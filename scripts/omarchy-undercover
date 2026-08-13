@@ -596,6 +596,14 @@ Gtk/DecorationLayout "close,minimize,maximize:"
 EOF
     killall -HUP xsettingsd 2>/dev/null || true
 
+    # Deploy macOS Finder file manager icon
+    if [[ -f "$HOME/.local/share/icons/hicolor/scalable/apps/mac-finder.svg" ]]; then
+        cp -f "$HOME/.local/share/icons/hicolor/scalable/apps/mac-finder.svg" "$HOME/.local/share/icons/hicolor/scalable/apps/org.gnome.Nautilus.svg" 2>/dev/null || true
+        cp -f "$HOME/.local/share/icons/hicolor/scalable/apps/mac-finder.svg" "$HOME/.local/share/icons/hicolor/scalable/apps/system-file-manager.svg" 2>/dev/null || true
+        cp -f "$HOME/.local/share/icons/hicolor/scalable/apps/mac-finder.svg" "$HOME/.local/share/icons/mac-dock/finder.svg" 2>/dev/null || true
+        gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
+    fi
+
     # Deploy macOS traffic light GTK CSS
     if [[ -f "$CONFIG_DIR/gtk/mac-style.css" ]]; then
         cp -f "$CONFIG_DIR/gtk/mac-style.css" "$HOME/.config/gtk-4.0/gtk.css" 2>/dev/null || true
@@ -701,6 +709,13 @@ Gtk/CursorThemeSize 24
 Gtk/DecorationLayout ":minimize,maximize,close"
 EOF
     killall -HUP xsettingsd 2>/dev/null || true
+
+    # Deploy Windows 11 Fluent File Explorer icon
+    if [[ -f "$HOME/.local/share/icons/hicolor/scalable/apps/win11-explorer.svg" ]]; then
+        cp -f "$HOME/.local/share/icons/hicolor/scalable/apps/win11-explorer.svg" "$HOME/.local/share/icons/hicolor/scalable/apps/org.gnome.Nautilus.svg" 2>/dev/null || true
+        cp -f "$HOME/.local/share/icons/hicolor/scalable/apps/win11-explorer.svg" "$HOME/.local/share/icons/hicolor/scalable/apps/system-file-manager.svg" 2>/dev/null || true
+        gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
+    fi
 
     # Deploy Windows 11 Fluent GTK CSS
     if [[ -f "$CONFIG_DIR/gtk/win11-style.css" ]]; then

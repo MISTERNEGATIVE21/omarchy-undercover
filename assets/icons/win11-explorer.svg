@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Back Folder Gradient -->
+    <linearGradient id="backFolder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffa000"/>
+      <stop offset="100%" stop-color="#e65100"/>
+    </linearGradient>
+
+    <!-- Front Folder Flap Gradient -->
+    <linearGradient id="frontFolder" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffd54f"/>
+      <stop offset="60%" stop-color="#ffca28"/>
+      <stop offset="100%" stop-color="#ffb300"/>
+    </linearGradient>
+
+    <!-- Blue Acrylic Insert Pill -->
+    <linearGradient id="blueInsert" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00d2ff"/>
+      <stop offset="60%" stop-color="#0078d4"/>
+      <stop offset="100%" stop-color="#004e8c"/>
+    </linearGradient>
+
+    <!-- Drop Shadow -->
+    <filter id="explorerShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#000000" flood-opacity="0.38"/>
+    </filter>
+    
+    <filter id="flapShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="-4" stdDeviation="6" flood-color="#000000" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <!-- Back Folder Body -->
+  <g filter="url(#explorerShadow)">
+    <!-- Back tab and base -->
+    <path d="M 64,136 C 64,118 78,104 96,104 L 200,104 C 218,104 232,118 244,132 L 260,152 L 416,152 C 434,152 448,166 448,184 L 448,392 C 448,410 434,424 416,424 L 96,424 C 78,424 64,410 64,392 Z" fill="url(#backFolder)"/>
+  </g>
+
+  <!-- Central Blue Acrylic Document / Insert -->
+  <g filter="url(#flapShadow)">
+    <rect x="108" y="168" width="296" height="150" rx="16" fill="url(#blueInsert)"/>
+    <!-- Document lines inside insert -->
+    <rect x="136" y="196" width="120" height="10" rx="5" fill="#ffffff" opacity="0.85"/>
+    <rect x="136" y="218" width="180" height="8" rx="4" fill="#ffffff" opacity="0.55"/>
+    <rect x="136" y="236" width="150" height="8" rx="4" fill="#ffffff" opacity="0.45"/>
+    <!-- Shiny acrylic gloss -->
+    <rect x="108" y="168" width="296" height="70" rx="16" fill="#ffffff" opacity="0.15"/>
+  </g>
+
+  <!-- Front Warm Yellow Folder Flap -->
+  <g filter="url(#flapShadow)">
+    <path d="M 64,228 C 64,210 78,198 96,198 L 416,198 C 434,198 448,210 448,228 L 448,396 C 448,414 434,428 416,428 L 96,428 C 78,428 64,414 64,396 Z" fill="url(#frontFolder)"/>
+    <!-- Top Flap Sheen -->
+    <path d="M 64,228 C 64,210 78,198 96,198 L 416,198 C 434,198 448,210 448,228 L 448,248 L 64,248 Z" fill="#ffffff" opacity="0.22"/>
+  </g>
+</svg>
