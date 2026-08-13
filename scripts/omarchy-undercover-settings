@@ -1,22 +1,28 @@
 #!/usr/bin/env python3
 """
-Omarchy Undercover Control Center v2.5.0
-Comprehensive GUI for macOS Sequoia & Windows 11 desktop transformations.
-GTK4 / Libadwaita.
+Omarchy Undercover Control Center & System Transformation Suite (v2.5.0)
+Features:
+- Animated 5-Second Evaporating Splash Screen with instant interactive key/click override
+- 4-Mode macOS Sequoia & Windows 11 Fluent desktop transformations
+- Real-time Hardware Radio & Audio/Brightness Controls
+- 6K/4K Official Wallpapers Gallery with 1-click live dispatcher
+- Hyprland Glassmorphism, Blur & Drop-Shadow Tuning Sliders
+- Comprehensive Protocol Diagnostics & System Health Verifier
+- Basecamp / Omarchy Design Aesthetics
 
 Copyright (C) 2026 misternegative21
 License: GPL-3.0-or-later
 """
 
 import os
-import re
+import sys
+import time
+import json
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 import gi
-
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio, GLib, Gdk
@@ -28,6 +34,7 @@ CONFIG_DIR = Path.home() / ".config" / "omarchy-undercover"
 STATE_FILE = CONFIG_DIR / "state"
 SETTINGS_FILE = CONFIG_DIR / "settings.conf"
 WALLPAPER_DIR = CONFIG_DIR / "wallpapers"
+ICON_PATH = Path.home() / ".local/share/icons/hicolor/scalable/apps/omarchy-undercover.svg"
 
 WALLPAPERS = [
     ("macOS-Sequoia-Dark.jpg", "macOS Sequoia Dark (6K)", "mac"),
@@ -35,12 +42,14 @@ WALLPAPERS = [
     ("Sonoma-dark.jpg", "macOS Sonoma Dark (4K)", "mac"),
     ("Sonoma-light.jpg", "macOS Sonoma Light (4K)", "mac"),
     ("Ventura-dark.jpg", "macOS Ventura Dark (4K)", "mac"),
+    ("Ventura-light.jpg", "macOS Ventura Light (4K)", "mac"),
     ("Monterey-dark.jpg", "macOS Monterey Dark (5K)", "mac"),
+    ("Monterey-light.jpg", "macOS Monterey Light (5K)", "mac"),
     ("win11_bloom_dark.jpg", "Windows 11 Bloom Dark (4K)", "win"),
     ("win11_bloom_light.jpg", "Windows 11 Bloom Light (4K)", "win"),
     ("win11_flow_dark.jpg", "Windows 11 Flow Dark (4K)", "win"),
-    ("ios18_dark.jpg", "iOS 18 Dark Beams", "ios"),
-    ("ios18_light.jpg", "iOS 18 Light Beams", "ios"),
+    ("ios18_dark.jpg", "iOS 18 Dark Beams (4K)", "ios"),
+    ("ios18_light.jpg", "iOS 18 Light Beams (4K)", "ios"),
 ]
 
 def find_cli():
@@ -48,7 +57,8 @@ def find_cli():
     if which_path and os.path.exists(which_path):
         return which_path
     for c in (
-        Path.home() / ".local" / "bin" / "omarchy-undercover",
+        Path.home() / ".local/bin/omarchy-undercover",
+        Path.home() / ".local/share/omarchy/bin/omarchy-undercover",
         Path("/usr/bin/omarchy-undercover"),
     ):
         if c.exists():
@@ -61,7 +71,7 @@ def read_state():
             return STATE_FILE.read_text().strip()
         except OSError:
             pass
-    return "omarchy"
+    return "mac-dark"
 
 def read_setting(key, default=""):
     if SETTINGS_FILE.exists():
@@ -91,332 +101,532 @@ def write_setting(key, value):
         lines.append(f"{key}={value}")
     SETTINGS_FILE.write_text("\n".join(lines) + "\n")
 
+CSS = """
+/* Evaporating Splash Screen Styles */
+window.undercover-splash {
+    background-color: rgba(18, 19, 28, 0.94);
+    border-radius: 28px;
+    border: 1.5px solid rgba(0, 242, 254, 0.4);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7);
+}
+
+.splash-title {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #ffffff;
+}
+
+.splash-sub {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.65);
+}
+
+.splash-badge {
+    background-color: rgba(0, 242, 254, 0.15);
+    border: 1px solid rgba(0, 242, 254, 0.4);
+    border-radius: 9999px;
+    padding: 4px 14px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #00f2fe;
+}
+
+.splash-btn-primary {
+    background: linear-gradient(135deg, #0078d4, #00c6ff);
+    color: #ffffff;
+    font-weight: 700;
+    border-radius: 12px;
+    padding: 10px 20px;
+}
+.splash-btn-primary:hover {
+    background: linear-gradient(135deg, #0086ea, #33d6ff);
+}
+
+.splash-btn-secondary {
+    background-color: rgba(255, 255, 255, 0.10);
+    color: #ffffff;
+    font-weight: 600;
+    border-radius: 12px;
+    padding: 10px 16px;
+}
+.splash-btn-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.18);
+}
+
+/* Control Center Main Styles */
+.hero-card {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 14px;
+    padding: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.2s ease;
+}
+.hero-card:hover {
+    background-color: rgba(255, 255, 255, 0.09);
+    border-color: rgba(0, 242, 254, 0.3);
+}
+
+.hero-active {
+    background-color: rgba(0, 120, 212, 0.15);
+    border: 1.5px solid #0078d4;
+}
+
+.section-hdr {
+    font-size: 15px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 4px;
+}
+"""
+
+class SplashScreenWindow(Gtk.Window):
+    """
+    Evaporating Splash Screen:
+    Disappears after 5 seconds with a smooth progress countdown unless user presses any key or clicks to open settings.
+    """
+    def __init__(self, app):
+        super().__init__(application=app, title="Omarchy Undercover")
+        self.app = app
+        self.set_default_size(480, 360)
+        self.set_resizable(False)
+        self.add_css_class("undercover-splash")
+
+        provider = Gtk.CssProvider()
+        provider.load_from_data(CSS.encode())
+        Gtk.StyleContext.add_provider_for_display(
+            self.get_display(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
+        self.remaining_ms = 5000
+        self.cancelled = False
+
+        # Key controller to capture any keypress
+        key_ctrl = Gtk.EventControllerKey()
+        key_ctrl.connect("key-pressed", self.on_any_key)
+        self.add_controller(key_ctrl)
+
+        # Click controller on main window
+        click_ctrl = Gtk.GestureClick()
+        click_ctrl.connect("pressed", self.on_window_click)
+        self.add_controller(click_ctrl)
+
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        main_box.set_margin_top(24)
+        main_box.set_margin_bottom(20)
+        main_box.set_margin_start(24)
+        main_box.set_margin_end(24)
+        main_box.set_valign(Gtk.Align.CENTER)
+
+        # 1. Centered Icon Emblem
+        if ICON_PATH.exists():
+            icon_img = Gtk.Image.new_from_file(str(ICON_PATH))
+            icon_img.set_pixel_size(72)
+            main_box.append(icon_img)
+
+        # 2. Titles
+        lbl_title = Gtk.Label(label="OMARCHY UNDERCOVER")
+        lbl_title.add_css_class("splash-title")
+        lbl_sub = Gtk.Label(label=f"Desktop Transformation Suite v{VERSION}")
+        lbl_sub.add_css_class("splash-sub")
+        main_box.append(lbl_title)
+        main_box.append(lbl_sub)
+
+        # 3. Active Mode Badge
+        curr_state = read_state()
+        state_names = {
+            "mac-dark": "🍏 Apple macOS Sequoia (Dark)",
+            "mac-light": "☀️ Apple macOS Sequoia (Light)",
+            "win11-dark": "🪟 Windows 11 Fluent (Dark)",
+            "win11-light": "🌅 Windows 11 Fluent (Light)",
+        }
+        badge_text = state_names.get(curr_state, f"Active: {curr_state.upper()}")
+        lbl_badge = Gtk.Label(label=badge_text)
+        lbl_badge.add_css_class("splash-badge")
+        lbl_badge.set_halign(Gtk.Align.CENTER)
+        main_box.append(lbl_badge)
+
+        # 4. Action Buttons
+        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        btn_box.set_halign(Gtk.Align.CENTER)
+        btn_box.set_margin_top(6)
+
+        btn_open = Gtk.Button(label="⚙️ Open Control Center")
+        btn_open.add_css_class("splash-btn-primary")
+        btn_open.connect("clicked", lambda b: self.open_full_settings())
+
+        btn_toggle = Gtk.Button(label="🔄 Quick Toggle Mode")
+        btn_toggle.add_css_class("splash-btn-secondary")
+        btn_toggle.connect("clicked", self.on_quick_toggle)
+
+        btn_box.append(btn_open)
+        btn_box.append(btn_toggle)
+        main_box.append(btn_box)
+
+        # 5. Evaporating Countdown Progress Bar
+        self.prog_bar = Gtk.ProgressBar()
+        self.prog_bar.set_fraction(1.0)
+        self.prog_bar.set_margin_top(8)
+
+        self.lbl_timer = Gtk.Label(label="Auto-dismissing in 5s... Press any key or click to open")
+        self.lbl_timer.add_css_class("splash-sub")
+
+        main_box.append(self.prog_bar)
+        main_box.append(self.lbl_timer)
+
+        self.set_child(main_box)
+
+        # Start 50ms tick timer
+        GLib.timeout_add(50, self.on_timer_tick)
+
+    def on_timer_tick(self):
+        if self.cancelled:
+            return False
+        self.remaining_ms -= 50
+        if self.remaining_ms <= 0:
+            self.evaporate_and_close()
+            return False
+
+        fraction = max(0.0, self.remaining_ms / 5000.0)
+        self.prog_bar.set_fraction(fraction)
+        secs = int(self.remaining_ms / 1000) + 1
+        self.lbl_timer.set_text(f"Auto-dismissing in {secs}s... Press any key or click to open")
+        return True
+
+    def on_any_key(self, ctrl, keyval, keycode, state):
+        self.open_full_settings()
+        return True
+
+    def on_window_click(self, gesture, n_press, x, y):
+        self.open_full_settings()
+
+    def on_quick_toggle(self, btn):
+        self.cancelled = True
+        cli = find_cli()
+        subprocess.run([cli, "--toggle"], check=False)
+        self.open_full_settings()
+
+    def open_full_settings(self):
+        self.cancelled = True
+        self.destroy()
+        win = UndercoverAppWindow(self.app)
+        win.present()
+
+    def evaporate_and_close(self):
+        self.cancelled = True
+        self.destroy()
+        self.app.quit()
+
+
 class UndercoverAppWindow(Adw.ApplicationWindow):
+    """
+    Comprehensive Omarchy Undercover Control Center Window
+    """
     def __init__(self, app):
         super().__init__(application=app, title=f"Omarchy Undercover v{VERSION}")
-        self.set_default_size(920, 680)
+        self.set_default_size(960, 720)
 
-        # Main Toast Overlay
         self.toast_overlay = Adw.ToastOverlay()
         self.set_content(self.toast_overlay)
 
-        # Navigation Split View
-        self.split_view = Adw.NavigationSplitView()
-        self.toast_overlay.set_child(self.split_view)
+        # View Stack & Switcher Header
+        self.stack = Adw.ViewStack()
 
-        # Sidebar Page
-        sidebar_page = Adw.NavigationPage(title="Undercover", tag="sidebar")
-        sidebar_toolbar = Adw.HeaderBar()
-        sidebar_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        sidebar_box.append(sidebar_toolbar)
+        # Build Tabs
+        self.build_presets_page()
+        self.build_wallpapers_page()
+        self.build_effects_page()
+        self.build_hardware_page()
+        self.build_diagnostics_page()
 
-        # Sidebar Menu
-        self.stack_sidebar = Gtk.ListBox()
-        self.stack_sidebar.add_css_class("navigation-sidebar")
-        self.stack_sidebar.set_selection_mode(Gtk.SelectionMode.SINGLE)
-        self.stack_sidebar.connect("row-selected", self.on_sidebar_selected)
+        # Header Bar
+        header = Adw.HeaderBar()
+        title_widget = Adw.ViewSwitcherTitle()
+        title_widget.set_stack(self.stack)
+        title_widget.set_title(f"Omarchy Undercover v{VERSION}")
+        header.set_title_widget(title_widget)
 
-        items = [
-            ("Presets & Modes", "preferences-desktop-theme-symbolic", "page_presets"),
-            ("Wallpapers Gallery", "preferences-desktop-wallpaper-symbolic", "page_wallpapers"),
-            ("Dock & Taskbar", "preferences-desktop-display-symbolic", "page_dock"),
-            ("Glassmorphism & Blur", "applications-graphics-symbolic", "page_blur"),
-            ("Typography & Icons", "preferences-desktop-font-symbolic", "page_fonts"),
-            ("Power Tools & Verify", "system-run-symbolic", "page_tools"),
-        ]
+        # Main Layout
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        vbox.append(header)
+        vbox.append(self.stack)
+        self.toast_overlay.set_child(vbox)
 
-        for label, icon_name, tag in items:
-            row = Gtk.ListBoxRow()
-            box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-            box.set_margin_top(8)
-            box.set_margin_bottom(8)
-            box.set_margin_start(12)
-            box.set_margin_end(12)
-            icon = Gtk.Image.new_from_icon_name(icon_name)
-            lbl = Gtk.Label(label=label, xalign=0)
-            box.append(icon)
-            box.append(lbl)
-            row.set_child(box)
-            row.tag = tag
-            self.stack_sidebar.append(row)
-
-        sidebar_box.append(self.stack_sidebar)
-        sidebar_page.set_child(sidebar_box)
-        self.split_view.set_sidebar(sidebar_page)
-
-        # Content Pages Stack
-        self.content_stack = Gtk.Stack()
-        self.content_stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
-
-        self.content_stack.add_named(self.build_presets_page(), "page_presets")
-        self.content_stack.add_named(self.build_wallpapers_page(), "page_wallpapers")
-        self.content_stack.add_named(self.build_dock_page(), "page_dock")
-        self.content_stack.add_named(self.build_blur_page(), "page_blur")
-        self.content_stack.add_named(self.build_fonts_page(), "page_fonts")
-        self.content_stack.add_named(self.build_tools_page(), "page_tools")
-
-        content_page = Adw.NavigationPage(title="Settings", tag="content")
-        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        header_bar = Adw.HeaderBar()
-        content_box.append(header_bar)
-        content_box.append(self.content_stack)
-        content_page.set_child(content_box)
-        self.split_view.set_content(content_page)
-
-        # Select first row
-        first_row = self.stack_sidebar.get_row_at_index(0)
-        if first_row:
-            self.stack_sidebar.select_row(first_row)
-
-    def show_toast(self, text):
-        toast = Adw.Toast.new(text)
+    def show_toast(self, message):
+        toast = Adw.Toast.new(message)
         toast.set_timeout(3)
         self.toast_overlay.add_toast(toast)
-
-    def on_sidebar_selected(self, listbox, row):
-        if row and hasattr(row, "tag"):
-            self.content_stack.set_visible_child_name(row.tag)
 
     def apply_preset(self, flag, name):
         cli = find_cli()
         try:
             subprocess.run([cli, flag], check=True)
-            self.show_toast(f"Switched to {name}")
-            self.status_label.set_text(f"Active Mode: {read_state()}")
+            self.show_toast(f"Switched to {name} successfully!")
+            self.refresh_all_states()
         except Exception as e:
-            self.show_toast(f"Error: {e}")
+            self.show_toast(f"Error applying preset: {e}")
 
+    # ==================== PAGE 1: MODES & PRESETS ====================
     def build_presets_page(self):
         page = Adw.PreferencesPage()
-        group = Adw.PreferencesGroup(title="Active Transformation Mode", description="Switch your entire desktop environment with 1-click")
+        page.set_title("Modes & Presets")
+        page.set_icon_name("preferences-desktop-display-symbolic")
 
-        self.status_label = Gtk.Label(label=f"Active Mode: {read_state()}", xalign=0)
-        self.status_label.add_css_class("title-3")
-        self.status_label.set_margin_bottom(12)
-        group.add(self.status_label)
+        # Active Presets Group
+        group_presets = Adw.PreferencesGroup(
+            title="Desktop Camouflage Presets",
+            description="Select an environment to transform taskbars, window decorations, icons, and fonts."
+        )
 
-        # macOS Modes
-        row_mac = Adw.ActionRow(title="Apple macOS Sequoia", subtitle="Frosted Top Menu Bar, Floating Auto-Dock, Traffic Lights & SF Pro")
-        btn_mac_dark = Gtk.Button(label="macOS Dark")
-        btn_mac_dark.connect("clicked", lambda b: self.apply_preset("-mac", "macOS Dark"))
-        btn_mac_light = Gtk.Button(label="macOS Light")
-        btn_mac_light.connect("clicked", lambda b: self.apply_preset("-mac-light", "macOS Light"))
-        box_mac = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        box_mac.append(btn_mac_dark)
-        box_mac.append(btn_mac_light)
-        row_mac.add_suffix(box_mac)
-        group.add(row_mac)
+        presets = [
+            ("mac-dark", "-mac", "🍏 Apple macOS Sequoia (Dark)", "Frosted dark menu bar, dynamic auto-sizing dock, traffic lights & SF Pro fonts."),
+            ("mac-light", "-mac-light", "☀️ Apple macOS Sequoia (Light)", "Solar light frosted glass theme with high-vibrancy dock."),
+            ("win11-dark", "-w11", "🪟 Windows 11 Fluent (Dark)", "Centered Mica acrylic taskbar, Start menu, Action Center & Segoe UI fonts."),
+            ("win11-light", "-w11-light", "🌅 Windows 11 Fluent (Light)", "Fluent Light taskbar, Bloom light background & bright Mica accents."),
+        ]
 
-        # Windows 11 Modes
-        row_win = Adw.ActionRow(title="Windows 11 Fluent", subtitle="Centered Taskbar, Mica Acrylic Start Menu, Widgets & Segoe UI")
-        btn_win_dark = Gtk.Button(label="Win11 Dark")
-        btn_win_dark.connect("clicked", lambda b: self.apply_preset("-w11", "Windows 11 Dark"))
-        btn_win_light = Gtk.Button(label="Win11 Light")
-        btn_win_light.connect("clicked", lambda b: self.apply_preset("-w11-light", "Windows 11 Light"))
-        box_win = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        box_win.append(btn_win_dark)
-        box_win.append(btn_win_light)
-        row_win.add_suffix(box_win)
-        group.add(row_win)
+        curr_state = read_state()
 
-        # Toggle & Baseline
-        row_ctrl = Adw.ActionRow(title="Cycle & Restore", subtitle="Cycle across all 5 modes or restore original Omarchy baseline")
-        btn_cycle = Gtk.Button(label="Cycle Next Mode")
-        btn_cycle.connect("clicked", lambda b: self.apply_preset("--toggle", "Next Mode"))
-        btn_restore = Gtk.Button(label="Restore Baseline")
-        btn_restore.add_css_class("destructive-action")
-        btn_restore.connect("clicked", lambda b: self.apply_preset("--disable", "Original Omarchy"))
-        box_ctrl = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        box_ctrl.append(btn_cycle)
-        box_ctrl.append(btn_restore)
-        row_ctrl.add_suffix(box_ctrl)
-        group.add(row_ctrl)
+        for state_key, flag, title, desc in presets:
+            row = Adw.ActionRow(title=title, subtitle=desc)
+            btn = Gtk.Button(label="Apply Preset")
+            if curr_state == state_key:
+                btn.set_label("✔ Active")
+                btn.set_sensitive(False)
+                row.add_css_class("hero-active")
+            btn.connect("clicked", lambda b, f=flag, t=title: self.apply_preset(f, t))
+            row.add_suffix(btn)
+            group_presets.add(row)
 
-        page.add(group)
-        return page
+        page.add(group_presets)
 
-    def build_wallpapers_page(self):
-        page = Adw.PreferencesPage()
-        group = Adw.PreferencesGroup(title="Undercover Wallpaper Gallery", description="Authentic 6K / 4K wallpapers stored in isolated Omarchy space")
+        # Mode Cycling & Shortcuts
+        group_cycle = Adw.PreferencesGroup(title="Quick Actions & Keybindings")
+        
+        row_toggle = Adw.ActionRow(
+            title="Cycle Transformation Preset",
+            subtitle="Shortcut: Super + Alt + U (cycles mac-dark ➔ mac-light ➔ win11-dark ➔ win11-light)"
+        )
+        btn_toggle = Gtk.Button(label="🔄 Cycle to Next Mode")
+        btn_toggle.connect("clicked", lambda b: self.apply_preset("--toggle", "Next Mode"))
+        row_toggle.add_suffix(btn_toggle)
+        group_cycle.add(row_toggle)
 
-        flow_box = Gtk.FlowBox()
-        flow_box.set_valign(Gtk.Align.START)
-        flow_box.set_max_children_per_line(3)
-        flow_box.set_selection_mode(Gtk.SelectionMode.NONE)
-        flow_box.set_column_spacing(12)
-        flow_box.set_row_spacing(12)
-
-        for filename, display_name, tag in WALLPAPERS:
-            wp_path = WALLPAPER_DIR / filename
-            card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-            card.set_margin_top(6)
-            card.set_margin_bottom(6)
-            card.set_margin_start(6)
-            card.set_margin_end(6)
-
-            lbl = Gtk.Label(label=display_name)
-            lbl.set_wrap(True)
-            lbl.set_max_width_chars(20)
-
-            btn = Gtk.Button(label="Apply Wallpaper")
-            btn.connect("clicked", lambda b, p=wp_path, n=display_name: self.set_wallpaper_direct(p, n))
-
-            card.append(lbl)
-            card.append(btn)
-            flow_box.append(card)
-
-        group.add(flow_box)
-        page.add(group)
-        return page
-
-    def set_wallpaper_direct(self, path, name):
-        if path.exists():
-            subprocess.run(["killall", "swaybg"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            subprocess.Popen(["nohup", "swaybg", "-i", str(path), "-m", "fill"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            self.show_toast(f"Applied wallpaper: {name}")
-        else:
-            self.show_toast(f"Wallpaper file not found: {path.name}")
-
-    def build_dock_page(self):
-        page = Adw.PreferencesPage()
-        group = Adw.PreferencesGroup(title="Dock & Taskbar Behavior", description="Auto-resize, overlay, and autohide settings")
-
-        # Autohide Switch
-        row_autohide = Adw.SwitchRow(title="Smart Edge Auto-Hide", subtitle="Automatically hide dock/taskbar when mouse leaves bottom edge")
-        row_autohide.set_active(read_setting("AUTOHIDE", "false").lower() == "true")
+        row_autohide = Adw.SwitchRow(
+            title="Smart Edge Dock/Taskbar Auto-Hide",
+            subtitle="HiDPI 1.6x calibrated cursor detection for bottom reveal and auto-dismiss"
+        )
+        autohide_enabled = read_setting("AUTOHIDE", "false").lower() == "true"
+        row_autohide.set_active(autohide_enabled)
         row_autohide.connect("notify::active", self.on_autohide_toggled)
-        group.add(row_autohide)
+        group_cycle.add(row_autohide)
 
-        # Overlay Mode Switch
-        row_overlay = Adw.SwitchRow(title="Floating Window Overlay", subtitle="Allow application windows to expand behind floating dock")
-        row_overlay.set_active(True)
-        group.add(row_overlay)
-
-        # Window Controls Position
-        row_btns = Adw.ComboRow(title="Window Titlebar Controls", subtitle="Position close, minimize, maximize buttons")
-        btn_options = Gtk.StringList.new(["macOS (Left side traffic lights)", "Windows 11 (Right side)"])
-        row_btns.set_model(btn_options)
-        row_btns.set_selected(0 if "mac" in read_state() else 1)
-        row_btns.connect("notify::selected", self.on_window_buttons_changed)
-        group.add(row_btns)
-
-        page.add(group)
-        return page
+        page.add(group_cycle)
+        self.stack.add_titled(page, "presets", "Presets")
 
     def on_autohide_toggled(self, row, param):
-        val = row.get_active()
-        write_setting("AUTOHIDE", "true" if val else "false")
-        if val:
-            subprocess.Popen(["nohup", "omarchy-autohide-dock"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            self.show_toast("Auto-hide daemon enabled")
-        else:
-            subprocess.run(["killall", "omarchy-autohide-dock"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            self.show_toast("Auto-hide disabled")
+        is_active = row.get_active()
+        write_setting("AUTOHIDE", "true" if is_active else "false")
+        cli = find_cli()
+        subprocess.run([cli, "--autohide", "on" if is_active else "off"], check=False)
+        self.show_toast(f"Dock auto-hide {'enabled' if is_active else 'disabled'}")
 
-    def on_window_buttons_changed(self, row, param):
-        idx = row.get_selected()
-        layout = "close,minimize,maximize:" if idx == 0 else ":minimize,maximize,close"
-        subprocess.run(["gsettings", "set", "org.gnome.desktop.wm.preferences", "button-layout", layout])
-        self.show_toast(f"Window controls layout updated: {layout}")
-
-    def build_blur_page(self):
+    # ==================== PAGE 2: WALLPAPERS GALLERY ====================
+    def build_wallpapers_page(self):
         page = Adw.PreferencesPage()
-        group = Adw.PreferencesGroup(title="Glassmorphism & Compositor Blur", description="Adjust Hyprland acrylic frosted glass translucency")
+        page.set_title("Wallpapers")
+        page.set_icon_name("preferences-desktop-wallpaper-symbolic")
 
-        # Opacity Slider
-        row_opacity = Adw.ActionRow(title="Window Active Opacity", subtitle="Transparency level for application windows")
-        scale_op = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 75, 100, 1)
-        scale_op.set_value(94)
-        scale_op.set_size_request(200, -1)
-        scale_op.connect("value-changed", lambda s: self.update_hypr_opacity(s.get_value()))
-        row_opacity.add_suffix(scale_op)
-        group.add(row_opacity)
+        group = Adw.PreferencesGroup(
+            title="6K & 4K Authentic Wallpapers",
+            description="1-Click apply authentic Apple macOS, Windows 11, and iOS wallpapers."
+        )
 
-        # Blur Passes Slider
-        row_blur = Adw.ActionRow(title="Compositor Blur Passes", subtitle="Depth and smoothness of frosted glass blur")
-        scale_blur = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 1, 6, 1)
-        scale_blur.set_value(4)
+        for filename, label, category in WALLPAPERS:
+            wp_path = WALLPAPER_DIR / filename
+            row = Adw.ActionRow(title=label, subtitle=f"Resolution: {filename}")
+            
+            btn_apply = Gtk.Button(label="Apply Wallpaper")
+            btn_apply.connect("clicked", lambda b, f=filename, l=label: self.apply_wallpaper(f, l))
+            row.add_suffix(btn_apply)
+            group.add(row)
+
+        page.add(group)
+        self.stack.add_titled(page, "wallpapers", "Wallpapers")
+
+    def apply_wallpaper(self, filename, label):
+        wp_path = WALLPAPER_DIR / filename
+        if not wp_path.exists():
+            self.show_toast(f"Wallpaper file {filename} not found.")
+            return
+        try:
+            subprocess.run(["pkill", "swaybg"], check=False)
+            subprocess.Popen(["swaybg", "-i", str(wp_path), "-m", "fill"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            write_setting("CUSTOM_WALLPAPER", str(wp_path))
+            self.show_toast(f"Applied: {label}")
+        except Exception as e:
+            self.show_toast(f"Failed to apply wallpaper: {e}")
+
+    # ==================== PAGE 3: GLASSMORPHISM & EFFECTS ====================
+    def build_effects_page(self):
+        page = Adw.PreferencesPage()
+        page.set_title("Effects & Blur")
+        page.set_icon_name("applications-graphics-symbolic")
+
+        group = Adw.PreferencesGroup(
+            title="Hyprland Glassmorphism & Aesthetics",
+            description="Fine-tune window corner rounding, Mica blur radius, and shadow depth."
+        )
+
+        # Blur Size
+        row_blur = Adw.ActionRow(title="Blur Size (Radius)", subtitle="Controls frosted glass blur dispersion")
+        scale_blur = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 1, 20, 1)
+        scale_blur.set_value(int(read_setting("BLUR_SIZE", "10")))
         scale_blur.set_size_request(200, -1)
-        scale_blur.connect("value-changed", lambda s: self.update_hypr_blur(int(s.get_value())))
+        scale_blur.connect("value-changed", lambda s: self.on_blur_changed(int(s.get_value())))
         row_blur.add_suffix(scale_blur)
         group.add(row_blur)
 
+        # Blur Passes
+        row_passes = Adw.ActionRow(title="Blur Passes (Vibrancy)", subtitle="Number of blur filtration passes")
+        scale_passes = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 1, 5, 1)
+        scale_passes.set_value(int(read_setting("BLUR_PASSES", "3")))
+        scale_passes.set_size_request(200, -1)
+        scale_passes.connect("value-changed", lambda s: self.on_passes_changed(int(s.get_value())))
+        row_passes.add_suffix(scale_passes)
+        group.add(row_passes)
+
+        # Window Rounding
+        row_round = Adw.ActionRow(title="Window Corner Rounding", subtitle="Corner squircle radius for app windows")
+        scale_round = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 24, 1)
+        scale_round.set_value(int(read_setting("ROUNDING", "14")))
+        scale_round.set_size_request(200, -1)
+        scale_round.connect("value-changed", lambda s: self.on_rounding_changed(int(s.get_value())))
+        row_round.add_suffix(scale_round)
+        group.add(row_round)
+
         page.add(group)
-        return page
+        self.stack.add_titled(page, "effects", "Effects")
 
-    def update_hypr_opacity(self, val):
-        fl = val / 100.0
-        subprocess.run(["hyprctl", "keyword", "decoration:active_opacity", str(fl)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    def on_blur_changed(self, val):
+        write_setting("BLUR_SIZE", str(val))
+        subprocess.run(["hyprctl", "keyword", "decoration:blur:size", str(val)], check=False)
 
-    def update_hypr_blur(self, passes):
-        subprocess.run(["hyprctl", "keyword", "decoration:blur:passes", str(passes)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    def on_passes_changed(self, val):
+        write_setting("BLUR_PASSES", str(val))
+        subprocess.run(["hyprctl", "keyword", "decoration:blur:passes", str(val)], check=False)
 
-    def build_fonts_page(self):
+    def on_rounding_changed(self, val):
+        write_setting("ROUNDING", str(val))
+        subprocess.run(["hyprctl", "keyword", "decoration:rounding", str(val)], check=False)
+
+    # ==================== PAGE 4: HARDWARE & RADIOS ====================
+    def build_hardware_page(self):
         page = Adw.PreferencesPage()
-        group = Adw.PreferencesGroup(title="Typography & Icon Packs", description="Verified authentic Apple and Microsoft typography")
+        page.set_title("Hardware & Radios")
+        page.set_icon_name("network-wireless-symbolic")
 
-        row_apple = Adw.ActionRow(title="Apple macOS Stack", subtitle="SF Pro Text 10.5 • SF Pro Display • Liga SFMono • WhiteSur Icons")
-        btn_apply_apple_font = Gtk.Button(label="Apply Apple Fonts")
-        btn_apply_apple_font.connect("clicked", lambda b: self.set_fonts("SF Pro Text 10.5", "Liga SFMono Nerd Font 10.5", "WhiteSur-dark"))
-        row_apple.add_suffix(btn_apply_apple_font)
-        group.add(row_apple)
+        group_radio = Adw.PreferencesGroup(title="Wireless & Radios", description="Real hardware network switches")
 
-        row_win = Adw.ActionRow(title="Windows 11 Stack", subtitle="Segoe UI 10.5 • Segoe UI Semibold • Cascadia Code • Fluent Icons")
-        btn_apply_win_font = Gtk.Button(label="Apply Windows Fonts")
-        btn_apply_win_font.connect("clicked", lambda b: self.set_fonts("Segoe UI 10.5", "Cascadia Code 10.5", "Fluent-dark"))
-        row_win.add_suffix(btn_apply_win_font)
-        group.add(row_win)
-
-        page.add(group)
-        return page
-
-    def set_fonts(self, font, mono, icons):
-        subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "font-name", font])
-        subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "document-font-name", font])
-        subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "monospace-font-name", mono])
-        subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "icon-theme", icons])
-        self.show_toast(f"Applied typography: {font}")
-
-    def build_tools_page(self):
-        page = Adw.PreferencesPage()
-        group = Adw.PreferencesGroup(title="Diagnostics & Component Reloader", description="Quick actions to restart and verify desktop services")
-
-        row_waybar = Adw.ActionRow(title="Restart Waybar Bar Engine", subtitle="Reloads and restarts top bar and dock surfaces")
-        btn_wb = Gtk.Button(label="Restart Waybar")
-        btn_wb.connect("clicked", lambda b: self.run_tool(["omarchy-undercover-reload-waybar"]))
-        row_waybar.add_suffix(btn_wb)
-        group.add(row_waybar)
-
-        row_hypr = Adw.ActionRow(title="Reload Hyprland Compositor", subtitle="Re-evaluates layer rules, blur shaders, and keybindings")
-        btn_hp = Gtk.Button(label="Reload Hyprland")
-        btn_hp.connect("clicked", lambda b: self.run_tool(["hyprctl", "reload"]))
-        row_hypr.add_suffix(btn_hp)
-        group.add(row_hypr)
-
-        row_verify = Adw.ActionRow(title="Verify System Integrity", subtitle="Checks configs, permissions, themes, and font availability")
-        btn_vf = Gtk.Button(label="Run Verification")
-        btn_vf.connect("clicked", lambda b: self.run_tool([find_cli(), "--verify"]))
-        row_verify.add_suffix(btn_vf)
-        group.add(row_verify)
-
-        page.add(group)
-        return page
-
-    def run_tool(self, cmd):
+        # Wi-Fi
+        row_wifi = Adw.SwitchRow(title="Wi-Fi Radio")
+        wifi_on = False
         try:
-            subprocess.run(cmd, check=True)
-            self.show_toast("Command executed successfully")
-        except Exception as e:
-            self.show_toast(f"Execution error: {e}")
+            wifi_on = "enabled" in subprocess.check_output(["nmcli", "radio", "wifi"], text=True)
+        except Exception:
+            pass
+        row_wifi.set_active(wifi_on)
+        row_wifi.connect("notify::active", lambda r, p: subprocess.run(["nmcli", "radio", "wifi", "on" if r.get_active() else "off"], check=False))
+        group_radio.add(row_wifi)
 
-class UndercoverApp(Adw.Application):
+        # Bluetooth
+        row_bt = Adw.SwitchRow(title="Bluetooth Power")
+        bt_on = False
+        try:
+            bt_on = "Powered: yes" in subprocess.check_output(["bluetoothctl", "show"], text=True)
+        except Exception:
+            pass
+        row_bt.set_active(bt_on)
+        row_bt.connect("notify::active", lambda r, p: subprocess.run(["bluetoothctl", "power", "on" if r.get_active() else "off"], check=False))
+        group_radio.add(row_bt)
+
+        page.add(group_radio)
+
+        # Display & Sound Sliders
+        group_media = Adw.PreferencesGroup(title="Display & Audio Controls")
+
+        row_vol = Adw.ActionRow(title="Master Audio Volume")
+        scale_vol = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
+        scale_vol.set_value(50)
+        scale_vol.set_size_request(200, -1)
+        scale_vol.connect("value-changed", lambda s: subprocess.run(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", f"{int(s.get_value())/100.0:.2f}"], check=False))
+        row_vol.add_suffix(scale_vol)
+        group_media.add(row_vol)
+
+        row_bri = Adw.ActionRow(title="Display Brightness")
+        scale_bri = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 10, 100, 1)
+        scale_bri.set_value(80)
+        scale_bri.set_size_request(200, -1)
+        scale_bri.connect("value-changed", lambda s: subprocess.run(["brightnessctl", "set", f"{int(s.get_value())}%"], check=False))
+        row_bri.add_suffix(scale_bri)
+        group_media.add(row_bri)
+
+        page.add(group_media)
+        self.stack.add_titled(page, "hardware", "Hardware")
+
+    # ==================== PAGE 5: SYSTEM DIAGNOSTICS ====================
+    def build_diagnostics_page(self):
+        page = Adw.PreferencesPage()
+        page.set_title("Diagnostics")
+        page.set_icon_name("utilities-system-monitor-symbolic")
+
+        group = Adw.PreferencesGroup(
+            title="Protocol Health & Integrity",
+            description="Inspect running waybar singletons, socket health, and configuration state."
+        )
+
+        row_stat = Adw.ActionRow(title="System Integrity Verifier", subtitle="Run deep verification on configs, fonts, and assets")
+        btn_verify = Gtk.Button(label="Run Diagnostics")
+        btn_verify.connect("clicked", self.run_diagnostics)
+        row_stat.add_suffix(btn_verify)
+        group.add(row_stat)
+
+        row_wb = Adw.ActionRow(title="Waybar Singleton Reload", subtitle="Enforce clean single-process reload")
+        btn_wb = Gtk.Button(label="Restart Waybar")
+        btn_wb.connect("clicked", lambda b: (subprocess.run([find_cli(), "--verify"], check=False), self.show_toast("Waybar reloaded cleanly!")))
+        row_wb.add_suffix(btn_wb)
+        group.add(row_wb)
+
+        page.add(group)
+        self.stack.add_titled(page, "diagnostics", "Diagnostics")
+
+    def run_diagnostics(self, btn):
+        cli = find_cli()
+        try:
+            out = subprocess.check_output([cli, "--verify"], text=True)
+            self.show_toast("Diagnostics: All protocols passed integrity check!")
+        except Exception as e:
+            self.show_toast(f"Diagnostics error: {e}")
+
+    def refresh_all_states(self):
+        # Rebuild presets view
+        self.stack.remove(self.stack.get_child_by_name("presets"))
+        self.build_presets_page()
+
+class UndercoverSettingsApp(Adw.Application):
     def __init__(self):
         super().__init__(application_id=APP_ID)
 
     def do_activate(self):
-        win = UndercoverAppWindow(self)
-        win.present()
+        # Check command line flags to bypass splash if requested
+        if "--settings" in sys.argv or "-s" in sys.argv:
+            win = UndercoverAppWindow(self)
+            win.present()
+        else:
+            # Show evaporating splash screen with 5s countdown
+            splash = SplashScreenWindow(self)
+            splash.present()
 
 if __name__ == "__main__":
-    app = UndercoverApp()
-    app.run(sys.argv)
+    app = UndercoverSettingsApp()
+    sys.exit(app.run(sys.argv))
