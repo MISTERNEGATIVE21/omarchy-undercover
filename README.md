@@ -1,13 +1,18 @@
 # 🕵️ Omarchy Undercover (v2.5.0)
 
 ```
-╭────────────────────────────────────────────────────────────────────────╮
-│                                                                        │
-│   🕵️  O M A R C H Y   U N D E R C O V E R   ( v 2 . 5 . 0 )            │
-│   The Ultimate macOS Sequoia & Windows 11 Desktop Suite for Hyprland   │
-│   Developed by misternegative21                                        │
-│                                                                        │
-╰────────────────────────────────────────────────────────────────────────╯
+  ██████╗ ███╗   ███╗ █████╗ ██████╗  ██████╗██╗  ██╗██╗   ██╗
+ ██╔═══██╗████╗ ████║██╔══██╗██╔══██╗██╔════╝██║  ██║╚██╗ ██╔╝
+ ██║   ██║██╔████╔██║███████║██████╔╝██║     ███████║ ╚████╔╝ 
+ ██║   ██║██║╚██╔╝██║██╔══██║██╔══██╗██║     ██╔══██║  ╚██╔╝  
+ ╚██████╔╝██║ ╚═╝ ██║██║  ██║██║  ██║╚██████╗██║  ██║   ██║   
+  ╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝   ╚═╝   
+ ██╗   ██╗███╗   ██╗██████╗ ███████╗██████╗  ██████╗ ██████╗ ██╗   ██╗███████╗██████╗ 
+ ██║   ██║████╗  ██║██╔══██╗██╔════╝██╔══██╗██╔════╝██╔═══██╗██║   ██║██╔════╝██╔══██╗
+ ██║   ██║██╔██╗ ██║██║  ██║█████╗  ██████╔╝██║     ██║   ██║██║   ██║█████╗  ██████╔╝
+ ██║   ██║██║╚██╗██║██║  ██║██╔══╝  ██╔══██╗██║     ██║   ██║╚██╗ ██╔╝██╔══╝  ██╔══██╗
+ ╚██████╔╝██║ ╚████║██████╔╝███████╗██║  ██║╚██████╗╚██████╔╝ ╚████╔╝ ███████╗██║  ██║
+  ╚═════╝ ╚═╝  ╚═══╝╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝   ╚═══╝  ╚══════╝╚═╝  ╚═╝
 ```
 
 [![Release](https://img.shields.io/badge/Release-v2.5.0-blue.svg?style=for-the-badge)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases)
@@ -15,18 +20,18 @@
 [![Theme Engine](https://img.shields.io/badge/Theme-Omarchy-ff2d55.svg?style=for-the-badge)](https://github.com/MISTERNEGATIVE21/omarchy-undercover)
 [![License](https://img.shields.io/badge/License-GPL--3.0-green.svg?style=for-the-badge)](LICENSE)
 
-> **The Ultimate Camouflage & Transformation Suite for Linux / Hyprland**  
-> Effortlessly morph your Linux desktop into pixel-perfect **Apple macOS Sequoia** or **Windows 11 Fluent**, complete with authentic typography, native blur/mica glassmorphism, dynamic auto-sizing dock, live weather, functional radio toggles, and universal GTK/Qt theming.
+> **The Ultimate Camouflage & Desktop Transformation Suite for Linux / Hyprland**  
+> Effortlessly morph your Linux desktop into pixel-perfect **Apple macOS Sequoia** or **Windows 11 Fluent**, complete with authentic typography, native blur/mica glassmorphism, dynamic auto-sizing dock, live weather, functional radio dropdowns, and universal GTK/Qt theming.
 
 ---
 
-## ⚡ 1-Line Quick Install
+## ⚡ 1-Line Basecamp-Styled TUI Quick Install
 
 ```bash
 bash <(curl -sL https://raw.githubusercontent.com/MISTERNEGATIVE21/omarchy-undercover/master/install.sh)
 ```
 
-Or clone and run the interactive TUI installer:
+Or clone and run the interactive Charm Gum installer:
 
 ```bash
 git clone https://github.com/MISTERNEGATIVE21/omarchy-undercover.git
@@ -43,17 +48,20 @@ Press **`Super + Alt + U`** to instantly cycle through the 4 environments:
 $$\Large \text{🍏 macOS Dark} \longrightarrow \text{☀️ macOS Light} \longrightarrow \text{🪟 Win11 Dark} \longrightarrow \text{🌅 Win11 Light}$$
 
 ```
-┌───────────────────────────────┬────────────────────────────────┐
-│  🍏 Apple macOS Sequoia       │  🪟 Windows 11 Fluent          │
-├───────────────────────────────┼────────────────────────────────┤
-│  • Frosted Top Menu Bar       │  • Centered Mica Taskbar       │
-│  • Dynamic Auto-Sizing Dock   │  • Task View & Start Button    │
-│  • Full Vector Apple SVGs     │  • Live Geolocation Weather    │
-│  • Window Traffic Lights      │  • Windows 11 Start Menu       │
-│  • SF Pro Text & Display      │  • Segoe UI & Cascadia Code    │
-│  • Liga SFMono Nerd Font      │  • Action Center Quick Toggles │
-│  • Spotlight (Super + Space)  │  • Real Wi-Fi / Bluetooth Sync │
-└───────────────────────────────┴────────────────────────────────┘
+┌──────────────────────────────────────┬──────────────────────────────────────┐
+│  🍏 Apple macOS Sequoia              │  🪟 Windows 11 Fluent                │
+├──────────────────────────────────────┼──────────────────────────────────────┤
+│  • Frosted Top Menu Bar              │  • Centered Mica Acrylic Taskbar     │
+│  • Apple Menu ( About This Mac)     │  • Windows 11 Start Menu & Power Hub │
+│  • Dynamic Auto-Sizing Dock          │  • Live Geolocation Weather Widget   │
+│  • Full Vector Apple Icon Suite      │  • Windows 11 Action Center          │
+│  • Window Traffic Lights (Left)      │  • Flat Fluent Window Buttons (Right)│
+│  • SF Pro Text & SF Pro Display      │  • Segoe UI & Cascadia Code          │
+│  • Liga SFMono Nerd Font             │  • Live Wi-Fi & Bluetooth Scanners   │
+│  • Spotlight (Super + Space)         │  • Live Volume & Brightness Sliders  │
+│  • Mission Control (Super + Tab)     │  • Task View Window Switcher         │
+│  • macOS Spring / Ease Physics       │  • Fluent Cubic Bezier Animations    │
+└──────────────────────────────────────┴──────────────────────────────────────┘
 ```
 
 ---
@@ -103,8 +111,11 @@ omarchy-undercover --autohide off
 
 ### GUI Control Center & System Settings
 ```bash
-# Launch GTK4 / Libadwaita Undercover Settings App
+# Launch GTK4 / Libadwaita Undercover Settings App (with 5-second evaporating splash)
 omarchy-undercover-settings
+
+# Launch direct settings (bypassing splash screen)
+omarchy-undercover-settings -s
 ```
 
 ---

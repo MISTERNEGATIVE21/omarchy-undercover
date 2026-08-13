@@ -1,5 +1,5 @@
 -- =============================================================================
--- Omarchy Undercover - Apple macOS Mode for Hyprland (Lua module)
+-- Omarchy Undercover - Apple macOS Sequoia Mode for Hyprland (Lua module)
 -- =============================================================================
 
 local settings_path = os.getenv("HOME") .. "/.config/omarchy-undercover/settings.conf"
@@ -39,8 +39,8 @@ hl.config({
   },
   decoration = {
     rounding = 14,
-    active_opacity = 0.94,
-    inactive_opacity = 0.88,
+    active_opacity = 0.96,
+    inactive_opacity = 0.90,
     fullscreen_opacity = 1.0,
     shadow = { enabled = true, range = 36, render_power = 4, color = "rgba(00000088)" },
     blur = {
@@ -59,8 +59,19 @@ hl.config({
   input = { repeat_rate = 25, repeat_delay = 600 },
 })
 
-hl.curve("macSpring", { type = "bezier", points = { { 0.1, 0.9 }, { 0.2, 1 } } })
+-- macOS Sequoia Spring & Smooth Acceleration Animation Physics
+hl.curve("macSpring", { type = "bezier", points = { { 0.1, 0.9 }, { 0.2, 1.0 } } })
+hl.curve("macEase", { type = "bezier", points = { { 0.25, 1.0 }, { 0.5, 1.0 } } })
+hl.curve("macFade", { type = "bezier", points = { { 0.0, 0.0 }, { 0.2, 1.0 } } })
+
 hl.animation({ leaf = "global", enabled = true, speed = 6, bezier = "macSpring" })
+hl.animation({ leaf = "windowsIn", enabled = true, speed = 6, bezier = "macSpring", style = "popin 85%" })
+hl.animation({ leaf = "windowsOut", enabled = true, speed = 5, bezier = "macEase", style = "popin 90%" })
+hl.animation({ leaf = "fadeIn", enabled = true, speed = 4, bezier = "macFade" })
+hl.animation({ leaf = "fadeOut", enabled = true, speed = 4, bezier = "macFade" })
+hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "macEase", style = "slide" })
+hl.animation({ leaf = "layersIn", enabled = true, speed = 4, bezier = "macSpring", style = "fade" })
+hl.animation({ leaf = "layersOut", enabled = true, speed = 3, bezier = "macEase", style = "fade" })
 
 hl.unbind("SUPER + SPACE")
 hl.bind("SUPER + SPACE", hl.dsp.exec_cmd("rofi -show drun -theme ~/.config/rofi/mac.rasi"), { description = "macOS Spotlight Search" })

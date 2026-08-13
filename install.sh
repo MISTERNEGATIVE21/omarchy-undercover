@@ -1,8 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # =============================================================================
-# 🕵️ Omarchy Undercover — Interactive TUI Installer & Setup
-# Basecamp / Charm Gum animated TUI installer for Hyprland desktop transformation.
+# 🕵️ OMARCHY UNDERCOVER — BASECAMP / CHARM TUI INSTALLER (v2.5.0)
+# Interactive Terminal Installer with Smooth Multi-Stage Animations & Styling
+#
 # Copyright (C) 2026 misternegative21
+# License: GPL-3.0-or-later
 # =============================================================================
 
 set -e
@@ -15,75 +17,111 @@ APPS_DIR="$LOCAL_SHARE/applications"
 ICONS_DIR="$LOCAL_SHARE/icons"
 FONTS_DIR="$LOCAL_SHARE/fonts"
 
-# Color constants
-CYAN='\033[0;36m'
-MAGENTA='\033[0;35m'
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
+# ANSI Terminal Color Tokens
+CYAN='\033[38;2;0;242;254m'
+BLUE='\033[38;2;0;120;212m'
+PURPLE='\033[38;2;175;82;222m'
+PINK='\033[38;2;255;45;85m'
+GREEN='\033[38;2;52;199;89m'
+YELLOW='\033[38;2;255;204;0m'
+WHITE='\033[38;2;255;255;255m'
+GRAY='\033[38;2;140;140;160m'
 BOLD='\033[1m'
+DIM='\033[2m'
 NC='\033[0m'
 
-# Check if gum is installed, fallback to ANSI helpers if not
 HAS_GUM=0
 if command -v gum >/dev/null 2>&1; then
     HAS_GUM=1
 fi
 
-print_banner() {
+print_logo() {
     clear
+    echo -e "${CYAN}${BOLD}"
+    cat << "EOF"
+  ██████╗ ███╗   ███╗ █████╗ ██████╗  ██████╗██╗  ██╗██╗   ██╗
+ ██╔═══██╗████╗ ████║██╔══██╗██╔══██╗██╔════╝██║  ██║╚██╗ ██╔╝
+ ██║   ██║██╔████╔██║███████║██████╔╝██║     ███████║ ╚████╔╝ 
+ ██║   ██║██║╚██╔╝██║██╔══██║██╔══██╗██║     ██╔══██║  ╚██╔╝  
+ ╚██████╔╝██║ ╚═╝ ██║██║  ██║██║  ██║╚██████╗██║  ██║   ██║   
+  ╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝   ╚═╝   
+EOF
+    echo -e "${PINK}${BOLD}"
+    cat << "EOF"
+ ██╗   ██╗███╗   ██╗██████╗ ███████╗██████╗  ██████╗ ██████╗ ██╗   ██╗███████╗██████╗ 
+ ██║   ██║████╗  ██║██╔══██╗██╔════╝██╔══██╗██╔════╝██╔═══██╗██║   ██║██╔════╝██╔══██╗
+ ██║   ██║██╔██╗ ██║██║  ██║█████╗  ██████╔╝██║     ██║   ██║██║   ██║█████╗  ██████╔╝
+ ██║   ██║██║╚██╗██║██║  ██║██╔══╝  ██╔══██╗██║     ██║   ██║╚██╗ ██╔╝██╔══╝  ██╔══██╗
+ ╚██████╔╝██║ ╚████║██████╔╝███████╗██║  ██║╚██████╗╚██████╔╝ ╚████╔╝ ███████╗██║  ██║
+  ╚═════╝ ╚═╝  ╚═══╝╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝   ╚═══╝  ╚══════╝╚═╝  ╚═╝
+EOF
+    echo -e "${NC}"
+}
+
+print_header_box() {
     if [[ $HAS_GUM -eq 1 ]]; then
         gum style \
             --border double \
-            --margin "1 2" \
-            --padding "1 4" \
+            --margin "0 1 1 1" \
+            --padding "1 3" \
             --border-foreground 39 \
-            --foreground 212 \
+            --foreground 255 \
             --bold \
-            "🕵️  O M A R C H Y   U N D E R C O V E R   (v2.5.0)" \
-            "  The Ultimate macOS Sequoia & Windows 11 Desktop Suite  " \
-            "  Developed by misternegative21                          "
+            "🕵️  OMARCHY UNDERCOVER  •  THE ULTIMATE DESKTOP TRANSFORMATION SUITE" \
+            "   macOS Sequoia Frosted Glass  ╳  Windows 11 Fluent Acrylic        " \
+            "   Release v2.5.0  •  Engineered by misternegative21                "
     else
-        echo -e "${CYAN}${BOLD}====================================================================${NC}"
-        echo -e "${MAGENTA}${BOLD}     🕵️  OMARCHY UNDERCOVER — DESKTOP TRANSFORMATION SUITE (v2.5.0)${NC}"
-        echo -e "${BLUE}          Developed by misternegative21 for Hyprland / Omarchy${NC}"
-        echo -e "${CYAN}${BOLD}====================================================================${NC}"
+        echo -e "${BLUE}${BOLD}┌────────────────────────────────────────────────────────────────────────┐${NC}"
+        echo -e "${BLUE}${BOLD}│${WHITE}  🕵️  OMARCHY UNDERCOVER  •  THE ULTIMATE DESKTOP TRANSFORMATION SUITE   ${BLUE}│${NC}"
+        echo -e "${BLUE}${BOLD}│${CYAN}   macOS Sequoia Frosted Glass  ╳  Windows 11 Fluent Acrylic         ${BLUE}│${NC}"
+        echo -e "${BLUE}${BOLD}│${GRAY}   Release v2.5.0  •  Engineered by misternegative21                 ${BLUE}│${NC}"
+        echo -e "${BLUE}${BOLD}└────────────────────────────────────────────────────────────────────────┘${NC}"
         echo ""
     fi
 }
 
-run_step() {
-    local title="$1"
-    local cmd="$2"
+run_animated_step() {
+    local step_num="$1"
+    local total_steps="$2"
+    local spinner_type="$3"
+    local title="$4"
+    local cmd="$5"
+
+    local prefix="[${step_num}/${total_steps}]"
+
     if [[ $HAS_GUM -eq 1 ]]; then
-        gum spin --spinner dot --title "$title" -- bash -c "$cmd"
-        gum style --foreground 48 "  ✔ $title"
+        gum spin --spinner "$spinner_type" --title "$prefix $title" -- bash -c "$cmd"
+        gum style --foreground 48 "  ✔ $prefix $title"
     else
-        echo -e "${YELLOW}❯ ${title}...${NC}"
+        echo -ne "${CYAN}${BOLD}${prefix} ${YELLOW}⏳ ${title}...${NC}\r"
         eval "$cmd"
-        echo -e "${GREEN}✔ Done: ${title}${NC}"
+        echo -e "${GREEN}${BOLD}  ✔ ${prefix} ${WHITE}${title}${NC}                      "
     fi
+    sleep 0.15
 }
 
 main() {
-    print_banner
+    print_logo
+    print_header_box
 
-    # 1. Environment & Target Directories
-    run_step "Creating destination directories in ~/.config and ~/.local..." '
+    echo -e "${WHITE}${BOLD}⚡ Initializing Deployment Pipeline:${NC}\n"
+
+    # Step 1: Destination Directories
+    run_animated_step "1" "8" "dot" "Configuring directory architecture in ~/.config & ~/.local" '
         mkdir -p "$CONFIG_DIR/wallpapers" "$CONFIG_DIR/waybar" "$CONFIG_DIR/rofi" "$CONFIG_DIR/gtk" "$CONFIG_DIR/assets"
         mkdir -p "$LOCAL_BIN" "$APPS_DIR" "$ICONS_DIR/hicolor/scalable/apps" "$ICONS_DIR/mac-dock" "$FONTS_DIR"
     '
 
-    # 2. Typography Installation
-    run_step "Installing authentic Apple SF Pro, SF Mono, Segoe UI, and Cascadia Code fonts..." '
+    # Step 2: Authentic Typography Stack
+    run_animated_step "2" "8" "monkey" "Installing Apple SF Pro, SF Mono, Segoe UI & Cascadia Code" '
         if [[ -d "$SCRIPT_DIR/assets/fonts" ]]; then
             cp -rf "$SCRIPT_DIR/assets/fonts/"* "$FONTS_DIR/" 2>/dev/null || true
         fi
         fc-cache -f "$FONTS_DIR" >/dev/null 2>&1 || true
     '
 
-    # 3. Vector Icons & Assets
-    run_step "Deploying vector icons, dock launchers, and theme assets..." '
+    # Step 3: Vector Icon Engines & SVGs
+    run_animated_step "3" "8" "line" "Deploying vector app icons, dock suite, and custom emblems" '
         if [[ -d "$SCRIPT_DIR/assets/mac-dock" ]]; then
             cp -rf "$SCRIPT_DIR/assets/mac-dock/"* "$ICONS_DIR/mac-dock/" 2>/dev/null || true
         fi
@@ -93,15 +131,15 @@ main() {
         gtk-update-icon-cache -f -t "$ICONS_DIR/hicolor" >/dev/null 2>&1 || true
     '
 
-    # 4. 6K & 4K Wallpapers
-    run_step "Installing authentic 6K & 4K macOS and Windows 11 wallpaper library..." '
+    # Step 4: 6K & 4K Authentic Wallpapers
+    run_animated_step "4" "8" "pulse" "Deploying 6K & 4K macOS Sequoia & Windows 11 Bloom wallpapers" '
         if [[ -d "$SCRIPT_DIR/assets/wallpapers" ]]; then
             cp -rf "$SCRIPT_DIR/assets/wallpapers/"* "$CONFIG_DIR/wallpapers/" 2>/dev/null || true
         fi
     '
 
-    # 5. Configurations & Waybar Engine
-    run_step "Deploying Waybar dynamic auto-sizing dock, Mica taskbars, and Rofi menus..." '
+    # Step 5: Waybar Layouts & Mica Acrylic Stylesheets
+    run_animated_step "5" "8" "points" "Compiling dynamic auto-sizing dock, top bar & mica taskbars" '
         if [[ -d "$SCRIPT_DIR/configs/waybar" ]]; then
             cp -rf "$SCRIPT_DIR/configs/waybar/"* "$CONFIG_DIR/waybar/" 2>/dev/null || true
         fi
@@ -113,8 +151,8 @@ main() {
         fi
     '
 
-    # 6. Executables & Binaries
-    run_step "Installing CLI state machine, GUI control center, and daemons into ~/.local/bin..." '
+    # Step 6: CLI State Machine, Start Menu & Network Managers
+    run_animated_step "6" "8" "globe" "Installing executables, start menu & wireless managers into ~/.local/bin" '
         if [[ -d "$SCRIPT_DIR/scripts" ]]; then
             for s in "$SCRIPT_DIR/scripts/"*; do
                 if [[ -f "$s" ]]; then
@@ -125,8 +163,8 @@ main() {
         fi
     '
 
-    # 7. Desktop Applications & Database
-    run_step "Registering desktop applications and system control center..." '
+    # Step 7: Desktop Integration & Splash Screen Launchers
+    run_animated_step "7" "8" "minidot" "Registering desktop applications and evaporating splash screen" '
         if [[ -f "$SCRIPT_DIR/assets/omarchy-undercover.desktop" ]]; then
             cp -f "$SCRIPT_DIR/assets/omarchy-undercover.desktop" "$APPS_DIR/"
         fi
@@ -136,8 +174,8 @@ main() {
         update-desktop-database "$APPS_DIR" >/dev/null 2>&1 || true
     '
 
-    # 8. Hyprland Keybindings & Modules
-    run_step "Integrating Hyprland dynamic modules and global SUPER+ALT+U keybinding..." '
+    # Step 8: Hyprland Dynamic Modules & Keybindings
+    run_animated_step "8" "8" "dot" "Synchronizing Hyprland physics, spring curves & Super+Alt+U" '
         mkdir -p "$HOME/.config/hypr"
         if [[ -f "$SCRIPT_DIR/configs/hypr/mac-mode.lua" ]]; then
             cp -f "$SCRIPT_DIR/configs/hypr/mac-mode.lua" "$HOME/.config/hypr/mac-mode.lua"
@@ -150,19 +188,19 @@ main() {
 
     echo ""
     if [[ $HAS_GUM -eq 1 ]]; then
-        gum style --foreground 39 --bold "✨ Select your starting desktop transformation preset:"
+        gum style --foreground 39 --bold "✨ Select your initial desktop transformation preset:"
         CHOSEN=$(gum choose \
             "🍏 Apple macOS Sequoia (Dark)" \
             "☀️ Apple macOS Sequoia (Light)" \
             "🪟 Windows 11 Fluent (Dark)" \
             "🌅 Windows 11 Fluent (Light)")
     else
-        echo -e "${CYAN}${BOLD}Select your starting desktop transformation preset:${NC}"
-        echo "1) Apple macOS Sequoia (Dark)"
-        echo "2) Apple macOS Sequoia (Light)"
-        echo "3) Windows 11 Fluent (Dark)"
-        echo "4) Windows 11 Fluent (Light)"
-        read -p "Enter choice [1-4]: " opt
+        echo -e "${CYAN}${BOLD}✨ Select your initial desktop transformation preset:${NC}"
+        echo -e "  ${PURPLE}1)${NC} 🍏 Apple macOS Sequoia (Dark)"
+        echo -e "  ${YELLOW}2)${NC} ☀️ Apple macOS Sequoia (Light)"
+        echo -e "  ${BLUE}3)${NC} 🪟 Windows 11 Fluent (Dark)"
+        echo -e "  ${PINK}4)${NC} 🌅 Windows 11 Fluent (Light)"
+        read -p "  Enter choice [1-4]: " opt
         case "$opt" in
             1) CHOSEN="🍏 Apple macOS Sequoia (Dark)" ;;
             2) CHOSEN="☀️ Apple macOS Sequoia (Light)" ;;
@@ -172,6 +210,7 @@ main() {
         esac
     fi
 
+    echo ""
     case "$CHOSEN" in
         *"macOS Sequoia (Dark)"*)
             "$LOCAL_BIN/omarchy-undercover" -mac
@@ -191,21 +230,30 @@ main() {
     if [[ $HAS_GUM -eq 1 ]]; then
         gum style \
             --border rounded \
-            --margin "1 2" \
+            --margin "1 1" \
             --padding "1 3" \
             --border-foreground 48 \
-            --foreground 48 \
+            --foreground 255 \
             --bold \
-            "🎉 Omarchy Undercover Successfully Installed & Activated!" \
+            "🎉 OMARCHY UNDERCOVER SUCCESSFULLY INSTALLED & ACTIVATED!" \
             "" \
-            "  • Press Super + Alt + U anywhere to cycle modes" \
-            "  • Press Super + B to toggle dock/taskbar autohide" \
-            "  • Run 'omarchy-undercover-settings' to open the Control Center"
+            "  ⚡ Super + Alt + U    ➔  Cycle 4-Mode Presets (Mac ➔ Win11)" \
+            "  ⚡ Super + B          ➔  Toggle Taskbar / Dock Autohide" \
+            "  ⚡ Super + Space / Win➔  Spotlight Search / Start Menu" \
+            "  ⚡ Super + Tab        ➔  Mission Control / Task View" \
+            "  ⚡ Super + N          ➔  Widget Center / Action Center" \
+            "  ⚡ Settings App       ➔  omarchy-undercover-settings"
     else
-        echo -e "${GREEN}${BOLD}🎉 Omarchy Undercover Successfully Installed & Activated!${NC}"
-        echo -e "  • Press ${YELLOW}Super + Alt + U${NC} anywhere to cycle modes"
-        echo -e "  • Press ${YELLOW}Super + B${NC} to toggle dock/taskbar autohide"
-        echo -e "  • Run ${CYAN}omarchy-undercover-settings${NC} to open the Control Center"
+        echo -e "${GREEN}${BOLD}┌────────────────────────────────────────────────────────────────────────┐${NC}"
+        echo -e "${GREEN}${BOLD}│  🎉 OMARCHY UNDERCOVER SUCCESSFULLY INSTALLED & ACTIVATED!            │${NC}"
+        echo -e "${GREEN}${BOLD}├────────────────────────────────────────────────────────────────────────┤${NC}"
+        echo -e "${WHITE}  • ${YELLOW}Super + Alt + U${WHITE}    ➔  Cycle 4-Mode Presets (Mac ➔ Win11)            │${NC}"
+        echo -e "${WHITE}  • ${YELLOW}Super + B${WHITE}          ➔  Toggle Taskbar / Dock Autohide                │${NC}"
+        echo -e "${WHITE}  • ${YELLOW}Super + Space / Win${WHITE}➔  Spotlight Search / Start Menu                 │${NC}"
+        echo -e "${WHITE}  • ${YELLOW}Super + Tab${WHITE}        ➔  Mission Control / Task View                   │${NC}"
+        echo -e "${WHITE}  • ${YELLOW}Super + N${WHITE}          ➔  Widget Center / Action Center                 │${NC}"
+        echo -e "${WHITE}  • ${CYAN}Settings App${WHITE}       ➔  ${CYAN}omarchy-undercover-settings${WHITE}                   │${NC}"
+        echo -e "${GREEN}${BOLD}└────────────────────────────────────────────────────────────────────────┘${NC}"
     fi
 }
 
