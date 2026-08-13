@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Omarchy Undercover Audio Dispatcher
+# Plays authentic macOS / Windows 11 notification and switch sound effects
+# ==============================================================================
+
+SOUNDS_DIR="$HOME/.config/omarchy-undercover/sounds"
+TYPE="${1:-notify}"
+
+SOUND_FILE="$SOUNDS_DIR/current-notify.wav"
+
+case "$TYPE" in
+    notify|alert)
+        SOUND_FILE="$SOUNDS_DIR/current-notify.wav"
+        ;;
+    mac|mac-notify)
+        SOUND_FILE="$SOUNDS_DIR/mac-notify.wav"
+        ;;
+    mac-switch)
+        SOUND_FILE="$SOUNDS_DIR/mac-switch.wav"
+        ;;
+    win11|win|win11-notify)
+        SOUND_FILE="$SOUNDS_DIR/win11-notify.wav"
+        ;;
+    win11-switch)
+        SOUND_FILE="$SOUNDS_DIR/win11-switch.wav"
+        ;;
+    *)
+        if [[ -f "$TYPE" ]]; then
+            SOUND_FILE="$TYPE"
+        fi
+        ;;
+esac
+
+if [[ -f "$SOUND_FILE" ]]; then
+    if command -v pw-play &>/dev/null; then
+        pw-play "$SOUND_FILE" >/dev/null 2>&1 &
+    elif command -v paplay &>/dev/null; then
+        paplay "$SOUND_FILE" >/dev/null 2>&1 &
+    elif command -v aplay &>/dev/null; then
+        aplay -q "$SOUND_FILE" >/dev/null 2>&1 &
+    fi
+fi

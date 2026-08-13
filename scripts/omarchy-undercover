@@ -629,6 +629,12 @@ EOF
         disown 2>/dev/null || true
     fi
 
+    # Dispatch macOS sound effects
+    if [[ -d "$CONFIG_DIR/sounds" ]]; then
+        cp -f "$CONFIG_DIR/sounds/mac-notify.wav" "$CONFIG_DIR/sounds/current-notify.wav" 2>/dev/null || true
+        omarchy-play-sound mac-switch 2>/dev/null || true
+    fi
+
     omarchy_reload_waybar
     omarchy_reload_hyprland
     msg "Switched to Apple macOS Sequoia ($variant) — done!"
@@ -744,6 +750,12 @@ EOF
         killall swaybg 2>/dev/null || true
         nohup swaybg -i "$CONFIG_DIR/wallpapers/$wall_img" -m fill >/dev/null 2>&1 &
         disown 2>/dev/null || true
+    fi
+
+    # Dispatch Windows 11 sound effects
+    if [[ -d "$CONFIG_DIR/sounds" ]]; then
+        cp -f "$CONFIG_DIR/sounds/win11-notify.wav" "$CONFIG_DIR/sounds/current-notify.wav" 2>/dev/null || true
+        omarchy-play-sound win11-switch 2>/dev/null || true
     fi
 
     omarchy_reload_waybar
