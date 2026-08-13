@@ -1,9 +1,27 @@
 [Desktop Entry]
-Name=Omarchy Undercover Mode
-Comment=Toggle Windows 11 Desktop Mode for Hyprland
-Exec=omarchy-undercover --enable
+Name=Omarchy Undercover
+GenericName=Desktop Transformation Suite
+Comment=Effortlessly morph your Linux desktop into Apple macOS Sequoia or Windows 11 Fluent
+Exec=omarchy-undercover-settings
 Icon=omarchy-undercover
 Terminal=false
 Type=Application
-Categories=Utility;Settings;DesktopSettings;
-Keywords=Windows;Undercover;Hyprland;Theme;
+Categories=Settings;DesktopSettings;GTK;System;Utility;
+Keywords=macos;windows;theme;undercover;transformation;hyprland;sequoia;fluent;
+Actions=MacMode;Win11Mode;Toggle;Baseline;
+
+[Desktop Action MacMode]
+Name=Switch to Apple macOS Sequoia
+Exec=omarchy-undercover -mac
+
+[Desktop Action Win11Mode]
+Name=Switch to Windows 11 Fluent
+Exec=omarchy-undercover -w11
+
+[Desktop Action Toggle]
+Name=Cycle to Next Mode
+Exec=omarchy-undercover --toggle
+
+[Desktop Action Baseline]
+Name=Restore Original Omarchy Desktop
+Exec=omarchy-undercover --disable
