@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="sysBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b2e"/>
+      <stop offset="50%" stop-color="#141322"/>
+      <stop offset="100%" stop-color="#0b0a14"/>
+    </linearGradient>
+
+    <!-- Gold / Amber to Cyan Titanium Rim Border -->
+    <linearGradient id="sysNeonBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffb900"/>
+      <stop offset="40%" stop-color="#00f2fe"/>
+      <stop offset="75%" stop-color="#af52de"/>
+      <stop offset="100%" stop-color="#ff3b30"/>
+    </linearGradient>
+
+    <!-- Windows 11 Cyan / Blue Glow -->
+    <linearGradient id="sysWinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00e5ff"/>
+      <stop offset="50%" stop-color="#0078d4"/>
+      <stop offset="100%" stop-color="#003b70"/>
+    </linearGradient>
+
+    <!-- Apple macOS Silver / Violet Glow -->
+    <linearGradient id="sysAppleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="35%" stop-color="#e2e4f0"/>
+      <stop offset="70%" stop-color="#af52de"/>
+      <stop offset="100%" stop-color="#5856d6"/>
+    </linearGradient>
+
+    <!-- Center Titanium Cog Gradient -->
+    <linearGradient id="cogGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="30%" stop-color="#d0d4e4"/>
+      <stop offset="70%" stop-color="#8a92b2"/>
+      <stop offset="100%" stop-color="#4a506b"/>
+    </linearGradient>
+
+    <!-- Neon Glow Filter -->
+    <filter id="sysNeonGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="sysDropShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity="0.70"/>
+    </filter>
+
+    <!-- Split Masks for Left (Win) and Right (Apple) -->
+    <clipPath id="sysLeftClip">
+      <rect x="0" y="0" width="254" height="512"/>
+    </clipPath>
+    <clipPath id="sysRightClip">
+      <rect x="258" y="0" width="254" height="512"/>
+    </clipPath>
+  </defs>
+
+  <!-- Base Dark Glassmorphism Squircle -->
+  <rect x="24" y="24" width="464" height="464" rx="108" fill="url(#sysBgGrad)" stroke="url(#sysNeonBorder)" stroke-width="4.5" filter="url(#sysDropShadow)"/>
+
+  <!-- Ambient Light Orbs -->
+  <ellipse cx="140" cy="180" rx="130" ry="130" fill="#0078d4" opacity="0.18"/>
+  <ellipse cx="360" cy="300" rx="130" ry="130" fill="#af52de" opacity="0.20"/>
+
+  <!-- ================= LEFT HALF: WINDOWS 11 FLUENT EMBLEM ================= -->
+  <g clip-path="url(#sysLeftClip)">
+    <!-- Top-Left Tile -->
+    <rect x="142" y="152" width="102" height="92" rx="10" fill="url(#sysWinGrad)" filter="url(#sysNeonGlow)"/>
+    <rect x="145" y="155" width="96" height="42" rx="7" fill="#ffffff" opacity="0.22"/>
+
+    <!-- Bottom-Left Tile -->
+    <rect x="142" y="254" width="102" height="92" rx="10" fill="url(#sysWinGrad)" filter="url(#sysNeonGlow)"/>
+    <rect x="145" y="257" width="96" height="42" rx="7" fill="#ffffff" opacity="0.18"/>
+  </g>
+
+  <!-- ================= RIGHT HALF: APPLE SEEDED SILHOUETTE ================= -->
+  <g clip-path="url(#sysRightClip)">
+    <!-- Apple Leaf -->
+    <path d="M 264,120 C 264,120 295,108 308,126 C 322,146 306,172 306,172 C 306,172 278,174 266,155 C 255,138 264,120 264,120 Z" fill="url(#sysAppleGrad)" filter="url(#sysNeonGlow)"/>
+
+    <!-- Apple Body Silhouette with Bite -->
+    <path d="M 256,182 C 275,182 292,170 308,170 C 330,170 348,186 358,202 C 320,222 314,272 350,296 C 338,328 322,358 298,358 C 284,358 274,348 256,348 Z" fill="url(#sysAppleGrad)" filter="url(#sysNeonGlow)"/>
+    <!-- Gloss Sheen -->
+    <path d="M 268,194 C 280,194 295,185 308,185 C 322,185 336,195 344,206 C 330,224 326,246 332,268 C 308,240 286,216 268,194 Z" fill="#ffffff" opacity="0.25"/>
+  </g>
+
+  <!-- ================= CENTER CYBER DIVIDER SEAM ================= -->
+  <line x1="256" y1="135" x2="256" y2="365" stroke="url(#sysNeonBorder)" stroke-width="4.5" stroke-linecap="round" filter="url(#sysNeonGlow)"/>
+
+  <!-- ================= EMBEDDED SYSTEM SETTINGS GEAR (THE DIFFERENCE) ================= -->
+  <g transform="translate(256, 250)" filter="url(#sysDropShadow)">
+    <!-- 8-Tooth Cog Wheel Outer -->
+    <circle cx="0" cy="0" r="44" fill="url(#cogGrad)" stroke="#ffffff" stroke-width="2.5"/>
+    
+    <!-- Cog Teeth -->
+    <rect x="-10" y="-56" width="20" height="18" rx="4" fill="url(#cogGrad)" stroke="#ffffff" stroke-width="1.5"/>
+    <rect x="-10" y="38" width="20" height="18" rx="4" fill="url(#cogGrad)" stroke="#ffffff" stroke-width="1.5"/>
+    <rect x="-56" y="-10" width="18" height="20" rx="4" fill="url(#cogGrad)" stroke="#ffffff" stroke-width="1.5"/>
+    <rect x="38" y="-10" width="18" height="20" rx="4" fill="url(#cogGrad)" stroke="#ffffff" stroke-width="1.5"/>
+    
+    <!-- Diagonal Teeth -->
+    <rect x="-10" y="-56" width="20" height="18" rx="4" transform="rotate(45)" fill="url(#cogGrad)" stroke="#ffffff" stroke-width="1.5"/>
+    <rect x="-10" y="38" width="20" height="18" rx="4" transform="rotate(45)" fill="url(#cogGrad)" stroke="#ffffff" stroke-width="1.5"/>
+    <rect x="-56" y="-10" width="18" height="20" rx="4" transform="rotate(45)" fill="url(#cogGrad)" stroke="#ffffff" stroke-width="1.5"/>
+    <rect x="38" y="-10" width="18" height="20" rx="4" transform="rotate(45)" fill="url(#cogGrad)" stroke="#ffffff" stroke-width="1.5"/>
+
+    <!-- Inner Core Hub -->
+    <circle cx="0" cy="0" r="22" fill="#141322" stroke="url(#sysNeonBorder)" stroke-width="3"/>
+    <circle cx="0" cy="0" r="8" fill="#00e5ff" filter="url(#sysNeonGlow)"/>
+  </g>
+
+  <!-- ================= BOTTOM "SETTINGS" BADGE ================= -->
+  <g transform="translate(146, 396)">
+    <rect x="0" y="0" width="220" height="36" rx="18" fill="rgba(255, 255, 255, 0.10)" stroke="url(#sysNeonBorder)" stroke-width="1.5"/>
+    <text x="110" y="23" font-family="'SF Pro Display', 'Segoe UI', 'Roboto', sans-serif" font-size="12" font-weight="800" letter-spacing="2.5" fill="#ffffff" text-anchor="middle">SYSTEM SETTINGS</text>
+  </g>
+</svg>

@@ -1,0 +1,27 @@
+[Desktop Entry]
+Name=System Settings
+GenericName=Desktop Settings & Control Center
+Comment=Manage macOS Sequoia & Windows 11 desktop transformations, wallpapers, blur, and system preferences
+Exec=omarchy-undercover-settings
+Icon=omarchy-undercover-settings
+Terminal=false
+Type=Application
+Categories=Settings;DesktopSettings;GTK;System;Utility;
+Keywords=system;settings;control;panel;preferences;macos;windows;undercover;theme;
+Actions=MacMode;Win11Mode;Toggle;Baseline;
+
+[Desktop Action MacMode]
+Name=Switch to Apple macOS Sequoia
+Exec=omarchy-undercover -mac
+
+[Desktop Action Win11Mode]
+Name=Switch to Windows 11 Fluent
+Exec=omarchy-undercover -w11
+
+[Desktop Action Toggle]
+Name=Cycle to Next Mode
+Exec=omarchy-undercover --toggle
+
+[Desktop Action Baseline]
+Name=Restore Original Omarchy Desktop
+Exec=omarchy-undercover --disable
