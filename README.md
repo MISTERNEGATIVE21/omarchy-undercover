@@ -1,33 +1,60 @@
 # 🕵️ Omarchy Undercover (v2.5.0)
 
-> **The Ultimate Camouflage & Transformation Suite for Hyprland / Omarchy**  
-> Effortlessly morph your Linux desktop into pixel-perfect **Apple macOS Sequoia** or **Windows 11 Fluent**, complete with authentic typography, native blur/mica glassmorphism, dynamic auto-sizing dock, live weather, and universal GTK/Qt theming.
+```
+╭────────────────────────────────────────────────────────────────────────╮
+│                                                                        │
+│   🕵️  O M A R C H Y   U N D E R C O V E R   ( v 2 . 5 . 0 )            │
+│   The Ultimate macOS Sequoia & Windows 11 Desktop Suite for Hyprland   │
+│   Developed by misternegative21                                        │
+│                                                                        │
+╰────────────────────────────────────────────────────────────────────────╯
+```
 
-Developed by **[misternegative21](https://github.com/MISTERNEGATIVE21)**.
+[![Release](https://img.shields.io/badge/Release-v2.5.0-blue.svg?style=for-the-badge)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases)
+[![Compositor](https://img.shields.io/badge/Compositor-Hyprland-00f2fe.svg?style=for-the-badge)](https://hyprland.org)
+[![Theme Engine](https://img.shields.io/badge/Theme-Omarchy-ff2d55.svg?style=for-the-badge)](https://github.com/MISTERNEGATIVE21/omarchy-undercover)
+[![License](https://img.shields.io/badge/License-GPL--3.0-green.svg?style=for-the-badge)](LICENSE)
+
+> **The Ultimate Camouflage & Transformation Suite for Linux / Hyprland**  
+> Effortlessly morph your Linux desktop into pixel-perfect **Apple macOS Sequoia** or **Windows 11 Fluent**, complete with authentic typography, native blur/mica glassmorphism, dynamic auto-sizing dock, live weather, functional radio toggles, and universal GTK/Qt theming.
 
 ---
 
-## 🌟 Key Features
+## ⚡ 1-Line Quick Install
 
-### 🍏 Apple macOS Sequoia Environment
-* **Frosted Glass Top Menu Bar**: 30px translucent top bar with functional Apple Menu, Finder title, application menus (`File`, `Edit`, `View`, `Go`, `Window`, `Help`), live calendar clock, Siri launcher, and Control Center.
-* **Dynamic Auto-Sizing Dock**: Floating bottom dock that shrink-wraps and dynamically resizes to tightly hug only active apps, complete with vector Apple icons (Finder, Launchpad, Safari, Messages, Music, Photos, App Store, Terminal, Settings) and active running app indicator dots (`•`).
-* **Universal Window Traffic Lights**: True macOS circular window controls (🔴 `#FF5F56`, 🟡 `#FFBD2E`, 🟢 `#27C93F`) across GTK3, GTK4, and Libadwaita applications.
-* **Spotlight & Mission Control**: Rofi Spotlight search (`Super + Space`) and Mission Control window switcher (`Super + Tab`).
-* **Apple Typography Stack**: `SF Pro Text`, `SF Pro Display`, and `Liga SFMono Nerd Font`.
+```bash
+bash <(curl -sL https://raw.githubusercontent.com/MISTERNEGATIVE21/omarchy-undercover/master/install.sh)
+```
 
-### 🪟 Windows 11 Fluent Environment
-* **Centered Mica Acrylic Taskbar**: Centered taskbar pill housing the ⊞ Start button, Search capsule, **Task View** (`󱂬`), and running applications.
-* **Live Geolocation Weather Widget**: Bottom-left real-time temperature and weather conditions (`🌦️ +27°C`) powered by `omarchy-weather` with intelligent caching.
-* **Windows 11 Start Menu**: Bottom-anchored Start menu with Pinned grid, search bar, user profile, and power options.
-* **Windows 11 Notification Center & Quick Settings**: Native Libadwaita panel (`Super + N`) with volume sliders, network toggles, and interactive calendar.
-* **Microsoft Typography Stack**: `Segoe UI`, `Segoe UI Semibold`, and `Cascadia Code`.
+Or clone and run the interactive TUI installer:
 
-### ⚡ Intelligent Performance & Integration
-* **Smart Edge Auto-Hide Daemon**: Monitors cursor position with HiDPI scale factor calibration (`2560x1440` @ `1.6x`), revealing dock on bottom hover and smoothly hiding when mouse moves away.
-* **5-Mode Cycle Switcher**: `mac-dark` ➔ `mac-light` ➔ `win11-dark` ➔ `win11-light` ➔ `omarchy baseline`.
-* **Universal System Theming Dispatcher**: Instant broadcast of GTK themes, icon packs, typography, and cursor sizes across GSettings, GTK 3/4 `settings.ini`, GTK 2 `~/.gtkrc-2.0`, and XWayland `xsettingsd`.
-* **GUI Control Center**: Modern GTK4 / Libadwaita settings application (`omarchy-undercover-settings`) with wallpaper gallery, blur sliders, and component reloaders.
+```bash
+git clone https://github.com/MISTERNEGATIVE21/omarchy-undercover.git
+cd omarchy-undercover
+./install.sh
+```
+
+---
+
+## 🌟 Transformation Presets (4-Mode Cycle)
+
+Press **`Super + Alt + U`** to instantly cycle through the 4 environments:
+
+$$\Large \text{🍏 macOS Dark} \longrightarrow \text{☀️ macOS Light} \longrightarrow \text{🪟 Win11 Dark} \longrightarrow \text{🌅 Win11 Light}$$
+
+```
+┌───────────────────────────────┬────────────────────────────────┐
+│  🍏 Apple macOS Sequoia       │  🪟 Windows 11 Fluent          │
+├───────────────────────────────┼────────────────────────────────┤
+│  • Frosted Top Menu Bar       │  • Centered Mica Taskbar       │
+│  • Dynamic Auto-Sizing Dock   │  • Task View & Start Button    │
+│  • Full Vector Apple SVGs     │  • Live Geolocation Weather    │
+│  • Window Traffic Lights      │  • Windows 11 Start Menu       │
+│  • SF Pro Text & Display      │  • Segoe UI & Cascadia Code    │
+│  • Liga SFMono Nerd Font      │  • Action Center Quick Toggles │
+│  • Spotlight (Super + Space)  │  • Real Wi-Fi / Bluetooth Sync │
+└───────────────────────────────┴────────────────────────────────┘
+```
 
 ---
 
@@ -35,66 +62,54 @@ Developed by **[misternegative21](https://github.com/MISTERNEGATIVE21)**.
 
 | Shortcut | Action | Description |
 | :--- | :--- | :--- |
-| <kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>U</kbd> | **Toggle Undercover Mode** | Cycles across `mac-dark` ➔ `mac-light` ➔ `win11-dark` ➔ `win11-light` ➔ `omarchy` |
+| <kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>U</kbd> | **Toggle Undercover Mode** | Cycles across `mac-dark` ➔ `mac-light` ➔ `win11-dark` ➔ `win11-light` |
 | <kbd>Super</kbd> + <kbd>B</kbd> / <kbd>Win</kbd> + <kbd>B</kbd> | **Toggle Taskbar / Dock** | Instantly hides or shows the Waybar dock/taskbar |
 | <kbd>Super</kbd> + <kbd>Space</kbd> / <kbd>Win</kbd> | **Spotlight / Start Menu** | Opens macOS Spotlight or Windows 11 Start menu |
 | <kbd>Super</kbd> + <kbd>Tab</kbd> | **Mission Control / Task View** | Opens interactive window switcher |
-| <kbd>Super</kbd> + <kbd>N</kbd> | **Notification Center** | Opens macOS Widget Center or Windows 11 Quick Settings |
+| <kbd>Super</kbd> + <kbd>N</kbd> | **Notification Center** | Opens macOS Widget Center or Windows 11 Action Center |
 | <kbd>Super</kbd> + <kbd>D</kbd> / <kbd>Win</kbd> + <kbd>D</kbd> | **Show Desktop** | Minimizes/toggles all active windows |
 | <kbd>Alt</kbd> + <kbd>F4</kbd> | **Close Window** | Closes active window (Windows mode) |
 
 ---
 
-## 🛠️ Command Reference
+## 🛠️ CLI Command Reference
 
 ### Mode Switching
 ```bash
-# Switch to Apple macOS Sequoia (Dark mode)
+# 🍏 Switch to Apple macOS Sequoia (Dark mode)
 omarchy-undercover -mac
 
-# Switch to Apple macOS Sequoia (Light mode)
+# ☀️ Switch to Apple macOS Sequoia (Light mode)
 omarchy-undercover -mac-light
 
-# Switch to Windows 11 Fluent (Dark mode)
+# 🪟 Switch to Windows 11 Fluent (Dark mode)
 omarchy-undercover -w11
 
-# Switch to Windows 11 Fluent (Light mode)
+# 🌅 Switch to Windows 11 Fluent (Light mode)
 omarchy-undercover -w11-light
 
-# Cycle to next mode in 5-mode sequence
+# 🔄 Cycle to next mode in 4-mode sequence
 omarchy-undercover --toggle
-
-# Restore original Omarchy baseline configuration
-omarchy-undercover --disable
 ```
 
 ### Auto-Hide Daemon Control
 ```bash
-# Enable smart mouse edge auto-hide
+# Enable smart mouse edge auto-hide (HiDPI calibrated)
 omarchy-undercover --autohide on
 
 # Disable auto-hide (keep dock permanently visible)
 omarchy-undercover --autohide off
 ```
 
-### GUI Control Center
+### GUI Control Center & System Settings
 ```bash
 # Launch GTK4 / Libadwaita Undercover Settings App
 omarchy-undercover-settings
 ```
 
-### Diagnostics & Integrity
-```bash
-# Display current active mode and configuration state
-omarchy-undercover --status
-
-# Perform deep verification of configs, themes, fonts, and assets
-omarchy-undercover --verify
-```
-
 ---
 
-## 🖼️ Included Wallpapers Library (6K & 4K)
+## 🖼️ Included 6K & 4K Wallpapers Library
 Stored in `~/.config/omarchy-undercover/wallpapers/`:
 * `macOS-Sequoia-Dark.jpg` & `macOS-Sequoia-Light.jpg` (Official 6K Solar Noon/Midnight)
 * `Sonoma-dark.jpg` & `Sonoma-light.jpg` (Official 4K Sonoma Ribbons)
@@ -106,15 +121,5 @@ Stored in `~/.config/omarchy-undercover/wallpapers/`:
 
 ---
 
-## 📦 Installation & Setup
-
-```bash
-git clone https://github.com/MISTERNEGATIVE21/omarchy-undercover.git
-cd omarchy-undercover
-./scripts/omarchy-undercover-setup
-```
-
----
-
 ## 📜 License
-GPL-3.0-or-later © **misternegative21**
+GPL-3.0-or-later © **[misternegative21](https://github.com/MISTERNEGATIVE21)**
