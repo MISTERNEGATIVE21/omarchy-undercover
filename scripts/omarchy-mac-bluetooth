@@ -1,0 +1,179 @@
+#!/usr/bin/env python3
+"""
+macOS Sequoia Bluetooth Status Bar Dropdown Menu for Omarchy Hyprland
+"""
+
+import sys
+import subprocess
+import gi
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+from gi.repository import Gtk, Adw, GLib
+
+CSS = """
+window.mac-popover {
+    background-color: rgba(28, 28, 38, 0.96);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+.mac-card {
+    background-color: rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 8px 12px;
+    margin-bottom: 6px;
+}
+
+.mac-net-row {
+    border-radius: 8px;
+    padding: 6px 10px;
+    transition: background-color 0.12s ease;
+}
+.mac-net-row:hover {
+    background-color: #007aff;
+    color: #ffffff;
+}
+
+.mac-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.55);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 6px;
+    margin-bottom: 4px;
+}
+"""
+
+class MacBluetoothWindow(Gtk.Window):
+    def __init__(self, app):
+        super().__init__(application=app, title="Bluetooth")
+        self.set_default_size(320, 420)
+        self.set_resizable(False)
+        self.add_css_class("mac-popover")
+
+        p = Gtk.CssProvider()
+        p.load_from_data(CSS.encode())
+        Gtk.StyleContext.add_provider_for_display(self.get_display(), p, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        vbox.set_margin_top(12)
+        vbox.set_margin_bottom(12)
+        vbox.set_margin_start(14)
+        vbox.set_margin_end(14)
+        self.set_child(vbox)
+
+        # 1. Master Switch Card
+        sw_card = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        sw_card.add_css_class("mac-card")
+        
+        lbl_bt = Gtk.Label(label="<b>Bluetooth</b>")
+        lbl_bt.set_use_markup(True)
+        lbl_bt.set_hexpand(True)
+        lbl_bt.set_halign(Gtk.Align.START)
+        
+        self.sw = Gtk.Switch()
+        is_powered = False
+        try:
+            is_powered = "Powered: yes" in subprocess.check_output(["bluetoothctl", "show"], text=True)
+        except Exception:
+            pass
+        self.sw.set_active(is_powered)
+        self.sw.connect("notify::active", self.on_bt_toggled)
+
+        sw_card.append(lbl_bt)
+        sw_card.append(self.sw)
+        vbox.append(sw_card)
+
+        # 2. Devices Section Title
+        lbl_dev = Gtk.Label(label="Devices")
+        lbl_dev.add_css_class("mac-section-title")
+        lbl_dev.set_halign(Gtk.Align.START)
+        vbox.append(lbl_dev)
+
+        # 3. Devices Scrolled List
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll.set_vexpand(True)
+        self.list_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        scroll.set_child(self.list_box)
+        vbox.append(scroll)
+
+        # 4. Bluetooth Settings Button
+        btn_set = Gtk.Button(label="Bluetooth Settings...")
+        btn_set.connect("clicked", lambda b: (self.destroy(), subprocess.Popen(["omarchy-undercover-settings", "-s"])))
+        vbox.append(btn_set)
+
+        self.scan_devices()
+
+    def on_bt_toggled(self, sw, param):
+        act = sw.get_active()
+        subprocess.run(["bluetoothctl", "power", "on" if act else "off"], check=False)
+        self.scan_devices()
+
+    def scan_devices(self):
+        while child := self.list_box.get_first_child():
+            self.list_box.remove(child)
+
+        if not self.sw.get_active():
+            self.list_box.append(Gtk.Label(label="Bluetooth is turned off."))
+            return
+
+        devices = []
+        try:
+            out = subprocess.check_output(["bluetoothctl", "devices"], text=True)
+            for line in out.splitlines():
+                parts = line.split(" ", 2)
+                if len(parts) >= 3:
+                    mac = parts[1]
+                    name = parts[2]
+                    info = subprocess.check_output(["bluetoothctl", "info", mac], text=True)
+                    conn = "Connected: yes" in info
+                    devices.append((mac, name, conn))
+        except Exception:
+            pass
+
+        if not devices:
+            self.list_box.append(Gtk.Label(label="No paired devices found."))
+            return
+
+        for mac, name, conn in devices:
+            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+            row.add_css_class("mac-net-row")
+
+            lbl_icon = Gtk.Label(label="󰂱" if conn else "󰂯")
+            lbl_name = Gtk.Label(label=name)
+            lbl_name.set_halign(Gtk.Align.START)
+            lbl_name.set_hexpand(True)
+
+            lbl_stat = Gtk.Label(label="Connected" if conn else "")
+            lbl_stat.set_opacity(0.7)
+
+            row.append(lbl_icon)
+            row.append(lbl_name)
+            row.append(lbl_stat)
+
+            btn = Gtk.Button()
+            btn.set_child(row)
+            btn.add_css_class("flat")
+            btn.connect("clicked", lambda b, m=mac, c=conn: self.toggle_device(m, c))
+            self.list_box.append(btn)
+
+    def toggle_device(self, mac, connected):
+        self.destroy()
+        cmd = "disconnect" if connected else "connect"
+        subprocess.run(["bluetoothctl", cmd, mac], check=False)
+
+class MacBluetoothApp(Adw.Application):
+    def __init__(self):
+        super().__init__(application_id="org.omarchy.mac.bluetooth")
+
+    def do_activate(self):
+        win = MacBluetoothWindow(self)
+        win.present()
+
+if __name__ == "__main__":
+    app = MacBluetoothApp()
+    sys.exit(app.run(sys.argv))

@@ -1,0 +1,117 @@
+#!/usr/bin/env python3
+"""
+macOS Sequoia Top Bar Application Menus (File, Edit, View, Go, Window, Help)
+"""
+
+import sys
+import subprocess
+from pathlib import Path
+
+import gi
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+from gi.repository import Gtk, Adw, GLib
+
+MENU_DEFINITIONS = {
+    "file": [
+        ("New Window", "uwsm-app -- xdg-terminal-exec"),
+        ("New File / Document", "nautilus"),
+        ("Open...", "nautilus"),
+        ("Close Window", "hyprctl dispatch killactive"),
+    ],
+    "edit": [
+        ("Undo", "wtype -M ctrl -k z -m ctrl"),
+        ("Redo", "wtype -M ctrl -M shift -k z -m shift -m ctrl"),
+        ("Cut", "wtype -M ctrl -k x -m ctrl"),
+        ("Copy", "wtype -M ctrl -k c -m ctrl"),
+        ("Paste", "wtype -M ctrl -k v -m ctrl"),
+        ("Select All", "wtype -M ctrl -k a -m ctrl"),
+    ],
+    "view": [
+        ("Widgets & Notification Center", "omarchy-mac-widgets"),
+        ("Toggle Top Bar / Dock", "killall -SIGUSR1 waybar"),
+        ("Enter Full Screen", "hyprctl dispatch fullscreen"),
+        ("Cycle Mode", "omarchy-undercover --toggle"),
+    ],
+    "go": [
+        ("Home", "nautilus ~"),
+        ("Documents", "nautilus ~/Documents"),
+        ("Downloads", "nautilus ~/Downloads"),
+        ("Pictures", "nautilus ~/Pictures"),
+        ("Applications", "rofi -show drun -theme ~/.config/rofi/mac.rasi"),
+        ("Computer", "nautilus computer:///"),
+    ],
+    "window": [
+        ("Minimize", "omarchy-undercover-minimize"),
+        ("Zoom / Maximize", "hyprctl dispatch fullscreen"),
+        ("Mission Control", "rofi -show window -theme ~/.config/rofi/mac.rasi"),
+        ("Next Window", "hyprctl dispatch cyclenext"),
+    ],
+    "help": [
+        ("Omarchy Undercover Help", "omarchy-undercover-settings -s"),
+        ("Keyboard Shortcuts Cheat Sheet", "omarchy-undercover-settings -s"),
+        ("About Omarchy Undercover", "omarchy-mac-applemenu"),
+    ],
+}
+
+CSS = """
+window.mac-menu-popover {
+    background-color: rgba(28, 28, 38, 0.96);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+.menu-btn {
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 13px;
+    color: #ffffff;
+    border: none;
+    background-color: transparent;
+    transition: background-color 0.12s ease;
+}
+.menu-btn:hover {
+    background-color: #007aff;
+    color: #ffffff;
+}
+"""
+
+class MacMenuWindow(Gtk.Window):
+    def __init__(self, app, menu_type):
+        super().__init__(application=app, title=menu_type.title())
+        self.set_default_size(220, 240)
+        self.set_resizable(False)
+        self.add_css_class("mac-menu-popover")
+
+        p = Gtk.CssProvider()
+        p.load_from_data(CSS.encode())
+        Gtk.StyleContext.add_provider_for_display(self.get_display(), p, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        vbox.set_margin_top(6)
+        vbox.set_margin_bottom(6)
+        vbox.set_margin_start(6)
+        vbox.set_margin_end(6)
+        self.set_child(vbox)
+
+        items = MENU_DEFINITIONS.get(menu_type.lower(), MENU_DEFINITIONS["file"])
+        for label, cmd in items:
+            btn = Gtk.Button(label=label)
+            btn.add_css_class("menu-btn")
+            btn.set_halign(Gtk.Align.FILL)
+            btn.connect("clicked", lambda b, c=cmd: (self.destroy(), subprocess.Popen(["bash", "-c", c], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)))
+            vbox.append(btn)
+
+class MacMenuApp(Adw.Application):
+    def __init__(self, menu_type):
+        super().__init__(application_id=f"org.omarchy.mac.menu.{menu_type}")
+        self.menu_type = menu_type
+
+    def do_activate(self):
+        win = MacMenuWindow(self, self.menu_type)
+        win.present()
+
+if __name__ == "__main__":
+    m_type = sys.argv[1] if len(sys.argv) > 1 else "file"
+    app = MacMenuApp(m_type)
+    sys.exit(app.run(sys.argv[:1]))

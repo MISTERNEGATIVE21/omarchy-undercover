@@ -1,0 +1,199 @@
+#!/usr/bin/env python3
+"""
+macOS Sequoia Wi-Fi Status Bar Dropdown Menu for Omarchy Hyprland
+"""
+
+import sys
+import subprocess
+import gi
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+from gi.repository import Gtk, Adw, GLib
+
+CSS = """
+window.mac-popover {
+    background-color: rgba(28, 28, 38, 0.96);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+.mac-card {
+    background-color: rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 8px 12px;
+    margin-bottom: 6px;
+}
+
+.mac-net-row {
+    border-radius: 8px;
+    padding: 6px 10px;
+    transition: background-color 0.12s ease;
+}
+.mac-net-row:hover {
+    background-color: #007aff;
+    color: #ffffff;
+}
+
+.mac-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.55);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 6px;
+    margin-bottom: 4px;
+}
+"""
+
+class MacWifiWindow(Gtk.Window):
+    def __init__(self, app):
+        super().__init__(application=app, title="Wi-Fi")
+        self.set_default_size(320, 440)
+        self.set_resizable(False)
+        self.add_css_class("mac-popover")
+
+        p = Gtk.CssProvider()
+        p.load_from_data(CSS.encode())
+        Gtk.StyleContext.add_provider_for_display(self.get_display(), p, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        vbox.set_margin_top(12)
+        vbox.set_margin_bottom(12)
+        vbox.set_margin_start(14)
+        vbox.set_margin_end(14)
+        self.set_child(vbox)
+
+        # 1. Master Wi-Fi Switch Card
+        sw_card = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        sw_card.add_css_class("mac-card")
+        
+        lbl_wi = Gtk.Label(label="<b>Wi-Fi</b>")
+        lbl_wi.set_use_markup(True)
+        lbl_wi.set_hexpand(True)
+        lbl_wi.set_halign(Gtk.Align.START)
+        
+        self.sw = Gtk.Switch()
+        wifi_on = False
+        try:
+            wifi_on = "enabled" in subprocess.check_output(["nmcli", "radio", "wifi"], text=True)
+        except Exception:
+            pass
+        self.sw.set_active(wifi_on)
+        self.sw.connect("notify::active", self.on_wifi_toggled)
+
+        sw_card.append(lbl_wi)
+        sw_card.append(self.sw)
+        vbox.append(sw_card)
+
+        # 2. Known / Nearby Networks Title
+        lbl_avail = Gtk.Label(label="Available Networks")
+        lbl_avail.add_css_class("mac-section-title")
+        lbl_avail.set_halign(Gtk.Align.START)
+        vbox.append(lbl_avail)
+
+        # 3. Networks Scrolled List
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll.set_vexpand(True)
+        self.list_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        scroll.set_child(self.list_box)
+        vbox.append(scroll)
+
+        # 4. Bottom Wi-Fi Settings Button
+        btn_set = Gtk.Button(label="Wi-Fi Settings...")
+        btn_set.connect("clicked", lambda b: (self.destroy(), subprocess.Popen(["omarchy-undercover-settings", "-s"])))
+        vbox.append(btn_set)
+
+        self.scan_networks()
+
+    def on_wifi_toggled(self, sw, param):
+        act = sw.get_active()
+        subprocess.run(["nmcli", "radio", "wifi", "on" if act else "off"], check=False)
+        self.scan_networks()
+
+    def scan_networks(self):
+        while child := self.list_box.get_first_child():
+            self.list_box.remove(child)
+
+        if not self.sw.get_active():
+            self.list_box.append(Gtk.Label(label="Wi-Fi is turned off."))
+            return
+
+        active_ssid = ""
+        try:
+            out = subprocess.check_output(["nmcli", "-t", "-f", "ACTIVE,SSID", "dev", "wifi"], text=True)
+            for line in out.splitlines():
+                if line.startswith("yes:"):
+                    active_ssid = line.split(":", 1)[1]
+        except Exception:
+            pass
+
+        networks = []
+        try:
+            out = subprocess.check_output(["nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY", "dev", "wifi", "list"], text=True)
+            seen = set()
+            for line in out.splitlines():
+                parts = line.split(":")
+                if len(parts) >= 2 and parts[0]:
+                    ssid = parts[0]
+                    if ssid not in seen:
+                        seen.add(ssid)
+                        sig = int(parts[1]) if parts[1].isdigit() else 50
+                        sec = parts[2] if len(parts) > 2 else "Open"
+                        networks.append((ssid, sig, sec))
+        except Exception:
+            pass
+
+        if not networks:
+            self.list_box.append(Gtk.Label(label="No Wi-Fi networks found."))
+            return
+
+        for ssid, sig, sec in networks:
+            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+            row.add_css_class("mac-net-row")
+
+            # Checkmark or bullet
+            is_active = (ssid == active_ssid)
+            lbl_check = Gtk.Label(label="✔ " if is_active else "   ")
+            
+            # Icon
+            icon = "󰤨" if sig > 70 else ("󰤥" if sig > 40 else "󰤢")
+            lbl_icon = Gtk.Label(label=icon)
+
+            lbl_name = Gtk.Label(label=ssid)
+            lbl_name.set_halign(Gtk.Align.START)
+            lbl_name.set_hexpand(True)
+
+            lbl_lock = Gtk.Label(label="🔒" if "WPA" in sec or "WEP" in sec else "")
+
+            row.append(lbl_check)
+            row.append(lbl_icon)
+            row.append(lbl_name)
+            row.append(lbl_lock)
+
+            btn = Gtk.Button()
+            btn.set_child(row)
+            btn.add_css_class("flat")
+            btn.connect("clicked", lambda b, s=ssid, sc=sec: self.connect_network(s, sc))
+            self.list_box.append(btn)
+
+    def connect_network(self, ssid, security):
+        self.destroy()
+        if "WPA" in security or "WEP" in security:
+            subprocess.Popen(["omarchy-wifi-manager"])
+        else:
+            subprocess.run(["nmcli", "dev", "wifi", "connect", ssid], check=False)
+
+class MacWifiApp(Adw.Application):
+    def __init__(self):
+        super().__init__(application_id="org.omarchy.mac.wifi")
+
+    def do_activate(self):
+        win = MacWifiWindow(self)
+        win.present()
+
+if __name__ == "__main__":
+    app = MacWifiApp()
+    sys.exit(app.run(sys.argv))

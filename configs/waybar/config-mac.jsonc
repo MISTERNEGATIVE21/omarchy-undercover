@@ -47,12 +47,12 @@
         "^(?!.*\\S).*": "Finder"
       }
     },
-    "custom/menu-file": { "exec": "echo 'File'", "interval": 3600, "return-type": "plain", "tooltip": "File Menu", "on-click": "nautilus" },
-    "custom/menu-edit": { "exec": "echo 'Edit'", "interval": 3600, "return-type": "plain", "tooltip": "Edit Menu", "on-click": "rofi -show window -theme ~/.config/rofi/mac.rasi" },
-    "custom/menu-view": { "exec": "echo 'View'", "interval": 3600, "return-type": "plain", "tooltip": "View Menu", "on-click": "omarchy-mac-widgets" },
-    "custom/menu-go": { "exec": "echo 'Go'", "interval": 3600, "return-type": "plain", "tooltip": "Go Menu", "on-click": "nautilus" },
-    "custom/menu-window": { "exec": "echo 'Window'", "interval": 3600, "return-type": "plain", "tooltip": "Window Switcher", "on-click": "rofi -show window -theme ~/.config/rofi/mac.rasi" },
-    "custom/menu-help": { "exec": "echo 'Help'", "interval": 3600, "return-type": "plain", "tooltip": "Help & Settings", "on-click": "omarchy-undercover-settings" },
+    "custom/menu-file": { "exec": "echo 'File'", "interval": 3600, "return-type": "plain", "tooltip": "File Menu", "on-click": "omarchy-mac-appmenu file" },
+    "custom/menu-edit": { "exec": "echo 'Edit'", "interval": 3600, "return-type": "plain", "tooltip": "Edit Menu", "on-click": "omarchy-mac-appmenu edit" },
+    "custom/menu-view": { "exec": "echo 'View'", "interval": 3600, "return-type": "plain", "tooltip": "View Menu", "on-click": "omarchy-mac-appmenu view" },
+    "custom/menu-go": { "exec": "echo 'Go'", "interval": 3600, "return-type": "plain", "tooltip": "Go Menu", "on-click": "omarchy-mac-appmenu go" },
+    "custom/menu-window": { "exec": "echo 'Window'", "interval": 3600, "return-type": "plain", "tooltip": "Window Switcher", "on-click": "omarchy-mac-appmenu window" },
+    "custom/menu-help": { "exec": "echo 'Help'", "interval": 3600, "return-type": "plain", "tooltip": "Help Menu", "on-click": "omarchy-mac-appmenu help" },
     "clock": {
       "format": "{:%a %b %d  %I:%M %p}",
       "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
@@ -68,20 +68,20 @@
       "format-ethernet": "󰈀",
       "format-disconnected": "󰤭",
       "tooltip-format": "{ifname}: {ipaddr}",
-      "on-click": "omarchy-ios-control-center"
+      "on-click": "omarchy-mac-wifi"
     },
     "bluetooth": {
       "format": "󰂯",
       "format-disabled": "󰂲",
       "format-connected": "󰂱",
       "tooltip-format": "Bluetooth: {status}",
-      "on-click": "omarchy-ios-control-center"
+      "on-click": "omarchy-mac-bluetooth"
     },
     "pulseaudio": {
       "format": "{icon}",
       "format-muted": "󰝟",
       "format-icons": { "default": ["󰕿", "󰖀", "󰕾"] },
-      "on-click": "omarchy-ios-control-center",
+      "on-click": "omarchy-mac-sound",
       "on-click-right": "wpctl set-volume @DEFAULT_AUDIO_SINK@ toggle",
       "scroll-step": 5
     },
@@ -149,7 +149,7 @@
     "custom/dock-appstore": {
       "format": "   ",
       "tooltip": "App Store",
-      "on-click": "omarchy-undercover-settings"
+      "on-click": "omarchy-undercover-settings -s"
     },
     "custom/dock-terminal": {
       "format": "   ",
@@ -159,7 +159,7 @@
     "custom/dock-settings": {
       "format": "   ",
       "tooltip": "System Settings",
-      "on-click": "omarchy-undercover-settings"
+      "on-click": "omarchy-undercover-settings -s"
     },
     "wlr/taskbar": {
       "format": "{icon}",

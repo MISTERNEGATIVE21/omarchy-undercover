@@ -1,0 +1,194 @@
+#!/usr/bin/env python3
+"""
+macOS Sequoia Sound & Audio Output Dropdown Menu for Omarchy Hyprland
+"""
+
+import sys
+import subprocess
+import gi
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+from gi.repository import Gtk, Adw, GLib
+
+CSS = """
+window.mac-popover {
+    background-color: rgba(28, 28, 38, 0.96);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+.mac-card {
+    background-color: rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 6px;
+}
+
+.mac-sink-row {
+    border-radius: 8px;
+    padding: 6px 10px;
+    transition: background-color 0.12s ease;
+}
+.mac-sink-row:hover {
+    background-color: #007aff;
+    color: #ffffff;
+}
+
+.mac-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.55);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 6px;
+    margin-bottom: 4px;
+}
+"""
+
+class MacSoundWindow(Gtk.Window):
+    def __init__(self, app):
+        super().__init__(application=app, title="Sound")
+        self.set_default_size(320, 380)
+        self.set_resizable(False)
+        self.add_css_class("mac-popover")
+
+        p = Gtk.CssProvider()
+        p.load_from_data(CSS.encode())
+        Gtk.StyleContext.add_provider_for_display(self.get_display(), p, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        vbox.set_margin_top(12)
+        vbox.set_margin_bottom(12)
+        vbox.set_margin_start(14)
+        vbox.set_margin_end(14)
+        self.set_child(vbox)
+
+        # 1. Volume Slider Card
+        vol_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        vol_card.add_css_class("mac-card")
+
+        lbl_vol_title = Gtk.Label(label="<b>Sound Volume</b>")
+        lbl_vol_title.set_use_markup(True)
+        lbl_vol_title.set_halign(Gtk.Align.START)
+        vol_card.append(lbl_vol_title)
+
+        curr_vol = 50
+        try:
+            out = subprocess.check_output(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"], text=True)
+            parts = out.strip().split()
+            if len(parts) >= 2:
+                curr_vol = int(float(parts[1]) * 100)
+        except Exception:
+            pass
+
+        slider_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        lbl_v_icon = Gtk.Label(label="󰕾")
+        
+        self.slider = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
+        self.slider.set_value(curr_vol)
+        self.slider.set_hexpand(True)
+        self.slider.connect("value-changed", self.on_volume_changed)
+
+        slider_box.append(lbl_v_icon)
+        slider_box.append(self.slider)
+        vol_card.append(slider_box)
+        vbox.append(vol_card)
+
+        # 2. Output Section Title
+        lbl_out = Gtk.Label(label="Output Device")
+        lbl_out.add_css_class("mac-section-title")
+        lbl_out.set_halign(Gtk.Align.START)
+        vbox.append(lbl_out)
+
+        # 3. Audio Sinks List
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll.set_vexpand(True)
+        self.list_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        scroll.set_child(self.list_box)
+        vbox.append(scroll)
+
+        # 4. Sound Settings Button
+        btn_set = Gtk.Button(label="Sound Settings...")
+        btn_set.connect("clicked", lambda b: (self.destroy(), subprocess.Popen(["pavucontrol"])))
+        vbox.append(btn_set)
+
+        self.load_sinks()
+
+    def on_volume_changed(self, scale):
+        val = int(scale.get_value())
+        subprocess.run(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", f"{val/100.0:.2f}"], check=False)
+
+    def load_sinks(self):
+        while child := self.list_box.get_first_child():
+            self.list_box.remove(child)
+
+        sinks = []
+        try:
+            out = subprocess.check_output(["wpctl", "status"], text=True)
+            # parse sinks
+            in_sinks = False
+            for line in out.splitlines():
+                if "Sinks:" in line:
+                    in_sinks = True
+                    continue
+                if in_sinks:
+                    if "Sources:" in line or "Filters:" in line or "Streams:" in line:
+                        break
+                    line_clean = line.strip()
+                    if "." in line_clean:
+                        is_active = "*" in line_clean
+                        clean = line_clean.replace("*", "").replace("│", "").replace("├─", "").replace("└─", "").strip()
+                        parts = clean.split(".", 1)
+                        if len(parts) == 2:
+                            sink_id = parts[0].strip()
+                            name = parts[1].split("[")[0].strip()
+                            sinks.append((sink_id, name, is_active))
+        except Exception:
+            pass
+
+        if not sinks:
+            self.list_box.append(Gtk.Label(label="Default Output (Built-in Audio)"))
+            return
+
+        for sid, name, is_act in sinks:
+            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+            row.add_css_class("mac-sink-row")
+
+            lbl_chk = Gtk.Label(label="✔ " if is_act else "   ")
+            
+            icon = "󰋋" if "headphone" in name.lower() else ("󰍹" if "hdmi" in name.lower() else "󰕾")
+            lbl_ic = Gtk.Label(label=icon)
+
+            lbl_nm = Gtk.Label(label=name)
+            lbl_nm.set_halign(Gtk.Align.START)
+            lbl_nm.set_hexpand(True)
+            lbl_nm.set_ellipsize(3)
+
+            row.append(lbl_chk)
+            row.append(lbl_ic)
+            row.append(lbl_nm)
+
+            btn = Gtk.Button()
+            btn.set_child(row)
+            btn.add_css_class("flat")
+            btn.connect("clicked", lambda b, s=sid: self.select_sink(s))
+            self.list_box.append(btn)
+
+    def select_sink(self, sink_id):
+        self.destroy()
+        subprocess.run(["wpctl", "set-default", sink_id], check=False)
+
+class MacSoundApp(Adw.Application):
+    def __init__(self):
+        super().__init__(application_id="org.omarchy.mac.sound")
+
+    def do_activate(self):
+        win = MacSoundWindow(self)
+        win.present()
+
+if __name__ == "__main__":
+    app = MacSoundApp()
+    sys.exit(app.run(sys.argv))
