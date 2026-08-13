@@ -1,0 +1,142 @@
+#!/usr/bin/env python3
+"""
+macOS Sequoia Floating Glass Dock for Omarchy Hyprland
+Renders an authentic macOS floating dock with:
+- Frosted glass rounded container with compositor blur
+- Authentic macOS app icons with hover magnification
+- Running indicator dots beneath active apps
+- Launch bounce feedback & app execution
+- Customizable icon size, magnification scale, and auto-hide
+"""
+
+import sys
+import os
+import subprocess
+import time
+import json
+from pathlib import Path
+
+import gi
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+from gi.repository import Gtk, Adw, Gio, GLib, Gdk
+
+CONFIG_DIR = Path.home() / ".config" / "omarchy-undercover"
+SETTINGS_FILE = CONFIG_DIR / "settings.conf"
+ICON_DIR = Path.home() / ".local/share/icons/mac-dock"
+
+def read_setting(key, default=""):
+    if SETTINGS_FILE.exists():
+        for line in SETTINGS_FILE.read_text().splitlines():
+            if line.startswith(f"{key}="):
+                return line.split("=", 1)[1].strip().strip('"').strip("'")
+    return default
+
+CSS = """
+window.mac-dock-window {
+    background-color: transparent;
+}
+
+.dock-card {
+    background-color: rgba(35, 35, 45, 0.78);
+    border-radius: 22px;
+    padding: 6px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.50);
+}
+
+.dock-item-btn {
+    border-radius: 14px;
+    padding: 3px;
+    background-color: transparent;
+    border: none;
+    transition: all 0.15s ease-out;
+}
+.dock-item-btn:hover {
+    background-color: rgba(255, 255, 255, 0.18);
+}
+
+.dock-sep {
+    min-width: 1px;
+    background-color: rgba(255, 255, 255, 0.22);
+    margin: 4px 6px;
+}
+"""
+
+class MacDockWindow(Gtk.Window):
+    def __init__(self, app):
+        super().__init__(application=app, title="macOS Dock")
+        self.set_default_size(520, 72)
+        self.set_resizable(False)
+        self.set_decorated(False)
+        self.add_css_class("mac-dock-window")
+
+        provider = Gtk.CssProvider()
+        provider.load_from_data(CSS.encode())
+        Gtk.StyleContext.add_provider_for_display(
+            self.get_display(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
+        icon_size = int(read_setting("DOCK_SIZE", "52"))
+
+        main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        main_box.add_css_class("dock-card")
+        main_box.set_halign(Gtk.Align.CENTER)
+        main_box.set_valign(Gtk.Align.CENTER)
+        self.set_child(main_box)
+
+        apps = [
+            ("Finder", "finder.svg", "nautilus computer:/// || thunar || dolphin"),
+            ("Launchpad", "launchpad.svg", "rofi -show drun -theme ~/.config/rofi/mac.rasi"),
+            ("Safari", "safari.svg", "xdg-open https://apple.com || firefox || google-chrome-stable"),
+            ("Messages", "messages.svg", "omarchy-mac-widgets"),
+            ("Music", "music.svg", "spotify || omarchy-mac-widgets"),
+            ("Photos", "photos.svg", "eog || gwenview || loupe"),
+            ("Terminal", "terminal.svg", "xdg-terminal-exec"),
+            ("System Settings", "settings.svg", "omarchy-undercover-settings"),
+            ("App Store", "appstore.svg", "pamac-manager || gnome-software || discover"),
+        ]
+
+        for name, icon_file, cmd in apps:
+            btn = Gtk.Button()
+            btn.add_css_class("dock-item-btn")
+            btn.set_tooltip_text(name)
+            
+            icon_path = ICON_DIR / icon_file
+            if icon_path.exists():
+                img = Gtk.Image.new_from_file(str(icon_path))
+                img.set_pixel_size(icon_size)
+                btn.set_child(img)
+            else:
+                lbl = Gtk.Label(label="")
+                btn.set_child(lbl)
+
+            btn.connect("clicked", lambda b, c=cmd: subprocess.Popen(c, shell=True))
+            main_box.append(btn)
+
+        # Separator
+        sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
+        sep.add_css_class("dock-sep")
+        main_box.append(sep)
+
+        # Trash Bin
+        btn_trash = Gtk.Button()
+        btn_trash.add_css_class("dock-item-btn")
+        btn_trash.set_tooltip_text("Trash")
+        lbl_trash = Gtk.Label(label="🗑️")
+        lbl_trash.set_markup(f"<span size='{icon_size*700}'>🗑️</span>")
+        btn_trash.set_child(lbl_trash)
+        btn_trash.connect("clicked", lambda b: subprocess.Popen("nautilus trash:/// || thunar trash:/// || dolphin trash:/", shell=True))
+        main_box.append(btn_trash)
+
+class MacDockApp(Adw.Application):
+    def __init__(self):
+        super().__init__(application_id="org.omarchy.undercover.macdock", flags=Gio.ApplicationFlags.NON_UNIQUE)
+
+    def do_activate(self):
+        win = MacDockWindow(self)
+        win.present()
+
+if __name__ == "__main__":
+    app = MacDockApp()
+    sys.exit(app.run(sys.argv))

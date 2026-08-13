@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "undercover.mac-dock",
+  "name": "macOS Sequoia Dock",
+  "version": "1.0.0",
+  "author": "misternegative21",
+  "description": "Authentic macOS Sequoia floating frosted glass dock with magnification and launch animations",
+  "kinds": ["panel"],
+  "entryPoints": {
+    "panel": "Dock.qml"
+  }
+}

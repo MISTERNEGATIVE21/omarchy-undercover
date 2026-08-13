@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "undercover.win11-taskbar",
+  "name": "Windows 11 Centered Taskbar",
+  "version": "1.0.0",
+  "author": "misternegative21",
+  "description": "Centered Windows 11 Fluent Taskbar with Start, Search, Task View, and pinned app icons",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "Widget.qml"
+  },
+  "barWidget": {
+    "displayName": "Centered Taskbar",
+    "category": "Launcher",
+    "allowMultiple": false,
+    "defaultSection": "center"
+  }
+}

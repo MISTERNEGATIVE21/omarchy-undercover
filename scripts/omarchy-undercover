@@ -379,8 +379,23 @@ apply_shell_windows() {
         fi
         if [[ -f "$src" ]]; then
             mkdir -p "$HOME/.config/omarchy"
-            cp -f "$src" "$HOME/.config/omarchy/shell.json"
-            msg "Windows 11 Quickshell taskbar applied (Omarchy 4.0 bottom bar)."
+            local align
+            align=$(read_setting "TASKBAR_ALIGNMENT" "center")
+            if [[ "$align" == "center" ]]; then
+                cp -f "$src" "$HOME/.config/omarchy/shell.json"
+                # If jq is available, ensure centered layout
+                if command_exists jq; then
+                    jq '.bar.centerAnchor = "" | .bar.layout.center = [{"id": "undercover.win11-taskbar"}] | .bar.layout.left = [{"id": "undercover.win11-weather"}]' "$src" > "$HOME/.config/omarchy/shell.json" 2>/dev/null || cp -f "$src" "$HOME/.config/omarchy/shell.json"
+                fi
+            else
+                # Left-aligned classic layout
+                if command_exists jq; then
+                    jq '.bar.centerAnchor = "" | .bar.layout.left = [{"id": "undercover.win11-weather"}, {"id": "undercover.win11-start"}, {"id": "undercover.win11-search"}, {"id": "undercover.win11-taskview"}, {"id": "undercover.win11-copilot"}, {"id": "omarchy.workspaces"}] | .bar.layout.center = [{"id": "omarchy.media"}]' "$src" > "$HOME/.config/omarchy/shell.json" 2>/dev/null || cp -f "$src" "$HOME/.config/omarchy/shell.json"
+                else
+                    cp -f "$src" "$HOME/.config/omarchy/shell.json"
+                fi
+            fi
+            msg "Windows 11 Quickshell taskbar applied (alignment: $align)."
         fi
     fi
 
@@ -724,6 +739,14 @@ EOF
         omarchy-play-sound mac-switch 2>/dev/null || true
     fi
 
+    local enable_dock
+    enable_dock=$(read_setting "ENABLE_MAC_DOCK" "true")
+    if [[ "$enable_dock" == "true" ]]; then
+        pkill -f omarchy-mac-dock 2>/dev/null || true
+        nohup omarchy-mac-dock >/dev/null 2>&1 &
+        disown 2>/dev/null || true
+    fi
+
     omarchy_reload_bar
     omarchy_reload_hyprland
     msg "Switched to Apple macOS Sequoia ($variant) — done!"
@@ -736,6 +759,7 @@ switch_to_win11() {
     fi
 
     msg "Switching to Windows 11 ($variant)..."
+    pkill -f omarchy-mac-dock 2>/dev/null || true
     if [[ ! -f "$BASELINE_FILE" ]]; then
         backup_original_configs
     fi

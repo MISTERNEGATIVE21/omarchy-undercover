@@ -334,6 +334,7 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
 
         # Build Tabs
         self.build_presets_page()
+        self.build_dock_taskbar_page()
         self.build_wallpapers_page()
         self.build_effects_page()
         self.build_hardware_page()
@@ -430,6 +431,103 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         cli = find_cli()
         subprocess.run([cli, "--autohide", "on" if is_active else "off"], check=False)
         self.show_toast(f"Dock auto-hide {'enabled' if is_active else 'disabled'}")
+
+    # ==================== PAGE: DOCK & TASKBAR ====================
+    def build_dock_taskbar_page(self):
+        page = Adw.PreferencesPage()
+        page.set_title("Dock & Taskbar")
+        page.set_icon_name("user-desktop-symbolic")
+
+        # 1. macOS Sequoia Dock Preferences
+        group_mac = Adw.PreferencesGroup(
+            title="macOS Sequoia Dock Options",
+            description="Customize floating dock magnification, size, position, and running apps."
+        )
+
+        # Show Mac Dock
+        row_mac_dock = Adw.SwitchRow(title="Enable Floating macOS Dock", subtitle="Displays frosted glass application dock at the bottom of the screen")
+        row_mac_dock.set_active(read_setting("ENABLE_MAC_DOCK", "true").lower() == "true")
+        def on_mac_dock_toggled(row, param):
+            write_setting("ENABLE_MAC_DOCK", "true" if row.get_active() else "false")
+            if row.get_active():
+                subprocess.Popen(["omarchy-mac-dock"])
+            else:
+                subprocess.run(["pkill", "-f", "omarchy-mac-dock"], check=False)
+            self.show_toast("macOS Dock preference updated.")
+        row_mac_dock.connect("notify::active", on_mac_dock_toggled)
+        group_mac.add(row_mac_dock)
+
+        # Dock Icon Size
+        row_dock_size = Adw.ActionRow(title="Dock Icon Size", subtitle="Base pixel size for dock app icons")
+        scale_size = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 32, 72, 4)
+        scale_size.set_value(int(read_setting("DOCK_SIZE", "52")))
+        scale_size.set_size_request(200, -1)
+        def on_dock_size_changed(s):
+            val = int(s.get_value())
+            write_setting("DOCK_SIZE", str(val))
+            self.show_toast(f"Dock icon size set to {val}px")
+        scale_size.connect("value-changed", on_dock_size_changed)
+        row_dock_size.add_suffix(scale_size)
+        group_mac.add(row_dock_size)
+
+        # Dock Magnification
+        row_mag = Adw.ActionRow(title="Dock Hover Magnification Scale", subtitle="Parabolic scale multiplier on cursor hover")
+        scale_mag = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 1.0, 1.8, 0.05)
+        scale_mag.set_value(float(read_setting("DOCK_MAGNIFICATION", "1.35")))
+        scale_mag.set_size_request(200, -1)
+        def on_mag_changed(s):
+            val = f"{s.get_value():.2f}"
+            write_setting("DOCK_MAGNIFICATION", val)
+        scale_mag.connect("value-changed", on_mag_changed)
+        row_mag.add_suffix(scale_mag)
+        group_mac.add(row_mag)
+
+        page.add(group_mac)
+
+        # 2. Windows 11 Fluent Taskbar Preferences
+        group_win = Adw.PreferencesGroup(
+            title="Windows 11 Taskbar Options",
+            description="Customize Start button alignment, search box, Copilot, and widgets."
+        )
+
+        # Taskbar Alignment (Centered vs Left)
+        curr_align = read_setting("TASKBAR_ALIGNMENT", "center")
+        row_align = Adw.ComboRow(title="Taskbar Start & Icons Alignment", subtitle="Choose between Windows 11 centered default or classic left-aligned")
+        model_align = Gtk.StringList()
+        model_align.append("Centered (Windows 11 Default)")
+        model_align.append("Left-Aligned (Classic Windows)")
+        row_align.set_model(model_align)
+        row_align.set_selected(0 if curr_align == "center" else 1)
+
+        def on_align_changed(combo, param):
+            val = "center" if combo.get_selected() == 0 else "left"
+            write_setting("TASKBAR_ALIGNMENT", val)
+            cli = find_cli()
+            subprocess.run([cli, "-w11"], check=False)
+            self.show_toast(f"Taskbar alignment switched to: {val.capitalize()}")
+        row_align.connect("notify::selected", on_align_changed)
+        group_win.add(row_align)
+
+        # Show Weather Ticker on Taskbar
+        row_win_weather = Adw.SwitchRow(title="Show Weather Ticker", subtitle="Displays live temperature and opens Windows 11 Widgets Board on click")
+        row_win_weather.set_active(read_setting("SHOW_WIN_WEATHER", "true").lower() == "true")
+        row_win_weather.connect("notify::active", lambda r, p: write_setting("SHOW_WIN_WEATHER", "true" if r.get_active() else "false"))
+        group_win.add(row_win_weather)
+
+        # Show Search Pill
+        row_win_search = Adw.SwitchRow(title="Show Search Box Pill", subtitle="Displays Windows 11 search bar on taskbar")
+        row_win_search.set_active(read_setting("SHOW_WIN_SEARCH", "true").lower() == "true")
+        row_win_search.connect("notify::active", lambda r, p: write_setting("SHOW_WIN_SEARCH", "true" if r.get_active() else "false"))
+        group_win.add(row_win_search)
+
+        # Show Copilot Button
+        row_win_copilot = Adw.SwitchRow(title="Show Copilot AI Button", subtitle="Displays Copilot assistant icon next to search")
+        row_win_copilot.set_active(read_setting("SHOW_WIN_COPILOT", "true").lower() == "true")
+        row_win_copilot.connect("notify::active", lambda r, p: write_setting("SHOW_WIN_COPILOT", "true" if r.get_active() else "false"))
+        group_win.add(row_win_copilot)
+
+        page.add(group_win)
+        self.stack.add_titled(page, "dock_taskbar", "Dock & Taskbar")
 
     # ==================== PAGE 2: WALLPAPERS GALLERY ====================
     def build_wallpapers_page(self):
