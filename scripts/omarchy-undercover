@@ -702,8 +702,11 @@ Gtk/DecorationLayout ":minimize,maximize,close"
 EOF
     killall -HUP xsettingsd 2>/dev/null || true
 
-    # Remove macOS GTK CSS (restore clean default)
-    rm -f "$HOME/.config/gtk-4.0/gtk.css" "$HOME/.config/gtk-3.0/gtk.css" 2>/dev/null || true
+    # Deploy Windows 11 Fluent GTK CSS
+    if [[ -f "$CONFIG_DIR/gtk/win11-style.css" ]]; then
+        cp -f "$CONFIG_DIR/gtk/win11-style.css" "$HOME/.config/gtk-4.0/gtk.css" 2>/dev/null || true
+        cp -f "$CONFIG_DIR/gtk/win11-style.css" "$HOME/.config/gtk-3.0/gtk.css" 2>/dev/null || true
+    fi
 
     # Deploy Waybar win11 config
     if [[ -f "$CONFIG_DIR/waybar/config-win.jsonc" ]]; then
