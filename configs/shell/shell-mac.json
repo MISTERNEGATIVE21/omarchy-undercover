@@ -30,22 +30,16 @@
           "id": "omarchy.tray"
         },
         {
-          "id": "omarchy.keyboard-layout"
+          "id": "undercover.mac-battery"
         },
         {
-          "id": "omarchy.weather"
+          "id": "undercover.mac-wifi"
         },
         {
-          "id": "omarchy.bluetooth"
+          "id": "undercover.mac-spotlight"
         },
         {
-          "id": "omarchy.network"
-        },
-        {
-          "id": "omarchy.audio"
-        },
-        {
-          "id": "omarchy.power"
+          "id": "undercover.mac-siri"
         },
         {
           "id": "undercover.mac-controlcenter"

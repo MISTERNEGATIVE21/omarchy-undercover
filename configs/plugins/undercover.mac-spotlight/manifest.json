@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "undercover.mac-spotlight",
+  "name": "macOS Spotlight Search",
+  "version": "1.0.0",
+  "author": "misternegative21",
+  "description": "macOS Spotlight Magnifier Menu Bar Widget",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "Widget.qml"
+  },
+  "barWidget": {
+    "displayName": "Spotlight",
+    "category": "Search",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}

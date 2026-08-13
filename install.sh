@@ -31,7 +31,7 @@ DIM='\033[2m'
 NC='\033[0m'
 
 HAS_GUM=0
-if [[ -t 1 ]] && command -v gum >/dev/null 2>&1; then
+if [[ -t 0 && -t 1 ]] && command -v gum >/dev/null 2>&1; then
     HAS_GUM=1
 fi
 
@@ -92,14 +92,14 @@ run_animated_step() {
     local prefix="[${step_num}/${total_steps}]"
 
     if [[ $HAS_GUM -eq 1 ]]; then
-        gum spin --spinner "$spinner_type" --title "$prefix $title" -- bash -c "$cmd"
+        gum spin --spinner "$spinner_type" --title "$prefix $title" -- bash -c "$cmd" 2>/dev/null || eval "$cmd"
         gum style --foreground 48 "  ✔ $prefix $title"
     else
         echo -ne "${CYAN}${BOLD}${prefix} ${YELLOW}⏳ ${title}...${NC}\r"
         eval "$cmd"
         echo -e "${GREEN}${BOLD}  ✔ ${prefix} ${WHITE}${title}${NC}                      "
     fi
-    sleep 0.15
+    sleep 0.05
 }
 
 main() {

@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "undercover.mac-siri",
+  "name": "macOS Siri Orb",
+  "version": "1.0.0",
+  "author": "misternegative21",
+  "description": "Apple Siri Menu Bar Glowing Orb Widget",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "Widget.qml"
+  },
+  "barWidget": {
+    "displayName": "Siri Orb",
+    "category": "Assistant",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}

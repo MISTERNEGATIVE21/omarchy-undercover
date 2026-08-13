@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "undercover.win11-weather",
+  "name": "Windows 11 Weather Ticker",
+  "version": "1.0.0",
+  "author": "misternegative21",
+  "description": "Windows 11 Fluent Weather Taskbar Widget & Board Summoner",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "Widget.qml"
+  },
+  "barWidget": {
+    "displayName": "Weather Ticker",
+    "category": "Weather",
+    "allowMultiple": false,
+    "defaultSection": "left"
+  }
+}

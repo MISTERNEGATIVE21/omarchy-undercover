@@ -185,8 +185,17 @@ hl.bind("SUPER + E", hl.dsp.exec_cmd("env GTK_THEME=Adwaita:dark GTK_ICON_THEME=
 -- Win + I: Settings
 hl.bind("SUPER + I", hl.dsp.exec_cmd("uwsm-app -- omarchy-undercover-settings"), { description = "Settings" })
 
--- Win + A: Quick settings
-hl.bind("SUPER + A", hl.dsp.exec_cmd("uwsm-app -- omarchy-undercover-settings --page system"), { description = "Quick settings" })
+-- Win + W: Windows 11 Widgets Board
+hl.bind("SUPER + W", hl.dsp.exec_cmd("omarchy-win11-widgets"), { description = "Windows 11 Widgets Board" })
+
+-- Win + A: Windows 11 Quick Settings & Action Center
+hl.bind("SUPER + A", hl.dsp.exec_cmd("omarchy-win11-notifications"), { description = "Quick Settings & Action Center" })
+
+-- Win + N: Windows 11 Notification Center & Calendar Flyout
+hl.bind("SUPER + N", hl.dsp.exec_cmd("omarchy-win11-notifications"), { description = "Notification Center & Calendar" })
+
+-- Win + C: Copilot AI Assistant
+hl.bind("SUPER + C", hl.dsp.exec_cmd("xdg-terminal-exec"), { description = "Copilot AI Assistant" })
 
 -- Win + R: Run dialog
 hl.bind("SUPER + R", hl.dsp.exec_cmd("rofi -show run -theme ~/.config/rofi/windows11.rasi"), { description = "Run dialog" })
@@ -211,7 +220,7 @@ hl.bind("SUPER + SHIFT + S", hl.dsp.exec_cmd("omarchy capture screenshot region 
 -- Alt + F4: Close window
 hl.bind("ALT + F4", hl.dsp.window.close(), { description = "Close window" })
 
--- Win + Q: Quick assist (terminal) - handy replacement for Win+W (widgets)
+-- Win + Q: Quick assist (terminal)
 hl.bind("SUPER + Q", hl.dsp.exec_cmd("xdg-terminal-exec"), { description = "Terminal (quick)" })
 
 -- Win + B: Toggle Taskbar Visibility (Instant hide / reveal for Quickshell & Waybar)

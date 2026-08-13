@@ -11,7 +11,19 @@
     "layout": {
       "left": [
         {
+          "id": "undercover.win11-weather"
+        },
+        {
           "id": "undercover.win11-start"
+        },
+        {
+          "id": "undercover.win11-search"
+        },
+        {
+          "id": "undercover.win11-taskview"
+        },
+        {
+          "id": "undercover.win11-copilot"
         },
         {
           "id": "omarchy.workspaces"
@@ -25,15 +37,6 @@
       "right": [
         {
           "id": "omarchy.tray"
-        },
-        {
-          "id": "omarchy.network"
-        },
-        {
-          "id": "omarchy.audio"
-        },
-        {
-          "id": "omarchy.power"
         },
         {
           "id": "undercover.win11-actioncenter"

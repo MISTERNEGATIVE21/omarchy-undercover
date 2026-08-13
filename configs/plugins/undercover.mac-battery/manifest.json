@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "undercover.mac-battery",
+  "name": "macOS Battery Indicator",
+  "version": "1.0.0",
+  "author": "misternegative21",
+  "description": "macOS Sequoia Battery Status Indicator with percentage",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "Widget.qml"
+  },
+  "barWidget": {
+    "displayName": "Battery",
+    "category": "Power",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
