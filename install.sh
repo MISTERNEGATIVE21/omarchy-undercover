@@ -197,6 +197,11 @@ main() {
         if [[ -f "$SCRIPT_DIR/configs/hypr/windows-mode.lua" ]]; then
             cp -f "$SCRIPT_DIR/configs/hypr/windows-mode.lua" "$HOME/.config/hypr/windows-mode.lua"
         fi
+        if [[ -f "$HOME/.config/hypr/bindings.lua" ]]; then
+            if ! grep -q "omarchy-undercover --toggle" "$HOME/.config/hypr/bindings.lua"; then
+                echo -e "\n-- Global Omarchy Undercover Mode Toggle (Super + Alt + U)\no.bind(\"SUPER + ALT + U\", \"Toggle Undercover Mode\", \"omarchy-undercover --toggle\")" >> "$HOME/.config/hypr/bindings.lua"
+            fi
+        fi
         hyprctl reload >/dev/null 2>&1 || true
     '
 
