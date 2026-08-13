@@ -146,6 +146,10 @@ main() {
         if [[ -d "$SCRIPT_DIR/configs/shell" ]]; then
             cp -rf "$SCRIPT_DIR/configs/shell/"* "$CONFIG_DIR/shell/" 2>/dev/null || true
         fi
+        if [[ -d "$SCRIPT_DIR/configs/quickshell" ]]; then
+            mkdir -p "$CONFIG_DIR/quickshell"
+            cp -rf "$SCRIPT_DIR/configs/quickshell/"* "$CONFIG_DIR/quickshell/" 2>/dev/null || true
+        fi
         if [[ -d "$SCRIPT_DIR/configs/plugins" ]]; then
             cp -rf "$SCRIPT_DIR/configs/plugins/"* "$CONFIG_DIR/plugins/" 2>/dev/null || true
             cp -rf "$SCRIPT_DIR/configs/plugins/"* "$HOME/.config/omarchy/plugins/" 2>/dev/null || true
