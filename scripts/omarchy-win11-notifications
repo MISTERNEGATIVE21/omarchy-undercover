@@ -2,7 +2,7 @@
 """
 Windows 11 Action Center & Interactive Widget Board for Omarchy Hyprland
 Features:
-- Live Interactive Quick Settings Tiles (Wi-Fi, Bluetooth, Night Light, DND, Screenshot)
+- Live Interactive Quick Settings Tiles with real state query (Wi-Fi, Bluetooth, Night Light, DND, Screenshot)
 - Real Live Audio Volume Slider (wpctl integration)
 - Real Live Display Brightness Slider (brightnessctl integration)
 - Real Geolocation Weather Widget with City/Scale Configuration
@@ -51,6 +51,45 @@ def load_config():
 def save_config(cfg):
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     WIN_WIDGETS_CONF.write_text(json.dumps(cfg, indent=2))
+
+def is_wifi_enabled():
+    try:
+        out = subprocess.check_output(["nmcli", "radio", "wifi"], text=True).strip()
+        return "enabled" in out
+    except Exception:
+        return False
+
+def toggle_wifi():
+    curr = is_wifi_enabled()
+    new_state = "off" if curr else "on"
+    try:
+        subprocess.run(["nmcli", "radio", "wifi", new_state], check=False)
+    except Exception:
+        pass
+    return not curr
+
+def is_bluetooth_enabled():
+    try:
+        out = subprocess.check_output(["bluetoothctl", "show"], text=True)
+        return "Powered: yes" in out
+    except Exception:
+        return False
+
+def toggle_bluetooth():
+    curr = is_bluetooth_enabled()
+    try:
+        subprocess.run(["bluetoothctl", "power", "off" if curr else "on"], check=False)
+        subprocess.run(["rfkill", "unblock" if not curr else "block", "bluetooth"], check=False)
+    except Exception:
+        pass
+    return not curr
+
+def is_dnd_enabled():
+    try:
+        out = subprocess.check_output(["makoctl", "mode"], text=True).strip()
+        return "dnd" in out
+    except Exception:
+        return False
 
 CSS = """
 window.win11-notif {
@@ -187,79 +226,88 @@ class Win11Panel(Gtk.Window):
         grid.set_column_spacing(6)
         grid.set_row_spacing(6)
 
-        tiles = [
-            ("󰤨", "Wi-Fi", True, self.toggle_wifi),
-            ("󰂯", "Bluetooth", True, self.toggle_bluetooth),
-            ("󰋙", "Night Light", False, self.toggle_nightlight),
-            ("󰂛", "Do Not Disturb", False, self.toggle_dnd),
-            ("󰄀", "Screenshot", False, self.take_screenshot),
-            ("󰒓", "Settings", False, self.open_settings),
-        ]
+        wifi_on = is_wifi_enabled()
+        bt_on = is_bluetooth_enabled()
+        dnd_on = is_dnd_enabled()
 
-        for i, (icon, label, default_active, handler) in enumerate(tiles):
-            btn = Gtk.Button()
-            btn.add_css_class("win11-tile")
-            if default_active:
-                btn.add_css_class("active")
+        self.btn_wifi = Gtk.Button()
+        self.setup_tile(self.btn_wifi, "󰤨", "Wi-Fi", wifi_on, self.handle_wifi_toggle)
 
-            t_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
-            i_lbl = Gtk.Label(label=icon)
-            i_lbl.set_markup(f'<span size="large">{icon}</span>')
-            n_lbl = Gtk.Label()
-            n_lbl.set_markup(f'<span size="small">{label}</span>')
+        self.btn_bt = Gtk.Button()
+        self.setup_tile(self.btn_bt, "󰂯", "Bluetooth", bt_on, self.handle_bt_toggle)
 
-            t_box.append(i_lbl)
-            t_box.append(n_lbl)
-            btn.set_child(t_box)
-            btn.connect("clicked", lambda b, h=handler: self.handle_tile_click(b, h))
+        self.btn_night = Gtk.Button()
+        self.setup_tile(self.btn_night, "󰋙", "Night Light", False, self.handle_night_toggle)
 
-            grid.attach(btn, i % 3, i // 3, 1, 1)
+        self.btn_dnd = Gtk.Button()
+        self.setup_tile(self.btn_dnd, "󰂛", "Do Not Disturb", dnd_on, self.handle_dnd_toggle)
+
+        self.btn_shot = Gtk.Button()
+        self.setup_tile(self.btn_shot, "󰄀", "Screenshot", False, self.handle_screenshot)
+
+        self.btn_set = Gtk.Button()
+        self.setup_tile(self.btn_set, "󰒓", "Settings", False, self.handle_settings)
+
+        grid.attach(self.btn_wifi, 0, 0, 1, 1)
+        grid.attach(self.btn_bt, 1, 0, 1, 1)
+        grid.attach(self.btn_night, 2, 0, 1, 1)
+        grid.attach(self.btn_dnd, 0, 1, 1, 1)
+        grid.attach(self.btn_shot, 1, 1, 1, 1)
+        grid.attach(self.btn_set, 2, 1, 1, 1)
 
         card.append(grid)
         return card
 
-    def handle_tile_click(self, btn, handler):
+    def setup_tile(self, btn, icon, label, is_active, handler):
+        btn.add_css_class("win11-tile")
+        if is_active:
+            btn.add_css_class("active")
+
+        t_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        i_lbl = Gtk.Label()
+        i_lbl.set_markup(f'<span size="large">{icon}</span>')
+        n_lbl = Gtk.Label()
+        n_lbl.set_markup(f'<span size="small">{label}</span>')
+
+        t_box.append(i_lbl)
+        t_box.append(n_lbl)
+        btn.set_child(t_box)
+        btn.connect("clicked", lambda b: handler(b))
+
+    def handle_wifi_toggle(self, btn):
+        new_state = toggle_wifi()
+        if new_state:
+            btn.add_css_class("active")
+        else:
+            btn.remove_css_class("active")
+
+    def handle_bt_toggle(self, btn):
+        new_state = toggle_bluetooth()
+        if new_state:
+            btn.add_css_class("active")
+        else:
+            btn.remove_css_class("active")
+
+    def handle_night_toggle(self, btn):
+        if btn.has_css_class("active"):
+            btn.remove_css_class("active")
+            subprocess.run(["pkill", "hyprsunset"], check=False)
+        else:
+            btn.add_css_class("active")
+            subprocess.Popen(["hyprsunset", "-t", "4000"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    def handle_dnd_toggle(self, btn):
+        subprocess.run(["makoctl", "mode", "-t", "dnd"], check=False)
         if btn.has_css_class("active"):
             btn.remove_css_class("active")
         else:
             btn.add_css_class("active")
-        handler()
 
-    def toggle_wifi(self):
-        try:
-            subprocess.run(["nmcli", "radio", "wifi"], check=False)
-        except Exception:
-            pass
+    def handle_screenshot(self, btn):
+        subprocess.Popen(["omarchy", "screenshot"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    def toggle_bluetooth(self):
-        try:
-            subprocess.run(["bluetoothctl", "power", "toggle"], check=False)
-        except Exception:
-            pass
-
-    def toggle_nightlight(self):
-        try:
-            subprocess.Popen(["hyprsunset", "-t", "4000"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except Exception:
-            pass
-
-    def toggle_dnd(self):
-        try:
-            subprocess.run(["makoctl", "mode", "-t", "dnd"], check=False)
-        except Exception:
-            pass
-
-    def take_screenshot(self):
-        try:
-            subprocess.Popen(["omarchy", "screenshot"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except Exception:
-            pass
-
-    def open_settings(self):
-        try:
-            subprocess.Popen(["omarchy-undercover-settings"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except Exception:
-            pass
+    def handle_settings(self, btn):
+        subprocess.Popen(["omarchy-undercover-settings"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     def create_volume_card(self):
         card = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
@@ -271,7 +319,6 @@ class Win11Panel(Gtk.Window):
         curr_vol = 50
         try:
             out = subprocess.check_output(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"], text=True)
-            # format: "Volume: 0.45"
             parts = out.strip().split()
             if len(parts) >= 2:
                 curr_vol = int(float(parts[1]) * 100)
@@ -397,6 +444,19 @@ class Win11Panel(Gtk.Window):
                 mem = psutil.virtual_memory()
                 self.ram_lbl.set_text(f"Memory: {mem.used / (1024**3):.1f} GB / {mem.total / (1024**3):.1f} GB ({mem.percent}%)")
                 self.ram_bar.set_fraction(mem.percent / 100.0)
+
+            # Sync Wifi & BT button states
+            if hasattr(self, "btn_wifi"):
+                if is_wifi_enabled():
+                    self.btn_wifi.add_css_class("active")
+                else:
+                    self.btn_wifi.remove_css_class("active")
+
+            if hasattr(self, "btn_bt"):
+                if is_bluetooth_enabled():
+                    self.btn_bt.add_css_class("active")
+                else:
+                    self.btn_bt.remove_css_class("active")
         except Exception:
             pass
         return True

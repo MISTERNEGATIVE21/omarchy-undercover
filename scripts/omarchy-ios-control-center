@@ -1,0 +1,235 @@
+#!/usr/bin/env python3
+"""
+iOS Control Center for Omarchy Hyprland
+Interactive translucent GTK4 Control Center widget with functional hardware toggles.
+"""
+
+import sys
+import os
+import subprocess
+import gi
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+from gi.repository import Gtk, Adw, Gio, GLib
+
+def is_wifi_enabled():
+    try:
+        out = subprocess.check_output(["nmcli", "radio", "wifi"], text=True).strip()
+        return "enabled" in out
+    except Exception:
+        return False
+
+def toggle_wifi():
+    curr = is_wifi_enabled()
+    new_state = "off" if curr else "on"
+    try:
+        subprocess.run(["nmcli", "radio", "wifi", new_state], check=False)
+    except Exception:
+        pass
+    return not curr
+
+def is_bluetooth_enabled():
+    try:
+        out = subprocess.check_output(["bluetoothctl", "show"], text=True)
+        return "Powered: yes" in out
+    except Exception:
+        return False
+
+def toggle_bluetooth():
+    curr = is_bluetooth_enabled()
+    try:
+        subprocess.run(["bluetoothctl", "power", "off" if curr else "on"], check=False)
+        subprocess.run(["rfkill", "unblock" if not curr else "block", "bluetooth"], check=False)
+    except Exception:
+        pass
+    return not curr
+
+CSS = """
+window.control-center {
+    background-color: rgba(25, 25, 35, 0.85);
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+}
+
+.cc-card {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    padding: 16px;
+    margin: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.cc-button {
+    background-color: rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+    min-width: 52px;
+    min-height: 52px;
+    border: none;
+    color: #ffffff;
+    font-size: 20px;
+    transition: all 0.2s ease;
+}
+
+.cc-button.active {
+    background-color: #007aff;
+    color: #ffffff;
+}
+
+.cc-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #ffffff;
+    margin-top: 4px;
+}
+"""
+
+class ControlCenterWindow(Gtk.Window):
+    def __init__(self, app):
+        super().__init__(application=app, title="Control Center")
+        self.set_default_size(360, 480)
+        self.set_resizable(False)
+        self.add_css_class("control-center")
+
+        provider = Gtk.CssProvider()
+        provider.load_from_data(CSS.encode("utf-8"))
+        Gtk.StyleContext.add_provider_for_display(
+            self.get_display(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        main_box.set_margin_top(16)
+        main_box.set_margin_bottom(16)
+        main_box.set_margin_start(16)
+        main_box.set_margin_end(16)
+
+        # 1. Quick Toggles Grid (Wi-Fi, Bluetooth, Dark Mode, Night Light)
+        toggles_grid = Gtk.Grid()
+        toggles_grid.set_column_spacing(12)
+        toggles_grid.set_row_spacing(12)
+        toggles_grid.set_homogeneous(True)
+
+        self.btn_wifi = self.create_toggle_btn("󰤨", "Wi-Fi", is_wifi_enabled(), self.handle_wifi)
+        self.btn_bt = self.create_toggle_btn("󰂯", "Bluetooth", is_bluetooth_enabled(), self.handle_bt)
+        self.btn_theme = self.create_toggle_btn("󰔎", "Theme", True, self.handle_theme)
+        self.btn_night = self.create_toggle_btn("󰋙", "Night Light", False, self.handle_night)
+
+        toggles_grid.attach(self.btn_wifi, 0, 0, 1, 1)
+        toggles_grid.attach(self.btn_bt, 1, 0, 1, 1)
+        toggles_grid.attach(self.btn_theme, 0, 1, 1, 1)
+        toggles_grid.attach(self.btn_night, 1, 1, 1, 1)
+
+        main_box.append(toggles_grid)
+
+        # 2. Brightness Slider Card
+        bright_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        bright_box.add_css_class("cc-card")
+        bright_icon = Gtk.Label(label="󰃠")
+        bright_icon.set_size_request(24, 24)
+
+        curr_bri = 80
+        try:
+            cur = int(subprocess.check_output(["brightnessctl", "get"], text=True).strip())
+            max_b = int(subprocess.check_output(["brightnessctl", "max"], text=True).strip())
+            curr_bri = int((cur / max_b) * 100)
+        except Exception:
+            pass
+
+        self.bright_slider = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 5, 100, 5)
+        self.bright_slider.set_value(curr_bri)
+        self.bright_slider.set_hexpand(True)
+        self.bright_slider.connect("value-changed", self.on_bright_changed)
+
+        bright_box.append(bright_icon)
+        bright_box.append(self.bright_slider)
+        main_box.append(bright_box)
+
+        # 3. Volume Slider Card
+        vol_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        vol_box.add_css_class("cc-card")
+        vol_icon = Gtk.Label(label="󰕾")
+        vol_icon.set_size_request(24, 24)
+
+        curr_vol = 50
+        try:
+            out = subprocess.check_output(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"], text=True)
+            parts = out.strip().split()
+            if len(parts) >= 2:
+                curr_vol = int(float(parts[1]) * 100)
+        except Exception:
+            pass
+
+        self.vol_slider = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 5)
+        self.vol_slider.set_value(curr_vol)
+        self.vol_slider.set_hexpand(True)
+        self.vol_slider.connect("value-changed", self.on_vol_changed)
+
+        vol_box.append(vol_icon)
+        vol_box.append(self.vol_slider)
+        main_box.append(vol_box)
+
+        self.set_child(main_box)
+
+    def create_toggle_btn(self, icon, label, active, callback):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        box.add_css_class("cc-card")
+
+        btn = Gtk.Button(label=icon)
+        btn.add_css_class("cc-button")
+        if active:
+            btn.add_css_class("active")
+        btn.connect("clicked", callback)
+
+        lbl = Gtk.Label(label=label)
+        lbl.add_css_class("cc-label")
+
+        box.append(btn)
+        box.append(lbl)
+        box.btn = btn
+        return box
+
+    def handle_wifi(self, btn):
+        state = toggle_wifi()
+        if state:
+            btn.add_css_class("active")
+        else:
+            btn.remove_css_class("active")
+
+    def handle_bt(self, btn):
+        state = toggle_bluetooth()
+        if state:
+            btn.add_css_class("active")
+        else:
+            btn.remove_css_class("active")
+
+    def handle_theme(self, btn):
+        subprocess.Popen(["omarchy-undercover", "--toggle"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    def handle_night(self, btn):
+        if btn.has_css_class("active"):
+            btn.remove_css_class("active")
+            subprocess.run(["pkill", "hyprsunset"], check=False)
+        else:
+            btn.add_css_class("active")
+            subprocess.Popen(["hyprsunset", "-t", "4000"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    def on_bright_changed(self, slider):
+        val = int(slider.get_value())
+        subprocess.run(["brightnessctl", "set", f"{val}%"], check=False)
+
+    def on_vol_changed(self, slider):
+        val = int(slider.get_value())
+        subprocess.run(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", f"{val/100:.2f}"], check=False)
+
+class CCApp(Adw.Application):
+    def __init__(self):
+        super().__init__(application_id="org.omarchy.controlcenter")
+
+    def do_activate(self):
+        win = ControlCenterWindow(self)
+        win.present()
+
+if __name__ == "__main__":
+    app = CCApp()
+    sys.exit(app.run(sys.argv))
