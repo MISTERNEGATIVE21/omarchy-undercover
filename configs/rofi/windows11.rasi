@@ -1,0 +1,76 @@
+* {
+    background-color: transparent;
+    text-color: #ffffff;
+    font: "Roboto 10.5";
+}
+
+window {
+    width: 760px;
+    height: 760px;
+    background-color: #222222f2;
+    border-radius: 12px;
+    border: 1px;
+    border-color: #ffffff22;
+    location: center;
+    anchor: center;
+    margin: 0px;
+}
+
+mainbox {
+    padding: 28px 30px 30px 30px;
+    spacing: 16px;
+    children: [ "inputbar", "listview" ];
+}
+
+inputbar {
+    background-color: #333333f0;
+    border-radius: 22px;
+    border: 1px;
+    border-color: #ffffff18;
+    padding: 12px 22px;
+    margin: 0px 0px 14px 0px;
+    children: [ "entry" ];
+}
+
+entry {
+    placeholder: "Type here to search";
+    placeholder-color: #ffffff85;
+    text-color: #ffffff;
+    font: "Roboto 11.5";
+    cursor: text;
+}
+
+listview {
+    columns: 6;
+    lines: 4;
+    cycle: false;
+    dynamic: true;
+    layout: vertical;
+    spacing: 14px;
+}
+
+element {
+    orientation: vertical;
+    padding: 18px 8px;
+    border-radius: 8px;
+}
+
+element-icon {
+    size: 68px;
+    horizontal-align: 0.5;
+}
+
+element-text {
+    horizontal-align: 0.5;
+    vertical-align: 0.5;
+    text-color: #ffffff;
+    font: "Roboto 10";
+}
+
+element selected.normal {
+    background-color: #ffffff16;
+}
+
+element selected.active {
+    background-color: #0078d470;
+}

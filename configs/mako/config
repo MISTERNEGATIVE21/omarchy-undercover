@@ -1,0 +1,37 @@
+# =============================================================================
+# Omarchy Undercover - Windows 11 Notifications (Mako)
+# License: GPL-3.0-or-later
+#
+# Fluent-style dark toast notifications that mimic Windows 11 notifications.
+# =============================================================================
+
+font=Segoe UI Variable Text 10
+background-color=#282828f2
+text-color=#ffffff
+border-color=#0078d4
+border-size=1
+border-radius=8
+padding=14
+width=380
+height=110
+margin=14
+anchor=bottom-right
+default-timeout=6000
+icons=1
+max-icon-size=44
+icon-path=~/.icons/Fluent-dark
+layer=overlay
+
+[urgency=low]
+background-color=#282828f2
+border-color=#3c3c3c
+default-timeout=5000
+
+[urgency=normal]
+background-color=#282828f2
+border-color=#0078d4
+
+[urgency=critical]
+background-color=#2b2020f2
+border-color=#c42b1c
+default-timeout=0

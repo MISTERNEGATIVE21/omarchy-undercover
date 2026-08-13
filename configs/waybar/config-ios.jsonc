@@ -1,0 +1,127 @@
+[
+  {
+    "name": "mac-topbar",
+    "layer": "top",
+    "position": "top",
+    "height": 32,
+    "margin-top": 0,
+    "margin-left": 0,
+    "margin-right": 0,
+    "modules-left": [
+      "custom/apple-logo",
+      "custom/finder-title",
+      "custom/menu-file",
+      "custom/menu-edit",
+      "custom/menu-view",
+      "custom/menu-go",
+      "custom/menu-window",
+      "custom/menu-help"
+    ],
+    "modules-center": ["clock"],
+    "modules-right": [
+      "custom/siri",
+      "network",
+      "pulseaudio",
+      "battery",
+      "custom/control-center"
+    ],
+
+    "custom/apple-logo": {
+      "format": "  ",
+      "tooltip": "Apple Menu",
+      "on-click": "rofi -show drun -theme ~/.config/rofi/mac.rasi"
+    },
+    "custom/finder-title": {
+      "format": "Finder",
+      "tooltip": "macOS Finder",
+      "on-click": "nautilus --new-window computer:///"
+    },
+    "custom/menu-file": { "format": "File", "tooltip": false },
+    "custom/menu-edit": { "format": "Edit", "tooltip": false },
+    "custom/menu-view": { "format": "View", "tooltip": false },
+    "custom/menu-go": { "format": "Go", "tooltip": false },
+    "custom/menu-window": { "format": "Window", "tooltip": false },
+    "custom/menu-help": { "format": "Help", "tooltip": false },
+
+    "clock": {
+      "format": "{:%a %b %d  %I:%M %p}",
+      "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
+      "on-click": "omarchy-mac-widgets"
+    },
+
+    "custom/siri": {
+      "format": "󰍬 Siri",
+      "tooltip": "Siri & Search",
+      "on-click": "rofi -show drun -theme ~/.config/rofi/mac.rasi"
+    },
+    "network": {
+      "format-wifi": "󰤨",
+      "format-ethernet": "󰈀",
+      "format-disconnected": "󰤭",
+      "tooltip-format": "{ifname}: {ipaddr}"
+    },
+    "pulseaudio": {
+      "format": "{icon}",
+      "format-muted": "󰝟",
+      "format-icons": { "default": ["󰕿", "󰖀", "󰕾"] },
+      "on-click": "omarchy-swayosd-client --output-volume mute-toggle"
+    },
+    "battery": {
+      "format": "{icon} {capacity}%",
+      "format-icons": ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰁹"]
+    },
+    "custom/control-center": {
+      "format": "󰄨",
+      "tooltip": "Control Center",
+      "on-click": "omarchy-ios-control-center"
+    }
+  },
+  {
+    "name": "mac-dock",
+    "layer": "top",
+    "position": "bottom",
+    "margin-bottom": 8,
+    "margin-left": 140,
+    "margin-right": 140,
+    "height": 62,
+    "modules-center": [
+      "custom/dock-finder",
+      "custom/dock-launchpad",
+      "custom/dock-browser",
+      "custom/dock-terminal",
+      "custom/dock-settings",
+      "wlr/taskbar"
+    ],
+    "custom/dock-finder": {
+      "format": "󰀶",
+      "tooltip": "Finder",
+      "on-click": "nautilus --new-window computer:///"
+    },
+    "custom/dock-launchpad": {
+      "format": "󰀻",
+      "tooltip": "Launchpad",
+      "on-click": "rofi -show drun -theme ~/.config/rofi/mac.rasi"
+    },
+    "custom/dock-browser": {
+      "format": "󰈹",
+      "tooltip": "Safari / Browser",
+      "on-click": "omarchy-launch-browser"
+    },
+    "custom/dock-terminal": {
+      "format": "󰞷",
+      "tooltip": "Terminal",
+      "on-click": "uwsm-app -- xdg-terminal-exec"
+    },
+    "custom/dock-settings": {
+      "format": "󰒓",
+      "tooltip": "System Settings",
+      "on-click": "omarchy-undercover-settings"
+    },
+    "wlr/taskbar": {
+      "format": "{icon}",
+      "icon-size": 38,
+      "tooltip-format": "{title}",
+      "on-click": "activate"
+    }
+  }
+]

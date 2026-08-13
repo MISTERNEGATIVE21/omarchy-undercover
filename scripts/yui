@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+#
+# yui - Quick command-line toggle and restore helper for Omarchy Undercover
+# License: GPL-3.0-or-later
+#
+# omarchy:summary=Quick CLI toggle & restore command for Windows 11 undercover mode
+# omarchy:args=[restore|toggle|--help]
+# omarchy:examples=yui | yui restore
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CLI_TOOL="omarchy-undercover"
+
+if command -v omarchy-undercover >/dev/null 2>&1; then
+    CLI_TOOL="omarchy-undercover"
+elif [[ -x "$SCRIPT_DIR/omarchy-undercover" ]]; then
+    CLI_TOOL="$SCRIPT_DIR/omarchy-undercover"
+elif [[ -x "$HOME/.local/bin/omarchy-undercover" ]]; then
+    CLI_TOOL="$HOME/.local/bin/omarchy-undercover"
+elif [[ -x "$HOME/.local/share/omarchy/bin/omarchy-undercover" ]]; then
+    CLI_TOOL="$HOME/.local/share/omarchy/bin/omarchy-undercover"
+fi
+
+show_help() {
+    echo "yui - Omarchy Undercover Quick Control"
+    echo ""
+    echo "Usage:"
+    echo "  yui             Toggle between Windows 11 mode and baseline Hyprland"
+    echo "  yui restore     Restore baseline desktop snapshot"
+    echo "  yui status      Show current undercover state"
+    echo "  yui help        Show this help message"
+}
+
+case "${1:-toggle}" in
+    toggle|--toggle)
+        "$CLI_TOOL"
+        ;;
+    restore|--restore|-r)
+        "$CLI_TOOL" --restore
+        ;;
+    status|--status|-s)
+        "$CLI_TOOL" --status
+        ;;
+    help|--help|-h)
+        show_help
+        ;;
+    *)
+        echo "Unknown command: $1"
+        show_help
+        exit 1
+        ;;
+esac

@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <enum id="io.github.yannmasoch.nautilus-my-computer.visibility">
+    <value nick="visible" value="0"/>
+    <value nick="merged" value="1"/>
+    <value nick="hidden" value="2"/>
+  </enum>
+
+  <enum id="io.github.yannmasoch.nautilus-my-computer.default-view">
+    <value nick="native" value="0"/>
+    <value nick="column" value="1"/>
+  </enum>
+
+  <schema id="io.github.yannmasoch.nautilus-my-computer" path="/io/github/yannmasoch/nautilus-my-computer/">
+
+    <key name="start-on-disks" type="b">
+      <default>true</default>
+      <summary>Start on Computer view</summary>
+      <description>Show the disk panel when Nautilus opens</description>
+    </key>
+
+    <key name="default-view" enum="io.github.yannmasoch.nautilus-my-computer.default-view">
+      <default>'native'</default>
+      <summary>Default view for new tabs and windows</summary>
+      <description>Which of this extension's own views new tabs and windows open into. 'native' defers entirely to Nautilus's own grid/list default.</description>
+    </key>
+
+    <key name="show-system-partitions" type="b">
+      <default>false</default>
+      <summary>Show system partitions</summary>
+      <description>Show boot and EFI partitions in the System group</description>
+    </key>
+
+    <key name="visibility-system" enum="io.github.yannmasoch.nautilus-my-computer.visibility">
+      <default>'visible'</default>
+      <summary>System group visibility</summary>
+      <description>How the System group is displayed: visible, merged into On this computer, or hidden</description>
+    </key>
+
+    <key name="visibility-removable" enum="io.github.yannmasoch.nautilus-my-computer.visibility">
+      <default>'visible'</default>
+      <summary>Removable Devices group visibility</summary>
+      <description>How the Removable Devices group is displayed: visible, merged, or hidden</description>
+    </key>
+
+    <key name="visibility-disc" enum="io.github.yannmasoch.nautilus-my-computer.visibility">
+      <default>'visible'</default>
+      <summary>Disc Images group visibility</summary>
+      <description>How the Disc Images group is displayed: visible, merged, or hidden</description>
+    </key>
+
+    <key name="visibility-network" enum="io.github.yannmasoch.nautilus-my-computer.visibility">
+      <default>'visible'</default>
+      <summary>Network Volumes group visibility</summary>
+      <description>How the Network Volumes group is displayed: visible, merged, or hidden</description>
+    </key>
+
+    <key name="sidebar-show-home" type="b">
+      <default>true</default>
+      <summary>Show Home in the sidebar Computer group</summary>
+      <description>Show the Home place in the custom Computer group on the sidebar</description>
+    </key>
+
+    <key name="sidebar-show-recent" type="b">
+      <default>true</default>
+      <summary>Show Recent in the sidebar Computer group</summary>
+      <description>Show the Recent place in the custom Computer group on the sidebar</description>
+    </key>
+
+    <key name="sidebar-show-starred" type="b">
+      <default>true</default>
+      <summary>Show Starred in the sidebar Computer group</summary>
+      <description>Show the Starred place in the custom Computer group on the sidebar</description>
+    </key>
+
+    <key name="sidebar-show-network" type="b">
+      <default>true</default>
+      <summary>Show Network in the sidebar Computer group</summary>
+      <description>Show the Network place in the custom Computer group on the sidebar</description>
+    </key>
+
+    <key name="sidebar-show-trash" type="b">
+      <default>true</default>
+      <summary>Show Trash in the sidebar Computer group</summary>
+      <description>Show the Trash place in the custom Computer group on the sidebar</description>
+    </key>
+
+    <key name="color-mode" type="s">
+      <default>'accent'</default>
+      <summary>Level bar color mode</summary>
+      <description>One of: accent, flat, gradient</description>
+    </key>
+
+    <key name="custom-color" type="s">
+      <default>'#59A6FF'</default>
+      <summary>Custom flat color</summary>
+      <description>Hex color used when color-mode is flat</description>
+    </key>
+
+    <key name="custom-gradient-color-1" type="s">
+      <default>'#59A6FF'</default>
+      <summary>Gradient start color</summary>
+      <description>Left color (stop 20%) used when color-mode is gradient</description>
+    </key>
+
+    <key name="custom-gradient-color-2" type="s">
+      <default>'#D574C1'</default>
+      <summary>Gradient end color</summary>
+      <description>Right color (stop 100%) used when color-mode is gradient</description>
+    </key>
+
+    <key name="computer-icon" type="s">
+      <default>'computer-symbolic'</default>
+      <summary>Computer row icon</summary>
+      <description>Symbolic icon name used for the Computer row in the sidebar and path bar. Intended for distro-level customization via .gschema.override.</description>
+    </key>
+
+    <key name="custom-bookmark-icons" type="a{ss}">
+      <default>{}</default>
+      <summary>Custom bookmark icons</summary>
+      <description>Map of bookmark URI to chosen symbolic icon name. Only customized bookmarks are stored.</description>
+    </key>
+
+    <key name="visibility-preferred-folders" enum="io.github.yannmasoch.nautilus-my-computer.visibility">
+      <default>'visible'</default>
+      <summary>Preferred Folders group visibility</summary>
+      <description>How the Preferred Folders group is displayed: visible or hidden</description>
+    </key>
+
+    <key name="preferred-folders" type="as">
+      <default>['home', 'recent', 'starred', 'network', 'downloads', 'documents', 'music', 'pictures', 'videos', 'trash']</default>
+      <summary>Preferred Folders list</summary>
+      <description>Ordered list of quick-access folders shown in the Preferred Folders group. Entries are either logical tokens (home, recent, starred, network, trash, documents, downloads, music, videos, pictures) or folder URIs added by the user. A file://~/ prefix resolves relative to the current user's home directory. Intended for distro-level customization via .gschema.override.</description>
+    </key>
+
+    <key name="show-preferred-folder-captions" type="b">
+      <default>false</default>
+      <summary>Show captions on Preferred Folder cards</summary>
+      <description>Show extra detail lines (Nautilus icon-view captions) below each Preferred Folder card</description>
+    </key>
+
+  </schema>
+</schemalist>

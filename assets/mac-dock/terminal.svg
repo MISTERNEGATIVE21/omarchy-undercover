@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="termBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3a3a3c"/>
+      <stop offset="100%" stop-color="#1c1c1e"/>
+    </linearGradient>
+    <filter id="termShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect x="32" y="32" width="448" height="448" rx="105" fill="url(#termBg)" filter="url(#termShadow)" stroke="rgba(255,255,255,0.15)" stroke-width="4"/>
+  <!-- Terminal Prompt >_ -->
+  <path d="M 120,160 L 220,240 L 120,320" fill="none" stroke="#ffffff" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="240" y1="320" x2="360" y2="320" stroke="#ffffff" stroke-width="28" stroke-linecap="round"/>
+</svg>

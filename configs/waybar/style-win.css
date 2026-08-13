@@ -1,0 +1,103 @@
+/* Windows 11 Mica Dark Taskbar */
+* {
+    font-family: "Segoe UI", "Segoe UI Variable Text", "Roboto", "Noto Sans", sans-serif;
+    font-size: 13px;
+}
+
+window#waybar.win11-taskbar {
+    background-color: rgba(32, 32, 32, 0.82);
+    border-top: 1px solid rgba(255, 255, 255, 0.0837);
+    color: #ffffff;
+}
+
+window#waybar.win11-taskbar #custom-weather {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    padding: 0 10px;
+    margin: 6px 8px;
+    font-size: 11.5px;
+    color: rgba(255, 255, 255, 0.85);
+}
+window#waybar.win11-taskbar #custom-weather:hover {
+    background-color: rgba(255, 255, 255, 0.09);
+}
+
+window#waybar.win11-taskbar #custom-startmenu {
+    color: #60cdff;
+    font-size: 20px;
+    padding: 0 12px;
+    margin: 4px 2px;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+}
+window#waybar.win11-taskbar #custom-startmenu:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+window#waybar.win11-taskbar #custom-search {
+    background-color: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 0 14px;
+    margin: 6px 4px;
+    color: #d0d0d0;
+    font-size: 12px;
+    min-width: 140px;
+    transition: all 0.15s ease;
+}
+window#waybar.win11-taskbar #custom-search:hover {
+    background-color: rgba(255, 255, 255, 0.10);
+}
+
+window#waybar.win11-taskbar #custom-taskview {
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 17px;
+    padding: 0 10px;
+    margin: 4px 2px;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+}
+window#waybar.win11-taskbar #custom-taskview:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+window#waybar.win11-taskbar #taskbar button {
+    padding: 0 10px;
+    margin: 4px 2px;
+    border-radius: 6px;
+    border-top: 2px solid transparent;
+    transition: all 0.15s ease;
+}
+window#waybar.win11-taskbar #taskbar button.active {
+    background-color: rgba(255, 255, 255, 0.06);
+    border-top: 2px solid #60cdff;
+}
+window#waybar.win11-taskbar #taskbar button:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+}
+
+window#waybar.win11-taskbar #tray,
+window#waybar.win11-taskbar #network,
+window#waybar.win11-taskbar #pulseaudio,
+window#waybar.win11-taskbar #battery {
+    padding: 0 6px;
+    margin: 4px 1px;
+}
+
+window#waybar.win11-taskbar #clock {
+    padding: 2px 10px;
+    margin: 2px 2px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+window#waybar.win11-taskbar #custom-notification {
+    padding: 0 10px;
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.9);
+}
+window#waybar.win11-taskbar #custom-notification:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+}

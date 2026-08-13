@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Copyright (C) 2026 John Varghese
+# Omarchy Undercover - New Virtual Desktop (taskbar "+")
+# License: GPL-3.0-or-later
+#
+# omarchy:summary=Create and switch to a new empty virtual desktop (Windows 11 style)
+# omarchy:args=[]
+# omarchy:examples=omarchy-undercover-new-desktop
+# ==============================================================================
+#
+# Switches to the next empty workspace, creating one if none exists - the same
+# behaviour as the "+" new desktop button in the Windows 11 task view.
+
+if ! command -v hyprctl >/dev/null 2>&1; then
+    exit 1
+fi
+
+if hyprctl dispatch "hl.dsp.focus({ workspace = \"empty\" })" >/dev/null 2>&1; then
+    exit 0
+fi
+hyprctl dispatch workspace empty >/dev/null 2>&1 || true

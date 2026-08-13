@@ -1,0 +1,76 @@
+* {
+    background-color: transparent;
+    text-color: #ffffff;
+    font: "SF Pro Text 10.5";
+}
+
+window {
+    width: 860px;
+    height: 640px;
+    background-color: rgba(18, 18, 26, 0.88);
+    border-radius: 20px;
+    border: 1px;
+    border-color: rgba(255, 255, 255, 0.16);
+    location: center;
+    anchor: center;
+    margin: 0px;
+}
+
+mainbox {
+    padding: 28px;
+    spacing: 18px;
+    children: [ "inputbar", "listview" ];
+}
+
+inputbar {
+    background-color: rgba(255, 255, 255, 0.09);
+    border-radius: 16px;
+    border: 1px;
+    border-color: rgba(255, 255, 255, 0.14);
+    padding: 12px 22px;
+    margin: 0px 0px 8px 0px;
+    children: [ "entry" ];
+}
+
+entry {
+    placeholder: "Spotlight Search";
+    placeholder-color: rgba(255, 255, 255, 0.45);
+    text-color: #ffffff;
+    font: "SF Pro Text 11";
+    cursor: text;
+}
+
+listview {
+    columns: 6;
+    lines: 4;
+    cycle: false;
+    dynamic: true;
+    layout: vertical;
+    spacing: 14px;
+}
+
+element {
+    orientation: vertical;
+    padding: 14px 6px;
+    border-radius: 14px;
+}
+
+element-icon {
+    size: 68px;
+    horizontal-align: 0.5;
+}
+
+element-text {
+    horizontal-align: 0.5;
+    vertical-align: 0.5;
+    text-color: #ffffff;
+    font: "SF Pro Text 10";
+}
+
+element selected.normal {
+    background-color: rgba(255, 255, 255, 0.16);
+}
+
+element selected.active {
+    background-color: rgba(0, 122, 255, 0.55);
+}

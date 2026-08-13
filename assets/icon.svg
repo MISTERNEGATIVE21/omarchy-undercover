@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#181926"/>
+      <stop offset="50%" stop-color="#12131c"/>
+      <stop offset="100%" stop-color="#090a10"/>
+    </linearGradient>
+
+    <!-- Omarchy Neon Border Stroke -->
+    <linearGradient id="neonBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f2fe"/>
+      <stop offset="35%" stop-color="#4facfe"/>
+      <stop offset="70%" stop-color="#9b51e0"/>
+      <stop offset="100%" stop-color="#ff2d55"/>
+    </linearGradient>
+
+    <!-- Windows 11 Cyan / Blue Glow -->
+    <linearGradient id="winGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00d2ff"/>
+      <stop offset="50%" stop-color="#0078d4"/>
+      <stop offset="100%" stop-color="#004e92"/>
+    </linearGradient>
+
+    <!-- Apple macOS Silver / Violet Glow -->
+    <linearGradient id="appleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="30%" stop-color="#e0e0f0"/>
+      <stop offset="70%" stop-color="#af52de"/>
+      <stop offset="100%" stop-color="#5856d6"/>
+    </linearGradient>
+
+    <!-- Neon Glow Filter -->
+    <filter id="neonGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity="0.65"/>
+    </filter>
+
+    <!-- Split Masks for Left (Win) and Right (Apple) -->
+    <clipPath id="leftClip">
+      <rect x="0" y="0" width="254" height="512"/>
+    </clipPath>
+    <clipPath id="rightClip">
+      <rect x="258" y="0" width="254" height="512"/>
+    </clipPath>
+  </defs>
+
+  <!-- Base Dark Glassmorphism Squircle -->
+  <rect x="24" y="24" width="464" height="464" rx="108" fill="url(#bgGrad)" stroke="url(#neonBorder)" stroke-width="4.5" filter="url(#dropShadow)"/>
+
+  <!-- Inner Ambient Cyber Mesh / Radial Accents -->
+  <ellipse cx="140" cy="180" rx="130" ry="130" fill="#0078d4" opacity="0.16"/>
+  <ellipse cx="360" cy="300" rx="130" ry="130" fill="#af52de" opacity="0.18"/>
+
+  <!-- ================= LEFT HALF: WINDOWS 11 FLUENT EMBLEM ================= -->
+  <g clip-path="url(#leftClip)">
+    <!-- Top-Left Tile -->
+    <rect x="142" y="152" width="102" height="92" rx="10" fill="url(#winGrad)" filter="url(#neonGlow)"/>
+    <rect x="145" y="155" width="96" height="42" rx="7" fill="#ffffff" opacity="0.22"/>
+
+    <!-- Bottom-Left Tile -->
+    <rect x="142" y="254" width="102" height="92" rx="10" fill="url(#winGrad)" filter="url(#neonGlow)"/>
+    <rect x="145" y="257" width="96" height="42" rx="7" fill="#ffffff" opacity="0.18"/>
+  </g>
+
+  <!-- ================= RIGHT HALF: APPLE SEEDED SILHOUETTE ================= -->
+  <g clip-path="url(#rightClip)">
+    <!-- Apple Leaf (Top-Right Angle) -->
+    <path d="M 264,120 C 264,120 295,108 308,126 C 322,146 306,172 306,172 C 306,172 278,174 266,155 C 255,138 264,120 264,120 Z" fill="url(#appleGrad)" filter="url(#neonGlow)"/>
+
+    <!-- Apple Body Silhouette with Bite -->
+    <path d="M 256,182 C 275,182 292,170 308,170 C 330,170 348,186 358,202 C 320,222 314,272 350,296 C 338,328 322,358 298,358 C 284,358 274,348 256,348 Z" fill="url(#appleGrad)" filter="url(#neonGlow)"/>
+    <!-- Gloss Sheen -->
+    <path d="M 268,194 C 280,194 295,185 308,185 C 322,185 336,195 344,206 C 330,224 326,246 332,268 C 308,240 286,216 268,194 Z" fill="#ffffff" opacity="0.25"/>
+  </g>
+
+  <!-- ================= CENTER CYBER DIVIDER SEAM ================= -->
+  <line x1="256" y1="135" x2="256" y2="365" stroke="url(#neonBorder)" stroke-width="4.5" stroke-linecap="round" filter="url(#neonGlow)"/>
+  <circle cx="256" cy="250" r="5" fill="#ffffff" filter="url(#neonGlow)"/>
+
+  <!-- ================= BOTTOM "UNDERCOVER" BADGE ================= -->
+  <g transform="translate(146, 396)">
+    <rect x="0" y="0" width="220" height="36" rx="18" fill="rgba(255, 255, 255, 0.08)" stroke="rgba(255, 255, 255, 0.18)" stroke-width="1"/>
+    <text x="110" y="23" font-family="'SF Pro Display', 'Segoe UI', 'Roboto', sans-serif" font-size="13" font-weight="800" letter-spacing="2.5" fill="#ffffff" text-anchor="middle">UNDERCOVER</text>
+  </g>
+</svg>

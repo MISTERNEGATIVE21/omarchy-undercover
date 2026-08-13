@@ -1,0 +1,170 @@
+#!/usr/bin/env python3
+"""
+macOS Notification Center & Widgets Sidebar for Omarchy Hyprland
+Translucent frosted glass Notification Center with Calendar, Weather, and System Stats.
+"""
+
+import sys
+import os
+import subprocess
+import time
+import gi
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+from gi.repository import Gtk, Adw, Gio, GLib
+
+CSS = """
+window.mac-widgets {
+    background-color: rgba(20, 20, 30, 0.88);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: -10px 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+.widget-card {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.widget-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 8px;
+}
+
+.stat-value {
+    font-size: 22px;
+    font-weight: 800;
+    color: #007aff;
+}
+
+.notif-card {
+    background-color: rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    padding: 10px 14px;
+    margin-top: 6px;
+}
+"""
+
+
+class MacWidgetsWindow(Gtk.Window):
+    def __init__(self, app):
+        super().__init__(application=app, title="Notification Center & Widgets")
+        self.set_default_size(360, 680)
+        self.set_resizable(False)
+        self.add_css_class("mac-widgets")
+
+        provider = Gtk.CssProvider()
+        provider.load_from_data(CSS.encode("utf-8"))
+        Gtk.StyleContext.add_provider_for_display(
+            self.get_display(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
+        scroll = Gtk.ScrolledWindow()
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        main_box.set_margin_top(16)
+        main_box.set_margin_bottom(16)
+        main_box.set_margin_start(16)
+        main_box.set_margin_end(16)
+
+        # 1. Calendar Widget
+        cal_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        cal_card.add_css_class("widget-card")
+        cal_lbl = Gtk.Label(label="Calendar")
+        cal_lbl.add_css_class("widget-title")
+        cal_lbl.set_halign(Gtk.Align.START)
+        
+        calendar = Gtk.Calendar()
+        cal_card.append(cal_lbl)
+        cal_card.append(calendar)
+        main_box.append(cal_card)
+
+        # 2. Weather & Location Widget
+        weather_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        weather_card.add_css_class("widget-card")
+        w_title = Gtk.Label(label="Weather")
+        w_title.add_css_class("widget-title")
+        w_title.set_halign(Gtk.Align.START)
+        
+        w_temp = Gtk.Label(label="72°  Sunny")
+        w_temp.add_css_class("stat-value")
+        w_temp.set_halign(Gtk.Align.START)
+        
+        w_sub = Gtk.Label(label="H: 78°  L: 60° • Cupertino")
+        w_sub.set_halign(Gtk.Align.START)
+        
+        weather_card.append(w_title)
+        weather_card.append(w_temp)
+        weather_card.append(w_sub)
+        main_box.append(weather_card)
+
+        # 3. System Activity Widget
+        stats_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        stats_card.add_css_class("widget-card")
+        st_title = Gtk.Label(label="System Performance")
+        st_title.add_css_class("widget-title")
+        st_title.set_halign(Gtk.Align.START)
+
+        # CPU bar
+        cpu_lbl = Gtk.Label(label="CPU Usage: 14%")
+        cpu_lbl.set_halign(Gtk.Align.START)
+        cpu_bar = Gtk.ProgressBar()
+        cpu_bar.set_fraction(0.14)
+
+        # Memory bar
+        mem_lbl = Gtk.Label(label="Memory Usage: 3.8 GB / 16 GB")
+        mem_lbl.set_halign(Gtk.Align.START)
+        mem_bar = Gtk.ProgressBar()
+        mem_bar.set_fraction(0.24)
+
+        stats_card.append(st_title)
+        stats_card.append(cpu_lbl)
+        stats_card.append(cpu_bar)
+        stats_card.append(mem_lbl)
+        stats_card.append(mem_bar)
+        main_box.append(stats_card)
+
+        # 4. Notifications Panel
+        notif_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        notif_card.add_css_class("widget-card")
+        n_title = Gtk.Label(label="Notifications")
+        n_title.add_css_class("widget-title")
+        n_title.set_halign(Gtk.Align.START)
+
+        n1 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        n1.add_css_class("notif-card")
+        n1_head = Gtk.Label(label="<b>Messages</b> • Now")
+        n1_head.set_use_markup(True)
+        n1_head.set_halign(Gtk.Align.START)
+        n1_body = Gtk.Label(label="Welcome to Apple macOS Undercover Desktop Mode!")
+        n1_body.set_halign(Gtk.Align.START)
+        n1.append(n1_head)
+        n1.append(n1_body)
+
+        notif_card.append(n_title)
+        notif_card.append(n1)
+        main_box.append(notif_card)
+
+        scroll.set_child(main_box)
+        self.set_child(scroll)
+
+
+class MacWidgetsApp(Adw.Application):
+    def __init__(self):
+        super().__init__(application_id="org.omarchy.macwidgets")
+
+    def do_activate(self):
+        win = self.props.active_window
+        if not win:
+            win = MacWidgetsWindow(self)
+        win.present()
+
+
+if __name__ == "__main__":
+    app = MacWidgetsApp()
+    sys.exit(app.run(sys.argv))

@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Copyright (C) 2026 John Varghese
+# Omarchy Undercover - Show Desktop (Win+D)
+# License: GPL-3.0-or-later
+#
+# omarchy:summary=Minimize all windows to reveal the desktop (toggle)
+# omarchy:args=[toggle]
+# omarchy:examples=omarchy-undercover-show-desktop
+# ==============================================================================
+#
+# Moves every mapped window on the active workspace to the special:desktop
+# workspace (hiding them) and focuses it. Pressing Win+D again restores each
+# window to its original workspace.
+#
+# Dispatch uses the Hyprland Lua form first (0.55+) and falls back to the
+# legacy hyprlang syntax for older releases.
+
+CONFIG_DIR="$HOME/.config/omarchy-undercover"
+STATE_FILE="$CONFIG_DIR/show_desktop_state"
+
+mkdir -p "$CONFIG_DIR"
+
+if ! command -v hyprctl >/dev/null 2>&1; then
+    exit 1
+fi
+
+move_window_to_ws() {
+    local addr="$1" ws="$2"
+    if hyprctl dispatch "hl.dsp.window.move({ window = \"address:$addr\", workspace = \"$ws\", follow = false })" >/dev/null 2>&1; then
+        return 0
+    fi
+    hyprctl dispatch movetoworkspacesilent "$ws,address:$addr" >/dev/null 2>&1 || true
+}
+
+focus_special_desktop() {
+    if hyprctl dispatch "hl.dsp.workspace.toggle_special(\"desktop\")" >/dev/null 2>&1; then
+        return 0
+    fi
+    hyprctl dispatch togglespecialworkspace desktop >/dev/null 2>&1 || true
+}
+
+if [[ -f "$STATE_FILE" ]]; then
+    # Restore windows to their original workspaces
+    while read -r address workspace; do
+        [[ -n "$address" ]] && move_window_to_ws "$address" "$workspace"
+    done < "$STATE_FILE"
+    rm -f "$STATE_FILE"
+    hyprctl dispatch "hl.dsp.workspace.toggle_special(\"desktop\")" >/dev/null 2>&1 || true
+    exit 0
+fi
+
+# Remember each window's workspace, then stash all windows into special:desktop
+: > "$STATE_FILE"
+while read -r address workspace; do
+    if [[ -n "$address" ]]; then
+        echo "$address $workspace" >> "$STATE_FILE"
+        move_window_to_ws "$address" "special:desktop"
+    fi
+done < <(hyprctl clients -j 2>/dev/null | python3 -c '
+import json, sys
+try:
+    clients = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+for c in clients:
+    if c.get("mapped") and c.get("workspace", {}).get("id", 0) > 0:
+        addr = c.get("address", "")
+        ws = c.get("workspace", {}).get("id", 1)
+        if addr:
+            print(f"{addr} {ws}")
+')
+
+if [[ ! -s "$STATE_FILE" ]]; then
+    rm -f "$STATE_FILE"
+    exit 0
+fi
+
+focus_special_desktop

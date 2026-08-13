@@ -1,0 +1,29 @@
+{
+    "position": "bottom",
+    "height": 48,
+    "modules-left": [
+        "custom/start",
+        "wlr/taskbar"
+    ],
+    "modules-center": [
+        "hyprland/workspaces"
+    ],
+    "modules-right": [
+        "tray",
+        "pulseaudio",
+        "network",
+        "battery",
+        "clock",
+        "custom/power"
+    ],
+    "custom/start": {
+        "format": "󰍜",
+        "on-click": "omarchy-undercover-launcher",
+        "tooltip": false
+    },
+    "custom/power": {
+        "format": "⏻",
+        "on-click": "wlogout || rofi -show power-menu || wofi --show drun",
+        "tooltip": false
+    }
+}

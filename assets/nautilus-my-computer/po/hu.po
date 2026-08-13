@@ -1,0 +1,441 @@
+#
+# Pelach András <pelach.andras@gmail.com>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: nautilus-my-computer\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-04 11:31-0700\n"
+"PO-Revision-Date: 2026-07-30 05:22+0000\n"
+"Last-Translator: Pelach András <pelach.andras@gmail.com>\n"
+"Language-Team: Hungarian\n"
+"Language: hu\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Gtranslator 48.0\n"
+
+#: nautilus_my_computer/bookmarks.py
+msgid "Change Icon"
+msgstr ""
+
+#: nautilus_my_computer/bookmarks.py
+msgid "Search icons…"
+msgstr ""
+
+#: nautilus_my_computer/bookmarks.py
+msgid "Reset"
+msgstr ""
+
+#: nautilus_my_computer/column_view.py
+msgid "Select"
+msgstr ""
+
+#: nautilus_my_computer/column_view.py
+msgid "Beta"
+msgstr ""
+
+#: nautilus_my_computer/column_view.py
+msgid "Early access feature. It may contain bugs or inconsistencies."
+msgstr ""
+
+#: nautilus_my_computer/column_view.py
+msgid "Column View"
+msgstr ""
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "{n} item"
+msgid_plural "{n} items"
+msgstr[0] "{n} elem"
+msgstr[1] "{n} elem"
+
+#: nautilus_my_computer/common.py
+msgid "Today"
+msgstr "Ma"
+
+#: nautilus_my_computer/common.py
+msgid "Yesterday"
+msgstr "Tegnap"
+
+#: nautilus_my_computer/common.py
+msgid "Tomorrow"
+msgstr "Holnap"
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "{n} day ago"
+msgid_plural "{n} days ago"
+msgstr[0] "{n} napja"
+msgstr[1] "{n} napja"
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "In {n} day"
+msgid_plural "In {n} days"
+msgstr[0] "{n} nap múlva"
+msgstr[1] "{n} nap múlva"
+
+#: nautilus_my_computer/common.py
+msgid "This week"
+msgstr "Ezen a héten"
+
+#: nautilus_my_computer/common.py
+msgid "Last week"
+msgstr "Múlt héten"
+
+#: nautilus_my_computer/common.py
+msgid "Next week"
+msgstr "Jövő héten"
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "{n} week ago"
+msgid_plural "{n} weeks ago"
+msgstr[0] "{n} hete"
+msgstr[1] "{n} hete"
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "In {n} week"
+msgid_plural "In {n} weeks"
+msgstr[0] "{n} hét múlva"
+msgstr[1] "{n} hét múlva"
+
+#: nautilus_my_computer/common.py
+msgid "This month"
+msgstr "Ebben a hónapban"
+
+#: nautilus_my_computer/common.py
+msgid "Last month"
+msgstr "Múlt hónapban"
+
+#: nautilus_my_computer/common.py
+msgid "Next month"
+msgstr "Jövő hónapban"
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "{n} month ago"
+msgid_plural "{n} months ago"
+msgstr[0] "{n} hónapja"
+msgstr[1] "{n} hónapja"
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "In {n} month"
+msgid_plural "In {n} months"
+msgstr[0] "{n} hónap múlva"
+msgstr[1] "{n} hónap múlva"
+
+#: nautilus_my_computer/common.py
+msgid "This year"
+msgstr "Idén"
+
+#: nautilus_my_computer/common.py
+msgid "Last year"
+msgstr "Tavaly"
+
+#: nautilus_my_computer/common.py
+msgid "Next year"
+msgstr "Jövőre"
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "{n} year ago"
+msgid_plural "{n} years ago"
+msgstr[0] "{n} éve"
+msgstr[1] "{n} éve"
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "In {n} year"
+msgid_plural "In {n} years"
+msgstr[0] "{n} év múlva"
+msgstr[1] "{n} év múlva"
+
+#: nautilus_my_computer/components.py
+msgid "Rename"
+msgstr ""
+
+#: nautilus_my_computer/context_menu.py
+msgid "Open in New Tab"
+msgstr "Megnyitás új lapon"
+
+#: nautilus_my_computer/context_menu.py
+msgid "Open in New Window"
+msgstr "Megnyitás új ablakban"
+
+#: nautilus_my_computer/context_menu.py
+msgid "Open With…"
+msgstr "Megnyitás ezzel…"
+
+#: nautilus_my_computer/context_menu.py
+msgid "Remove from Bookmarks"
+msgstr ""
+
+#: nautilus_my_computer/context_menu.py
+msgid "Add to Bookmarks"
+msgstr ""
+
+#: nautilus_my_computer/context_menu.py
+#: nautilus_my_computer/preferred_folders.py
+msgid "Unpin from My Computer"
+msgstr ""
+
+#: nautilus_my_computer/context_menu.py
+#: nautilus_my_computer/preferred_folders.py
+msgid "Pin to My Computer"
+msgstr ""
+
+#: nautilus_my_computer/context_menu.py
+msgid "New Folder…"
+msgstr ""
+
+#: nautilus_my_computer/context_menu.py
+msgid "New Document"
+msgstr ""
+
+#: nautilus_my_computer/context_menu.py
+msgid "Open in Terminal"
+msgstr ""
+
+#: nautilus_my_computer/context_menu.py
+msgid "Rename…"
+msgstr ""
+
+#: nautilus_my_computer/context_menu.py
+msgid "Compress…"
+msgstr ""
+
+#: nautilus_my_computer/context_menu.py
+msgid "Move to Trash"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "My Computer Settings"
+msgstr "Számítógép beállítása"
+
+#: nautilus_my_computer/main.py
+msgid "Open My Computer"
+msgstr "Számítógép nyitása"
+
+#: nautilus_my_computer/main.py
+msgid "Recommended Apps"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "Other Apps"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "General"
+msgstr "Általános"
+
+#: nautilus_my_computer/main.py
+msgid "Computer view"
+msgstr "Számítógép nézet"
+
+#: nautilus_my_computer/main.py
+msgid "Start on the Computer view"
+msgstr "Számítógép nézetben indul"
+
+#: nautilus_my_computer/main.py
+msgid "Launch directly to the Computer view instead of Home"
+msgstr "Közvetlenül a Számítógép nézetbe indítás a Kezdőlap helyett"
+
+#: nautilus_my_computer/main.py
+msgid "Panel visibility"
+msgstr "Panel láthatóság"
+
+#: nautilus_my_computer/main.py
+msgid ""
+"Choose how each group appears. Visible: shows the group as a normal "
+"separated section. Merged: folds the group into the On this Computer group. "
+"Hidden: hides the group entirely."
+msgstr ""
+"Válassza ki, hogyan jelenjenek meg az egyes csoportok. Látható: a csoportot "
+"normál, elkülönített szakaszként jeleníti meg. Egyesített: a csoportot az "
+"Ezen a számítógépen csoportba rakja. Rejtett: teljesen elrejti a csoportot."
+
+#: nautilus_my_computer/main.py
+msgid "Visible"
+msgstr "Látható"
+
+#: nautilus_my_computer/main.py
+msgid "Merged"
+msgstr "Egyesített"
+
+#: nautilus_my_computer/main.py
+msgid "Hidden"
+msgstr "Rejtett"
+
+#: nautilus_my_computer/main.py nautilus_my_computer/my_computer_view.py
+msgid "Preferred Folders"
+msgstr "Kedvelt mappák"
+
+#: nautilus_my_computer/main.py
+msgid "Show system partitions"
+msgstr "Látható rendszer partíció"
+
+#: nautilus_my_computer/main.py
+msgid "Include boot and EFI partitions in the System group"
+msgstr "A rendszerindító és az EFI partíciók hozzáadása a Rendszer csoporthoz"
+
+#: nautilus_my_computer/main.py
+msgid "Sidebar visibility"
+msgstr "Oldalsáv láthatósága"
+
+#: nautilus_my_computer/main.py
+msgid "Choose which locations appear on the sidebar."
+msgstr "Válassza ki, hogy mely helyek jelenjenek meg az oldalsávon."
+
+#: nautilus_my_computer/main.py
+msgid "Bar Color"
+msgstr "Sáv színe"
+
+#: nautilus_my_computer/main.py
+msgid "Select or customize the bar color."
+msgstr "Válassza ki vagy szabja testre a sáv színét."
+
+#: nautilus_my_computer/main.py
+msgid "Color mode"
+msgstr "Szín mód"
+
+#: nautilus_my_computer/main.py
+msgid "System accent"
+msgstr "Rendszer színek használata"
+
+#: nautilus_my_computer/main.py
+msgid "Custom color"
+msgstr "Választott szín"
+
+#: nautilus_my_computer/main.py
+msgid "Custom gradient"
+msgstr "Választott színátmenet"
+
+#: nautilus_my_computer/main.py
+msgid "Color"
+msgstr "Szín"
+
+#: nautilus_my_computer/main.py
+msgid "Start color"
+msgstr "Induló szín"
+
+#: nautilus_my_computer/main.py
+msgid "End color"
+msgstr "Záró szín"
+
+#: nautilus_my_computer/main.py
+msgid "Show captions"
+msgstr "Feliratok megjelenítése"
+
+#: nautilus_my_computer/main.py
+msgid "Shows or hides the caption lines already configured in Nautilus"
+msgstr "Megjeleníti vagy elrejti a Nautilusban már beállított feliratsorokat"
+
+#: nautilus_my_computer/main.py
+msgid "Extension"
+msgstr "Kiterjesztés"
+
+#: nautilus_my_computer/main.py
+msgid "Version"
+msgstr "Verzió"
+
+#: nautilus_my_computer/main.py
+msgid "Author"
+msgstr "Szerző"
+
+#: nautilus_my_computer/main.py
+msgid "Source code"
+msgstr "Forráskód"
+
+#: nautilus_my_computer/main.py
+msgid "GitHub"
+msgstr "GitHub"
+
+#: nautilus_my_computer/my_computer_view.py
+msgid "Mount"
+msgstr "Csatolás"
+
+#: nautilus_my_computer/my_computer_view.py
+msgid "System"
+msgstr "Rendszer"
+
+#: nautilus_my_computer/my_computer_view.py
+msgid "On this Computer"
+msgstr "Számítógép"
+
+#: nautilus_my_computer/my_computer_view.py
+msgid "Removable"
+msgstr "Eltávolítható"
+
+#: nautilus_my_computer/my_computer_view.py
+msgid "Disc"
+msgstr "Lemez"
+
+#: nautilus_my_computer/widgets.py
+msgid "Not mounted"
+msgstr "Nincs csatolva"
+
+#: nautilus_my_computer/widgets.py
+#, python-brace-format
+msgid "{free} free of {total}"
+msgstr "{free} szabad {total}-ból"
+
+#: nautilus_my_computer/widgets.py
+msgid "Program"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Audio"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Font"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Image"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Archive"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Markup"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Text"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Video"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Contacts"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Calendar"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Document"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Presentation"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Spreadsheet"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Dimensions"
+msgstr ""

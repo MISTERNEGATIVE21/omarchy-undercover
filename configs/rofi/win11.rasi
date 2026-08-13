@@ -1,0 +1,136 @@
+/* =============================================================================
+ * Windows 11 Fluent Mica Dark Start Menu (Rofi Theme)
+ * ============================================================================= */
+
+* {
+    font: "Segoe UI 10.5";
+    background-color: transparent;
+    text-color: #ffffff;
+    accent-color: #60cdff;
+}
+
+window {
+    width: 640px;
+    height: 590px;
+    location: south;
+    anchor: south;
+    y-offset: -58px;
+    x-offset: 0px;
+    background-color: rgba(32, 32, 32, 0.90);
+    border-radius: 12px;
+    border: 1px;
+    border-color: rgba(255, 255, 255, 0.0837);
+    cursor: default;
+}
+
+mainbox {
+    padding: 24px 28px 12px 28px;
+    spacing: 12px;
+    children: [ "inputbar", "textbox-pinned", "listview", "footer-box" ];
+}
+
+inputbar {
+    background-color: rgba(255, 255, 255, 0.055);
+    border-radius: 8px;
+    border: 1px;
+    border-color: rgba(255, 255, 255, 0.08);
+    padding: 10px 14px;
+    spacing: 10px;
+    children: [ "prompt", "entry" ];
+}
+
+prompt {
+    font: "JetBrainsMono Nerd Font 12";
+    text-color: #60cdff;
+    padding: 0px 4px 0px 0px;
+}
+
+entry {
+    placeholder: "Type here to search";
+    placeholder-color: rgba(255, 255, 255, 0.45);
+    text-color: #ffffff;
+    font: "Segoe UI 10.5";
+    cursor: text;
+}
+
+textbox-pinned {
+    expand: false;
+    content: "Pinned";
+    font: "Segoe UI Bold 11";
+    text-color: #ffffff;
+    padding: 4px 6px 0px 6px;
+}
+
+listview {
+    columns: 6;
+    lines: 3;
+    cycle: false;
+    dynamic: true;
+    layout: vertical;
+    spacing: 8px;
+    margin: 4px 0px;
+}
+
+element {
+    orientation: vertical;
+    padding: 12px 6px;
+    border-radius: 6px;
+    spacing: 6px;
+    cursor: pointer;
+}
+
+element-icon {
+    size: 44px;
+    horizontal-align: 0.5;
+    cursor: pointer;
+}
+
+element-text {
+    horizontal-align: 0.5;
+    vertical-align: 0.5;
+    text-color: #ffffff;
+    font: "Segoe UI 9.5";
+    cursor: pointer;
+}
+
+element normal.normal {
+    background-color: transparent;
+}
+
+element selected.normal {
+    background-color: rgba(255, 255, 255, 0.07);
+    border: 1px;
+    border-color: rgba(96, 205, 255, 0.35);
+}
+
+element selected.active {
+    background-color: rgba(0, 120, 212, 0.55);
+}
+
+footer-box {
+    orientation: horizontal;
+    expand: false;
+    background-color: rgba(20, 20, 20, 0.45);
+    border: 1px 0px 0px 0px;
+    border-color: rgba(255, 255, 255, 0.06);
+    padding: 10px 16px;
+    margin: 4px -28px -12px -28px;
+    border-radius: 0px 0px 12px 12px;
+    children: [ "textbox-user", "textbox-power" ];
+}
+
+textbox-user {
+    expand: true;
+    content: "󰀉  User";
+    font: "Segoe UI Semibold 10.5";
+    text-color: #ffffff;
+    vertical-align: 0.5;
+}
+
+textbox-power {
+    expand: false;
+    content: "⏻ ";
+    font: "JetBrainsMono Nerd Font 13";
+    text-color: #ffffff;
+    vertical-align: 0.5;
+}

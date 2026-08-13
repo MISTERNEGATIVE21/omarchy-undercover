@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="msgBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4cd964"/>
+      <stop offset="100%" stop-color="#28cd41"/>
+    </linearGradient>
+    <filter id="msgShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#000000" flood-opacity="0.30"/>
+    </filter>
+  </defs>
+  <rect x="32" y="32" width="448" height="448" rx="105" fill="url(#msgBg)" filter="url(#msgShadow)"/>
+  <!-- Speech Bubble -->
+  <path d="M 130,230 C 130,165 186,115 256,115 C 326,115 382,165 382,230 C 382,295 326,345 256,345 C 230,345 205,338 185,326 L 130,342 L 146,295 C 136,275 130,253 130,230 Z" fill="#ffffff"/>
+</svg>

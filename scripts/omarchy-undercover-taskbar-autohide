@@ -1,0 +1,348 @@
+#!/bin/bash
+# ==============================================================================
+# omarchy-undercover-taskbar-autohide
+# Windows 11 taskbar visibility controller and watcher.
+#
+# Visibility modes:
+#   dock        -> taskbar always visible and reserves space (stay permanently)
+#   overlay     -> taskbar always visible but floats over content
+#   autohide    -> hidden, shown while the cursor is anywhere in the taskbar strip
+#   intelligent -> always visible; auto-hides while a window is maximized/fullscreen
+#
+# omarchy:summary=Windows taskbar visibility (dock / overlay / auto-hide / intelligent)
+# omarchy:args=[--set MODE] [--status] [--stop] [--ensure]
+# omarchy:examples=omarchy-undercover-taskbar-autohide --set intelligent
+# ==============================================================================
+#
+# Visibility is toggled with waybar's SIGUSR1 signal. The watcher keeps its own
+# state in $XDG_RUNTIME_DIR so it never toggles blindly.
+
+set -u
+
+SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+CONF="${XDG_RUNTIME_DIR:-/tmp}/waybar-autohide.state"
+MODE_FILE="${XDG_RUNTIME_DIR:-/tmp}/waybar-autohide.mode"
+WAYBAR_CONF="${HOME}/.config/waybar/config.jsonc"
+POLL_MS=0.1
+
+# -----------------------------------------------------------------------------
+# Helpers
+# -----------------------------------------------------------------------------
+
+live_waybar_pid() {
+    pgrep -x waybar 2>/dev/null | while read -r p; do
+        stat=$(ps -o stat= -p "$p" 2>/dev/null || true)
+        case "$stat" in
+            Z*) : ;;
+            *) printf '%s\n' "$p" ;;
+        esac
+    done | head -1
+}
+
+loop_is_running() {
+    systemctl --user is-active win11-taskbar-autohide.service >/dev/null 2>&1
+}
+
+config_mode() {
+    [[ -f "$WAYBAR_CONF" ]] || return
+    grep -o '"mode": *"[^"]*"' "$WAYBAR_CONF" | head -1 | sed -E 's/.*"([^"]+)"$/\1/'
+}
+
+set_config_mode() {
+    local mode="$1"
+    [[ -f "$WAYBAR_CONF" ]] || return 1
+    if grep -q '"mode"' "$WAYBAR_CONF"; then
+        sed -i 's/"mode": *"[^"]*"/"mode": "'"$mode"'"/' "$WAYBAR_CONF"
+    else
+        sed -i 's/"position": "bottom",/"position": "bottom",\n    "mode": "'"$mode"'",/' "$WAYBAR_CONF"
+    fi
+}
+
+restart_waybar() {
+    systemctl --user stop win11-waybar.service >/dev/null 2>&1 || true
+    killall waybar 2>/dev/null || true
+    sleep 0.3
+    systemd-run --user --unit=win11-waybar --description="Windows 11 taskbar" \
+        waybar >/dev/null 2>&1
+    sleep 0.8
+}
+
+waybar_signal() {
+    local pid
+    pid=$(live_waybar_pid)
+    [[ -n "$pid" ]] && kill -USR1 "$pid" 2>/dev/null || true
+}
+
+# Active window state: 1 when maximized or fullscreen, 0 otherwise.
+active_covered() {
+    hyprctl activewindow -j 2>/dev/null | python3 -c 'import json, sys
+try:
+    fs = int(json.load(sys.stdin).get("fullscreen", 0))
+except Exception:
+    fs = 0
+print(1 if fs != 0 else 0)
+' 2>/dev/null
+}
+
+# Print "H BAR_TOP" in logical pixels for the monitor under the cursor.
+# BAR_TOP is the top edge of the waybar strip: hovering anywhere within the
+# strip reveals the hidden bar, not just the very bottom pixels.
+hover_geometry() {
+    hyprctl monitors -j 2>/dev/null | python3 -c '
+import json, sys, subprocess
+def fail():
+    print("900 836")
+    raise SystemExit
+try:
+    monitors = json.loads(subprocess.check_output(["hyprctl", "monitors", "-j"]))
+except Exception:
+    fail()
+try:
+    pos = json.loads(subprocess.check_output(["hyprctl", "cursorpos", "-j"]))
+    cx, cy = int(pos["x"]), int(pos["y"])
+except Exception:
+    cx = cy = 0
+def logical(m):
+    s = m.get("scale") or 1
+    return (m["name"], int(m["x"] / s), int(m["y"] / s),
+            int(m["width"] / s), int(m["height"] / s))
+pick = None
+for m in monitors:
+    name, x, y, w, h = logical(m)
+    if x <= cx < x + w and y <= cy < y + h:
+        pick = (name, h)
+        break
+if pick is None:
+    if not monitors:
+        fail()
+    name, x, y, w, h = logical(monitors[0])
+    pick = (name, h)
+mon_name, h = pick
+bar_top = h - 64
+try:
+    layers = json.loads(subprocess.check_output(["hyprctl", "layers", "-j"]))
+    for level in layers.get(mon_name, {}).get("levels", {}).values():
+        for layer in level:
+            if layer.get("namespace") == "waybar" and layer.get("h", 0) > 0:
+                bar_top = int(layer["y"])
+                break
+        else:
+            continue
+        break
+except Exception:
+    pass
+print("%d %d" % (h, bar_top))
+' 2>/dev/null
+}
+
+# -----------------------------------------------------------------------------
+# Auto-hide watcher loop
+# -----------------------------------------------------------------------------
+
+run_autohide_loop() {
+    local shown="hidden" last_pid="" pid y h bar_top
+
+    # Adopt a known state: a fresh bar is visible, so hide it once on start
+    # unless the caller already hid it and recorded the state.
+    if [[ -f "$CONF" ]]; then
+        shown=$(cat "$CONF")
+        [[ "$shown" != "shown" ]] && shown="hidden"
+    else
+        waybar_signal
+    fi
+    # Avoid a spurious toggle on the first iteration (the bar is already in
+    # the adopted state; only real restarts from now on need a fresh-pid hide).
+    last_pid=$(live_waybar_pid)
+
+    while true; do
+        pid=$(live_waybar_pid)
+        if [[ -n "$pid" && "$pid" != "$last_pid" ]]; then
+            waybar_signal
+            shown="hidden"
+            last_pid="$pid"
+        fi
+
+        read -r h bar_top <<< "$(hover_geometry)"
+        y=$(hyprctl cursorpos -j 2>/dev/null | python3 -c 'import json, sys
+try:
+    print(int(json.load(sys.stdin)["y"]))
+except Exception:
+    print(0)
+' 2>/dev/null)
+
+        if [[ -n "$bar_top" ]] && (( y >= bar_top )); then
+            if [[ "$shown" == "hidden" ]]; then
+                waybar_signal
+                shown="shown"
+            fi
+        else
+            if [[ "$shown" == "shown" ]]; then
+                waybar_signal
+                shown="hidden"
+            fi
+        fi
+
+        printf '%s\n' "$shown" > "$CONF"
+        sleep "$POLL_MS"
+    done
+}
+
+# -----------------------------------------------------------------------------
+# Intelligent watcher loop (hide while a window is maximized / fullscreen)
+# -----------------------------------------------------------------------------
+
+run_intelligent_loop() {
+    local shown="shown" last_pid="" covered
+
+    if [[ -f "$CONF" ]]; then
+        shown=$(cat "$CONF")
+        [[ "$shown" != "shown" ]] && shown="shown"
+    fi
+    last_pid=$(live_waybar_pid)
+
+    while true; do
+        covered=$(active_covered)
+        if [[ "$covered" == "1" ]]; then
+            if [[ "$shown" != "hidden" ]]; then
+                set_config_mode "hide"
+                restart_waybar
+                waybar_signal
+                shown="hidden"
+                last_pid=$(live_waybar_pid)
+            fi
+        else
+            if [[ "$shown" != "shown" ]]; then
+                set_config_mode "dock"
+                restart_waybar
+                shown="shown"
+                last_pid=$(live_waybar_pid)
+            fi
+        fi
+
+        printf '%s\n' "$shown" > "$CONF"
+        sleep "$POLL_MS"
+    done
+}
+
+run_loop() {
+    local mode
+    mode=$(cat "$MODE_FILE" 2>/dev/null || echo autohide)
+    case "$mode" in
+        intelligent) run_intelligent_loop ;;
+        *) run_autohide_loop ;;
+    esac
+}
+
+# -----------------------------------------------------------------------------
+# Controller: --set MODE | --status | --stop | --ensure
+# -----------------------------------------------------------------------------
+
+start_loop() {
+    if loop_is_running; then
+        return
+    fi
+    printf '%s\n' "$1" > "$MODE_FILE"
+    systemd-run --user --unit=win11-taskbar-autohide \
+        --description="Windows 11 taskbar auto-hide" \
+        "$SELF" >/dev/null 2>&1
+}
+
+stop_loop() {
+    systemctl --user stop win11-taskbar-autohide.service >/dev/null 2>&1 || true
+    rm -f "$CONF" "$MODE_FILE"
+}
+
+apply_dock() {
+    if [[ "$(config_mode)" == "dock" ]] && ! loop_is_running; then
+        return
+    fi
+    stop_loop
+    set_config_mode "dock"
+    restart_waybar
+}
+
+apply_overlay() {
+    if [[ "$(config_mode)" == "overlay" ]] && ! loop_is_running; then
+        return
+    fi
+    stop_loop
+    set_config_mode "overlay"
+    restart_waybar
+}
+
+apply_autohide() {
+    if [[ "$(config_mode)" == "hide" ]] && loop_is_running; then
+        return
+    fi
+    stop_loop
+    set_config_mode "hide"
+    restart_waybar
+    waybar_signal
+    printf '%s\n' "hidden" > "$CONF"
+    start_loop "autohide"
+}
+
+apply_intelligent() {
+    if [[ "$(config_mode)" == "dock" ]] && loop_is_running; then
+        return
+    fi
+    stop_loop
+    set_config_mode "dock"
+    restart_waybar
+    printf '%s\n' "shown" > "$CONF"
+    start_loop "intelligent"
+}
+
+cmd="${1:-}"
+case "$cmd" in
+    --set)
+        case "${2:-}" in
+            dock) apply_dock ;;
+            overlay) apply_overlay ;;
+            autohide) apply_autohide ;;
+            intelligent) apply_intelligent ;;
+            *) echo "usage: $0 --set {dock|overlay|autohide|intelligent}" >&2; exit 2 ;;
+        esac
+        ;;
+    --status)
+        if [[ -f "$MODE_FILE" ]] && [[ "$(cat "$MODE_FILE")" == "intelligent" ]]; then
+            echo "intelligent"
+            exit 0
+        fi
+        case "$(config_mode)" in
+            hide) echo "autohide" ;;
+            overlay) echo "overlay" ;;
+            *) echo "dock" ;;
+        esac
+        ;;
+    --ensure)
+        # After a plain waybar reload: restore the active hide behavior and make
+        # sure the watcher is running.
+        mode=$(cat "$MODE_FILE" 2>/dev/null || true)
+        if [[ -z "$mode" ]]; then
+            case "$(config_mode)" in
+                hide) mode="autohide" ;;
+                *) exit 0 ;;
+            esac
+        fi
+        if loop_is_running; then
+            exit 0
+        fi
+        case "$mode" in
+            intelligent) apply_intelligent ;;
+            autohide) apply_autohide ;;
+        esac
+        ;;
+    --stop)
+        stop_loop
+        set_config_mode "dock"
+        restart_waybar
+        ;;
+    "")
+        run_loop
+        ;;
+    *)
+        echo "usage: $0 [--set MODE] [--status] [--stop] [--ensure]" >&2
+        exit 2
+        ;;
+esac

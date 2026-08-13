@@ -1,0 +1,473 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: nautilus-my-computer\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-04 11:31-0700\n"
+"PO-Revision-Date: 2026-07-30 05:21+0000\n"
+"Last-Translator: Yann Masoch\n"
+"Language-Team: Arabic\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
+"&& n%100<=10 ? 3 : n%100>=11 ? 4 : 5;\n"
+
+#: nautilus_my_computer/bookmarks.py
+msgid "Change Icon"
+msgstr ""
+
+#: nautilus_my_computer/bookmarks.py
+msgid "Search icons…"
+msgstr ""
+
+#: nautilus_my_computer/bookmarks.py
+msgid "Reset"
+msgstr ""
+
+#: nautilus_my_computer/column_view.py
+msgid "Select"
+msgstr ""
+
+#: nautilus_my_computer/column_view.py
+msgid "Beta"
+msgstr ""
+
+#: nautilus_my_computer/column_view.py
+msgid "Early access feature. It may contain bugs or inconsistencies."
+msgstr ""
+
+#: nautilus_my_computer/column_view.py
+msgid "Column View"
+msgstr ""
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "{n} item"
+msgid_plural "{n} items"
+msgstr[0] "لا عناصر"
+msgstr[1] "عنصرٌ واحد"
+msgstr[2] "عنصرين"
+msgstr[3] "{n} عناصر"
+msgstr[4] "{n} عنصرًا"
+msgstr[5] "{n} عنصر"
+
+#: nautilus_my_computer/common.py
+msgid "Today"
+msgstr "اليوم"
+
+#: nautilus_my_computer/common.py
+msgid "Yesterday"
+msgstr "أمس"
+
+#: nautilus_my_computer/common.py
+msgid "Tomorrow"
+msgstr "غدًا"
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "{n} day ago"
+msgid_plural "{n} days ago"
+msgstr[0] "منذ {n} يوم"
+msgstr[1] "منذ يوم واحد"
+msgstr[2] "منذ يومين"
+msgstr[3] "منذ {n} أيام"
+msgstr[4] "منذ {n} يومًا"
+msgstr[5] "منذ {n} يوم"
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "In {n} day"
+msgid_plural "In {n} days"
+msgstr[0] "خلال {n} يوم"
+msgstr[1] "خلال يوم واحد"
+msgstr[2] "خلال يومين"
+msgstr[3] "خلال {n} أيام"
+msgstr[4] "خلال {n} يومًا"
+msgstr[5] "خلال {n} يوم"
+
+#: nautilus_my_computer/common.py
+msgid "This week"
+msgstr "هذا الأسبوع"
+
+#: nautilus_my_computer/common.py
+msgid "Last week"
+msgstr "الأسبوع الماضي"
+
+#: nautilus_my_computer/common.py
+msgid "Next week"
+msgstr "الأسبوع القادم"
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "{n} week ago"
+msgid_plural "{n} weeks ago"
+msgstr[0] "منذ {n} أسبوع"
+msgstr[1] "منذ أسبوع واحد"
+msgstr[2] "منذ أسبوعين"
+msgstr[3] "منذ {n} أسابيع"
+msgstr[4] "منذ {n} أسبوعًا"
+msgstr[5] "منذ {n} أسبوع"
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "In {n} week"
+msgid_plural "In {n} weeks"
+msgstr[0] "خلال {n} أسبوع"
+msgstr[1] "خلال أسبوع واحد"
+msgstr[2] "خلال أسبوعين"
+msgstr[3] "خلال {n} أسابيع"
+msgstr[4] "خلال {n} أسبوعًا"
+msgstr[5] "خلال {n} أسبوع"
+
+#: nautilus_my_computer/common.py
+msgid "This month"
+msgstr "هذا الشهر"
+
+#: nautilus_my_computer/common.py
+msgid "Last month"
+msgstr "الشهر الماضي"
+
+#: nautilus_my_computer/common.py
+msgid "Next month"
+msgstr "الشهر القادم"
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "{n} month ago"
+msgid_plural "{n} months ago"
+msgstr[0] "منذ {n} شهر"
+msgstr[1] "منذ شهر واحد"
+msgstr[2] "منذ شهرين"
+msgstr[3] "منذ {n} أشهر"
+msgstr[4] "منذ {n} شهرًا"
+msgstr[5] "منذ {n} شهر"
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "In {n} month"
+msgid_plural "In {n} months"
+msgstr[0] "خلال {n} شهر"
+msgstr[1] "خلال شهر واحد"
+msgstr[2] "خلال شهرين"
+msgstr[3] "خلال {n} أشهر"
+msgstr[4] "خلال {n} شهرًا"
+msgstr[5] "خلال {n} شهر"
+
+#: nautilus_my_computer/common.py
+msgid "This year"
+msgstr "هذا العام"
+
+#: nautilus_my_computer/common.py
+msgid "Last year"
+msgstr "العام الماضي"
+
+#: nautilus_my_computer/common.py
+msgid "Next year"
+msgstr "العام القادم"
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "{n} year ago"
+msgid_plural "{n} years ago"
+msgstr[0] "منذ {n} سنة"
+msgstr[1] "منذ سنة واحدة"
+msgstr[2] "منذ سنتين"
+msgstr[3] "منذ {n} سنوات"
+msgstr[4] "منذ {n} سنة"
+msgstr[5] "منذ {n} سنة"
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "In {n} year"
+msgid_plural "In {n} years"
+msgstr[0] "خلال {n} سنة"
+msgstr[1] "خلال سنة واحدة"
+msgstr[2] "خلال سنتين"
+msgstr[3] "خلال {n} سنوات"
+msgstr[4] "خلال {n} سنة"
+msgstr[5] "خلال {n} سنة"
+
+#: nautilus_my_computer/components.py
+msgid "Rename"
+msgstr ""
+
+#: nautilus_my_computer/context_menu.py
+msgid "Open in New Tab"
+msgstr "افتح في علامة تبويب جديدة"
+
+#: nautilus_my_computer/context_menu.py
+msgid "Open in New Window"
+msgstr "افتح في نافذة جديدة"
+
+#: nautilus_my_computer/context_menu.py
+msgid "Open With…"
+msgstr "افتح باستخدام…"
+
+#: nautilus_my_computer/context_menu.py
+msgid "Remove from Bookmarks"
+msgstr ""
+
+#: nautilus_my_computer/context_menu.py
+msgid "Add to Bookmarks"
+msgstr ""
+
+#: nautilus_my_computer/context_menu.py
+#: nautilus_my_computer/preferred_folders.py
+msgid "Unpin from My Computer"
+msgstr ""
+
+#: nautilus_my_computer/context_menu.py
+#: nautilus_my_computer/preferred_folders.py
+msgid "Pin to My Computer"
+msgstr ""
+
+#: nautilus_my_computer/context_menu.py
+msgid "New Folder…"
+msgstr ""
+
+#: nautilus_my_computer/context_menu.py
+msgid "New Document"
+msgstr ""
+
+#: nautilus_my_computer/context_menu.py
+msgid "Open in Terminal"
+msgstr ""
+
+#: nautilus_my_computer/context_menu.py
+msgid "Rename…"
+msgstr ""
+
+#: nautilus_my_computer/context_menu.py
+msgid "Compress…"
+msgstr ""
+
+#: nautilus_my_computer/context_menu.py
+msgid "Move to Trash"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "My Computer Settings"
+msgstr "إعدادات جهاز الكمبيوتر"
+
+#: nautilus_my_computer/main.py
+msgid "Open My Computer"
+msgstr "افتح جهاز الكمبيوتر"
+
+#: nautilus_my_computer/main.py
+msgid "Recommended Apps"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "Other Apps"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "General"
+msgstr "عام"
+
+#: nautilus_my_computer/main.py
+msgid "Computer view"
+msgstr "عرض الكمبيوتر"
+
+#: nautilus_my_computer/main.py
+msgid "Start on the Computer view"
+msgstr "البدء في عرض الكمبيوتر"
+
+#: nautilus_my_computer/main.py
+msgid "Launch directly to the Computer view instead of Home"
+msgstr "الفتح مباشرة على عرض الكمبيوتر بدلاً من المجلد الرئيسي"
+
+#: nautilus_my_computer/main.py
+msgid "Panel visibility"
+msgstr "ظهور اللوحة"
+
+#: nautilus_my_computer/main.py
+msgid ""
+"Choose how each group appears. Visible: shows the group as a normal "
+"separated section. Merged: folds the group into the On this Computer group. "
+"Hidden: hides the group entirely."
+msgstr ""
+"اختر كيفية ظهور كل مجموعة. ظاهر: يظهر المجموعة كقسم منفصل عادي. مدمج: يطوي "
+"المجموعة ضمن مجموعة \"على هذا الكمبيوتر\". مخفي: يخفي المجموعة تماماً."
+
+#: nautilus_my_computer/main.py
+msgid "Visible"
+msgstr "ظاهر"
+
+#: nautilus_my_computer/main.py
+msgid "Merged"
+msgstr "مدمج"
+
+#: nautilus_my_computer/main.py
+msgid "Hidden"
+msgstr "مخفي"
+
+#: nautilus_my_computer/main.py nautilus_my_computer/my_computer_view.py
+msgid "Preferred Folders"
+msgstr "المجلدات المفضلة"
+
+#: nautilus_my_computer/main.py
+msgid "Show system partitions"
+msgstr "إظهار أقسام النظام"
+
+#: nautilus_my_computer/main.py
+msgid "Include boot and EFI partitions in the System group"
+msgstr "تضمين أقسام الإقلاع و EFI في مجموعة النظام"
+
+#: nautilus_my_computer/main.py
+msgid "Sidebar visibility"
+msgstr "ظهور الشريط الجانبي"
+
+#: nautilus_my_computer/main.py
+msgid "Choose which locations appear on the sidebar."
+msgstr "اختر المواقع التي تظهر في الشريط الجانبي."
+
+#: nautilus_my_computer/main.py
+msgid "Bar Color"
+msgstr "لون الشريط"
+
+#: nautilus_my_computer/main.py
+msgid "Select or customize the bar color."
+msgstr "اختر لون الشريط أو قم بتخصيصه."
+
+#: nautilus_my_computer/main.py
+msgid "Color mode"
+msgstr "وضع اللون"
+
+#: nautilus_my_computer/main.py
+msgid "System accent"
+msgstr "لون النظام المميز"
+
+#: nautilus_my_computer/main.py
+msgid "Custom color"
+msgstr "لون مخصص"
+
+#: nautilus_my_computer/main.py
+msgid "Custom gradient"
+msgstr "تدرج مخصص"
+
+#: nautilus_my_computer/main.py
+msgid "Color"
+msgstr "اللون"
+
+#: nautilus_my_computer/main.py
+msgid "Start color"
+msgstr "لون البداية"
+
+#: nautilus_my_computer/main.py
+msgid "End color"
+msgstr "لون النهاية"
+
+#: nautilus_my_computer/main.py
+msgid "Show captions"
+msgstr "إظهار التسميات التوضيحية"
+
+#: nautilus_my_computer/main.py
+msgid "Shows or hides the caption lines already configured in Nautilus"
+msgstr "يعرض أو يخفي أسطر التسميات التوضيحية المُعدّة مسبقًا في Nautilus"
+
+#: nautilus_my_computer/main.py
+msgid "Extension"
+msgstr "الامتداد"
+
+#: nautilus_my_computer/main.py
+msgid "Version"
+msgstr "الإصدار"
+
+#: nautilus_my_computer/main.py
+msgid "Author"
+msgstr "المؤلف"
+
+#: nautilus_my_computer/main.py
+msgid "Source code"
+msgstr "شفرة المصدر"
+
+#: nautilus_my_computer/main.py
+msgid "GitHub"
+msgstr "جيت هاب"
+
+#: nautilus_my_computer/my_computer_view.py
+msgid "Mount"
+msgstr "ضم"
+
+#: nautilus_my_computer/my_computer_view.py
+msgid "System"
+msgstr "النظام"
+
+#: nautilus_my_computer/my_computer_view.py
+msgid "On this Computer"
+msgstr "على هذا الكمبيوتر"
+
+#: nautilus_my_computer/my_computer_view.py
+msgid "Removable"
+msgstr "قابلة للإزالة"
+
+#: nautilus_my_computer/my_computer_view.py
+msgid "Disc"
+msgstr "قرص"
+
+#: nautilus_my_computer/widgets.py
+msgid "Not mounted"
+msgstr "غير موصول"
+
+#: nautilus_my_computer/widgets.py
+#, python-brace-format
+msgid "{free} free of {total}"
+msgstr "متوفر {free} من {total}"
+
+#: nautilus_my_computer/widgets.py
+msgid "Program"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Audio"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Font"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Image"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Archive"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Markup"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Text"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Video"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Contacts"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Calendar"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Document"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Presentation"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Spreadsheet"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Dimensions"
+msgstr ""

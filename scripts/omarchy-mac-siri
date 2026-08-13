@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+"""
+Apple Siri & Spotlight AI Voice Assistant Window
+"""
+import gi
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+from gi.repository import Gtk, Adw, GLib, Gdk
+import sys
+import os
+import subprocess
+
+class SiriWindow(Adw.Window):
+    def __init__(self, app):
+        super().__init__(application=app, title="Siri")
+        self.set_default_size(440, 240)
+        self.set_resizable(False)
+        
+        # Frosted glass styling
+        css_provider = Gtk.CssProvider()
+        css = """
+        window {
+            background-color: rgba(26, 26, 32, 0.88);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        .siri-orb {
+            background: linear-gradient(135deg, #007aff, #af52de, #ff2d55);
+            border-radius: 50%;
+            min-width: 68px;
+            min-height: 68px;
+            box-shadow: 0 0 24px rgba(175, 82, 222, 0.65);
+        }
+        .siri-prompt {
+            font-family: 'SF Pro Display', 'Inter', sans-serif;
+            font-size: 17px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+        .siri-sub {
+            font-family: 'SF Pro Text', sans-serif;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.65);
+        }
+        .siri-input {
+            background-color: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            font-size: 14px;
+            padding: 8px 14px;
+        }
+        """
+        css_provider.load_from_data(css.encode())
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(),
+            css_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        main_box.set_margin_top(24)
+        main_box.set_margin_bottom(24)
+        main_box.set_margin_start(24)
+        main_box.set_margin_end(24)
+
+        # Siri Glowing Orb
+        orb_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        orb_box.set_halign(Gtk.Align.CENTER)
+        orb = Gtk.Box()
+        orb.add_css_class("siri-orb")
+        orb_box.append(orb)
+        main_box.append(orb_box)
+
+        # Title & Subtitle
+        lbl_title = Gtk.Label(label="What can I help you with?")
+        lbl_title.add_css_class("siri-prompt")
+        main_box.append(lbl_title)
+
+        # Search Entry
+        self.entry = Gtk.Entry()
+        self.entry.add_css_class("siri-input")
+        self.entry.set_placeholder_text("Ask Siri or type a command...")
+        self.entry.connect("activate", self.on_search)
+        main_box.append(self.entry)
+
+        self.set_content(main_box)
+
+    def on_search(self, entry):
+        text = entry.get_text().strip()
+        if not text:
+            return
+        # Open in default browser or execute
+        if text.startswith("http") or "." in text.split()[0]:
+            subprocess.Popen(["xdg-open", text])
+        else:
+            subprocess.Popen(["xdg-open", f"https://www.google.com/search?q={text}"])
+        self.close()
+
+class SiriApp(Adw.Application):
+    def __init__(self):
+        super().__init__(application_id="org.omarchy.siri")
+    def do_activate(self):
+        win = SiriWindow(self)
+        win.present()
+
+if __name__ == "__main__":
+    app = SiriApp()
+    app.run(sys.argv)

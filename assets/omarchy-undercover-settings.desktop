@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Omarchy Undercover Settings
+Comment=Control Center for Windows 11 Desktop Transformation
+Exec=omarchy-undercover-settings
+Icon=omarchy-undercover
+Terminal=false
+Type=Application
+Categories=Settings;DesktopSettings;GTK;
+Keywords=Windows;Settings;Undercover;Theme;

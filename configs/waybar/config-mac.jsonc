@@ -1,0 +1,159 @@
+[
+  {
+    "name": "mac-topbar",
+    "layer": "top",
+    "position": "top",
+    "height": 30,
+    "exclusive": true,
+    "margin-top": 0,
+    "margin-left": 0,
+    "margin-right": 0,
+    "modules-left": [
+      "custom/apple-logo",
+      "custom/finder-title",
+      "hyprland/window",
+      "custom/menu-file",
+      "custom/menu-edit",
+      "custom/menu-view",
+      "custom/menu-go",
+      "custom/menu-window",
+      "custom/menu-help"
+    ],
+    "modules-center": ["clock"],
+    "modules-right": [
+      "custom/siri",
+      "network",
+      "pulseaudio",
+      "battery",
+      "custom/control-center"
+    ],
+    "custom/apple-logo": {
+      "format": "  ",
+      "tooltip": "Apple Menu",
+      "on-click": "rofi -show drun -theme ~/.config/rofi/mac.rasi"
+    },
+    "custom/finder-title": {
+      "format": "Finder",
+      "tooltip": "macOS Finder",
+      "on-click": "nautilus --new-window computer:///"
+    },
+    "hyprland/window": {
+      "format": "{}",
+      "max-length": 28,
+      "separate-outputs": true,
+      "rewrite": {
+        "^$": "Finder",
+        "^(?!.*\\S).*": "Finder"
+      }
+    },
+    "custom/menu-file": { "exec": "echo 'File'", "interval": 3600, "return-type": "plain", "tooltip": "File Menu", "on-click": "nautilus" },
+    "custom/menu-edit": { "exec": "echo 'Edit'", "interval": 3600, "return-type": "plain", "tooltip": "Edit Menu", "on-click": "rofi -show window -theme ~/.config/rofi/mac.rasi" },
+    "custom/menu-view": { "exec": "echo 'View'", "interval": 3600, "return-type": "plain", "tooltip": "View Menu", "on-click": "omarchy-mac-widgets" },
+    "custom/menu-go": { "exec": "echo 'Go'", "interval": 3600, "return-type": "plain", "tooltip": "Go Menu", "on-click": "nautilus" },
+    "custom/menu-window": { "exec": "echo 'Window'", "interval": 3600, "return-type": "plain", "tooltip": "Window Switcher", "on-click": "rofi -show window -theme ~/.config/rofi/mac.rasi" },
+    "custom/menu-help": { "exec": "echo 'Help'", "interval": 3600, "return-type": "plain", "tooltip": "Help & Settings", "on-click": "omarchy-undercover-settings" },
+    "clock": {
+      "format": "{:%a %b %d  %I:%M %p}",
+      "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
+      "on-click": "omarchy-mac-widgets"
+    },
+    "custom/siri": {
+      "format": "󰍬 Siri",
+      "tooltip": "Siri & Spotlight Search",
+      "on-click": "omarchy-mac-siri"
+    },
+    "network": {
+      "format-wifi": "󰤨",
+      "format-ethernet": "󰈀",
+      "format-disconnected": "󰤭",
+      "tooltip-format": "{ifname}: {ipaddr}"
+    },
+    "pulseaudio": {
+      "format": "{icon}",
+      "format-muted": "󰝟",
+      "format-icons": { "default": ["󰕿", "󰖀", "󰕾"] },
+      "on-click": "wpctl set-volume @DEFAULT_AUDIO_SINK@ toggle"
+    },
+    "battery": {
+      "format": "{icon} {capacity}%",
+      "format-icons": ["󰂎","󰁺","󰁻","󰁼","󰁽","󰁾","󰁿","󰂀","󰂁","󰁹"]
+    },
+    "custom/control-center": {
+      "format": "󰄨",
+      "tooltip": "Control Center",
+      "on-click": "omarchy-ios-control-center"
+    }
+  },
+  {
+    "name": "mac-dock",
+    "layer": "top",
+    "position": "bottom",
+    "exclusive": false,
+    "passthrough": false,
+    "margin-bottom": 10,
+    "height": 66,
+    "modules-center": [
+      "custom/dock-finder",
+      "custom/dock-launchpad",
+      "custom/dock-safari",
+      "custom/dock-messages",
+      "custom/dock-music",
+      "custom/dock-photos",
+      "custom/dock-appstore",
+      "custom/dock-terminal",
+      "custom/dock-settings",
+      "wlr/taskbar"
+    ],
+    "custom/dock-finder": {
+      "format": "   ",
+      "tooltip": "Finder",
+      "on-click": "nautilus --new-window computer:///"
+    },
+    "custom/dock-launchpad": {
+      "format": "   ",
+      "tooltip": "Launchpad",
+      "on-click": "rofi -show drun -theme ~/.config/rofi/mac.rasi"
+    },
+    "custom/dock-safari": {
+      "format": "   ",
+      "tooltip": "Safari / Web Browser",
+      "on-click": "xdg-open https://"
+    },
+    "custom/dock-messages": {
+      "format": "   ",
+      "tooltip": "Messages",
+      "on-click": "xdg-open https://messages.google.com"
+    },
+    "custom/dock-music": {
+      "format": "   ",
+      "tooltip": "Music",
+      "on-click": "xdg-open https://music.apple.com"
+    },
+    "custom/dock-photos": {
+      "format": "   ",
+      "tooltip": "Photos",
+      "on-click": "nautilus ~/Pictures"
+    },
+    "custom/dock-appstore": {
+      "format": "   ",
+      "tooltip": "App Store",
+      "on-click": "omarchy-undercover-settings"
+    },
+    "custom/dock-terminal": {
+      "format": "   ",
+      "tooltip": "Terminal",
+      "on-click": "uwsm-app -- xdg-terminal-exec"
+    },
+    "custom/dock-settings": {
+      "format": "   ",
+      "tooltip": "System Settings",
+      "on-click": "omarchy-undercover-settings"
+    },
+    "wlr/taskbar": {
+      "format": "{icon}",
+      "icon-size": 40,
+      "tooltip-format": "{title}",
+      "on-click": "activate"
+    }
+  }
+]

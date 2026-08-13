@@ -1,0 +1,950 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Omarchy Hyprland Undercover - Windows 11 Desktop Transformation
+# License: GPL-3.0-or-later
+# Author: misternegative21
+#
+# omarchy:summary=Windows 11 desktop transformation tool for Omarchy Hyprland
+# omarchy:args=[--enable|--disable|--restore|--verify|--status|--help]
+# omarchy:examples=omarchy-undercover --enable | omarchy-undercover --restore
+# ==============================================================================
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+CONFIG_DIR="$HOME/.config/omarchy-undercover"
+STATE_FILE="$CONFIG_DIR/state"
+BACKUP_DIR="$CONFIG_DIR/backups"
+BASELINE_FILE="$CONFIG_DIR/baseline"
+SETTINGS_FILE="$CONFIG_DIR/settings.conf"
+
+WINDOWS_GTK_THEME="Win11-Dark"
+WINDOWS_ICON_THEME="Fluent-dark"
+WINDOWS_CURSOR_THEME="Fluent-dark-cursors"
+WINDOWS_FONT_NAME="Roboto 10.5"
+
+mkdir -p "$CONFIG_DIR"
+mkdir -p "$BACKUP_DIR"
+
+# Source common.sh
+if [[ -f "$SCRIPT_DIR/common.sh" ]]; then
+    source "$SCRIPT_DIR/common.sh"
+elif [[ -f "$HOME/.local/share/omarchy/bin/common.sh" ]]; then
+    source "$HOME/.local/share/omarchy/bin/common.sh"
+elif [[ -f "$HOME/.local/bin/common.sh" ]]; then
+    source "$HOME/.local/bin/common.sh"
+elif [[ -f "/usr/share/omarchy-undercover/scripts/common.sh" ]]; then
+    source "/usr/share/omarchy-undercover/scripts/common.sh"
+else
+    msg() { echo -e "\e[1;32m[INFO]\e[0m $1"; }
+    warn() { echo -e "\e[1;33m[WARN]\e[0m $1"; }
+    error() { echo -e "\e[1;31m[ERROR]\e[0m $1"; exit 1; }
+    command_exists() { command -v "$1" >/dev/null 2>&1; }
+    omarchy_reload_waybar() { killall waybar 2>/dev/null || true; waybar &>/dev/null & }
+    omarchy_reload_hyprland() { hyprctl reload 2>/dev/null || true; }
+    omarchy_set_gnome_theme() {
+        gsettings set org.gnome.desktop.interface gtk-theme "$1" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface icon-theme "$2" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface cursor-theme "$3" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface font-name "$WINDOWS_FONT_NAME" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface color-scheme "prefer-dark" 2>/dev/null || true
+    }
+    backup_config_dir() {
+        local src="$1" dest="$2"
+        if [[ -d "$src" ]]; then cp -r "$src" "$dest"; fi
+    }
+    restore_config_dir() {
+        local src="$1" dest="$2"
+        if [[ -d "$src" ]]; then rm -rf "$dest"; cp -r "$src" "$dest"; fi
+    }
+    create_manifest() {
+        local file="$1"
+        shift
+        echo "{\"timestamp\":\"$(date -u +'%Y-%m-%dT%H:%M:%SZ')\"}" > "$file"
+    }
+fi
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+detect_launcher() {
+    if command_exists rofi; then
+        echo "rofi"
+    elif command_exists wofi; then
+        echo "wofi"
+    else
+        echo "none"
+    fi
+}
+
+# Ensure a setting exists in settings.conf without overwriting user values
+ensure_setting() {
+    local key="$1" default="$2"
+    local current
+    current=$(read_setting "$key" "")
+    if [[ -z "$current" ]]; then
+        write_setting "$key" "$default"
+    fi
+}
+
+# Copy a config file/dir from the project presets into the user config dir,
+# preferring the installed copy under CONFIG_DIR.
+project_file() {
+    local rel="$1"
+    if [[ -e "$CONFIG_DIR/$rel" ]]; then
+        echo "$CONFIG_DIR/$rel"
+    elif [[ -e "${SCRIPT_DIR}/../configs/$rel" ]]; then
+        echo "${SCRIPT_DIR}/../configs/$rel"
+    elif [[ -e "/usr/share/omarchy-undercover/configs/$rel" ]]; then
+        echo "/usr/share/omarchy-undercover/configs/$rel"
+    else
+        echo ""
+    fi
+}
+
+asset_dir() {
+    local rel="$1"
+    if [[ -e "$CONFIG_DIR/$rel" ]]; then
+        echo "$CONFIG_DIR/$rel"
+    elif [[ -e "${SCRIPT_DIR}/../assets/$rel" ]]; then
+        echo "${SCRIPT_DIR}/../assets/$rel"
+    elif [[ -e "/usr/share/omarchy-undercover/assets/$rel" ]]; then
+        echo "/usr/share/omarchy-undercover/assets/$rel"
+    else
+        echo ""
+    fi
+}
+
+install_win11_assets() {
+    local font_dir="$HOME/.local/share/fonts/SegoeUI"
+
+    mkdir -p "$font_dir"
+
+    # --- Segoe UI fonts (Windows UI font family) ---
+    if [[ "$(fc-list 2>/dev/null | grep -ci "Segoe UI" || true)" -eq 0 ]]; then
+        msg "Installing Segoe UI fonts..."
+        if [[ ! -d /tmp/segoe-ui-linux/font ]]; then
+            git clone --depth 1 https://github.com/mrbvrz/segoe-ui-linux.git /tmp/segoe-ui-linux 2>/dev/null || true
+        fi
+        if [[ -d /tmp/segoe-ui-linux/font ]]; then
+            cp -f /tmp/segoe-ui-linux/font/*.ttf "$font_dir/" 2>/dev/null || true
+            fc-cache -f >/dev/null 2>&1 || true
+        else
+            # Fallback: raw download of the core Segoe UI family
+            for name in segoeui segoeuib segoeuii segoeuiz segoeuil segoeuisl; do
+                curl -fsSL "https://github.com/mrbvrz/segoe-ui/raw/master/font/${name}.ttf" -o "$font_dir/${name}.ttf" 2>/dev/null || true
+            done
+            fc-cache -f >/dev/null 2>&1 || true
+        fi
+        if [[ "$(fc-list 2>/dev/null | grep -ci "Segoe UI" || true)" -eq 0 ]]; then
+            warn "Segoe UI fonts may be incomplete (offline?). Falling back to system fonts."
+        else
+            msg "Segoe UI fonts installed."
+        fi
+    fi
+}
+
+ensure_win11_themes_installed() {
+    local theme_src icons_src
+    theme_src=$(asset_dir "themes")
+    icons_src=$(asset_dir "icons")
+    mkdir -p "$HOME/.themes" "$HOME/.icons" "$HOME/.local/share/themes" "$HOME/.local/share/icons"
+
+    # Win11 GTK themes (Fluent-round based, GTK2/3/4 only - Hyprland stack)
+    for variant in Dark Light; do
+        for dest in "$HOME/.themes" "$HOME/.local/share/themes"; do
+            if [[ -n "$theme_src" && -d "$theme_src/Win11-$variant" && ! -d "$dest/Win11-$variant" ]]; then
+                cp -r "$theme_src/Win11-$variant" "$dest/Win11-$variant"
+                msg "Installed Win11-$variant GTK theme."
+            fi
+        done
+    done
+
+    # Fluent icon themes (Windows 11 fluent icons)
+    for variant in dark light; do
+        for dest in "$HOME/.icons" "$HOME/.local/share/icons"; do
+            if [[ -n "$icons_src" && -d "$icons_src/Fluent-$variant" && ! -d "$dest/Fluent-$variant" ]]; then
+                cp -r "$icons_src/Fluent-$variant" "$dest/Fluent-$variant"
+                msg "Installed Fluent-$variant icon theme."
+            fi
+        done
+    done
+
+    # Fluent dark cursor (Windows 11 default look)
+    for dest in "$HOME/.icons" "$HOME/.local/share/icons"; do
+        if [[ -n "$icons_src" && -d "$icons_src/Fluent-dark-cursors" && ! -d "$dest/Fluent-dark-cursors" ]]; then
+            cp -r "$icons_src/Fluent-dark-cursors" "$dest/Fluent-dark-cursors"
+            msg "Installed Fluent dark cursor theme."
+        fi
+    done
+
+    # Undercover app icon (also replaces any stale start-icon install)
+    local logo_src
+    logo_src=$(asset_dir "icons/omarchy-undercover/scalable/apps")
+    if [[ -n "$logo_src" && -f "$logo_src/omarchy-undercover.svg" ]]; then
+        for dest in "$HOME/.icons" "$HOME/.local/share/icons"; do
+            mkdir -p "$dest"
+            cp -f "$logo_src/omarchy-undercover.svg" "$dest/omarchy-undercover.svg"
+            cp -f "$logo_src/omarchy-undercover.svg" "$dest/org.omarchy.undercover.settings.svg"
+        done
+        msg "Installed Undercover app icon."
+    fi
+
+    # Retina Windows 11 start button icon (used by the waybar start module)
+    local start_icon
+    start_icon=$(asset_dir "start-icon.svg")
+    if [[ -n "$start_icon" && -f "$start_icon" ]]; then
+        for dest in "$HOME/.icons/hicolor/scalable/apps" "$HOME/.local/share/icons/hicolor/scalable/apps"; do
+            mkdir -p "$dest"
+            cp -f "$start_icon" "$dest/windows-start.svg"
+        done
+        msg "Installed Start button icon."
+    fi
+}
+
+apply_wallpaper() {
+    local preset
+    preset=$(read_setting "WALLPAPER" "win11_bloom_dark.jpg")
+    if command_exists omarchy-undercover-wallpaper; then
+        omarchy-undercover-wallpaper "$preset" || true
+    else
+        local wp_file="$CONFIG_DIR/wallpapers/$preset"
+        if [[ ! -f "$wp_file" && -f "${SCRIPT_DIR}/../assets/wallpapers/$preset" ]]; then
+            wp_file="${SCRIPT_DIR}/../assets/wallpapers/$preset"
+        fi
+        if [[ -f "$wp_file" ]]; then
+            msg "Applying Windows 11 wallpaper..."
+            if command_exists swaybg; then
+                killall swaybg 2>/dev/null || true
+                swaybg -i "$wp_file" -m fill &>/dev/null &
+            elif command_exists hyprpaper; then
+                killall hyprpaper 2>/dev/null || true
+                hyprpaper &>/dev/null &
+            fi
+        fi
+    fi
+}
+
+apply_gtk_windows_theme() {
+    rm -rf "$HOME/.config/gtk-3.0" "$HOME/.config/gtk-4.0"
+    mkdir -p "$HOME/.config/gtk-3.0" "$HOME/.config/gtk-4.0"
+
+    local win11_gtk4="$HOME/.themes/Win11-Dark/gtk-4.0"
+    local win11_gtk3="$HOME/.themes/Win11-Dark/gtk-3.0"
+
+    if [[ -d "$win11_gtk4" ]]; then
+        cp -rL "$win11_gtk4/"* "$HOME/.config/gtk-4.0/" 2>/dev/null || true
+        cat <<EOF > "$HOME/.config/gtk-4.0/gtk.css"
+@import url("file://$win11_gtk4/gtk.css");
+EOF
+        cat <<EOF > "$HOME/.config/gtk-4.0/gtk-dark.css"
+@import url("file://$win11_gtk4/gtk-dark.css");
+EOF
+    fi
+
+    if [[ -d "$win11_gtk3" ]]; then
+        cp -rL "$win11_gtk3/"* "$HOME/.config/gtk-3.0/" 2>/dev/null || true
+        cat <<EOF > "$HOME/.config/gtk-3.0/gtk.css"
+@import url("file://$win11_gtk3/gtk.css");
+EOF
+    fi
+
+    local cursor_size
+    cursor_size=$(read_setting "CURSOR_SIZE" "24")
+
+    cat <<EOF > "$HOME/.config/gtk-3.0/settings.ini"
+[Settings]
+gtk-theme-name=$WINDOWS_GTK_THEME
+gtk-icon-theme-name=$WINDOWS_ICON_THEME
+gtk-cursor-theme-name=$WINDOWS_CURSOR_THEME
+gtk-cursor-theme-size=$cursor_size
+gtk-font-name=$WINDOWS_FONT_NAME
+gtk-application-prefer-dark-theme=1
+gtk-decoration-layout=:minimize,maximize,close
+EOF
+
+    cat <<EOF > "$HOME/.config/gtk-4.0/settings.ini"
+[Settings]
+gtk-theme-name=$WINDOWS_GTK_THEME
+gtk-icon-theme-name=$WINDOWS_ICON_THEME
+gtk-cursor-theme-name=$WINDOWS_CURSOR_THEME
+gtk-cursor-theme-size=$cursor_size
+gtk-font-name=$WINDOWS_FONT_NAME
+gtk-decoration-layout=:minimize,maximize,close
+EOF
+
+    # Nautilus (File Explorer) tweaks - keep it looking like stock GNOME
+    # (Adwaita) rather than the Windows skin; breadcrumbs are cleaner.
+    if command_exists gsettings; then
+        gsettings set org.gnome.nautilus.preferences always-use-location-entry false 2>/dev/null || true
+        gsettings set org.gnome.nautilus.preferences show-create-link true 2>/dev/null || true
+        gsettings set org.gnome.nautilus.preferences show-delete-permanently true 2>/dev/null || true
+    fi
+    # Add a Windows-style "My Computer" (This PC) bookmark to the sidebar
+    local bookmarks="$HOME/.config/gtk-3.0/bookmarks"
+    mkdir -p "$HOME/.config/gtk-3.0"
+    if [[ -f "$bookmarks" ]] && grep -q "computer:///" "$bookmarks"; then
+        sed -i 's|^computer:///.*|computer:/// My Computer|' "$bookmarks"
+    else
+        echo "computer:/// My Computer" >> "$bookmarks"
+    fi
+
+    # Restart Nautilus daemon if running
+    nautilus -q 2>/dev/null || true
+
+    omarchy_set_gnome_theme "$WINDOWS_GTK_THEME" "$WINDOWS_ICON_THEME" "$WINDOWS_CURSOR_THEME" "$cursor_size"
+    gsettings set org.gnome.desktop.interface font-name "$WINDOWS_FONT_NAME" 2>/dev/null || true
+    gsettings set org.gnome.desktop.interface document-font-name "$WINDOWS_FONT_NAME" 2>/dev/null || true
+    gsettings set org.gnome.desktop.interface monospace-font-name "CaskaydiaMono Nerd Font 10" 2>/dev/null || true
+    gsettings set org.gnome.desktop.interface color-scheme "prefer-dark" 2>/dev/null || true
+}
+
+apply_waybar_windows() {
+    local src
+    src=$(project_file "waybar")
+    if [[ -n "$src" && -d "$src" ]]; then
+        mkdir -p "$HOME/.config/waybar"
+        local visibility
+        visibility=$(read_setting "TASKBAR_VISIBILITY" "")
+        if [[ -z "$visibility" ]]; then
+            visibility="dock"
+            [[ "$(read_setting "AUTOHIDE" "0")" == "1" ]] && visibility="autohide"
+        fi
+        local mode="dock"
+        [[ "$visibility" == "overlay" ]] && mode="overlay"
+        [[ "$visibility" == "autohide" ]] && mode="hide"
+        # intelligent keeps the solid dock mode and hides itself on maximize.
+
+        cp "$src/config.jsonc" "$HOME/.config/waybar/config.jsonc"
+        cp "$src/style.css" "$HOME/.config/waybar/style.css"
+
+        if ! grep -q '"mode"' "$HOME/.config/waybar/config.jsonc"; then
+            sed -i 's/"position": "bottom",/"position": "bottom",\n  "mode": "'"$mode"'",/' "$HOME/.config/waybar/config.jsonc"
+        else
+            sed -i 's/"mode": "[^"]*"/"mode": "'"$mode"'"/' "$HOME/.config/waybar/config.jsonc"
+        fi
+
+        if command -v omarchy-undercover-taskbar-autohide &>/dev/null; then
+            omarchy-undercover-taskbar-autohide --set "$visibility"
+        fi
+        msg "Windows 11 taskbar applied ($visibility)."
+    fi
+}
+
+apply_rofi_windows() {
+    local launcher
+    launcher=$(detect_launcher)
+    local src
+    src=$(project_file "rofi")
+
+    if [[ "$launcher" == "rofi" && -n "$src" && -d "$src" ]]; then
+        rm -rf "$HOME/.config/rofi"
+        cp -r "$src" "$HOME/.config/rofi"
+        msg "Windows 11 Start menu (rofi) applied."
+    fi
+}
+
+apply_mako_windows() {
+    local src
+    src=$(project_file "mako")
+    if [[ -n "$src" && -f "$src/config" ]]; then
+        mkdir -p "$HOME/.config/mako"
+        cp "$src/config" "$HOME/.config/mako/config"
+        omarchy_reload_mako
+        msg "Windows 11 notification style applied."
+    fi
+}
+
+apply_alacritty_windows() {
+    local src
+    src=$(project_file "alacritty")
+    if [[ -n "$src" && -f "$src/windows-terminal.toml" ]]; then
+        mkdir -p "$HOME/.config/alacritty"
+        cp "$src/windows-terminal.toml" "$HOME/.config/alacritty/alacritty.toml"
+        msg "Windows Terminal style applied to Alacritty."
+    fi
+}
+
+apply_fontconfig_windows() {
+    local src
+    src=$(project_file "fontconfig")
+    if [[ -n "$src" && -f "$src/fonts.conf" ]]; then
+        mkdir -p "$HOME/.config/fontconfig"
+        cp "$src/fonts.conf" "$HOME/.config/fontconfig/fonts.conf"
+        fc-cache -f >/dev/null 2>&1 || true
+        msg "Windows 11 font rendering configuration applied."
+    fi
+}
+
+backup_original_configs() {
+    local timestamp
+    timestamp=$(date +%Y%m%d_%H%M%S)
+    local cur_backup="$BACKUP_DIR/$timestamp"
+    mkdir -p "$cur_backup"
+
+    msg "Backing up original desktop configs to $cur_backup"
+
+    if [[ -f "$HOME/.config/hypr/hyprland.conf" ]]; then
+        mkdir -p "$cur_backup/hypr"
+        cp "$HOME/.config/hypr/hyprland.conf" "$cur_backup/hypr/"
+    fi
+    if [[ -f "$HOME/.config/hypr/hyprland.lua" ]]; then
+        mkdir -p "$cur_backup/hypr"
+        cp "$HOME/.config/hypr/hyprland.lua" "$cur_backup/hypr/"
+    fi
+
+    backup_config_dir "waybar" "$cur_backup"
+    backup_config_dir "rofi" "$cur_backup"
+    backup_config_dir "wofi" "$cur_backup"
+    backup_config_dir "gtk-3.0" "$cur_backup"
+    backup_config_dir "gtk-4.0" "$cur_backup"
+    backup_config_dir "mako" "$cur_backup"
+    backup_config_dir "alacritty" "$cur_backup"
+    backup_config_dir "fontconfig" "$cur_backup"
+
+    # Nautilus file manager override + My Computer extension (so toggling back
+    # can restore the original file-manager experience)
+    local nautilus_backup="$cur_backup/nautilus"
+    mkdir -p "$nautilus_backup"
+    if [[ -f "$HOME/.local/share/applications/org.gnome.Nautilus.desktop" ]]; then
+        cp -a "$HOME/.local/share/applications/org.gnome.Nautilus.desktop" "$nautilus_backup/"
+    else
+        touch "$nautilus_backup/.absent_nautilus_desktop"
+    fi
+    if [[ -d "$HOME/.local/share/nautilus-python/extensions" ]]; then
+        cp -a "$HOME/.local/share/nautilus-python/extensions" "$nautilus_backup/extensions"
+    else
+        touch "$nautilus_backup/.absent_extensions"
+    fi
+    if [[ -f "$HOME/.local/share/glib-2.0/schemas/io.github.yannmasoch.nautilus-my-computer.gschema.xml" ]]; then
+        cp -a "$HOME/.local/share/glib-2.0/schemas/io.github.yannmasoch.nautilus-my-computer.gschema.xml" "$nautilus_backup/"
+    fi
+
+    # Capture gtk settings
+    local gtk_file="$cur_backup/gtk_settings.conf"
+    if command_exists gsettings; then
+        echo "GTK_THEME=$(gsettings get org.gnome.desktop.interface gtk-theme 2>/dev/null || echo '')" > "$gtk_file"
+        echo "ICON_THEME=$(gsettings get org.gnome.desktop.interface icon-theme 2>/dev/null || echo '')" >> "$gtk_file"
+        echo "CURSOR_THEME=$(gsettings get org.gnome.desktop.interface cursor-theme 2>/dev/null || echo '')" >> "$gtk_file"
+        echo "FONT_NAME=$(gsettings get org.gnome.desktop.interface font-name 2>/dev/null || echo '')" >> "$gtk_file"
+        echo "COLOR_SCHEME=$(gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null || echo '')" >> "$gtk_file"
+        echo "CURSOR_SIZE=$(gsettings get org.gnome.desktop.interface cursor-size 2>/dev/null || echo '')" >> "$gtk_file"
+    fi
+
+    if type create_manifest >/dev/null 2>&1; then
+        create_manifest "$cur_backup"
+    fi
+
+    echo "$cur_backup" > "$BASELINE_FILE"
+}
+
+restore_gtk_from_baseline() {
+    local baseline="$1"
+    local gtk_file="$baseline/gtk_settings.conf"
+    if [[ -f "$gtk_file" ]]; then
+        local GTK_THEME="" ICON_THEME="" CURSOR_THEME="" FONT_NAME="" COLOR_SCHEME="" CURSOR_SIZE=""
+        source "$gtk_file"
+        omarchy_set_gnome_theme "${GTK_THEME//\'/}" "${ICON_THEME//\'/}" "${CURSOR_THEME//\'/}" "${CURSOR_SIZE//\'/}"
+        if [[ -n "${FONT_NAME:-}" ]]; then
+            gsettings set org.gnome.desktop.interface font-name "${FONT_NAME//\'/}" 2>/dev/null || true
+        fi
+        if [[ -n "${COLOR_SCHEME:-}" ]]; then
+            gsettings set org.gnome.desktop.interface color-scheme "${COLOR_SCHEME//\'/}" 2>/dev/null || true
+        fi
+    fi
+    nautilus -q 2>/dev/null || true
+}
+
+# Restore the file manager to its original condition: removes the Nautilus
+# desktop override, the My Computer extension, its schema, settings and
+# translations. Uses the baseline snapshot when available, otherwise removes
+# the known undercover artifacts so the stock file manager comes back.
+restore_undercover_nautilus() {
+    local baseline="$1"
+    local nautilus_backup="$baseline/nautilus"
+    local app_dir="$HOME/.local/share/applications"
+    local ext_dir="$HOME/.local/share/nautilus-python/extensions"
+    local schema_dir="$HOME/.local/share/glib-2.0/schemas"
+    local schema_id="io.github.yannmasoch.nautilus-my-computer"
+
+    gsettings reset-recursively "$schema_id" 2>/dev/null || true
+
+    if [[ -d "$nautilus_backup" ]]; then
+        if [[ -f "$nautilus_backup/org.gnome.Nautilus.desktop" ]]; then
+            mkdir -p "$app_dir"
+            cp -a "$nautilus_backup/org.gnome.Nautilus.desktop" "$app_dir/"
+        elif [[ -f "$nautilus_backup/.absent_nautilus_desktop" ]]; then
+            rm -f "$app_dir/org.gnome.Nautilus.desktop"
+        fi
+
+        if [[ -d "$nautilus_backup/extensions" ]]; then
+            rm -rf "$ext_dir"
+            mkdir -p "$(dirname "$ext_dir")"
+            cp -a "$nautilus_backup/extensions" "$(dirname "$ext_dir")/"
+        elif [[ -f "$nautilus_backup/.absent_extensions" ]]; then
+            rm -rf "$ext_dir"
+        fi
+
+        if [[ -f "$nautilus_backup/$schema_id.gschema.xml" ]]; then
+            mkdir -p "$schema_dir"
+            cp -a "$nautilus_backup/$schema_id.gschema.xml" "$schema_dir/"
+        else
+            rm -f "$schema_dir/$schema_id.gschema.xml"
+        fi
+    else
+        # Legacy baseline predating Nautilus tracking: drop known artifacts.
+        rm -f "$app_dir/org.gnome.Nautilus.desktop"
+        rm -f "$ext_dir/nautilus-my-computer.py"
+        rm -rf "$ext_dir/nautilus_my_computer"
+        rm -f "$ext_dir/__pycache__/nautilus-my-computer"*.pyc 2>/dev/null || true
+        rm -f "$schema_dir/$schema_id.gschema.xml"
+    fi
+
+    glib-compile-schemas "$schema_dir" 2>/dev/null || true
+    find "$HOME/.local/share/locale" -name "nautilus-my-computer.mo" -delete 2>/dev/null || true
+    nautilus -q 2>/dev/null || true
+}
+
+switch_to_mac() {
+    local variant="dark"
+    if [[ "${1:-}" == "light" || "${1:-}" == "--light" || "${2:-}" == "light" || "${2:-}" == "--light" ]]; then
+        variant="light"
+    fi
+
+    msg "Switching to Apple macOS Sequoia ($variant)..."
+    if [[ ! -f "$BASELINE_FILE" ]]; then
+        backup_original_configs
+    fi
+    echo "mac-$variant" > "$STATE_FILE"
+    write_setting "MODE" "mac"
+    write_setting "THEME_VARIANT" "$variant"
+
+    if [[ -f "$CONFIG_DIR/hypr/mac-mode.lua" ]]; then
+        cp -f "$CONFIG_DIR/hypr/mac-mode.lua" "$HOME/.config/hypr/mac-mode.lua" 2>/dev/null || true
+    fi
+
+    local gtk_icon="WhiteSur-dark"
+    local gtk_theme="WhiteSur-Dark"
+    local wall_img="macOS-Sequoia-Dark.jpg"
+    local color_scheme="prefer-dark"
+    if [[ "$variant" == "light" ]]; then
+        gtk_icon="WhiteSur-light"
+        gtk_theme="WhiteSur-Light"
+        wall_img="macOS-Sequoia-Light.jpg"
+        color_scheme="prefer-light"
+    fi
+
+    # 1. GSettings (GNOME / GTK / Flatpak / Libadwaita)
+    if command_exists gsettings; then
+        gsettings set org.gnome.desktop.wm.preferences button-layout "close,minimize,maximize:" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface icon-theme "$gtk_icon" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface gtk-theme "$gtk_theme" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface font-name "SF Pro Text 10.5" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface document-font-name "SF Pro Text 10.5" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface monospace-font-name "Liga SFMono Nerd Font 10.5" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface color-scheme "$color_scheme" 2>/dev/null || true
+    fi
+
+    # 2. GTK 3.0 & 4.0 settings.ini
+    for gtk_dir in "gtk-3.0" "gtk-4.0"; do
+        mkdir -p "$HOME/.config/$gtk_dir"
+        cat > "$HOME/.config/$gtk_dir/settings.ini" << EOF
+[Settings]
+gtk-theme-name=$gtk_theme
+gtk-icon-theme-name=$gtk_icon
+gtk-cursor-theme-name=Fluent-dark-cursors
+gtk-cursor-theme-size=24
+gtk-font-name=SF Pro Text 10.5
+gtk-application-prefer-dark-theme=$([ "$color_scheme" = "prefer-dark" ] && echo 1 || echo 0)
+gtk-decoration-layout=close,minimize,maximize:
+EOF
+    done
+
+    # 3. GTK 2.0 (~/.gtkrc-2.0)
+    cat > "$HOME/.gtkrc-2.0" << EOF
+gtk-theme-name="$gtk_theme"
+gtk-icon-theme-name="$gtk_icon"
+gtk-font-name="SF Pro Text 10.5"
+gtk-cursor-theme-name="Fluent-dark-cursors"
+gtk-cursor-theme-size=24
+EOF
+
+    # 4. xsettingsd for X11 & XWayland apps
+    mkdir -p "$HOME/.config/xsettingsd"
+    cat > "$HOME/.config/xsettingsd/xsettingsd.conf" << EOF
+Net/ThemeName "$gtk_theme"
+Net/IconThemeName "$gtk_icon"
+Gtk/FontName "SF Pro Text 10.5"
+Gtk/CursorThemeName "Fluent-dark-cursors"
+Gtk/CursorThemeSize 24
+Gtk/DecorationLayout "close,minimize,maximize:"
+EOF
+    killall -HUP xsettingsd 2>/dev/null || true
+
+    # Deploy macOS traffic light GTK CSS
+    if [[ -f "$CONFIG_DIR/gtk/mac-style.css" ]]; then
+        cp -f "$CONFIG_DIR/gtk/mac-style.css" "$HOME/.config/gtk-4.0/gtk.css" 2>/dev/null || true
+        cp -f "$CONFIG_DIR/gtk/mac-style.css" "$HOME/.config/gtk-3.0/gtk.css" 2>/dev/null || true
+    fi
+
+    # Deploy Waybar mac config
+    if [[ -f "$CONFIG_DIR/waybar/config-mac.jsonc" ]]; then
+        cp -f "$CONFIG_DIR/waybar/config-mac.jsonc" "$HOME/.config/waybar/config.jsonc"
+        cp -f "$CONFIG_DIR/waybar/style-mac.css" "$HOME/.config/waybar/style.css"
+    fi
+
+    # Deploy mac Rofi theme
+    if [[ -f "$CONFIG_DIR/rofi/mac.rasi" ]]; then
+        cp -f "$CONFIG_DIR/rofi/mac.rasi" "$HOME/.config/rofi/windows11.rasi" 2>/dev/null || true
+        cp -f "$CONFIG_DIR/rofi/mac.rasi" "$HOME/.config/rofi/mac.rasi" 2>/dev/null || true
+    fi
+
+    # Apply wallpaper
+    if [[ -f "$CONFIG_DIR/wallpapers/$wall_img" ]]; then
+        killall swaybg 2>/dev/null || true
+        nohup swaybg -i "$CONFIG_DIR/wallpapers/$wall_img" -m fill >/dev/null 2>&1 &
+        disown 2>/dev/null || true
+    fi
+
+    omarchy_reload_waybar
+    omarchy_reload_hyprland
+    msg "Switched to Apple macOS Sequoia ($variant) — done!"
+}
+
+switch_to_win11() {
+    local variant="dark"
+    if [[ "${1:-}" == "light" || "${1:-}" == "--light" || "${2:-}" == "light" || "${2:-}" == "--light" ]]; then
+        variant="light"
+    fi
+
+    msg "Switching to Windows 11 ($variant)..."
+    if [[ ! -f "$BASELINE_FILE" ]]; then
+        backup_original_configs
+    fi
+    echo "win11-$variant" > "$STATE_FILE"
+    write_setting "MODE" "windows"
+    write_setting "THEME_VARIANT" "$variant"
+
+    if [[ -f "$CONFIG_DIR/hypr/windows-mode.lua" ]]; then
+        cp -f "$CONFIG_DIR/hypr/windows-mode.lua" "$HOME/.config/hypr/windows-mode.lua" 2>/dev/null || true
+    fi
+
+    local gtk_icon="Fluent-dark"
+    local gtk_theme="Win11-Dark"
+    local wall_img="win11_bloom_dark.jpg"
+    local color_scheme="prefer-dark"
+    if [[ "$variant" == "light" ]]; then
+        gtk_icon="Fluent-light"
+        gtk_theme="Win11-Light"
+        wall_img="win11_bloom_light.jpg"
+        color_scheme="prefer-light"
+    fi
+
+    # 1. GSettings (GNOME / GTK / Flatpak / Libadwaita)
+    if command_exists gsettings; then
+        gsettings set org.gnome.desktop.wm.preferences button-layout ":minimize,maximize,close" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface icon-theme "$gtk_icon" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface gtk-theme "$gtk_theme" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface font-name "Segoe UI 10.5" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface document-font-name "Segoe UI 10.5" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface monospace-font-name "Cascadia Code 10.5" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface color-scheme "$color_scheme" 2>/dev/null || true
+    fi
+
+    # 2. GTK 3.0 & 4.0 settings.ini
+    for gtk_dir in "gtk-3.0" "gtk-4.0"; do
+        mkdir -p "$HOME/.config/$gtk_dir"
+        cat > "$HOME/.config/$gtk_dir/settings.ini" << EOF
+[Settings]
+gtk-theme-name=$gtk_theme
+gtk-icon-theme-name=$gtk_icon
+gtk-cursor-theme-name=Fluent-dark-cursors
+gtk-cursor-theme-size=24
+gtk-font-name=Segoe UI 10.5
+gtk-application-prefer-dark-theme=$([ "$color_scheme" = "prefer-dark" ] && echo 1 || echo 0)
+gtk-decoration-layout=:minimize,maximize,close
+EOF
+    done
+
+    # 3. GTK 2.0 (~/.gtkrc-2.0)
+    cat > "$HOME/.gtkrc-2.0" << EOF
+gtk-theme-name="$gtk_theme"
+gtk-icon-theme-name="$gtk_icon"
+gtk-font-name="Segoe UI 10.5"
+gtk-cursor-theme-name="Fluent-dark-cursors"
+gtk-cursor-theme-size=24
+EOF
+
+    # 4. xsettingsd for X11 & XWayland apps
+    mkdir -p "$HOME/.config/xsettingsd"
+    cat > "$HOME/.config/xsettingsd/xsettingsd.conf" << EOF
+Net/ThemeName "$gtk_theme"
+Net/IconThemeName "$gtk_icon"
+Gtk/FontName "Segoe UI 10.5"
+Gtk/CursorThemeName "Fluent-dark-cursors"
+Gtk/CursorThemeSize 24
+Gtk/DecorationLayout ":minimize,maximize,close"
+EOF
+    killall -HUP xsettingsd 2>/dev/null || true
+
+    # Remove macOS GTK CSS (restore clean default)
+    rm -f "$HOME/.config/gtk-4.0/gtk.css" "$HOME/.config/gtk-3.0/gtk.css" 2>/dev/null || true
+
+    # Deploy Waybar win11 config
+    if [[ -f "$CONFIG_DIR/waybar/config-win.jsonc" ]]; then
+        cp -f "$CONFIG_DIR/waybar/config-win.jsonc" "$HOME/.config/waybar/config.jsonc"
+        cp -f "$CONFIG_DIR/waybar/style-win.css" "$HOME/.config/waybar/style.css"
+    fi
+
+    # Deploy win11 Rofi theme
+    local rofi_src="$CONFIG_DIR/rofi/win11.rasi"
+    if [[ "$variant" == "light" && -f "$CONFIG_DIR/rofi/win11-light.rasi" ]]; then
+        rofi_src="$CONFIG_DIR/rofi/win11-light.rasi"
+    fi
+    if [[ -f "$rofi_src" ]]; then
+        cp -f "$rofi_src" "$HOME/.config/rofi/windows11.rasi" 2>/dev/null || true
+        cp -f "$rofi_src" "$HOME/.config/rofi/win11.rasi" 2>/dev/null || true
+    fi
+
+    # Apply wallpaper
+    if [[ -f "$CONFIG_DIR/wallpapers/$wall_img" ]]; then
+        killall swaybg 2>/dev/null || true
+        nohup swaybg -i "$CONFIG_DIR/wallpapers/$wall_img" -m fill >/dev/null 2>&1 &
+        disown 2>/dev/null || true
+    fi
+
+    omarchy_reload_waybar
+    omarchy_reload_hyprland
+    msg "Switched to Windows 11 ($variant) — done!"
+}
+
+switch_to_windows() {
+    switch_to_win11 "$@"
+}
+
+switch_to_ios() {
+    switch_to_mac "$@"
+}
+
+switch_to_omarchy() {
+    msg "Restoring original Omarchy desktop..."
+    echo "omarchy" > "$STATE_FILE"
+    write_setting "MODE" "omarchy"
+    killall swaybg 2>/dev/null || true
+    disable_windows_hyprland 2>/dev/null || true
+    rm -f "$HOME/.config/gtk-4.0/gtk.css" "$HOME/.config/gtk-3.0/gtk.css" 2>/dev/null || true
+    if [[ -f "$BASELINE_FILE" ]]; then
+        local baseline
+        baseline=$(cat "$BASELINE_FILE")
+        if [[ -d "$baseline" ]]; then
+            restore_config_dir "waybar" "$baseline"
+            restore_config_dir "rofi" "$baseline"
+            restore_config_dir "wofi" "$baseline"
+            restore_config_dir "gtk-3.0" "$baseline"
+            restore_config_dir "gtk-4.0" "$baseline"
+            restore_config_dir "mako" "$baseline"
+            restore_config_dir "alacritty" "$baseline"
+            restore_config_dir "fontconfig" "$baseline"
+            restore_gtk_from_baseline "$baseline"
+        fi
+    fi
+    if command_exists gsettings; then
+        gsettings set org.gnome.desktop.wm.preferences button-layout "close:minimize,maximize" 2>/dev/null || true
+    fi
+    omarchy_reload_waybar
+    omarchy_reload_hyprland
+    msg "Restored original Omarchy desktop!"
+}
+
+switch_to_hyprland() {
+    switch_to_omarchy
+}
+
+restore_baseline() {
+    msg "Restoring system from baseline backup..."
+    killall swaybg 2>/dev/null || true
+    disable_windows_hyprland
+
+    if [[ -f "$BASELINE_FILE" ]]; then
+        local baseline
+        baseline=$(cat "$BASELINE_FILE")
+        if [[ -d "$baseline" ]]; then
+            if [[ -f "$baseline/hypr/hyprland.lua" ]]; then
+                mkdir -p "$HOME/.config/hypr"
+                cp "$baseline/hypr/hyprland.lua" "$HOME/.config/hypr/"
+            fi
+            if [[ -f "$baseline/hypr/hyprland.conf" ]]; then
+                mkdir -p "$HOME/.config/hypr"
+                cp "$baseline/hypr/hyprland.conf" "$HOME/.config/hypr/"
+            fi
+            restore_config_dir "waybar" "$baseline"
+            restore_config_dir "rofi" "$baseline"
+            restore_config_dir "wofi" "$baseline"
+            restore_config_dir "gtk-3.0" "$baseline"
+            restore_config_dir "gtk-4.0" "$baseline"
+            restore_config_dir "mako" "$baseline"
+            restore_config_dir "alacritty" "$baseline"
+            restore_config_dir "fontconfig" "$baseline"
+            restore_gtk_from_baseline "$baseline"
+        fi
+    fi
+
+    restore_undercover_nautilus "$baseline"
+
+    omarchy_reload_waybar
+    omarchy_reload_hyprland
+
+    rm -f "$STATE_FILE"
+    msg "Baseline restored successfully."
+}
+
+verify_integrity() {
+    msg "Verifying integrity..."
+    if [[ -f "$STATE_FILE" ]]; then
+        echo "State: $(cat "$STATE_FILE")"
+    else
+        echo "State: default"
+    fi
+    if [[ -f "$BASELINE_FILE" ]]; then
+        echo "Baseline available: Yes"
+    else
+        echo "Baseline available: No"
+    fi
+    echo "Launcher: $(detect_launcher)"
+    if grep -q "windows-mode" "$HOME/.config/hypr/hyprland.lua" 2>/dev/null; then
+        echo "Hyprland Windows Mode (lua): Active"
+    else
+        echo "Hyprland Windows Mode (lua): Inactive"
+    fi
+    if [[ -d "$HOME/.themes/Win11-Dark" || -d "$HOME/.local/share/themes/Win11-Dark" ]]; then
+        echo "Win11 GTK Theme: Installed"
+    fi
+    if [[ -d "$HOME/.icons/Fluent-dark" || -d "$HOME/.icons/Fluent" || -d "$HOME/.local/share/icons/Fluent-dark" ]]; then
+        echo "Fluent Icon Theme: Installed"
+    fi
+    if [[ -d "$HOME/.icons/WhiteSur-dark" || -d "$HOME/.local/share/icons/WhiteSur-dark" ]]; then
+        echo "WhiteSur Icon Theme: Installed"
+    fi
+    if command_exists hyprctl; then
+        echo "Hyprland Lua config errors: $(hyprctl configerrors 2>/dev/null | grep -c . || echo 0)"
+    fi
+}
+
+show_status() {
+    if [[ -f "$STATE_FILE" ]]; then
+        local state
+        state=$(cat "$STATE_FILE")
+        echo "Omarchy Undercover: $state mode"
+    else
+        echo "Omarchy Undercover: default mode"
+    fi
+}
+
+show_help() {
+    echo "Usage: omarchy-undercover [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  -mac, --mac, --macOS, -apple, --apple  Switch to Apple macOS Sequoia (dark by default)"
+    echo "  -mac-light, --mac-light                 Switch to Apple macOS Sequoia Light mode"
+    echo "  -w11, --w11, --win11, --enable          Switch to Windows 11 (dark by default)"
+    echo "  -w11-light, --win11-light               Switch to Windows 11 Light mode"
+    echo "  --toggle                                Advance to next mode in 5-mode cycle"
+    echo "  --disable, --omarchy                    Switch to original Omarchy mode & theming"
+    echo "  --restore                               Restore from baseline backup"
+    echo "  --verify                                Verify integrity of config and state"
+    echo "  --status                                Show current status"
+    echo "  --help, -h                              Show this help message"
+}
+
+toggle_mode() {
+    local -a MODES=("mac-dark" "mac-light" "win11-dark" "win11-light" "omarchy")
+    local current=""
+    [[ -f "$STATE_FILE" ]] && current=$(cat "$STATE_FILE")
+    local next="mac-dark"
+    local found=0
+    for i in "${!MODES[@]}"; do
+        if [[ "${MODES[$i]}" == "$current" ]]; then
+            local ni=$(( (i + 1) % ${#MODES[@]} ))
+            next="${MODES[$ni]}"
+            found=1
+            break
+        fi
+    done
+    case "$next" in
+        mac-dark)    switch_to_mac "dark" ;;
+        mac-light)   switch_to_mac "light" ;;
+        win11-dark)  switch_to_win11 "dark" ;;
+        win11-light) switch_to_win11 "light" ;;
+        omarchy)     switch_to_omarchy ;;
+        *)           switch_to_mac "dark" ;;
+    esac
+}
+
+if [[ $# -eq 0 ]]; then
+    toggle_mode
+    exit 0
+fi
+
+case "$1" in
+    --toggle)
+        toggle_mode
+        ;;
+    -mac|--mac|--macOS|-apple|--apple|-app|-ios|--ios)
+        if [[ "${2:-}" == "--light" || "${2:-}" == "light" ]]; then
+            switch_to_mac "light"
+        else
+            switch_to_mac "dark"
+        fi
+        ;;
+    -mac-light|--mac-light)
+        switch_to_mac "light"
+        ;;
+    -w11|--w11|--win11|--enable)
+        if [[ "${2:-}" == "--light" || "${2:-}" == "light" ]]; then
+            switch_to_win11 "light"
+        else
+            switch_to_win11 "dark"
+        fi
+        ;;
+    -w11-light|--win11-light)
+        switch_to_win11 "light"
+        ;;
+    --autohide)
+        if [[ "${2:-}" == "off" || "${2:-}" == "disable" || "${2:-}" == "0" ]]; then
+            write_setting "AUTOHIDE" "false"
+            killall omarchy-autohide-dock 2>/dev/null || true
+            msg "Auto-hide disabled."
+        else
+            write_setting "AUTOHIDE" "true"
+            killall omarchy-autohide-dock 2>/dev/null || true
+            nohup omarchy-autohide-dock >/dev/null 2>&1 &
+            disown 2>/dev/null || true
+            msg "Smart edge auto-hide enabled."
+        fi
+        ;;
+    --disable|--omarchy)
+        switch_to_omarchy
+        ;;
+    --restore)
+        restore_baseline
+        ;;
+    --verify)
+        verify_integrity
+        ;;
+    --status)
+        show_status
+        ;;
+    --help|-h)
+        show_help
+        ;;
+    *)
+        echo "Unknown option: $1"
+        show_help
+        exit 1
+        ;;
+esac
+
+
+exit 0

@@ -1,0 +1,88 @@
+[
+  {
+    "name": "win11-taskbar",
+    "layer": "top",
+    "position": "bottom",
+    "height": 48,
+    "margin-bottom": 0,
+    "margin-left": 0,
+    "margin-right": 0,
+    "modules-left": [
+      "custom/weather"
+    ],
+    "modules-center": [
+      "custom/startmenu",
+      "custom/search",
+      "custom/taskview",
+      "wlr/taskbar"
+    ],
+    "modules-right": [
+      "tray",
+      "network",
+      "pulseaudio",
+      "battery",
+      "clock",
+      "custom/notification"
+    ],
+    "custom/weather": {
+      "exec": "omarchy-weather",
+      "interval": 600,
+      "return-type": "json",
+      "format": "{}",
+      "tooltip": true,
+      "on-click": "omarchy-win11-notifications"
+    },
+    "custom/startmenu": {
+      "format": "󰍲",
+      "tooltip": "Start (Win)",
+      "on-click": "rofi -show drun -theme ~/.config/rofi/win11.rasi"
+    },
+    "custom/search": {
+      "format": "󰍉  Search",
+      "tooltip": "Type here to search",
+      "on-click": "rofi -show drun -theme ~/.config/rofi/win11.rasi"
+    },
+    "custom/taskview": {
+      "format": "󱂬",
+      "tooltip": "Task View (Win+Tab)",
+      "on-click": "rofi -show window -theme ~/.config/rofi/win11.rasi"
+    },
+    "wlr/taskbar": {
+      "format": "{icon}",
+      "icon-size": 24,
+      "tooltip-format": "{title}",
+      "on-click": "activate"
+    },
+    "tray": {
+      "icon-size": 16,
+      "spacing": 6
+    },
+    "network": {
+      "format-wifi": "󰤨",
+      "format-ethernet": "󰈀",
+      "format-disconnected": "󰤭",
+      "tooltip-format": "{ifname}: {ipaddr}"
+    },
+    "pulseaudio": {
+      "format": "{icon}",
+      "format-muted": "󰝟",
+      "format-icons": { "default": ["󰕿","󰖀","󰕾"] },
+      "on-click": "wpctl set-volume @DEFAULT_AUDIO_SINK@ toggle"
+    },
+    "battery": {
+      "format": "{icon}",
+      "format-icons": ["󰂎","󰁺","󰁻","󰁼","󰁽","󰁾","󰁿","󰂀","󰂁","󰁹"],
+      "tooltip-format": "{capacity}% {timeTo}"
+    },
+    "clock": {
+      "format": "{:%I:%M %p\n%m/%d/%Y}",
+      "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
+      "on-click": "omarchy-win11-notifications"
+    },
+    "custom/notification": {
+      "format": "󰂞",
+      "tooltip": "Notification Center (Win+N)",
+      "on-click": "omarchy-win11-notifications"
+    }
+  }
+]

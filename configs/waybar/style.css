@@ -1,0 +1,264 @@
+/* =============================================================================
+   Omarchy Undercover - Windows 11 Taskbar (Fluent)
+   License: GPL-3.0-or-later
+   ========================================================================= */
+
+* {
+    border: none;
+    border-radius: 0;
+    font-family: "Segoe UI Variable Display", "Segoe UI Variable Text", "Segoe UI",
+                 "JetBrainsMono Nerd Font", sans-serif;
+    font-size: 12px;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+}
+
+/* Taskbar "acrylic" background */
+window#waybar {
+    background-color: rgba(22, 22, 22, 0.90);
+    background-image: linear-gradient(0deg, rgba(0, 120, 212, 0.05), rgba(0, 120, 212, 0.05));
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    min-height: 40px;
+}
+
+tooltip {
+    background-color: rgba(32, 32, 32, 0.97);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif;
+    color: #ffffff;
+}
+
+/* Center container: taskbar icons cluster */
+.modules-center {
+    background: transparent;
+    margin: 0 180px;
+}
+
+/* --- Start button (Windows 11 logo) --- */
+#custom-windows-start {
+    padding: 0 16px;
+    margin: 2px 4px;
+    border-radius: 8px;
+    transition: background-color 0.1s linear;
+}
+
+#custom-windows-start image {
+    background: transparent;
+}
+
+#custom-windows-start:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* --- Search pill --- */
+#custom-windows-search {
+    background-color: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    padding: 0 16px;
+    margin: 5px 6px;
+    font-size: 11px;
+    transition: background-color 0.1s linear;
+}
+
+#custom-windows-search:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+}
+
+/* --- Task view icon --- */
+#custom-task-view {
+    font-size: 16px;
+    color: #ffffff;
+    padding: 0 10px;
+    margin: 2px 2px;
+    border-radius: 4px;
+    transition: background-color 0.1s linear;
+}
+
+#custom-task-view:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* --- Task view & new desktop (Win11 virtual desktops) --- */
+#custom-task-view,
+#custom-task-view-new {
+    font-size: 16px;
+    color: #ffffff;
+    padding: 0 10px;
+    margin: 2px 2px;
+    border-radius: 6px;
+    transition: background-color 0.1s linear;
+}
+
+#custom-task-view-new {
+    font-size: 20px;
+}
+
+#custom-task-view:hover,
+#custom-task-view-new:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* --- Running / active apps --- */
+#wlr-taskbar {
+    padding: 0 2px;
+    margin-left: 8px;
+    border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+#wlr-taskbar button {
+    padding: 0 10px;
+    margin: 4px 6px;
+    border-radius: 6px;
+    background-color: transparent;
+    border-bottom: 3px solid transparent;
+    transition: background-color 0.1s linear;
+}
+
+#wlr-taskbar button:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+#wlr-taskbar button.active {
+    background-color: rgba(255, 255, 255, 0.14);
+    border-bottom: 3px solid #0078d4;
+    opacity: 1;
+}
+
+#wlr-taskbar button.active:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Running-but-unfocused apps: tucked away / dimmed like a Win11 tray, revealed on hover */
+#wlr-taskbar button:not(.active) {
+    border-bottom: 3px solid rgba(255, 255, 255, 0.25);
+    opacity: 0.55;
+}
+
+#wlr-taskbar button:not(.active):hover {
+    opacity: 1;
+}
+
+/* --- Right modules --- */
+.modules-right {
+    margin-right: 4px;
+}
+
+/* --- System tray (Windows 11 style) --- */
+#tray {
+    padding: 0 4px;
+    margin: 3px 2px;
+    border-radius: 8px;
+}
+
+#tray button {
+    padding: 2px 4px;
+    margin: 0 1px;
+    border-radius: 4px;
+    background-color: transparent;
+    transition: background-color 0.15s ease-in-out;
+}
+
+#tray button:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+#tray > .needs-attention {
+    background-color: rgba(0, 120, 212, 0.4);
+    border-radius: 4px;
+}
+
+#tray > .passive {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+/* Tray context menu (right-click) */
+#tray menu {
+    background-color: rgba(32, 32, 32, 0.97);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 4px;
+    font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif;
+    color: #ffffff;
+}
+
+#tray menuitem {
+    padding: 6px 14px;
+    border-radius: 4px;
+    color: #ffffff;
+}
+
+#tray menuitem:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+#tray menu separator {
+    background-color: rgba(255, 255, 255, 0.12);
+    margin: 3px 6px;
+}
+
+#quick-settings {
+    background-color: transparent;
+    padding: 0 4px;
+    margin: 3px 2px;
+    border-radius: 4px;
+    transition: background-color 0.15s ease-in-out;
+}
+
+#quick-settings:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+#network, #pulseaudio, #battery {
+    padding: 0 5px;
+    font-size: 14px;
+    color: #ffffff;
+}
+
+#clock {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 0 10px;
+    margin: 3px 2px;
+    border-radius: 4px;
+    color: #ffffff;
+    transition: background-color 0.15s ease-in-out;
+}
+
+#clock:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+#custom-windows-settings {
+    font-size: 16px;
+    padding: 0 10px;
+    margin: 3px 2px;
+    border-radius: 4px;
+    color: #ffffff;
+    transition: background-color 0.15s ease-in-out;
+}
+
+#custom-windows-settings:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* --- Show desktop "sliver" --- */
+#custom-show-desktop {
+    font-size: 14px;
+    padding: 0 8px;
+    margin: 3px 0 3px 2px;
+    border-left: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    color: #ffffff;
+    transition: background-color 0.15s ease-in-out;
+}
+
+#custom-show-desktop:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+}

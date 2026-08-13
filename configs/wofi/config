@@ -1,0 +1,8 @@
+show=drun
+width=600
+height=700
+location=center
+allow_images=true
+image_size=48
+columns=6
+prompt=Type here to search

@@ -1,0 +1,239 @@
+/* macOS Sequoia / Sonoma — Pixel Perfect Frosted Top Menu Bar */
+* {
+    font-family: "SF Pro Text", "SF Pro Display", "JetBrainsMono Nerd Font", "Inter", sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+window#waybar.mac-topbar {
+    background-color: rgba(24, 24, 28, 0.76);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    padding: 0 4px;
+}
+
+window#waybar.mac-topbar #custom-apple-logo {
+    padding: 0 10px;
+    font-size: 18px;
+    color: #ffffff;
+    font-family: "JetBrainsMono Nerd Font", "SF Pro Display", sans-serif;
+}
+window#waybar.mac-topbar #custom-apple-logo:hover {
+    background-color: rgba(255, 255, 255, 0.16);
+    border-radius: 4px;
+}
+
+window#waybar.mac-topbar #custom-finder-title {
+    font-weight: 700;
+    padding: 0 8px;
+    color: #ffffff;
+}
+
+window#waybar.mac-topbar #window {
+    padding: 0 8px;
+    color: rgba(255, 255, 255, 0.88);
+    font-weight: 500;
+}
+
+window#waybar.mac-topbar #custom-menu-file,
+window#waybar.mac-topbar #custom-menu-edit,
+window#waybar.mac-topbar #custom-menu-view,
+window#waybar.mac-topbar #custom-menu-go,
+window#waybar.mac-topbar #custom-menu-window,
+window#waybar.mac-topbar #custom-menu-help {
+    padding: 2px 7px;
+    margin: 2px 1px;
+    color: rgba(255, 255, 255, 0.90);
+    font-size: 13px;
+}
+window#waybar.mac-topbar #custom-menu-file:hover,
+window#waybar.mac-topbar #custom-menu-edit:hover,
+window#waybar.mac-topbar #custom-menu-view:hover,
+window#waybar.mac-topbar #custom-menu-go:hover,
+window#waybar.mac-topbar #custom-menu-window:hover,
+window#waybar.mac-topbar #custom-menu-help:hover {
+    background-color: rgba(255, 255, 255, 0.16);
+    border-radius: 4px;
+}
+
+window#waybar.mac-topbar #clock {
+    padding: 0 10px;
+    font-weight: 600;
+    font-size: 12.5px;
+    color: #ffffff;
+}
+
+window#waybar.mac-topbar #custom-siri {
+    padding: 1px 10px;
+    margin: 4px 6px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(0, 122, 255, 0.75), rgba(175, 82, 222, 0.75));
+    border: 1px solid rgba(255, 255, 255, 0.30);
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #ffffff;
+}
+window#waybar.mac-topbar #custom-siri:hover {
+    background: linear-gradient(135deg, rgba(0, 122, 255, 0.95), rgba(175, 82, 222, 0.95));
+}
+
+window#waybar.mac-topbar #network,
+window#waybar.mac-topbar #pulseaudio,
+window#waybar.mac-topbar #battery,
+window#waybar.mac-topbar #custom-control-center {
+    padding: 0 7px;
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 14px;
+}
+
+/* macOS Sequoia / Sonoma — Dynamically Auto-Sizing Floating Bottom Dock */
+window#waybar.mac-dock {
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+window#waybar.mac-dock .modules-center {
+    background-color: rgba(22, 22, 28, 0.65);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    padding: 4px 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+}
+
+window#waybar.mac-dock #custom-dock-finder {
+    background-image: url("/home/mister/.local/share/icons/mac-dock/finder.svg");
+    background-size: 40px 40px;
+    background-repeat: no-repeat;
+    background-position: center;
+    min-width: 44px;
+    min-height: 44px;
+    margin: 2px 3px;
+    border-radius: 12px;
+    transition: all 0.2s cubic-bezier(0.1, 0.9, 0.2, 1.0);
+}
+
+window#waybar.mac-dock #custom-dock-launchpad {
+    background-image: url("/home/mister/.local/share/icons/mac-dock/launchpad.svg");
+    background-size: 40px 40px;
+    background-repeat: no-repeat;
+    background-position: center;
+    min-width: 44px;
+    min-height: 44px;
+    margin: 2px 3px;
+    border-radius: 12px;
+    transition: all 0.2s cubic-bezier(0.1, 0.9, 0.2, 1.0);
+}
+
+window#waybar.mac-dock #custom-dock-safari {
+    background-image: url("/home/mister/.local/share/icons/mac-dock/safari.svg");
+    background-size: 40px 40px;
+    background-repeat: no-repeat;
+    background-position: center;
+    min-width: 44px;
+    min-height: 44px;
+    margin: 2px 3px;
+    border-radius: 12px;
+    transition: all 0.2s cubic-bezier(0.1, 0.9, 0.2, 1.0);
+}
+
+window#waybar.mac-dock #custom-dock-messages {
+    background-image: url("/home/mister/.local/share/icons/mac-dock/messages.svg");
+    background-size: 40px 40px;
+    background-repeat: no-repeat;
+    background-position: center;
+    min-width: 44px;
+    min-height: 44px;
+    margin: 2px 3px;
+    border-radius: 12px;
+    transition: all 0.2s cubic-bezier(0.1, 0.9, 0.2, 1.0);
+}
+
+window#waybar.mac-dock #custom-dock-music {
+    background-image: url("/home/mister/.local/share/icons/mac-dock/music.svg");
+    background-size: 40px 40px;
+    background-repeat: no-repeat;
+    background-position: center;
+    min-width: 44px;
+    min-height: 44px;
+    margin: 2px 3px;
+    border-radius: 12px;
+    transition: all 0.2s cubic-bezier(0.1, 0.9, 0.2, 1.0);
+}
+
+window#waybar.mac-dock #custom-dock-photos {
+    background-image: url("/home/mister/.local/share/icons/mac-dock/photos.svg");
+    background-size: 40px 40px;
+    background-repeat: no-repeat;
+    background-position: center;
+    min-width: 44px;
+    min-height: 44px;
+    margin: 2px 3px;
+    border-radius: 12px;
+    transition: all 0.2s cubic-bezier(0.1, 0.9, 0.2, 1.0);
+}
+
+window#waybar.mac-dock #custom-dock-appstore {
+    background-image: url("/home/mister/.local/share/icons/mac-dock/appstore.svg");
+    background-size: 40px 40px;
+    background-repeat: no-repeat;
+    background-position: center;
+    min-width: 44px;
+    min-height: 44px;
+    margin: 2px 3px;
+    border-radius: 12px;
+    transition: all 0.2s cubic-bezier(0.1, 0.9, 0.2, 1.0);
+}
+
+window#waybar.mac-dock #custom-dock-terminal {
+    background-image: url("/home/mister/.local/share/icons/mac-dock/terminal.svg");
+    background-size: 40px 40px;
+    background-repeat: no-repeat;
+    background-position: center;
+    min-width: 44px;
+    min-height: 44px;
+    margin: 2px 3px;
+    border-radius: 12px;
+    transition: all 0.2s cubic-bezier(0.1, 0.9, 0.2, 1.0);
+}
+
+window#waybar.mac-dock #custom-dock-settings {
+    background-image: url("/home/mister/.local/share/icons/mac-dock/settings.svg");
+    background-size: 40px 40px;
+    background-repeat: no-repeat;
+    background-position: center;
+    min-width: 44px;
+    min-height: 44px;
+    margin: 2px 3px;
+    border-radius: 12px;
+    transition: all 0.2s cubic-bezier(0.1, 0.9, 0.2, 1.0);
+}
+
+window#waybar.mac-dock #custom-dock-finder:hover,
+window#waybar.mac-dock #custom-dock-launchpad:hover,
+window#waybar.mac-dock #custom-dock-safari:hover,
+window#waybar.mac-dock #custom-dock-messages:hover,
+window#waybar.mac-dock #custom-dock-music:hover,
+window#waybar.mac-dock #custom-dock-photos:hover,
+window#waybar.mac-dock #custom-dock-appstore:hover,
+window#waybar.mac-dock #custom-dock-terminal:hover,
+window#waybar.mac-dock #custom-dock-settings:hover {
+    background-color: rgba(255, 255, 255, 0.22);
+}
+
+window#waybar.mac-dock #taskbar button {
+    padding: 4px 8px;
+    margin: 2px 3px;
+    border-radius: 12px;
+    border-bottom: 3px solid transparent;
+    transition: all 0.15s ease;
+}
+
+window#waybar.mac-dock #taskbar button.active {
+    background-color: rgba(255, 255, 255, 0.18);
+    border-bottom: 3px solid #ffffff;
+}
+
+window#waybar.mac-dock #taskbar button:hover {
+    background-color: rgba(255, 255, 255, 0.14);
+}

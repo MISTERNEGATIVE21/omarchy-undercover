@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Omarchy Undercover Mode
+Comment=Toggle Windows 11 Desktop Mode for Hyprland
+Exec=omarchy-undercover --enable
+Icon=omarchy-undercover
+Terminal=false
+Type=Application
+Categories=Utility;Settings;DesktopSettings;
+Keywords=Windows;Undercover;Hyprland;Theme;

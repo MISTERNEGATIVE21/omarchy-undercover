@@ -1,0 +1,22 @@
+[Desktop Entry]
+Name=Folders
+Comment=Access and organize your files
+Keywords=directory;explorer;file;files;
+Exec=env GTK_THEME=Adwaita:dark GTK_ICON_THEME=Fluent-dark nautilus computer:///
+Icon=org.gnome.Nautilus
+Terminal=false
+Type=Application
+Categories=GNOME;GTK;Utility;Core;FileManager;
+StartupNotify=true
+StartupWMClass=org.gnome.Nautilus
+Actions=new-window;new-window-private;
+X-GNOME-UsesNotifications=true
+X-GNOME-SingleMainWindow=true
+
+[Desktop Action new-window]
+Name=New Window
+Exec=env GTK_THEME=Adwaita:dark GTK_ICON_THEME=Fluent-dark nautilus --new-window computer:///
+
+[Desktop Action new-window-private]
+Name=New Window (Private)
+Exec=env GTK_THEME=Adwaita:dark GTK_ICON_THEME=Fluent-dark nautilus --new-window --incognito computer:///

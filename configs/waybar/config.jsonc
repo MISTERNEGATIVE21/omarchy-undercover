@@ -1,0 +1,107 @@
+{
+  "reload_style_on_change": true,
+  "layer": "top",
+  "position": "bottom",
+  "height": 46,
+  "spacing": 0,
+  "margin-top": 0,
+  "margin-bottom": 0,
+  "margin-left": 0,
+  "margin-right": 0,
+  "mode": "dock",
+  "modules-center": [
+    "custom/windows-start",
+    "custom/windows-search",
+    "custom/task-view",
+    "custom/task-view-new",
+    "wlr/taskbar"
+  ],
+  "modules-right": [
+    "tray",
+    "group/quick-settings",
+    "clock",
+    "custom/windows-settings",
+    "custom/show-desktop"
+  ],
+  "custom/windows-start": {
+    "image-name": "windows-start",
+    "icon-size": 20,
+    "on-click": "omarchy-undercover-launcher",
+    "tooltip-format": "Start Menu (Win)"
+  },
+  "custom/windows-search": {
+    "format": "󰍉  Type here to search",
+    "on-click": "omarchy-undercover-launcher",
+    "tooltip-format": "Search (Win + S)"
+  },
+  "custom/task-view": {
+    "format": "󱂬",
+    "on-click": "rofi -show window -theme ~/.config/rofi/windows11.rasi",
+    "tooltip-format": "Task View (Win + Tab)"
+  },
+  "custom/task-view-new": {
+    "format": "+",
+    "on-click": "omarchy-undercover-new-desktop",
+    "on-click-right": "omarchy-undercover-new-desktop",
+    "tooltip-format": "New Desktop"
+  },
+  "wlr/taskbar": {
+    "format": "{icon}",
+    "icon-size": 24,
+    "icon-theme": "Fluent-dark",
+    "tooltip-format": "{title}",
+    "on-click": "activate",
+    "on-click-middle": "close",
+    "on-click-right": "minimize",
+    "ignore-list": []
+  },
+  "group/quick-settings": {
+    "orientation": "horizontal",
+    "modules": [
+      "network",
+      "pulseaudio",
+      "battery"
+    ]
+  },
+  "network": {
+    "format-wifi": "󰤨",
+    "format-ethernet": "󰈀",
+    "format-disconnected": "󰤭",
+    "tooltip-format": "Network: {essid}",
+    "on-click": "omarchy-launch-wifi || nm-connection-editor || nmtui"
+  },
+  "pulseaudio": {
+    "format": "{icon}",
+    "format-muted": "󰝟",
+    "format-icons": {
+      "default": ["󰕿", "󰖀", "󰕾"]
+    },
+    "tooltip-format": "Volume: {volume}%",
+    "on-click": "omarchy-launch-audio || pavucontrol"
+  },
+  "battery": {
+    "states": {
+      "warning": 30,
+      "critical": 15
+    },
+    "format": "{icon}",
+    "format-charging": "󰂄",
+    "format-plugged": "󰚥",
+    "format-icons": ["󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
+    "tooltip-format": "Battery: {capacity}% ({time})"
+  },
+  "clock": {
+    "format": "{:%I:%M %p  %m/%d/%Y}",
+    "tooltip-format": "<big>{:%B %Y}</big>\n<tt><small>{calendar}</small></tt>"
+  },
+  "custom/windows-settings": {
+    "format": "󰒓",
+    "on-click": "uwsm-app -- omarchy-undercover-settings",
+    "tooltip-format": "Settings (Win + I)"
+  },
+  "custom/show-desktop": {
+    "format": "󰛢",
+    "on-click": "omarchy-undercover-show-desktop",
+    "tooltip-format": "Show Desktop (Win + D)"
+  }
+}

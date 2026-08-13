@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+"""Windows 11 Notification Center & Quick Settings Panel"""
+import sys, subprocess, gi
+gi.require_version("Gtk","4.0"); gi.require_version("Adw","1")
+from gi.repository import Gtk, Adw, GLib
+
+CSS = """
+window.win11-notif {
+    background-color: rgba(32, 32, 40, 0.94);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.0837);
+}
+.win11-card {
+    background-color: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
+}
+.win11-tile {
+    background-color: rgba(255,255,255,0.06);
+    border-radius: 6px;
+    padding: 12px;
+    margin: 3px;
+    min-width: 80px;
+    min-height: 64px;
+    color: #ffffff;
+    font-size: 22px;
+}
+.win11-tile.active { background-color: rgba(0,120,212,0.7); }
+.win11-title { font-size: 14px; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+"""
+
+class Win11Panel(Gtk.Window):
+    def __init__(self, app):
+        super().__init__(application=app, title="Notification Center")
+        self.set_default_size(380, 660)
+        self.set_resizable(False)
+        self.add_css_class("win11-notif")
+        p = Gtk.CssProvider()
+        p.load_from_data(CSS.encode())
+        Gtk.StyleContext.add_provider_for_display(self.get_display(), p, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+        scroll = Gtk.ScrolledWindow()
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        box.set_margin_top(16); box.set_margin_bottom(16)
+        box.set_margin_start(16); box.set_margin_end(16)
+
+        # Quick Settings
+        qs_title = Gtk.Label(label="Quick Settings")
+        qs_title.add_css_class("win11-title"); qs_title.set_halign(Gtk.Align.START)
+        box.append(qs_title)
+
+        tiles_grid = Gtk.Grid()
+        tiles_grid.set_column_spacing(6); tiles_grid.set_row_spacing(6)
+        tiles_data = [
+            ("󰤨","Wi-Fi",True),("󰂯","Bluetooth",True),
+            ("󰀝","Airplane",False),("󰒟","Battery Saver",False),
+            ("󰋙","Night Light",False),("󰟛","Accessibility",False),
+        ]
+        for i,(icon,label,active) in enumerate(tiles_data):
+            tile_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+            tile_box.add_css_class("win11-tile")
+            if active: tile_box.add_css_class("active")
+            icon_lbl = Gtk.Label(label=icon)
+            name_lbl = Gtk.Label(label=label); name_lbl.set_wrap(True); name_lbl.set_max_width_chars(8)
+            name_lbl.set_markup(f'<span size="x-small">{label}</span>')
+            tile_box.append(icon_lbl); tile_box.append(name_lbl)
+            tiles_grid.attach(tile_box, i%3, i//3, 1, 1)
+        box.append(tiles_grid)
+
+        # Volume slider
+        vol_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        vol_box.add_css_class("win11-card")
+        vol_icon = Gtk.Label(label="󰕾"); vol_icon.set_size_request(24,24)
+        vol_slider = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL,0,100,5)
+        vol_slider.set_value(65); vol_slider.set_hexpand(True)
+        vol_slider.connect("value-changed", lambda s: subprocess.run(["wpctl","set-volume","@DEFAULT_AUDIO_SINK@",f"{int(s.get_value())/100:.2f}"],check=False))
+        vol_box.append(vol_icon); vol_box.append(vol_slider)
+        box.append(vol_box)
+
+        # Calendar
+        cal_title = Gtk.Label(label="Calendar")
+        cal_title.add_css_class("win11-title"); cal_title.set_halign(Gtk.Align.START)
+        box.append(cal_title)
+        cal = Gtk.Calendar()
+        cal.add_css_class("win11-card")
+        box.append(cal)
+
+        # Notification card
+        notif_title = Gtk.Label(label="Notifications")
+        notif_title.add_css_class("win11-title"); notif_title.set_halign(Gtk.Align.START)
+        box.append(notif_title)
+        notif_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        notif_card.add_css_class("win11-card")
+        n_head = Gtk.Label(); n_head.set_markup("<b>Omarchy Undercover</b> · Now")
+        n_head.set_halign(Gtk.Align.START)
+        n_body = Gtk.Label(label="Windows 11 desktop mode is active.")
+        n_body.set_halign(Gtk.Align.START)
+        notif_card.append(n_head); notif_card.append(n_body)
+        box.append(notif_card)
+
+        scroll.set_child(box)
+        self.set_child(scroll)
+
+class Win11App(Adw.Application):
+    def __init__(self): super().__init__(application_id="org.omarchy.win11notifications")
+    def do_activate(self):
+        w = self.props.active_window
+        if not w: w = Win11Panel(self)
+        w.present()
+
+if __name__ == "__main__":
+    sys.exit(Win11App().run(sys.argv))

@@ -1,0 +1,19 @@
+configuration {
+    modi: "drun,run,window";
+    window-format: "{w}   {t}";
+    show-icons: true;
+    display-drun: "Search";
+    drun-display-format: "{name}";
+    icon-theme: "Fluent-dark";
+    drun-use-desktop-cache: true;
+    drun-reload-desktop-cache: false;
+    sort: true;
+    case-smart: true;
+    hover-select: true;
+    click-to-exit: true;
+    kb-cancel: "Escape";
+    kb-remove-char-back: "BackSpace,Shift+BackSpace,Control+h";
+    me-select-entry: "";
+    me-accept-entry: "MousePrimary";
+}
+@theme "windows11"

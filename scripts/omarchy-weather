@@ -1,0 +1,28 @@
+#!/bin/bash
+CACHE_FILE="/tmp/omarchy-weather-cache.json"
+CACHE_AGE=900 # 15 minutes
+
+if [[ -f "$CACHE_FILE" ]]; then
+    file_age=$(( $(date +%s) - $(stat -c %Y "$CACHE_FILE" 2>/dev/null || echo 0) ))
+    if [[ $file_age -lt $CACHE_AGE ]]; then
+        cat "$CACHE_FILE"
+        exit 0
+    fi
+fi
+
+# Fetch accurate location & weather from wttr.in
+weather_raw=$(curl -s --max-time 4 "wttr.in/?format=%c+%t+%C" 2>/dev/null | tr -d '\n')
+
+if [[ -n "$weather_raw" && "$weather_raw" != *"Unknown"* && "$weather_raw" != *"50"* ]]; then
+    # Extract condition and temp
+    text=$(echo "$weather_raw" | awk '{print $1 " " $2}')
+    tooltip=$(echo "$weather_raw" | awk '{$1=$2=""; print $0}' | sed 's/^[ \t]*//')
+    json_out=$(printf '{"text":"%s","tooltip":"%s - Local Weather"}\n' "$text" "$weather_raw")
+    echo "$json_out" > "$CACHE_FILE"
+    echo "$json_out"
+else
+    # Fallback to local default if offline
+    fallback='{"text":"🌤 26°C","tooltip":"Local Weather"}'
+    echo "$fallback" > "$CACHE_FILE"
+    echo "$fallback"
+fi

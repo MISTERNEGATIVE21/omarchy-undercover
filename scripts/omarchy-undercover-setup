@@ -1,0 +1,227 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Copyright (C) 2026 John Varghese
+# Omarchy Hyprland Undercover Installer
+# License: GPL-3.0-or-later
+#
+# omarchy:summary=Environment setup & dependency installer for Omarchy Undercover
+# omarchy:args=[--dependencies-only|--files-only|--help]
+# omarchy:examples=omarchy-undercover-setup
+# ==============================================================================
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source common.sh safely
+if [[ -f "${SCRIPT_DIR}/common.sh" ]]; then
+    source "${SCRIPT_DIR}/common.sh"
+elif [[ -f "$HOME/.local/share/omarchy/bin/common.sh" ]]; then
+    source "$HOME/.local/share/omarchy/bin/common.sh"
+elif [[ -f "$HOME/.local/bin/common.sh" ]]; then
+    source "$HOME/.local/bin/common.sh"
+else
+    msg() { echo -e "\e[32m✔\e[0m  $1"; }
+    warn() { echo -e "\e[33m⚠\e[0m  $1" >&2; }
+    error() { echo -e "\e[31m✖\e[0m  $1" >&2; exit 1; }
+fi
+
+install_dependencies() {
+    msg "Checking system dependencies..."
+    local deps="git waybar rofi jq python3-gobject python-nautilus gtk4 libadwaita"
+    
+    if sudo -n true 2>/dev/null; then
+        if command_exists pacman; then
+            sudo pacman -S --needed --noconfirm $deps 2>/dev/null || warn "Failed pacman install; continuing with existing packages"
+        elif command_exists apt; then
+            sudo apt update -qq && sudo apt install -y $deps 2>/dev/null || warn "Failed apt install; continuing with existing packages"
+        elif command_exists dnf; then
+            sudo dnf install -y $deps 2>/dev/null || warn "Failed dnf install; continuing with existing packages"
+        elif command_exists zypper; then
+            sudo zypper install -y $deps 2>/dev/null || warn "Failed zypper install; continuing with existing packages"
+        fi
+    else
+        msg "Using existing installed system packages (sudo prompt skipped)."
+    fi
+}
+
+src_assets() {
+    if [[ -d "${SCRIPT_DIR}/../assets" ]]; then
+        echo "${SCRIPT_DIR}/../assets"
+    elif [[ -d "/usr/share/omarchy-undercover/assets" ]]; then
+        echo "/usr/share/omarchy-undercover/assets"
+    else
+        echo ""
+    fi
+}
+
+install_themes() {
+    msg "Installing Windows 11 themes, icons and cursors..."
+    mkdir -p "$HOME/.themes" "$HOME/.icons" "$HOME/.local/share/themes" "$HOME/.local/share/icons"
+    local src_assets
+    src_assets=$(src_assets)
+
+    for variant in Dark Light; do
+        for dest in "$HOME/.themes" "$HOME/.local/share/themes"; do
+            [[ -n "$src_assets" && -d "$src_assets/themes/Win11-$variant" ]] && cp -rf "$src_assets/themes/Win11-$variant" "$dest/Win11-$variant"
+        done
+    done
+    for variant in dark light; do
+        for dest in "$HOME/.icons" "$HOME/.local/share/icons"; do
+            [[ -n "$src_assets" && -d "$src_assets/icons/Fluent-$variant" ]] && cp -rf "$src_assets/icons/Fluent-$variant" "$dest/Fluent-$variant"
+        done
+    done
+    for dest in "$HOME/.icons" "$HOME/.local/share/icons"; do
+        [[ -n "$src_assets" && -d "$src_assets/icons/Fluent-dark-cursors" ]] && cp -rf "$src_assets/icons/Fluent-dark-cursors" "$dest/Fluent-dark-cursors"
+    done
+    gsettings set org.gnome.desktop.interface cursor-theme "Fluent-dark-cursors" 2>/dev/null || true
+}
+
+install_wallpaper() {
+    msg "Installing wallpaper assets..."
+    local wp_dir="$HOME/.local/share/backgrounds/omarchy-undercover"
+    local conf_dir="$HOME/.config/omarchy-undercover/wallpapers"
+    mkdir -p "$wp_dir" "$conf_dir"
+
+    local src_assets
+    src_assets=$(src_assets)
+    if [[ -n "$src_assets" ]]; then
+        if [[ -d "$src_assets/wallpapers" ]]; then
+            cp -rf "$src_assets/wallpapers/"* "$wp_dir/" 2>/dev/null || true
+            cp -rf "$src_assets/wallpapers/"* "$conf_dir/" 2>/dev/null || true
+        fi
+        if [[ -f "$src_assets/start-icon.svg" ]]; then
+            cp "$src_assets/start-icon.svg" "$wp_dir/start-icon.svg"
+        fi
+    fi
+}
+
+install_core_files() {
+    msg "Installing core files and Omarchy scripts..."
+    
+    local bin_dir="$HOME/.local/bin"
+    local omarchy_bin="$HOME/.local/share/omarchy/bin"
+    local conf_dir="$HOME/.config/omarchy-undercover"
+    local app_dir="$HOME/.local/share/applications"
+    
+    mkdir -p "$bin_dir" "$conf_dir" "$app_dir"
+    if [[ -d "$HOME/.local/share/omarchy" ]]; then
+        mkdir -p "$omarchy_bin"
+    fi
+    
+    # Copy scripts including yui helper
+    for script in omarchy-undercover omarchy-undercover-setup omarchy-undercover-settings omarchy-undercover-launcher omarchy-undercover-wallpaper omarchy-undercover-show-desktop omarchy-undercover-minimize omarchy-undercover-new-desktop yui common.sh; do
+        if [[ -f "${SCRIPT_DIR}/$script" ]]; then
+            cp "${SCRIPT_DIR}/$script" "$bin_dir/$script"
+            chmod +x "$bin_dir/$script"
+            
+            if [[ -d "$omarchy_bin" ]]; then
+                cp "${SCRIPT_DIR}/$script" "$omarchy_bin/$script"
+                chmod +x "$omarchy_bin/$script"
+            fi
+        else
+            warn "Script $script not found in ${SCRIPT_DIR}"
+        fi
+    done
+    
+    # Copy configs
+    msg "Installing configuration presets..."
+    local src_conf="${SCRIPT_DIR}/../configs"
+    if [[ -d "$src_conf" ]]; then
+        cp -r "$src_conf/"* "$conf_dir/"
+    fi
+    
+    # Install desktop files
+    msg "Installing application launchers..."
+    local src_assets
+    src_assets=$(src_assets)
+    if [[ -n "$src_assets" ]]; then
+        [[ -f "$src_assets/omarchy-undercover.desktop" ]] && cp "$src_assets/omarchy-undercover.desktop" "$app_dir/"
+        [[ -f "$src_assets/omarchy-undercover-settings.desktop" ]] && cp "$src_assets/omarchy-undercover-settings.desktop" "$app_dir/"
+        # File manager override: launch Nautilus with the stock GNOME (Adwaita)
+        # look instead of the Windows skin
+        [[ -f "$src_assets/org.gnome.Nautilus.desktop" ]] && cp "$src_assets/org.gnome.Nautilus.desktop" "$app_dir/"
+    fi
+
+    # Install icons
+    local icon_dir="$HOME/.local/share/icons"
+    mkdir -p "$icon_dir"
+    local hicolor_apps="$icon_dir/hicolor/scalable/apps"
+    mkdir -p "$hicolor_apps"
+    if [[ -n "$src_assets" ]]; then
+        # The Undercover eye logo powers the app/desktop icons
+        if [[ -f "$src_assets/omarchy-undercover-logo.svg" ]]; then
+            cp -f "$src_assets/omarchy-undercover-logo.svg" "$icon_dir/omarchy-undercover.svg"
+            cp -f "$src_assets/omarchy-undercover-logo.svg" "$hicolor_apps/omarchy-undercover.svg"
+            cp -f "$src_assets/omarchy-undercover-logo.svg" "$hicolor_apps/org.omarchy.undercover.settings.svg"
+        fi
+        # The retina Windows 11 logo powers the waybar Start button
+        if [[ -f "$src_assets/start-icon.svg" ]]; then
+            cp -f "$src_assets/start-icon.svg" "$hicolor_apps/windows-start.svg"
+        fi
+    fi
+}
+
+install_my_computer() {
+    msg "Installing My Computer for Nautilus extension..."
+    local src_assets
+    src_assets=$(src_assets)
+    local ext_src="$src_assets/nautilus-my-computer"
+    [[ -n "$src_assets" && -d "$ext_src" ]] || { warn "nautilus-my-computer assets not found; skipping"; return 0; }
+
+    local ext_dir="$HOME/.local/share/nautilus-python/extensions"
+    local schema_dir="$HOME/.local/share/glib-2.0/schemas"
+    local schema_id="io.github.yannmasoch.nautilus-my-computer"
+    local pkg_dir="nautilus_my_computer"
+
+    mkdir -p "$ext_dir" "$schema_dir"
+
+    cp "$ext_src/nautilus-my-computer.py" "$ext_dir/nautilus-my-computer.py"
+    rm -rf "$ext_dir/$pkg_dir"
+    cp -r "$ext_src/$pkg_dir" "$ext_dir/$pkg_dir"
+    rm -rf "$ext_dir/$pkg_dir/__pycache__"
+
+    cp "$ext_src/$schema_id.gschema.xml" "$schema_dir/$schema_id.gschema.xml"
+    glib-compile-schemas "$schema_dir"
+
+    if command_exists msgfmt; then
+        local mo lang
+        for po_file in "$ext_src"/po/*.po; do
+            [[ -f "$po_file" ]] || continue
+            lang=$(basename "$po_file" .po)
+            mo="$HOME/.local/share/locale/$lang/LC_MESSAGES/nautilus-my-computer.mo"
+            mkdir -p "$(dirname "$mo")"
+            msgfmt "$po_file" -o "$mo"
+        done
+    fi
+}
+
+update_path() {
+    msg "Verifying environment PATH..."
+    local bin_dir="$HOME/.local/bin"
+    
+    local rc_files=("$HOME/.bashrc" "$HOME/.zshrc")
+    for rc in "${rc_files[@]}"; do
+        if [[ -f "$rc" ]]; then
+            if ! grep -q "$bin_dir" "$rc"; then
+                echo -e "\n# Omarchy Undercover PATH\nexport PATH=\"\$PATH:$bin_dir\"" >> "$rc"
+                msg "Added $bin_dir to PATH in $rc"
+            fi
+        fi
+    done
+}
+
+main() {
+    msg "Starting Omarchy Undercover Setup..."
+    install_dependencies
+    install_themes
+    install_wallpaper
+    install_core_files
+    install_my_computer
+    update_path
+    msg "Omarchy Undercover setup completed successfully!"
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi

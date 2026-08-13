@@ -1,0 +1,70 @@
+/* macOS Sequoia Traffic Light Window Controls (GTK3 & GTK4) */
+
+windowcontrols > button.close,
+headerbar button.titlebutton.close,
+.titlebar button.titlebutton.close,
+button.titlebutton.close,
+button.close {
+    background-color: #FF5F56;
+    background-image: none;
+    border: 1px solid rgba(180, 40, 40, 0.45);
+    border-radius: 9999px;
+    min-width: 13px;
+    min-height: 13px;
+    margin: 0 4px;
+    padding: 0;
+    color: transparent;
+    box-shadow: none;
+}
+
+windowcontrols > button.close:hover,
+headerbar button.titlebutton.close:hover,
+button.titlebutton.close:hover {
+    background-color: #FF3B30;
+}
+
+windowcontrols > button.minimize,
+headerbar button.titlebutton.minimize,
+.titlebar button.titlebutton.minimize,
+button.titlebutton.minimize,
+button.minimize {
+    background-color: #FFBD2E;
+    background-image: none;
+    border: 1px solid rgba(180, 130, 20, 0.45);
+    border-radius: 9999px;
+    min-width: 13px;
+    min-height: 13px;
+    margin: 0 4px;
+    padding: 0;
+    color: transparent;
+    box-shadow: none;
+}
+
+windowcontrols > button.minimize:hover,
+headerbar button.titlebutton.minimize:hover,
+button.titlebutton.minimize:hover {
+    background-color: #FFCC00;
+}
+
+windowcontrols > button.maximize,
+headerbar button.titlebutton.maximize,
+.titlebar button.titlebutton.maximize,
+button.titlebutton.maximize,
+button.maximize {
+    background-color: #27C93F;
+    background-image: none;
+    border: 1px solid rgba(30, 140, 40, 0.45);
+    border-radius: 9999px;
+    min-width: 13px;
+    min-height: 13px;
+    margin: 0 4px;
+    padding: 0;
+    color: transparent;
+    box-shadow: none;
+}
+
+windowcontrols > button.maximize:hover,
+headerbar button.titlebutton.maximize:hover,
+button.titlebutton.maximize:hover {
+    background-color: #34C759;
+}

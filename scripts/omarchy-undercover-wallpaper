@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Copyright (C) 2026 John Varghese
+# Omarchy Undercover - Windows 11 Wallpaper Manager
+# License: GPL-3.0-or-later
+#
+# omarchy:summary=Apply the configured Windows 11 wallpaper on the desktop
+# omarchy:args=[preset|custom]
+# omarchy:examples=omarchy-undercover-wallpaper
+# ==============================================================================
+#
+# Reads the WALLPAPER setting from ~/.config/omarchy-undercover/settings.conf
+# and starts swaybg (or hyprpaper) with it. Runs automatically at Hyprland
+# startup via windows-mode.lua so the wallpaper survives relogin.
+
+CONFIG_DIR="$HOME/.config/omarchy-undercover"
+SETTINGS_FILE="$CONFIG_DIR/settings.conf"
+WP_DIR="$CONFIG_DIR/wallpapers"
+
+# Preset wallpapers shipped with omarchy-undercover
+declare -A PRESETS=(
+  ["win11_bloom_dark.jpg"]="Bloom Dark"
+  ["win11_bloom_light.jpg"]="Bloom Light"
+  ["win11_flow_dark.jpg"]="Flow Dark"
+)
+
+get_setting() {
+    local key="$1" default="$2"
+    local value="$default"
+    if [[ -f "$SETTINGS_FILE" ]]; then
+        value=$(grep -E "^${key}=" "$SETTINGS_FILE" 2>/dev/null | cut -d= -f2- | tail -1 || true)
+        [[ -z "$value" ]] && value="$default"
+    fi
+    printf '%s' "$value"
+}
+
+# Allow CLI override: omarchy-undercover-wallpaper <path-to-image>
+requested="${1:-}"
+if [[ -z "$requested" ]]; then
+    requested=$(get_setting "WALLPAPER" "win11_bloom_dark.jpg")
+fi
+
+wp_file=""
+if [[ -f "$requested" ]]; then
+    wp_file="$requested"
+elif [[ -n "${PRESETS[$requested]:-}" || "$requested" == *.jpg ]]; then
+    if [[ -f "$WP_DIR/$requested" ]]; then
+        wp_file="$WP_DIR/$requested"
+    fi
+fi
+
+if [[ -z "$wp_file" ]]; then
+    # Fall back to the shipped default
+    for preset in win11_bloom_dark.jpg win11_flow_dark.jpg win11_bloom_light.jpg; do
+        if [[ -f "$WP_DIR/$preset" ]]; then
+            wp_file="$WP_DIR/$preset"
+            break
+        fi
+    done
+fi
+
+if [[ -z "$wp_file" ]]; then
+    echo "omarchy-undercover-wallpaper: no wallpaper found" >&2
+    exit 1
+fi
+
+pkill -x swaybg 2>/dev/null
+pkill -x hyprpaper 2>/dev/null
+
+if command -v swaybg >/dev/null 2>&1; then
+    setsid swaybg -i "$wp_file" -m fill >/dev/null 2>&1 &
+elif command -v hyprpaper >/dev/null 2>&1; then
+    setsid hyprpaper >/dev/null 2>&1 &
+fi

@@ -1,0 +1,71 @@
+# =============================================================================
+# Omarchy Undercover - Windows Terminal style for Alacritty
+# License: GPL-3.0-or-later
+#
+# Uses the official Windows Terminal "Campbell" dark scheme with a Fluent
+# background and Segoe UI font, so terminals feel native to Windows 11.
+# =============================================================================
+
+[env]
+TERM = "xterm-256color"
+
+[font]
+normal = { family = "Segoe UI", style = "Regular" }
+bold = { family = "Segoe UI", style = "Bold" }
+italic = { family = "Segoe UI", style = "Italic" }
+bold_italic = { family = "Segoe UI", style = "Bold Italic" }
+size = 10.5
+
+[font.offset]
+x = 0
+y = 2
+
+[window]
+padding.x = 12
+padding.y = 12
+decorations = "None"
+opacity = 0.95
+title = "Terminal"
+
+[scrolling]
+history = 10000
+multiplier = 4
+
+[colors]
+primary = { background = "#0c0c0c", foreground = "#cccccc" }
+
+[colors.cursor]
+text = "#0c0c0c"
+cursor = "#ffffff"
+
+[colors.selection]
+text = "#000000"
+background = "#0078d4"
+
+[colors.normal]
+black = "#0c0c0c"
+red = "#c50f1f"
+green = "#13a10e"
+yellow = "#c19c00"
+blue = "#3b78ff"
+magenta = "#881798"
+cyan = "#3a96dd"
+white = "#cccccc"
+
+[colors.bright]
+black = "#767676"
+red = "#e74856"
+green = "#16c60c"
+yellow = "#f9f1a5"
+blue = "#3b78ff"
+magenta = "#b4009e"
+cyan = "#61d6d6"
+white = "#f2f2f2"
+
+[colors.hints]
+start = { foreground = "#0c0c0c", background = "#f9f1a5" }
+end = { foreground = "#0c0c0c", background = "#16c60c" }
+
+[colors.search]
+matches = { foreground = "#000000", background = "#f9f1a5" }
+focused_match = { foreground = "#000000", background = "#3b78ff" }

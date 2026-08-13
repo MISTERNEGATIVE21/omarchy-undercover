@@ -1,0 +1,9 @@
+[Icon Theme]
+Name=Omarchy Undercover
+Comment=Omarchy Undercover app icons
+Directories=scalable/apps
+
+[scalable/apps]
+Size=128
+Type=Scalable
+Context=Apps

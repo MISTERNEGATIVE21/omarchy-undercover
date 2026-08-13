@@ -1,0 +1,440 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the My Computer for Nautilus package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: My Computer for Nautilus 0.12.6\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-04 11:31-0700\n"
+"PO-Revision-Date: 2026-07-30 16:05+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: none\n"
+"Language: et\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+#: nautilus_my_computer/bookmarks.py
+msgid "Change Icon"
+msgstr "Muuda ikooni"
+
+#: nautilus_my_computer/bookmarks.py
+msgid "Search icons…"
+msgstr "Otsi ikoone…"
+
+#: nautilus_my_computer/bookmarks.py
+msgid "Reset"
+msgstr "Lähtesta"
+
+#: nautilus_my_computer/column_view.py
+msgid "Select"
+msgstr "Vali"
+
+#: nautilus_my_computer/column_view.py
+msgid "Beta"
+msgstr "Beetaversioon"
+
+#: nautilus_my_computer/column_view.py
+msgid "Early access feature. It may contain bugs or inconsistencies."
+msgstr "Katsetusjärgus funktsionaalsus. Võib sisaldada vigu ja vasturääkivusi."
+
+#: nautilus_my_computer/column_view.py
+msgid "Column View"
+msgstr "Veeruvaade"
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "{n} item"
+msgid_plural "{n} items"
+msgstr[0] "{n} objekt"
+msgstr[1] "{n} objekti"
+
+#: nautilus_my_computer/common.py
+msgid "Today"
+msgstr "Täna"
+
+#: nautilus_my_computer/common.py
+msgid "Yesterday"
+msgstr "Eile"
+
+#: nautilus_my_computer/common.py
+msgid "Tomorrow"
+msgstr "Homme"
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "{n} day ago"
+msgid_plural "{n} days ago"
+msgstr[0] "{n} päeva eest"
+msgstr[1] "{n} päeva eest"
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "In {n} day"
+msgid_plural "In {n} days"
+msgstr[0] "{n} päeva pärast"
+msgstr[1] "{n} päeva pärast"
+
+#: nautilus_my_computer/common.py
+msgid "This week"
+msgstr "Sel nädalal"
+
+#: nautilus_my_computer/common.py
+msgid "Last week"
+msgstr "Eelmisel nädalal"
+
+#: nautilus_my_computer/common.py
+msgid "Next week"
+msgstr "Järgmisel nädalal"
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "{n} week ago"
+msgid_plural "{n} weeks ago"
+msgstr[0] "{n} nädala eest"
+msgstr[1] "{n} nädala eest"
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "In {n} week"
+msgid_plural "In {n} weeks"
+msgstr[0] "{n} nädala pärast"
+msgstr[1] "{n} nädala pärast"
+
+#: nautilus_my_computer/common.py
+msgid "This month"
+msgstr "Sel kuul"
+
+#: nautilus_my_computer/common.py
+msgid "Last month"
+msgstr "Eelmisel kuul"
+
+#: nautilus_my_computer/common.py
+msgid "Next month"
+msgstr "Järgmisel kuul"
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "{n} month ago"
+msgid_plural "{n} months ago"
+msgstr[0] "{n} kuu eest"
+msgstr[1] "{n} kuu eest"
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "In {n} month"
+msgid_plural "In {n} months"
+msgstr[0] "{n} kuu pärast"
+msgstr[1] "{n} kuu pärast"
+
+#: nautilus_my_computer/common.py
+msgid "This year"
+msgstr "Sel aastal"
+
+#: nautilus_my_computer/common.py
+msgid "Last year"
+msgstr "Eelmisel aastal"
+
+#: nautilus_my_computer/common.py
+msgid "Next year"
+msgstr "Järgmisel aastal"
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "{n} year ago"
+msgid_plural "{n} years ago"
+msgstr[0] "{n} aasta tagasi"
+msgstr[1] "{n} aastat tagasi"
+
+#: nautilus_my_computer/common.py
+#, python-brace-format
+msgid "In {n} year"
+msgid_plural "In {n} years"
+msgstr[0] "{n} aasta pärast"
+msgstr[1] "{n} aasta pärast"
+
+#: nautilus_my_computer/components.py
+msgid "Rename"
+msgstr "Muuda nime"
+
+#: nautilus_my_computer/context_menu.py
+msgid "Open in New Tab"
+msgstr "Ava uuel vahekaardil"
+
+#: nautilus_my_computer/context_menu.py
+msgid "Open in New Window"
+msgstr "Ava uues aknas"
+
+#: nautilus_my_computer/context_menu.py
+msgid "Open With…"
+msgstr "Ava rakendusega…"
+
+#: nautilus_my_computer/context_menu.py
+msgid "Remove from Bookmarks"
+msgstr "Eemalda järjehoidjate seast"
+
+#: nautilus_my_computer/context_menu.py
+msgid "Add to Bookmarks"
+msgstr "Lisa järjehoidjaks"
+
+#: nautilus_my_computer/context_menu.py
+#: nautilus_my_computer/preferred_folders.py
+msgid "Unpin from My Computer"
+msgstr ""
+
+#: nautilus_my_computer/context_menu.py
+#: nautilus_my_computer/preferred_folders.py
+msgid "Pin to My Computer"
+msgstr ""
+
+#: nautilus_my_computer/context_menu.py
+msgid "New Folder…"
+msgstr "Uus kaust…"
+
+#: nautilus_my_computer/context_menu.py
+msgid "New Document"
+msgstr "Uus dokument"
+
+#: nautilus_my_computer/context_menu.py
+msgid "Open in Terminal"
+msgstr "Ava terminalis"
+
+#: nautilus_my_computer/context_menu.py
+msgid "Rename…"
+msgstr "Muuda nime…"
+
+#: nautilus_my_computer/context_menu.py
+msgid "Compress…"
+msgstr "Paki kokku…"
+
+#: nautilus_my_computer/context_menu.py
+msgid "Move to Trash"
+msgstr "Viska prügikasti"
+
+#: nautilus_my_computer/main.py
+msgid "My Computer Settings"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "Open My Computer"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "Recommended Apps"
+msgstr "Soovitatud rakendused"
+
+#: nautilus_my_computer/main.py
+msgid "Other Apps"
+msgstr "Muud rakendused"
+
+#: nautilus_my_computer/main.py
+msgid "General"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "Computer view"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "Start on the Computer view"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "Launch directly to the Computer view instead of Home"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "Panel visibility"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid ""
+"Choose how each group appears. Visible: shows the group as a normal "
+"separated section. Merged: folds the group into the On this Computer group. "
+"Hidden: hides the group entirely."
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "Visible"
+msgstr "Nähtav"
+
+#: nautilus_my_computer/main.py
+msgid "Merged"
+msgstr "Mestitud"
+
+#: nautilus_my_computer/main.py
+msgid "Hidden"
+msgstr "Peidetud"
+
+#: nautilus_my_computer/main.py nautilus_my_computer/my_computer_view.py
+msgid "Preferred Folders"
+msgstr "Eelistatud kaustad"
+
+#: nautilus_my_computer/main.py
+msgid "Show system partitions"
+msgstr "Näita süsteemi partitsioone"
+
+#: nautilus_my_computer/main.py
+msgid "Include boot and EFI partitions in the System group"
+msgstr "Kaasa süsteemipartitsioonide gruppi ka „boot“ ja „EFI“ partitsioonid"
+
+#: nautilus_my_computer/main.py
+msgid "Sidebar visibility"
+msgstr "Külgpaani nähtavus"
+
+#: nautilus_my_computer/main.py
+msgid "Choose which locations appear on the sidebar."
+msgstr "Vali külgpaanil kuvatavad asukohad."
+
+#: nautilus_my_computer/main.py
+msgid "Bar Color"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "Select or customize the bar color."
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "Color mode"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "System accent"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "Custom color"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "Custom gradient"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "Color"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "Start color"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "End color"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "Show captions"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "Shows or hides the caption lines already configured in Nautilus"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "Extension"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "Version"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "Author"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "Source code"
+msgstr ""
+
+#: nautilus_my_computer/main.py
+msgid "GitHub"
+msgstr ""
+
+#: nautilus_my_computer/my_computer_view.py
+msgid "Mount"
+msgstr ""
+
+#: nautilus_my_computer/my_computer_view.py
+msgid "System"
+msgstr ""
+
+#: nautilus_my_computer/my_computer_view.py
+msgid "On this Computer"
+msgstr ""
+
+#: nautilus_my_computer/my_computer_view.py
+msgid "Removable"
+msgstr ""
+
+#: nautilus_my_computer/my_computer_view.py
+msgid "Disc"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Not mounted"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+#, python-brace-format
+msgid "{free} free of {total}"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Program"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Audio"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Font"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Image"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Archive"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Markup"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Text"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Video"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Contacts"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Calendar"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+#, fuzzy
+msgid "Document"
+msgstr "Uus dokument"
+
+#: nautilus_my_computer/widgets.py
+msgid "Presentation"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Spreadsheet"
+msgstr ""
+
+#: nautilus_my_computer/widgets.py
+msgid "Dimensions"
+msgstr "Mõõdud"
