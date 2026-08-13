@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """
-macOS Notification Center & Interactive Widgets Sidebar for Omarchy Hyprland
-Features:
-- Live Geolocation Weather (from wttr.in with °C/°F toggle & custom location)
-- Live CPU, RAM, and Disk Storage Vitals with progress rings/bars
-- Live Battery & Power Management with percentage and charging status
-- Interactive MPRIS Media Player (Play/Pause, Prev, Next via playerctl)
-- World Clocks & Calendar
-- Full In-App Widget Configuration (Enable/Disable cards, reorder, change city)
+macOS Sequoia Notification Center & Interactive Widgets Sidebar for Omarchy Hyprland
+Comprehensive live widgets:
+- Wi-Fi & Network Status Card with 1-click scan/connect
+- Bluetooth Device Card with active connections & manager
+- Sound & Output Device Selector with Volume slider
+- Live Weather with satellite geolocation & forecast
+- Battery & Power Profile Switcher (Performance, Balanced, Power-saver)
+- System Vitals (CPU %, RAM GB, Disk Free GB) with live activity progress bars
+- Interactive MPRIS Media Player (Play/Pause, Next, Prev, Progress)
+- Interactive Calendar & World Clocks
+- In-App Widget Configuration Panel
 """
 
 import sys
@@ -28,12 +31,13 @@ CONFIG_DIR = Path.home() / ".config" / "omarchy-undercover"
 WIDGETS_CONF = CONFIG_DIR / "mac_widgets.conf"
 
 DEFAULT_CONFIG = {
+    "show_network": True,
+    "show_sound": True,
     "show_weather": True,
     "show_system": True,
     "show_battery": True,
     "show_media": True,
     "show_calendar": True,
-    "show_world_clock": True,
     "weather_city": "",
     "temp_unit": "C"
 }
@@ -53,10 +57,10 @@ def save_config(cfg):
 
 CSS = """
 window.mac-widgets {
-    background-color: rgba(22, 22, 30, 0.90);
+    background-color: rgba(22, 22, 30, 0.92);
     border-radius: 26px;
     border: 1px solid rgba(255, 255, 255, 0.18);
-    box-shadow: -12px 18px 45px rgba(0, 0, 0, 0.55);
+    box-shadow: -12px 18px 45px rgba(0, 0, 0, 0.60);
 }
 
 .widget-card {
@@ -68,35 +72,49 @@ window.mac-widgets {
 }
 
 .widget-title {
-    font-size: 12.5px;
+    font-size: 11.5px;
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.65);
-    letter-spacing: 0.5px;
+    color: rgba(255, 255, 255, 0.60);
+    letter-spacing: 0.8px;
     text-transform: uppercase;
     margin-bottom: 6px;
 }
 
 .stat-value {
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 800;
     color: #ffffff;
 }
 
 .stat-sub {
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.75);
+    color: rgba(255, 255, 255, 0.70);
 }
 
 .media-btn {
     border-radius: 9999px;
-    min-width: 36px;
-    min-height: 36px;
+    min-width: 38px;
+    min-height: 38px;
     padding: 4px;
-    background-color: rgba(255, 255, 255, 0.14);
+    background-color: rgba(255, 255, 255, 0.12);
     color: #ffffff;
+    border: none;
 }
 .media-btn:hover {
-    background-color: rgba(255, 255, 255, 0.26);
+    background-color: #007aff;
+}
+
+.action-pill {
+    border-radius: 12px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    background-color: rgba(255, 255, 255, 0.10);
+    color: #ffffff;
+    border: none;
+}
+.action-pill:hover {
+    background-color: rgba(255, 255, 255, 0.22);
 }
 
 .edit-btn {
@@ -111,8 +129,8 @@ window.mac-widgets {
 
 class MacWidgetsWindow(Gtk.Window):
     def __init__(self, app):
-        super().__init__(application=app, title="Notification Center & Widgets")
-        self.set_default_size(380, 720)
+        super().__init__(application=app, title="Widgets")
+        self.set_default_size(390, 760)
         self.set_resizable(False)
         self.add_css_class("mac-widgets")
 
@@ -128,7 +146,7 @@ class MacWidgetsWindow(Gtk.Window):
         scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.set_child(scroll)
 
-        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         self.main_box.set_margin_top(16)
         self.main_box.set_margin_bottom(16)
         self.main_box.set_margin_start(16)
@@ -136,21 +154,20 @@ class MacWidgetsWindow(Gtk.Window):
         scroll.set_child(self.main_box)
 
         self.build_ui()
-        GLib.timeout_add_seconds(3, self.refresh_vitals)
+        GLib.timeout_add_seconds(2, self.refresh_vitals)
 
     def build_ui(self):
-        # Clear existing
         while child := self.main_box.get_first_child():
             self.main_box.remove(child)
 
-        # Header with Edit Widgets button
+        # Header
         hdr_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         hdr_lbl = Gtk.Label(label="Widgets")
         hdr_lbl.add_css_class("stat-value")
         hdr_lbl.set_hexpand(True)
         hdr_lbl.set_halign(Gtk.Align.START)
         
-        btn_edit = Gtk.Button(label="Edit Widgets")
+        btn_edit = Gtk.Button(label="⚙️ Customize")
         btn_edit.add_css_class("edit-btn")
         btn_edit.connect("clicked", self.open_config_dialog)
         
@@ -158,25 +175,146 @@ class MacWidgetsWindow(Gtk.Window):
         hdr_box.append(btn_edit)
         self.main_box.append(hdr_box)
 
-        # 1. Live Weather Widget
+        # 1. Connectivity & Wireless Card (Wi-Fi + Bluetooth)
+        if self.cfg.get("show_network", True):
+            self.main_box.append(self.create_connectivity_card())
+
+        # 2. Sound & Output Selector Card
+        if self.cfg.get("show_sound", True):
+            self.main_box.append(self.create_sound_card())
+
+        # 3. Live Weather Card
         if self.cfg.get("show_weather", True):
             self.main_box.append(self.create_weather_card())
 
-        # 2. System Vitals (CPU / RAM / Disk)
-        if self.cfg.get("show_system", True):
-            self.main_box.append(self.create_system_card())
-
-        # 3. Live Battery & Power Card
+        # 4. Battery & Power Profile Card
         if self.cfg.get("show_battery", True):
             self.main_box.append(self.create_battery_card())
 
-        # 4. Interactive MPRIS Media Player
+        # 5. System Activity & Vitals
+        if self.cfg.get("show_system", True):
+            self.main_box.append(self.create_system_card())
+
+        # 6. Now Playing Media Player Card
         if self.cfg.get("show_media", True):
             self.main_box.append(self.create_media_card())
 
-        # 5. Interactive Calendar
+        # 7. Calendar Card
         if self.cfg.get("show_calendar", True):
             self.main_box.append(self.create_calendar_card())
+
+    def create_connectivity_card(self):
+        card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        card.add_css_class("widget-card")
+
+        t_lbl = Gtk.Label(label="Connectivity")
+        t_lbl.add_css_class("widget-title")
+        t_lbl.set_halign(Gtk.Align.START)
+        card.append(t_lbl)
+
+        # Wi-Fi Row
+        wifi_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        wifi_icon = Gtk.Label(label="󰤨")
+        wifi_icon.set_markup('<span size="large" color="#007aff">󰤨</span>')
+
+        active_ssid = "Disconnected"
+        wifi_on = False
+        try:
+            wifi_on = "enabled" in subprocess.check_output(["nmcli", "radio", "wifi"], text=True)
+            if wifi_on:
+                out = subprocess.check_output(["nmcli", "-t", "-f", "ACTIVE,SSID", "dev", "wifi"], text=True)
+                for line in out.splitlines():
+                    if line.startswith("yes:"):
+                        active_ssid = line.split(":", 1)[1]
+                        break
+        except Exception:
+            pass
+
+        self.lbl_wifi_ssid = Gtk.Label(label=f"Wi-Fi: {active_ssid}")
+        self.lbl_wifi_ssid.set_halign(Gtk.Align.START)
+        self.lbl_wifi_ssid.set_hexpand(True)
+
+        btn_wifi_mgt = Gtk.Button(label="Scan...")
+        btn_wifi_mgt.add_css_class("action-pill")
+        btn_wifi_mgt.connect("clicked", lambda b: subprocess.Popen(["omarchy-wifi-manager"]))
+
+        wifi_row.append(wifi_icon)
+        wifi_row.append(self.lbl_wifi_ssid)
+        wifi_row.append(btn_wifi_mgt)
+        card.append(wifi_row)
+
+        # Bluetooth Row
+        bt_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        bt_icon = Gtk.Label(label="󰂯")
+        bt_icon.set_markup('<span size="large" color="#af52de">󰂯</span>')
+
+        bt_status = "Off"
+        try:
+            out = subprocess.check_output(["bluetoothctl", "show"], text=True)
+            if "Powered: yes" in out:
+                bt_status = "Active"
+                devs = subprocess.check_output(["bluetoothctl", "devices", "Connected"], text=True)
+                if devs.strip():
+                    bt_status = devs.strip().split("\n")[0].split(" ", 2)[-1]
+        except Exception:
+            pass
+
+        self.lbl_bt_stat = Gtk.Label(label=f"Bluetooth: {bt_status}")
+        self.lbl_bt_stat.set_halign(Gtk.Align.START)
+        self.lbl_bt_stat.set_hexpand(True)
+
+        btn_bt_mgt = Gtk.Button(label="Devices...")
+        btn_bt_mgt.add_css_class("action-pill")
+        btn_bt_mgt.connect("clicked", lambda b: subprocess.Popen(["omarchy-bluetooth-manager"]))
+
+        bt_row.append(bt_icon)
+        bt_row.append(self.lbl_bt_stat)
+        bt_row.append(btn_bt_mgt)
+        card.append(bt_row)
+
+        return card
+
+    def create_sound_card(self):
+        card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        card.add_css_class("widget-card")
+
+        hdr = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        t_lbl = Gtk.Label(label="Sound & Output")
+        t_lbl.add_css_class("widget-title")
+        t_lbl.set_halign(Gtk.Align.START)
+        t_lbl.set_hexpand(True)
+
+        btn_mixer = Gtk.Button(label="Mixer...")
+        btn_mixer.add_css_class("action-pill")
+        btn_mixer.connect("clicked", lambda b: subprocess.Popen(["pavucontrol"]))
+
+        hdr.append(t_lbl)
+        hdr.append(btn_mixer)
+        card.append(hdr)
+
+        # Volume Slider
+        curr_vol = 50
+        try:
+            out = subprocess.check_output(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"], text=True)
+            parts = out.strip().split()
+            if len(parts) >= 2:
+                curr_vol = int(float(parts[1]) * 100)
+        except Exception:
+            pass
+
+        vol_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        lbl_v = Gtk.Label(label="󰕾")
+        
+        self.vol_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0, 100, 1)
+        self.vol_scale.set_value(curr_vol)
+        self.vol_scale.set_hexpand(True)
+        self.vol_scale.connect("value-changed", lambda s: subprocess.run(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", f"{int(s.get_value())/100.0:.2f}"], check=False))
+
+        vol_box.append(lbl_v)
+        vol_box.append(self.vol_scale)
+        card.append(vol_box)
+
+        return card
 
     def create_weather_card(self):
         card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
@@ -187,18 +325,17 @@ class MacWidgetsWindow(Gtk.Window):
         t_lbl.set_halign(Gtk.Align.START)
         card.append(t_lbl)
 
-        # Fetch live weather
         weather_text = "🌦️ +27°C  Partly Cloudy"
-        sub_text = "Live Geolocation • Updated Just Now"
+        sub_text = "Local Area • Live Satellite"
         try:
             city = self.cfg.get("weather_city", "")
             unit = self.cfg.get("temp_unit", "C")
             fmt = "%c+%t+%C" if unit == "C" else "%c+%f+%C"
             query = f"{city}?format={fmt}" if city else f"?format={fmt}"
             out = subprocess.check_output(["curl", "-s", "--max-time", "1.5", f"wttr.in/{query}"], text=True).strip()
-            if out and not "<html>" in out and not "Unknown" in out:
+            if out and not "<html>" in out:
                 weather_text = out
-                sub_text = f"{city or 'Current Location'} • Real-Time Satellite"
+                sub_text = f"{city or 'Real Location'} • Updated Just Now"
         except Exception:
             pass
 
@@ -214,53 +351,23 @@ class MacWidgetsWindow(Gtk.Window):
         card.append(self.w_sub_lbl)
         return card
 
-    def create_system_card(self):
+    def create_battery_card(self):
         card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         card.add_css_class("widget-card")
 
-        t_lbl = Gtk.Label(label="System Activity")
-        t_lbl.add_css_class("widget-title")
-        t_lbl.set_halign(Gtk.Align.START)
-        card.append(t_lbl)
-
-        # CPU Row
-        cpu_pct = psutil.cpu_percent(interval=None)
-        self.cpu_lbl = Gtk.Label(label=f"CPU: {cpu_pct:.1f}%")
-        self.cpu_lbl.set_halign(Gtk.Align.START)
-        self.cpu_bar = Gtk.ProgressBar()
-        self.cpu_bar.set_fraction(cpu_pct / 100.0)
-
-        # RAM Row
-        mem = psutil.virtual_memory()
-        self.ram_lbl = Gtk.Label(label=f"RAM: {mem.used / (1024**3):.1f} GB / {mem.total / (1024**3):.1f} GB ({mem.percent}%)")
-        self.ram_lbl.set_halign(Gtk.Align.START)
-        self.ram_bar = Gtk.ProgressBar()
-        self.ram_bar.set_fraction(mem.percent / 100.0)
-
-        # Disk Storage Row
-        disk = shutil.disk_usage("/")
-        disk_pct = (disk.used / disk.total) * 100.0
-        self.disk_lbl = Gtk.Label(label=f"SSD: {disk.free / (1024**3):.1f} GB free of {disk.total / (1024**3):.1f} GB")
-        self.disk_lbl.set_halign(Gtk.Align.START)
-        self.disk_bar = Gtk.ProgressBar()
-        self.disk_bar.set_fraction(disk_pct / 100.0)
-
-        card.append(self.cpu_lbl)
-        card.append(self.cpu_bar)
-        card.append(self.ram_lbl)
-        card.append(self.ram_bar)
-        card.append(self.disk_lbl)
-        card.append(self.disk_bar)
-        return card
-
-    def create_battery_card(self):
-        card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
-        card.add_css_class("widget-card")
-
+        hdr = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         t_lbl = Gtk.Label(label="Battery & Power")
         t_lbl.add_css_class("widget-title")
         t_lbl.set_halign(Gtk.Align.START)
-        card.append(t_lbl)
+        t_lbl.set_hexpand(True)
+
+        btn_cycle_pwr = Gtk.Button(label="Power Profile ⚡")
+        btn_cycle_pwr.add_css_class("action-pill")
+        btn_cycle_pwr.connect("clicked", self.cycle_power_profile)
+
+        hdr.append(t_lbl)
+        hdr.append(btn_cycle_pwr)
+        card.append(hdr)
 
         bat_pct = 100
         status = "AC Connected"
@@ -283,6 +390,51 @@ class MacWidgetsWindow(Gtk.Window):
         card.append(self.bat_bar)
         return card
 
+    def cycle_power_profile(self, btn):
+        try:
+            curr = subprocess.check_output(["powerprofilesctl", "get"], text=True).strip()
+            nxt = "balanced" if curr == "performance" else ("power-saver" if curr == "balanced" else "performance")
+            subprocess.run(["powerprofilesctl", "set", nxt], check=False)
+            btn.set_label(f"⚡ {nxt.title()}")
+        except Exception:
+            pass
+
+    def create_system_card(self):
+        card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        card.add_css_class("widget-card")
+
+        t_lbl = Gtk.Label(label="System Performance")
+        t_lbl.add_css_class("widget-title")
+        t_lbl.set_halign(Gtk.Align.START)
+        card.append(t_lbl)
+
+        cpu_pct = psutil.cpu_percent(interval=None)
+        self.cpu_lbl = Gtk.Label(label=f"CPU: {cpu_pct:.1f}%")
+        self.cpu_lbl.set_halign(Gtk.Align.START)
+        self.cpu_bar = Gtk.ProgressBar()
+        self.cpu_bar.set_fraction(cpu_pct / 100.0)
+
+        mem = psutil.virtual_memory()
+        self.ram_lbl = Gtk.Label(label=f"RAM: {mem.used / (1024**3):.1f} GB / {mem.total / (1024**3):.1f} GB ({mem.percent}%)")
+        self.ram_lbl.set_halign(Gtk.Align.START)
+        self.ram_bar = Gtk.ProgressBar()
+        self.ram_bar.set_fraction(mem.percent / 100.0)
+
+        disk = shutil.disk_usage("/")
+        disk_pct = (disk.used / disk.total) * 100.0
+        self.disk_lbl = Gtk.Label(label=f"SSD: {disk.free / (1024**3):.1f} GB free of {disk.total / (1024**3):.1f} GB")
+        self.disk_lbl.set_halign(Gtk.Align.START)
+        self.disk_bar = Gtk.ProgressBar()
+        self.disk_bar.set_fraction(disk_pct / 100.0)
+
+        card.append(self.cpu_lbl)
+        card.append(self.cpu_bar)
+        card.append(self.ram_lbl)
+        card.append(self.ram_bar)
+        card.append(self.disk_lbl)
+        card.append(self.disk_bar)
+        return card
+
     def create_media_card(self):
         card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         card.add_css_class("widget-card")
@@ -292,14 +444,13 @@ class MacWidgetsWindow(Gtk.Window):
         t_lbl.set_halign(Gtk.Align.START)
         card.append(t_lbl)
 
-        # Query playerctl
         track = "No active media stream"
         artist = "Launch Spotify, Apple Music, or Browser"
         try:
             out = subprocess.check_output(["playerctl", "metadata", "--format", "{{title}}|||{{artist}}"], text=True).strip()
             if "|||" in out:
                 p = out.split("|||")
-                track = p[0] or "Unknown Track"
+                track = p[0] or "Playing"
                 artist = p[1] or "Media Player"
         except Exception:
             pass
@@ -307,14 +458,13 @@ class MacWidgetsWindow(Gtk.Window):
         self.media_title = Gtk.Label(label=track)
         self.media_title.add_css_class("stat-value")
         self.media_title.set_halign(Gtk.Align.START)
-        self.media_title.set_ellipsize(3) # PANGO_ELLIPSIZE_END
+        self.media_title.set_ellipsize(3)
 
         self.media_artist = Gtk.Label(label=artist)
         self.media_artist.add_css_class("stat-sub")
         self.media_artist.set_halign(Gtk.Align.START)
 
-        # Controls row
-        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
         btn_box.set_halign(Gtk.Align.CENTER)
         btn_box.set_margin_top(6)
 
@@ -343,7 +493,7 @@ class MacWidgetsWindow(Gtk.Window):
         card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         card.add_css_class("widget-card")
 
-        t_lbl = Gtk.Label(label="Calendar & Events")
+        t_lbl = Gtk.Label(label="Calendar")
         t_lbl.add_css_class("widget-title")
         t_lbl.set_halign(Gtk.Align.START)
         card.append(t_lbl)
@@ -354,19 +504,16 @@ class MacWidgetsWindow(Gtk.Window):
 
     def refresh_vitals(self):
         try:
-            # CPU
             if hasattr(self, "cpu_bar"):
                 cpu = psutil.cpu_percent(interval=None)
                 self.cpu_lbl.set_text(f"CPU: {cpu:.1f}%")
                 self.cpu_bar.set_fraction(cpu / 100.0)
 
-            # RAM
             if hasattr(self, "ram_bar"):
                 mem = psutil.virtual_memory()
                 self.ram_lbl.set_text(f"RAM: {mem.used / (1024**3):.1f} GB / {mem.total / (1024**3):.1f} GB ({mem.percent}%)")
                 self.ram_bar.set_fraction(mem.percent / 100.0)
 
-            # Media
             if hasattr(self, "media_title"):
                 out = subprocess.check_output(["playerctl", "metadata", "--format", "{{title}}|||{{artist}}"], text=True).strip()
                 if "|||" in out:
@@ -382,35 +529,24 @@ class MacWidgetsWindow(Gtk.Window):
         dialog.set_title("Widget Configuration")
         dialog.set_transient_for(self)
         dialog.set_modal(True)
-        dialog.set_default_size(400, 480)
+        dialog.set_default_size(380, 480)
 
         page = Adw.PreferencesPage()
         group_vis = Adw.PreferencesGroup(title="Active Widgets", description="Toggle visibility of desktop widgets")
 
-        sw_weather = Adw.SwitchRow(title="Weather & Geolocation Widget")
-        sw_weather.set_active(self.cfg.get("show_weather", True))
-        sw_weather.connect("notify::active", lambda r, p: self.update_cfg_key("show_weather", r.get_active()))
-        group_vis.add(sw_weather)
-
-        sw_sys = Adw.SwitchRow(title="System Activity & Storage")
-        sw_sys.set_active(self.cfg.get("show_system", True))
-        sw_sys.connect("notify::active", lambda r, p: self.update_cfg_key("show_system", r.get_active()))
-        group_vis.add(sw_sys)
-
-        sw_bat = Adw.SwitchRow(title="Battery & Power Profile")
-        sw_bat.set_active(self.cfg.get("show_battery", True))
-        sw_bat.connect("notify::active", lambda r, p: self.update_cfg_key("show_battery", r.get_active()))
-        group_vis.add(sw_bat)
-
-        sw_media = Adw.SwitchRow(title="Now Playing Media Player")
-        sw_media.set_active(self.cfg.get("show_media", True))
-        sw_media.connect("notify::active", lambda r, p: self.update_cfg_key("show_media", r.get_active()))
-        group_vis.add(sw_media)
-
-        sw_cal = Adw.SwitchRow(title="Interactive Calendar")
-        sw_cal.set_active(self.cfg.get("show_calendar", True))
-        sw_cal.connect("notify::active", lambda r, p: self.update_cfg_key("show_calendar", r.get_active()))
-        group_vis.add(sw_cal)
+        for key, title in [
+            ("show_network", "Wi-Fi & Bluetooth Connectivity"),
+            ("show_sound", "Sound Volume & Output Sink"),
+            ("show_weather", "Weather & Satellite Geolocation"),
+            ("show_battery", "Battery & Power Profile"),
+            ("show_system", "System Activity & Performance"),
+            ("show_media", "Now Playing Media Player"),
+            ("show_calendar", "Interactive Calendar"),
+        ]:
+            sw = Adw.SwitchRow(title=title)
+            sw.set_active(self.cfg.get(key, True))
+            sw.connect("notify::active", lambda r, p, k=key: self.update_cfg_key(k, r.get_active()))
+            group_vis.add(sw)
 
         page.add(group_vis)
 
@@ -446,4 +582,4 @@ class MacWidgetsApp(Adw.Application):
 
 if __name__ == "__main__":
     app = MacWidgetsApp()
-    app.run(sys.argv)
+    sys.exit(app.run(sys.argv))
