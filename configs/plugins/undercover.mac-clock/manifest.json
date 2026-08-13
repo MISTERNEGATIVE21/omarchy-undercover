@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "undercover.mac-clock",
+  "name": "macOS Menu Bar Clock",
+  "version": "1.0.0",
+  "author": "misternegative21",
+  "description": "Authentic macOS Sequoia Date and Time Status Widget",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "Widget.qml"
+  },
+  "barWidget": {
+    "displayName": "macOS Clock",
+    "category": "Time",
+    "allowMultiple": false,
+    "defaultSection": "center"
+  }
+}

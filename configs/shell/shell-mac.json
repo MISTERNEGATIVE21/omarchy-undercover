@@ -7,11 +7,11 @@
   "bar": {
     "position": "top",
     "transparent": true,
-    "centerAnchor": "omarchy.clock",
+    "centerAnchor": "undercover.mac-clock",
     "layout": {
       "left": [
         {
-          "id": "omarchy.menu"
+          "id": "undercover.mac-apple"
         },
         {
           "id": "omarchy.workspaces"
@@ -22,10 +22,7 @@
           "id": "omarchy.media"
         },
         {
-          "id": "omarchy.clock",
-          "format": "ddd d MMM  HH:mm",
-          "formatAlt": "EEEE, MMMM d, yyyy HH:mm:ss",
-          "verticalFormat": "HH\n—\nmm"
+          "id": "undercover.mac-clock"
         }
       ],
       "right": [
@@ -51,7 +48,7 @@
           "id": "omarchy.power"
         },
         {
-          "id": "omarchy.indicators"
+          "id": "undercover.mac-controlcenter"
         }
       ]
     }

@@ -217,6 +217,27 @@ ensure_win11_themes_installed() {
     fi
 }
 
+ensure_omarchy_quickshell_assets() {
+    local plugins_src themes_src
+    plugins_src=$(project_file "plugins")
+    if [[ -z "$plugins_src" || ! -d "$plugins_src" ]]; then
+        plugins_src="${SCRIPT_DIR}/../configs/plugins"
+    fi
+    themes_src=$(project_file "themes")
+    if [[ -z "$themes_src" || ! -d "$themes_src" ]]; then
+        themes_src="${SCRIPT_DIR}/../configs/omarchy-theme"
+    fi
+
+    mkdir -p "$HOME/.config/omarchy/plugins" "$HOME/.config/omarchy/themes"
+
+    if [[ -d "$plugins_src" ]]; then
+        cp -rf "$plugins_src/"* "$HOME/.config/omarchy/plugins/" 2>/dev/null || true
+    fi
+    if [[ -d "$themes_src" ]]; then
+        cp -rf "$themes_src/"* "$HOME/.config/omarchy/themes/" 2>/dev/null || true
+    fi
+}
+
 apply_wallpaper() {
     local preset
     preset=$(read_setting "WALLPAPER" "win11_bloom_dark.jpg")
@@ -604,8 +625,9 @@ switch_to_mac() {
     write_setting "MODE" "mac"
     write_setting "THEME_VARIANT" "$variant"
 
-    if [[ -f "$CONFIG_DIR/hypr/mac-mode.lua" ]]; then
-        cp -f "$CONFIG_DIR/hypr/mac-mode.lua" "$HOME/.config/hypr/mac-mode.lua" 2>/dev/null || true
+    ensure_omarchy_quickshell_assets
+    if command_exists omarchy-theme-set; then
+        omarchy-theme-set "macos-$variant" 2>/dev/null || true
     fi
 
     local gtk_icon="WhiteSur-dark"
@@ -721,8 +743,9 @@ switch_to_win11() {
     write_setting "MODE" "windows"
     write_setting "THEME_VARIANT" "$variant"
 
-    if [[ -f "$CONFIG_DIR/hypr/windows-mode.lua" ]]; then
-        cp -f "$CONFIG_DIR/hypr/windows-mode.lua" "$HOME/.config/hypr/windows-mode.lua" 2>/dev/null || true
+    ensure_omarchy_quickshell_assets
+    if command_exists omarchy-theme-set; then
+        omarchy-theme-set "windows11-$variant" 2>/dev/null || true
     fi
 
     local gtk_icon="Fluent-dark"

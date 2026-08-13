@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "undercover.mac-controlcenter",
+  "name": "macOS Control Center Widget",
+  "version": "1.0.0",
+  "author": "misternegative21",
+  "description": "macOS Sequoia twin slider Control Center toggle",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "Widget.qml"
+  },
+  "barWidget": {
+    "displayName": "Control Center",
+    "category": "Controls",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}

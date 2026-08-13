@@ -11,7 +11,7 @@
     "layout": {
       "left": [
         {
-          "id": "omarchy.menu"
+          "id": "undercover.win11-start"
         },
         {
           "id": "omarchy.workspaces"
@@ -30,22 +30,19 @@
           "id": "omarchy.network"
         },
         {
-          "id": "omarchy.bluetooth"
-        },
-        {
           "id": "omarchy.audio"
         },
         {
           "id": "omarchy.power"
         },
         {
+          "id": "undercover.win11-actioncenter"
+        },
+        {
           "id": "omarchy.clock",
           "format": "HH:mm\ndd/MM/yyyy",
           "formatAlt": "dddd, MMMM d, yyyy\nHH:mm:ss",
           "verticalFormat": "HH\n—\nmm"
-        },
-        {
-          "id": "omarchy.indicators"
         }
       ]
     }

@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "undercover.win11-actioncenter",
+  "name": "Windows 11 Action Center Pill",
+  "version": "1.0.0",
+  "author": "misternegative21",
+  "description": "Windows 11 Fluent unified status indicators and Quick Settings toggle",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "Widget.qml"
+  },
+  "barWidget": {
+    "displayName": "Action Center",
+    "category": "Status",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}

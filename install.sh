@@ -108,7 +108,8 @@ main() {
 
     # Step 1: Destination Directories
     run_animated_step "1" "8" "dot" "Configuring directory architecture in ~/.config & ~/.local" '
-        mkdir -p "$CONFIG_DIR/wallpapers" "$CONFIG_DIR/waybar" "$CONFIG_DIR/shell" "$CONFIG_DIR/rofi" "$CONFIG_DIR/gtk" "$CONFIG_DIR/assets"
+        mkdir -p "$CONFIG_DIR/wallpapers" "$CONFIG_DIR/waybar" "$CONFIG_DIR/shell" "$CONFIG_DIR/plugins" "$CONFIG_DIR/themes" "$CONFIG_DIR/rofi" "$CONFIG_DIR/gtk" "$CONFIG_DIR/assets"
+        mkdir -p "$HOME/.config/omarchy/themes" "$HOME/.config/omarchy/plugins"
         mkdir -p "$LOCAL_BIN" "$APPS_DIR" "$ICONS_DIR/hicolor/scalable/apps" "$ICONS_DIR/mac-dock" "$FONTS_DIR"
     '
 
@@ -138,10 +139,18 @@ main() {
         fi
     '
 
-    # Step 5: Quickshell (Omarchy 4.0+) & Waybar Layouts
-    run_animated_step "5" "8" "points" "Compiling Quickshell 4.0 & Waybar layouts with acrylic stylesheets" '
+    # Step 5: Quickshell (Omarchy 4.0+) Themes, Widgets & Layouts
+    run_animated_step "5" "8" "points" "Compiling Quickshell 4.0 QML widgets, themes & Waybar layouts" '
         if [[ -d "$SCRIPT_DIR/configs/shell" ]]; then
             cp -rf "$SCRIPT_DIR/configs/shell/"* "$CONFIG_DIR/shell/" 2>/dev/null || true
+        fi
+        if [[ -d "$SCRIPT_DIR/configs/plugins" ]]; then
+            cp -rf "$SCRIPT_DIR/configs/plugins/"* "$CONFIG_DIR/plugins/" 2>/dev/null || true
+            cp -rf "$SCRIPT_DIR/configs/plugins/"* "$HOME/.config/omarchy/plugins/" 2>/dev/null || true
+        fi
+        if [[ -d "$SCRIPT_DIR/configs/omarchy-theme" ]]; then
+            cp -rf "$SCRIPT_DIR/configs/omarchy-theme/"* "$CONFIG_DIR/themes/" 2>/dev/null || true
+            cp -rf "$SCRIPT_DIR/configs/omarchy-theme/"* "$HOME/.config/omarchy/themes/" 2>/dev/null || true
         fi
         if [[ -d "$SCRIPT_DIR/configs/waybar" ]]; then
             cp -rf "$SCRIPT_DIR/configs/waybar/"* "$CONFIG_DIR/waybar/" 2>/dev/null || true
