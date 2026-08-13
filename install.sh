@@ -31,12 +31,14 @@ DIM='\033[2m'
 NC='\033[0m'
 
 HAS_GUM=0
-if command -v gum >/dev/null 2>&1; then
+if [[ -t 1 ]] && command -v gum >/dev/null 2>&1; then
     HAS_GUM=1
 fi
 
 print_logo() {
-    clear
+    if [[ -t 1 ]]; then
+        clear 2>/dev/null || true
+    fi
     echo -e "${CYAN}${BOLD}"
     cat << "EOF"
   ██████╗ ███╗   ███╗ █████╗ ██████╗  ██████╗██╗  ██╗██╗   ██╗
@@ -199,28 +201,39 @@ main() {
     '
 
     echo ""
-    if [[ $HAS_GUM -eq 1 ]]; then
-        gum style --foreground 39 --bold "✨ Select your initial desktop transformation preset:"
-        CHOSEN=$(gum choose \
-            "🍏 Apple macOS Sequoia (Dark)" \
-            "☀️ Apple macOS Sequoia (Light)" \
-            "🪟 Windows 11 Fluent (Dark)" \
-            "🌅 Windows 11 Fluent (Light)")
-    else
-        echo -e "${CYAN}${BOLD}✨ Select your initial desktop transformation preset:${NC}"
-        echo -e "  ${PURPLE}1)${NC} 🍏 Apple macOS Sequoia (Dark)"
-        echo -e "  ${YELLOW}2)${NC} ☀️ Apple macOS Sequoia (Light)"
-        echo -e "  ${BLUE}3)${NC} 🪟 Windows 11 Fluent (Dark)"
-        echo -e "  ${PINK}4)${NC} 🌅 Windows 11 Fluent (Light)"
-        read -p "  Enter choice [1-4]: " opt
-        case "$opt" in
-            1) CHOSEN="🍏 Apple macOS Sequoia (Dark)" ;;
-            2) CHOSEN="☀️ Apple macOS Sequoia (Light)" ;;
-            3) CHOSEN="🪟 Windows 11 Fluent (Dark)" ;;
-            4) CHOSEN="🌅 Windows 11 Fluent (Light)" ;;
-            *) CHOSEN="🍏 Apple macOS Sequoia (Dark)" ;;
-        esac
-    fi
+    local opt_arg="${1:-}"
+    case "$opt_arg" in
+        1|--mac|--mac-dark|mac) CHOSEN="🍏 Apple macOS Sequoia (Dark)" ;;
+        2|--mac-light|mac-light) CHOSEN="☀️ Apple macOS Sequoia (Light)" ;;
+        3|--w11|--win11|--windows|win11-dark) CHOSEN="🪟 Windows 11 Fluent (Dark)" ;;
+        4|--w11-light|--win11-light|win11-light) CHOSEN="🌅 Windows 11 Fluent (Light)" ;;
+        *)
+            if [[ $HAS_GUM -eq 1 && -t 0 ]]; then
+                gum style --foreground 39 --bold "✨ Select your initial desktop transformation preset:"
+                CHOSEN=$(gum choose \
+                    "🍏 Apple macOS Sequoia (Dark)" \
+                    "☀️ Apple macOS Sequoia (Light)" \
+                    "🪟 Windows 11 Fluent (Dark)" \
+                    "🌅 Windows 11 Fluent (Light)")
+            elif [[ -t 0 ]]; then
+                echo -e "${CYAN}${BOLD}✨ Select your initial desktop transformation preset:${NC}"
+                echo -e "  ${PURPLE}1)${NC} 🍏 Apple macOS Sequoia (Dark)"
+                echo -e "  ${YELLOW}2)${NC} ☀️ Apple macOS Sequoia (Light)"
+                echo -e "  ${BLUE}3)${NC} 🪟 Windows 11 Fluent (Dark)"
+                echo -e "  ${PINK}4)${NC} 🌅 Windows 11 Fluent (Light)"
+                read -p "  Enter choice [1-4]: " opt
+                case "$opt" in
+                    1) CHOSEN="🍏 Apple macOS Sequoia (Dark)" ;;
+                    2) CHOSEN="☀️ Apple macOS Sequoia (Light)" ;;
+                    3) CHOSEN="🪟 Windows 11 Fluent (Dark)" ;;
+                    4) CHOSEN="🌅 Windows 11 Fluent (Light)" ;;
+                    *) CHOSEN="🍏 Apple macOS Sequoia (Dark)" ;;
+                esac
+            else
+                CHOSEN="🍏 Apple macOS Sequoia (Dark)"
+            fi
+            ;;
+    esac
 
     echo ""
     case "$CHOSEN" in
