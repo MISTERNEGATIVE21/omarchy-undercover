@@ -1,0 +1,167 @@
+#!/usr/bin/env python3
+"""
+Intelligent Mouse-Edge Auto-Hide Daemon for Omarchy Undercover (v2.5.0)
+High-performance Wayland edge detection daemon for macOS Dock & Windows 11 Taskbar.
+"""
+
+import sys
+import os
+import time
+import json
+import subprocess
+import signal
+
+CONFIG_DIR = os.path.expanduser("~/.config/omarchy-undercover")
+PID_FILE = os.path.join(CONFIG_DIR, "autohide.pid")
+STATE_FILE = os.path.join(CONFIG_DIR, "state")
+SETTINGS_FILE = os.path.join(CONFIG_DIR, "settings.conf")
+
+def get_screen_metrics():
+    try:
+        out = subprocess.check_output(["hyprctl", "monitors", "-j"], text=True)
+        data = json.loads(out)
+        if data and len(data) > 0:
+            # Find focused monitor
+            focused = next((m for m in data if m.get("focused")), data[0])
+            h = focused.get("height", 1440)
+            scale = focused.get("scale", 1.0)
+            return int(h / scale)
+    except Exception:
+        pass
+    return 900
+
+def get_cursor_y():
+    try:
+        out = subprocess.check_output(["hyprctl", "cursorpos"], text=True)
+        parts = out.strip().split(",")
+        if len(parts) >= 2:
+            return int(parts[1].strip())
+    except Exception:
+        pass
+    return 0
+
+def signal_waybar_toggle():
+    subprocess.run(["pkill", "-SIGUSR1", "-x", "waybar"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+def is_waybar_running():
+    try:
+        out = subprocess.check_output(["pgrep", "-x", "waybar"], text=True)
+        return bool(out.strip())
+    except Exception:
+        return False
+
+def run_daemon():
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+    with open(PID_FILE, "w") as f:
+        f.write(str(os.getpid()))
+
+    screen_h = get_screen_metrics()
+    trigger_y = screen_h - 15  # bottom 15px triggers reveal
+    leave_y = screen_h - 90    # above dock/taskbar area
+
+    bar_visible = True
+    away_since = None
+
+    # Initial hide after 1.5s
+    time.sleep(1.5)
+    if is_waybar_running():
+        signal_waybar_toggle()
+        bar_visible = False
+
+    while True:
+        time.sleep(0.06)
+        if not is_waybar_running():
+            continue
+
+        y = get_cursor_y()
+
+        if y >= trigger_y:
+            away_since = None
+            if not bar_visible:
+                signal_waybar_toggle()
+                bar_visible = True
+        elif y < leave_y:
+            if bar_visible:
+                if away_since is None:
+                    away_since = time.time()
+                elif (time.time() - away_since) > 0.40:  # 400ms natural dwell time
+                    signal_waybar_toggle()
+                    bar_visible = False
+                    away_since = None
+            else:
+                away_since = None
+
+def start_daemon():
+    if is_running():
+        print("Autohide daemon is already running.")
+        return
+
+    pid = os.fork()
+    if pid > 0:
+        print("Autohide daemon started.")
+        sys.exit(0)
+
+    # Detach from terminal
+    os.setsid()
+    run_daemon()
+
+def stop_daemon():
+    if os.path.exists(PID_FILE):
+        try:
+            with open(PID_FILE, "r") as f:
+                pid = int(f.read().strip())
+            os.kill(pid, signal.SIGTERM)
+        except Exception:
+            pass
+        try:
+            os.remove(PID_FILE)
+        except Exception:
+            pass
+    # Kill any lingering instances
+    subprocess.run(["pkill", "-f", "omarchy-undercover-autohide"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    # Ensure waybar is visible
+    time.sleep(0.2)
+    # If waybar is hidden, toggle to visible
+    try:
+        out = subprocess.check_output(["hyprctl", "layers"], text=True)
+        if "waybar" not in out:
+            signal_waybar_toggle()
+    except Exception:
+        pass
+    print("Autohide daemon stopped (Bar kept visible).")
+
+def is_running():
+    if os.path.exists(PID_FILE):
+        try:
+            with open(PID_FILE, "r") as f:
+                pid = int(f.read().strip())
+            os.kill(pid, 0)
+            return True
+        except OSError:
+            try:
+                os.remove(PID_FILE)
+            except Exception:
+                pass
+    return False
+
+def main():
+    if len(sys.argv) > 1:
+        arg = sys.argv[1].lower()
+        if arg in ["--start", "start", "on", "--on"]:
+            start_daemon()
+        elif arg in ["--stop", "stop", "off", "--off"]:
+            stop_daemon()
+        elif arg in ["--toggle", "toggle"]:
+            if is_running():
+                stop_daemon()
+            else:
+                start_daemon()
+        elif arg in ["--status", "status"]:
+            print("running" if is_running() else "stopped")
+        else:
+            print("Usage: omarchy-undercover-autohide [--start | --stop | --toggle | --status]")
+    else:
+        run_daemon()
+
+if __name__ == "__main__":
+    main()

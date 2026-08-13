@@ -185,14 +185,8 @@ hl.bind("SUPER + E", hl.dsp.exec_cmd("env GTK_THEME=Adwaita:dark GTK_ICON_THEME=
 -- Win + I: Settings
 hl.bind("SUPER + I", hl.dsp.exec_cmd("uwsm-app -- omarchy-undercover-settings"), { description = "Settings" })
 
--- Win + A: Quick settings / Action Center
-hl.bind("SUPER + A", hl.dsp.exec_cmd("omarchy-win11-notifications"), { description = "Quick settings" })
-
--- Win + N: Notifications & Calendar
-hl.bind("SUPER + N", hl.dsp.exec_cmd("omarchy-win11-notifications"), { description = "Action Center" })
-
--- Win + W: Windows 11 Widgets Board
-hl.bind("SUPER + W", hl.dsp.exec_cmd("omarchy-win11-notifications"), { description = "Widgets board" })
+-- Win + A: Quick settings
+hl.bind("SUPER + A", hl.dsp.exec_cmd("uwsm-app -- omarchy-undercover-settings --page system"), { description = "Quick settings" })
 
 -- Win + R: Run dialog
 hl.bind("SUPER + R", hl.dsp.exec_cmd("rofi -show run -theme ~/.config/rofi/windows11.rasi"), { description = "Run dialog" })
@@ -219,6 +213,15 @@ hl.bind("ALT + F4", hl.dsp.window.close(), { description = "Close window" })
 
 -- Win + Q: Quick assist (terminal) - handy replacement for Win+W (widgets)
 hl.bind("SUPER + Q", hl.dsp.exec_cmd("xdg-terminal-exec"), { description = "Terminal (quick)" })
+
+-- Win + B: Toggle Taskbar Visibility (Instant hide / reveal)
+hl.bind("SUPER + B", hl.dsp.exec_cmd("pkill -SIGUSR1 -x waybar"), { description = "Toggle taskbar visibility" })
+
+-- Win + Alt + B: Toggle Intelligent Edge Auto-Hide Daemon
+hl.bind("SUPER + ALT + B", hl.dsp.exec_cmd("omarchy-undercover-autohide --toggle"), { description = "Toggle edge auto-hide" })
+
+-- Super + Alt + U: Toggle Undercover Mode
+hl.bind("SUPER + ALT + U", hl.dsp.exec_cmd("omarchy-undercover --toggle"), { description = "Toggle undercover mode" })
 
 -- Compositor blur for Mica taskbar and start menu
 hl.layer_rule({ match = { namespace = "waybar" }, blur = true })

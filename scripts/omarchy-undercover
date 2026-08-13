@@ -956,14 +956,14 @@ case "$1" in
     --autohide)
         if [[ "${2:-}" == "off" || "${2:-}" == "disable" || "${2:-}" == "0" ]]; then
             write_setting "AUTOHIDE" "false"
-            killall omarchy-autohide-dock 2>/dev/null || true
-            msg "Auto-hide disabled."
+            omarchy-undercover-autohide --stop
+            msg "Auto-hide disabled (Bar kept visible)."
+        elif [[ "${2:-}" == "status" ]]; then
+            omarchy-undercover-autohide --status
         else
             write_setting "AUTOHIDE" "true"
-            killall omarchy-autohide-dock 2>/dev/null || true
-            nohup omarchy-autohide-dock >/dev/null 2>&1 &
-            disown 2>/dev/null || true
-            msg "Smart edge auto-hide enabled."
+            omarchy-undercover-autohide --start
+            msg "Intelligent mouse-edge auto-hide enabled."
         fi
         ;;
     --disable|--omarchy)

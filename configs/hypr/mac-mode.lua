@@ -79,7 +79,8 @@ hl.unbind("SUPER + TAB")
 hl.bind("SUPER + TAB", hl.dsp.exec_cmd("rofi -show window -theme ~/.config/rofi/mac.rasi"), { description = "macOS Mission Control" })
 hl.bind("SUPER + N", hl.dsp.exec_cmd("omarchy-mac-widgets"), { description = "macOS Notification Center & Widgets" })
 hl.bind("SUPER + D", hl.dsp.exec_cmd("omarchy-undercover-show-desktop"), { description = "Show desktop" })
-hl.bind("SUPER + B", hl.dsp.exec_cmd("killall -SIGUSR1 waybar"), { description = "Toggle Dock/Taskbar Autohide" })
+hl.bind("SUPER + B", hl.dsp.exec_cmd("pkill -SIGUSR1 -x waybar"), { description = "Toggle Dock/Taskbar Visibility" })
+hl.bind("SUPER + ALT + B", hl.dsp.exec_cmd("omarchy-undercover-autohide --toggle"), { description = "Toggle Edge Auto-Hide Daemon" })
 hl.bind("SUPER + ALT + U", hl.dsp.exec_cmd("omarchy-undercover --toggle"), { description = "Toggle Undercover Mode" })
 
 -- Compositor frosted glass blur layer rules
