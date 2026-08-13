@@ -482,6 +482,19 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         row_mag.add_suffix(scale_mag)
         group_mac.add(row_mag)
 
+        # Dock Opacity
+        row_dock_op = Adw.ActionRow(title="Dock Background Opacity", subtitle="Transparency level of the floating dock container")
+        scale_dock_op = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 30, 100, 1)
+        scale_dock_op.set_value(int(float(read_setting("DOCK_OPACITY", "0.85")) * 100))
+        scale_dock_op.set_size_request(200, -1)
+        def on_dock_op_changed(s):
+            val = s.get_value() / 100.0
+            write_setting("DOCK_OPACITY", f"{val:.2f}")
+            self.show_toast(f"Dock opacity set to {int(s.get_value())}%")
+        scale_dock_op.connect("value-changed", on_dock_op_changed)
+        row_dock_op.add_suffix(scale_dock_op)
+        group_mac.add(row_dock_op)
+
         page.add(group_mac)
 
         # 2. Windows 11 Fluent Taskbar Preferences
@@ -507,6 +520,19 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
             self.show_toast(f"Taskbar alignment switched to: {val.capitalize()}")
         row_align.connect("notify::selected", on_align_changed)
         group_win.add(row_align)
+
+        # Taskbar Opacity
+        row_taskbar_op = Adw.ActionRow(title="Taskbar Opacity / Alpha", subtitle="Transparency level of the Windows 11 taskbar")
+        scale_taskbar_op = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 30, 100, 1)
+        scale_taskbar_op.set_value(int(float(read_setting("TASKBAR_OPACITY", "0.90")) * 100))
+        scale_taskbar_op.set_size_request(200, -1)
+        def on_taskbar_op_changed(s):
+            val = s.get_value() / 100.0
+            write_setting("TASKBAR_OPACITY", f"{val:.2f}")
+            self.show_toast(f"Taskbar opacity set to {int(s.get_value())}%")
+        scale_taskbar_op.connect("value-changed", on_taskbar_op_changed)
+        row_taskbar_op.add_suffix(scale_taskbar_op)
+        group_win.add(row_taskbar_op)
 
         # Show Weather Ticker on Taskbar
         row_win_weather = Adw.SwitchRow(title="Show Weather Ticker", subtitle="Displays live temperature and opens Windows 11 Widgets Board on click")
@@ -568,13 +594,83 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
     # ==================== PAGE 3: GLASSMORPHISM & EFFECTS ====================
     def build_effects_page(self):
         page = Adw.PreferencesPage()
-        page.set_title("Effects & Blur")
+        page.set_title("Effects & Transparency")
         page.set_icon_name("applications-graphics-symbolic")
 
-        group = Adw.PreferencesGroup(
+        # 1. Window Transparency & Opacity
+        group_opacity = Adw.PreferencesGroup(
+            title="Window Transparency & Opacity",
+            description="Adjust active and background application transparency."
+        )
+
+        # Active Window Opacity
+        row_active_op = Adw.ActionRow(title="Active Window Opacity", subtitle="Transparency level of focused application window")
+        scale_active_op = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 50, 100, 1)
+        curr_active = int(float(read_setting("ACTIVE_OPACITY", "0.95")) * 100)
+        scale_active_op.set_value(curr_active)
+        scale_active_op.set_size_request(200, -1)
+        def on_active_op_changed(s):
+            val = s.get_value() / 100.0
+            write_setting("ACTIVE_OPACITY", f"{val:.2f}")
+            subprocess.run(["hyprctl", "keyword", "decoration:active_opacity", f"{val:.2f}"], check=False)
+        scale_active_op.connect("value-changed", on_active_op_changed)
+        row_active_op.add_suffix(scale_active_op)
+        group_opacity.add(row_active_op)
+
+        # Inactive Window Opacity
+        row_inact_op = Adw.ActionRow(title="Inactive Window Opacity", subtitle="Transparency level of background unfocused windows")
+        scale_inact_op = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 50, 100, 1)
+        curr_inact = int(float(read_setting("INACTIVE_OPACITY", "0.85")) * 100)
+        scale_inact_op.set_value(curr_inact)
+        scale_inact_op.set_size_request(200, -1)
+        def on_inact_op_changed(s):
+            val = s.get_value() / 100.0
+            write_setting("INACTIVE_OPACITY", f"{val:.2f}")
+            subprocess.run(["hyprctl", "keyword", "decoration:inactive_opacity", f"{val:.2f}"], check=False)
+        scale_inact_op.connect("value-changed", on_inact_op_changed)
+        row_inact_op.add_suffix(scale_inact_op)
+        group_opacity.add(row_inact_op)
+
+        # Bar Transparency Switch
+        row_bar_trans = Adw.SwitchRow(title="Status Bar / Taskbar Transparency", subtitle="Toggles frosted glass translucent background for the taskbar / menu bar")
+        bar_trans_val = read_setting("BAR_TRANSPARENT", "true").lower() == "true"
+        row_bar_trans.set_active(bar_trans_val)
+        def on_bar_trans_toggled(r, p):
+            is_trans = r.get_active()
+            write_setting("BAR_TRANSPARENT", "true" if is_trans else "false")
+            # Update shell.json
+            shell_json = Path.home() / ".config/omarchy/shell.json"
+            if shell_json.exists():
+                try:
+                    data = json.loads(shell_json.read_text())
+                    if "bar" in data:
+                        data["bar"]["transparent"] = is_trans
+                        shell_json.write_text(json.dumps(data, indent=2))
+                except Exception:
+                    pass
+            cli = find_cli()
+            subprocess.run([cli, "--reload"], check=False)
+            self.show_toast(f"Bar transparency {'enabled' if is_trans else 'disabled'}")
+        row_bar_trans.connect("notify::active", on_bar_trans_toggled)
+        group_opacity.add(row_bar_trans)
+
+        page.add(group_opacity)
+
+        # 2. Glassmorphism & Blur Group
+        group_blur = Adw.PreferencesGroup(
             title="Hyprland Glassmorphism & Aesthetics",
             description="Fine-tune window corner rounding, Mica blur radius, and shadow depth."
         )
+
+        # Enable Blur Switch
+        row_blur_en = Adw.SwitchRow(title="Enable Compositor Blur", subtitle="Applies multi-pass Gaussian blur behind transparent surfaces")
+        blur_enabled = read_setting("BLUR_ENABLED", "true").lower() == "true"
+        row_blur_en.set_active(blur_enabled)
+        def on_blur_en_toggled(r, p):
+            write_setting("BLUR_ENABLED", "true" if r.get_active() else "false")
+            subprocess.run(["hyprctl", "keyword", "decoration:blur:enabled", "true" if r.get_active() else "false"], check=False)
+        row_blur_en.connect("notify::active", on_blur_en_toggled)
+        group_blur.add(row_blur_en)
 
         # Blur Size
         row_blur = Adw.ActionRow(title="Blur Size (Radius)", subtitle="Controls frosted glass blur dispersion")
@@ -583,7 +679,7 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         scale_blur.set_size_request(200, -1)
         scale_blur.connect("value-changed", lambda s: self.on_blur_changed(int(s.get_value())))
         row_blur.add_suffix(scale_blur)
-        group.add(row_blur)
+        group_blur.add(row_blur)
 
         # Blur Passes
         row_passes = Adw.ActionRow(title="Blur Passes (Vibrancy)", subtitle="Number of blur filtration passes")
@@ -592,7 +688,7 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         scale_passes.set_size_request(200, -1)
         scale_passes.connect("value-changed", lambda s: self.on_passes_changed(int(s.get_value())))
         row_passes.add_suffix(scale_passes)
-        group.add(row_passes)
+        group_blur.add(row_passes)
 
         # Window Rounding
         row_round = Adw.ActionRow(title="Window Corner Rounding", subtitle="Corner squircle radius for app windows")
@@ -601,10 +697,10 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         scale_round.set_size_request(200, -1)
         scale_round.connect("value-changed", lambda s: self.on_rounding_changed(int(s.get_value())))
         row_round.add_suffix(scale_round)
-        group.add(row_round)
+        group_blur.add(row_round)
 
-        page.add(group)
-        self.stack.add_titled(page, "effects", "Effects")
+        page.add(group_blur)
+        self.stack.add_titled(page, "effects", "Effects & Transparency")
 
     def on_blur_changed(self, val):
         write_setting("BLUR_SIZE", str(val))

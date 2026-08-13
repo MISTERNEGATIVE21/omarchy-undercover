@@ -1100,6 +1100,33 @@ case "$1" in
             msg "Intelligent mouse-edge auto-hide enabled."
         fi
         ;;
+    --opacity)
+        if [[ -n "${2:-}" ]]; then
+            local active_op="$2"
+            local inact_op="${3:-0.85}"
+            write_setting "ACTIVE_OPACITY" "$active_op"
+            write_setting "INACTIVE_OPACITY" "$inact_op"
+            hyprctl keyword decoration:active_opacity "$active_op" >/dev/null 2>&1 || true
+            hyprctl keyword decoration:inactive_opacity "$inact_op" >/dev/null 2>&1 || true
+            msg "Window opacity set to: active=$active_op, inactive=$inact_op"
+        else
+            echo "Current opacity: active=$(read_setting "ACTIVE_OPACITY" "0.95"), inactive=$(read_setting "INACTIVE_OPACITY" "0.85")"
+        fi
+        ;;
+    --transparency)
+        if [[ "${2:-}" == "off" || "${2:-}" == "false" || "${2:-}" == "0" ]]; then
+            write_setting "BAR_TRANSPARENT" "false"
+            write_setting "DOCK_OPACITY" "1.0"
+            write_setting "TASKBAR_OPACITY" "1.0"
+            msg "Transparency disabled (Solid surfaces)."
+        else
+            write_setting "BAR_TRANSPARENT" "true"
+            write_setting "DOCK_OPACITY" "${2:-0.85}"
+            write_setting "TASKBAR_OPACITY" "${2:-0.90}"
+            msg "Transparency enabled (Frosted glass surfaces)."
+        fi
+        omarchy_reload_bar
+        ;;
     --disable|--omarchy)
         switch_to_omarchy
         ;;
