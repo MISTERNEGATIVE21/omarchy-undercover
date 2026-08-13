@@ -859,7 +859,7 @@ show_help() {
 }
 
 toggle_mode() {
-    local -a MODES=("mac-dark" "mac-light" "win11-dark" "win11-light" "omarchy")
+    local -a MODES=("mac-dark" "mac-light" "win11-dark" "win11-light")
     local current=""
     [[ -f "$STATE_FILE" ]] && current=$(cat "$STATE_FILE")
     local next="mac-dark"
@@ -877,7 +877,6 @@ toggle_mode() {
         mac-light)   switch_to_mac "light" ;;
         win11-dark)  switch_to_win11 "dark" ;;
         win11-light) switch_to_win11 "light" ;;
-        omarchy)     switch_to_omarchy ;;
         *)           switch_to_mac "dark" ;;
     esac
 }
