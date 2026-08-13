@@ -79,6 +79,7 @@ window#waybar.win11-taskbar #taskbar button:hover {
 
 window#waybar.win11-taskbar #tray,
 window#waybar.win11-taskbar #network,
+window#waybar.win11-taskbar #bluetooth,
 window#waybar.win11-taskbar #pulseaudio,
 window#waybar.win11-taskbar #battery {
     padding: 0 6px;

@@ -41,7 +41,20 @@ else
     warn() { echo -e "\e[1;33m[WARN]\e[0m $1"; }
     error() { echo -e "\e[1;31m[ERROR]\e[0m $1"; exit 1; }
     command_exists() { command -v "$1" >/dev/null 2>&1; }
-    omarchy_reload_waybar() { killall waybar 2>/dev/null || true; waybar &>/dev/null & }
+    omarchy_reload_waybar() {
+        pkill -9 -x waybar 2>/dev/null || true
+        local retry=0
+        while pgrep -x waybar >/dev/null && [[ $retry -lt 8 ]]; do sleep 0.05; ((retry++)); done
+        pkill -9 -x waybar 2>/dev/null || true
+        sleep 0.15
+        nohup waybar >/tmp/waybar.log 2>&1 &
+        disown 2>/dev/null || true
+        sleep 0.35
+        local pids=($(pgrep -x waybar))
+        if [[ ${#pids[@]} -gt 1 ]]; then
+            for ((i=1; i<${#pids[@]}; i++)); do kill -9 "${pids[$i]}" 2>/dev/null || true; done
+        fi
+    }
     omarchy_reload_hyprland() { hyprctl reload 2>/dev/null || true; }
     omarchy_set_gnome_theme() {
         gsettings set org.gnome.desktop.interface gtk-theme "$1" 2>/dev/null || true

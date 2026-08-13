@@ -19,6 +19,7 @@
     "modules-right": [
       "tray",
       "network",
+      "bluetooth",
       "pulseaudio",
       "battery",
       "clock",
@@ -61,18 +62,29 @@
       "format-wifi": "󰤨",
       "format-ethernet": "󰈀",
       "format-disconnected": "󰤭",
-      "tooltip-format": "{ifname}: {ipaddr}"
+      "tooltip-format": "{ifname}: {ipaddr}",
+      "on-click": "omarchy-win11-notifications"
+    },
+    "bluetooth": {
+      "format": "󰂯",
+      "format-disabled": "󰂲",
+      "format-connected": "󰂱",
+      "tooltip-format": "Bluetooth: {status}",
+      "on-click": "omarchy-win11-notifications"
     },
     "pulseaudio": {
       "format": "{icon}",
       "format-muted": "󰝟",
       "format-icons": { "default": ["󰕿","󰖀","󰕾"] },
-      "on-click": "wpctl set-volume @DEFAULT_AUDIO_SINK@ toggle"
+      "on-click": "omarchy-win11-notifications",
+      "on-click-right": "wpctl set-volume @DEFAULT_AUDIO_SINK@ toggle",
+      "scroll-step": 5
     },
     "battery": {
       "format": "{icon}",
       "format-icons": ["󰂎","󰁺","󰁻","󰁼","󰁽","󰁾","󰁿","󰂀","󰂁","󰁹"],
-      "tooltip-format": "{capacity}% {timeTo}"
+      "tooltip-format": "{capacity}% {timeTo}",
+      "on-click": "omarchy-win11-notifications"
     },
     "clock": {
       "format": "{:%I:%M %p\n%m/%d/%Y}",

@@ -41,15 +41,30 @@ notify_omarchy() {
 
 # Omarchy System Reload Helpers
 omarchy_reload_waybar() {
-    if command_exists omarchy-restart-waybar; then
-        omarchy-restart-waybar 2>/dev/null || true
-    elif command_exists waybar; then
-        killall waybar 2>/dev/null || true
-        waybar &>/dev/null &
-    fi
-    # Restore auto-hide after a plain waybar restart.
-    if command_exists omarchy-undercover-taskbar-autohide; then
-        omarchy-undercover-taskbar-autohide --ensure 2>/dev/null || true
+    # 1. Kill any existing waybar processes
+    pkill -9 -x waybar 2>/dev/null || true
+    local retry=0
+    while pgrep -x waybar >/dev/null && [[ $retry -lt 8 ]]; do
+        sleep 0.05
+        ((retry++))
+    done
+    pkill -9 -x waybar 2>/dev/null || true
+    sleep 0.15
+
+    # 2. Launch single instance
+    nohup waybar >/tmp/waybar.log 2>&1 &
+    disown 2>/dev/null || true
+
+    # 3. Strict Self-Check: Enforce singleton
+    sleep 0.35
+    local pids=($(pgrep -x waybar))
+    if [[ ${#pids[@]} -gt 1 ]]; then
+        for ((i=1; i<${#pids[@]}; i++)); do
+            kill -9 "${pids[$i]}" 2>/dev/null || true
+        done
+    elif [[ ${#pids[@]} -eq 0 ]]; then
+        nohup waybar >/tmp/waybar.log 2>&1 &
+        disown 2>/dev/null || true
     fi
 }
 

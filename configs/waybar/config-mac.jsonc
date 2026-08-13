@@ -23,6 +23,7 @@
     "modules-right": [
       "custom/siri",
       "network",
+      "bluetooth",
       "pulseaudio",
       "battery",
       "custom/control-center"
@@ -66,17 +67,28 @@
       "format-wifi": "󰤨",
       "format-ethernet": "󰈀",
       "format-disconnected": "󰤭",
-      "tooltip-format": "{ifname}: {ipaddr}"
+      "tooltip-format": "{ifname}: {ipaddr}",
+      "on-click": "omarchy-ios-control-center"
+    },
+    "bluetooth": {
+      "format": "󰂯",
+      "format-disabled": "󰂲",
+      "format-connected": "󰂱",
+      "tooltip-format": "Bluetooth: {status}",
+      "on-click": "omarchy-ios-control-center"
     },
     "pulseaudio": {
       "format": "{icon}",
       "format-muted": "󰝟",
       "format-icons": { "default": ["󰕿", "󰖀", "󰕾"] },
-      "on-click": "wpctl set-volume @DEFAULT_AUDIO_SINK@ toggle"
+      "on-click": "omarchy-ios-control-center",
+      "on-click-right": "wpctl set-volume @DEFAULT_AUDIO_SINK@ toggle",
+      "scroll-step": 5
     },
     "battery": {
       "format": "{icon} {capacity}%",
-      "format-icons": ["󰂎","󰁺","󰁻","󰁼","󰁽","󰁾","󰁿","󰂀","󰂁","󰁹"]
+      "format-icons": ["󰂎","󰁺","󰁻","󰁼","󰁽","󰁾","󰁿","󰂀","󰂁","󰁹"],
+      "on-click": "omarchy-mac-widgets"
     },
     "custom/control-center": {
       "format": "󰄨",

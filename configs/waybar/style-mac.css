@@ -78,6 +78,7 @@ window#waybar.mac-topbar #custom-siri:hover {
 }
 
 window#waybar.mac-topbar #network,
+window#waybar.mac-topbar #bluetooth,
 window#waybar.mac-topbar #pulseaudio,
 window#waybar.mac-topbar #battery,
 window#waybar.mac-topbar #custom-control-center {
