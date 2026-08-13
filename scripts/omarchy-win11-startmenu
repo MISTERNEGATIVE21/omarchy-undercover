@@ -318,7 +318,7 @@ class Win11StartWindow(Gtk.Window):
 
 class Win11StartApp(Adw.Application):
     def __init__(self):
-        super().__init__(application_id="org.omarchy.win11.startmenu")
+        super().__init__(application_id=None, flags=Gio.ApplicationFlags.NON_UNIQUE)
 
     def do_activate(self):
         win = Win11StartWindow(self)

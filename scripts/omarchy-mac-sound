@@ -183,7 +183,7 @@ class MacSoundWindow(Gtk.Window):
 
 class MacSoundApp(Adw.Application):
     def __init__(self):
-        super().__init__(application_id="org.omarchy.mac.sound")
+        super().__init__(application_id=None, flags=Gio.ApplicationFlags.NON_UNIQUE)
 
     def do_activate(self):
         win = MacSoundWindow(self)

@@ -168,7 +168,7 @@ class MacBluetoothWindow(Gtk.Window):
 
 class MacBluetoothApp(Adw.Application):
     def __init__(self):
-        super().__init__(application_id="org.omarchy.mac.bluetooth")
+        super().__init__(application_id=None, flags=Gio.ApplicationFlags.NON_UNIQUE)
 
     def do_activate(self):
         win = MacBluetoothWindow(self)

@@ -6,11 +6,12 @@ Scans live nearby SSIDs, shows signal bars & security, and provides password con
 
 import sys
 import subprocess
+import threading
 import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, GLib
+from gi.repository import Gtk, Adw, Gio, GLib
 
 CSS = """
 window.wifi-manager {
@@ -29,7 +30,7 @@ window.wifi-manager {
 class WifiManagerWindow(Adw.Window):
     def __init__(self, app):
         super().__init__(application=app, title="Wi-Fi Networks")
-        self.set_default_size(420, 520)
+        self.set_default_size(420, 540)
         self.add_css_class("wifi-manager")
 
         p = Gtk.CssProvider()
@@ -41,10 +42,36 @@ class WifiManagerWindow(Adw.Window):
         header.set_title_widget(Gtk.Label(label="<b>Wi-Fi Networks</b>", use_markup=True))
         vbox.append(header)
 
+        # Wi-Fi Power Switch Row
+        pwr_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        pwr_box.set_margin_start(14)
+        pwr_box.set_margin_end(14)
+        pwr_box.set_margin_top(8)
+        pwr_box.set_margin_bottom(6)
+        pwr_box.add_css_class("wifi-card")
+
+        lbl_pwr = Gtk.Label(label="<b>Wi-Fi Radio</b>")
+        lbl_pwr.set_use_markup(True)
+        lbl_pwr.set_hexpand(True)
+        lbl_pwr.set_halign(Gtk.Align.START)
+
+        self.sw_pwr = Gtk.Switch()
+        wifi_on = False
+        try:
+            wifi_on = "enabled" in subprocess.check_output(["nmcli", "radio", "wifi"], text=True)
+        except Exception:
+            pass
+        self.sw_pwr.set_active(wifi_on)
+        self.sw_pwr.connect("notify::active", self.on_pwr_toggled)
+
+        pwr_box.append(lbl_pwr)
+        pwr_box.append(self.sw_pwr)
+        vbox.append(pwr_box)
+
         self.scroll = Gtk.ScrolledWindow()
         self.scroll.set_vexpand(True)
         self.list_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
-        self.list_box.set_margin_top(12)
+        self.list_box.set_margin_top(6)
         self.list_box.set_margin_bottom(12)
         self.list_box.set_margin_start(14)
         self.list_box.set_margin_end(14)
@@ -52,22 +79,45 @@ class WifiManagerWindow(Adw.Window):
         vbox.append(self.scroll)
 
         # Refresh button at bottom
-        btn_refresh = Gtk.Button(label="🔄 Scan Networks")
-        btn_refresh.set_margin_bottom(12)
-        btn_refresh.set_margin_start(14)
-        btn_refresh.set_margin_end(14)
-        btn_refresh.connect("clicked", lambda b: self.scan_networks())
-        vbox.append(btn_refresh)
+        self.btn_refresh = Gtk.Button(label="🔄 Rescan Networks")
+        self.btn_refresh.set_margin_bottom(12)
+        self.btn_refresh.set_margin_start(14)
+        self.btn_refresh.set_margin_end(14)
+        self.btn_refresh.connect("clicked", lambda b: self.trigger_rescan())
+        vbox.append(self.btn_refresh)
 
         self.set_content(vbox)
+        self.scan_networks()
+
+    def on_pwr_toggled(self, sw, param):
+        act = sw.get_active()
+        subprocess.run(["nmcli", "radio", "wifi", "on" if act else "off"], check=False)
+        self.scan_networks()
+
+    def trigger_rescan(self):
+        self.btn_refresh.set_sensitive(False)
+        self.btn_refresh.set_label("⏳ Rescanning...")
+        threading.Thread(target=self._rescan_thread, daemon=True).start()
+
+    def _rescan_thread(self):
+        try:
+            subprocess.run(["nmcli", "dev", "wifi", "rescan"], check=False)
+        except Exception:
+            pass
+        GLib.idle_add(self._rescan_done)
+
+    def _rescan_done(self):
+        self.btn_refresh.set_sensitive(True)
+        self.btn_refresh.set_label("🔄 Rescan Networks")
         self.scan_networks()
 
     def scan_networks(self):
         while child := self.list_box.get_first_child():
             self.list_box.remove(child)
 
-        lbl_scanning = Gtk.Label(label="Scanning for nearby networks...")
-        self.list_box.append(lbl_scanning)
+        if not self.sw_pwr.get_active():
+            self.list_box.append(Gtk.Label(label="Wi-Fi is currently turned off."))
+            return
 
         # Get active SSID
         active_ssid = ""
@@ -76,6 +126,7 @@ class WifiManagerWindow(Adw.Window):
             for line in out.splitlines():
                 if line.startswith("yes:"):
                     active_ssid = line.split(":", 1)[1]
+                    break
         except Exception:
             pass
 
@@ -96,11 +147,8 @@ class WifiManagerWindow(Adw.Window):
         except Exception:
             pass
 
-        while child := self.list_box.get_first_child():
-            self.list_box.remove(child)
-
         if not networks:
-            self.list_box.append(Gtk.Label(label="No Wi-Fi networks found."))
+            self.list_box.append(Gtk.Label(label="No Wi-Fi networks found. Try Rescanning."))
             return
 
         for ssid, sig, sec in networks:
@@ -110,7 +158,7 @@ class WifiManagerWindow(Adw.Window):
             # Signal Icon
             icon = "󰤨" if sig > 70 else ("󰤥" if sig > 45 else "󰤢")
             lbl_icon = Gtk.Label(label=icon)
-            lbl_icon.set_markup(f'<span size="large">{icon}</span>')
+            lbl_icon.set_markup(f'<span size="large" color="#00f2fe">{icon}</span>')
 
             info_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
             lbl_name = Gtk.Label(label=ssid)
@@ -133,7 +181,7 @@ class WifiManagerWindow(Adw.Window):
 
             if ssid == active_ssid:
                 lbl_conn = Gtk.Label(label="✔ Connected")
-                lbl_conn.set_markup('<span color="#00f2fe"><b>✔ Connected</b></span>')
+                lbl_conn.set_markup('<span color="#34c759"><b>✔ Connected</b></span>')
                 card.append(lbl_conn)
             else:
                 btn_conn = Gtk.Button(label="Connect")
@@ -147,7 +195,7 @@ class WifiManagerWindow(Adw.Window):
             dlg = Adw.MessageDialog(
                 transient_for=self,
                 heading=f"Connect to {ssid}",
-                body="Enter the network security password:"
+                body="Enter the Wi-Fi security password:"
             )
             dlg.add_response("cancel", "Cancel")
             dlg.add_response("connect", "Connect")
@@ -168,7 +216,7 @@ class WifiManagerWindow(Adw.Window):
             self.connect_wifi(ssid, pwd)
 
     def connect_wifi(self, ssid, password):
-        cmd = ["nmcli", "dev", "wifi", "connect", ssid]
+        cmd = ["nmcli", "--wait", "15", "dev", "wifi", "connect", ssid]
         if password:
             cmd.extend(["password", password])
         try:
@@ -185,7 +233,7 @@ class WifiManagerWindow(Adw.Window):
 
 class WifiApp(Adw.Application):
     def __init__(self):
-        super().__init__(application_id="org.omarchy.wifi.manager")
+        super().__init__(application_id=None, flags=Gio.ApplicationFlags.NON_UNIQUE)
 
     def do_activate(self):
         win = WifiManagerWindow(self)

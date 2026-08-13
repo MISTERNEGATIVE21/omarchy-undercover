@@ -185,8 +185,14 @@ hl.bind("SUPER + E", hl.dsp.exec_cmd("env GTK_THEME=Adwaita:dark GTK_ICON_THEME=
 -- Win + I: Settings
 hl.bind("SUPER + I", hl.dsp.exec_cmd("uwsm-app -- omarchy-undercover-settings"), { description = "Settings" })
 
--- Win + A: Quick settings
-hl.bind("SUPER + A", hl.dsp.exec_cmd("uwsm-app -- omarchy-undercover-settings --page system"), { description = "Quick settings" })
+-- Win + A: Quick settings / Action Center
+hl.bind("SUPER + A", hl.dsp.exec_cmd("omarchy-win11-notifications"), { description = "Quick settings" })
+
+-- Win + N: Notifications & Calendar
+hl.bind("SUPER + N", hl.dsp.exec_cmd("omarchy-win11-notifications"), { description = "Action Center" })
+
+-- Win + W: Windows 11 Widgets Board
+hl.bind("SUPER + W", hl.dsp.exec_cmd("omarchy-win11-notifications"), { description = "Widgets board" })
 
 -- Win + R: Run dialog
 hl.bind("SUPER + R", hl.dsp.exec_cmd("rofi -show run -theme ~/.config/rofi/windows11.rasi"), { description = "Run dialog" })
