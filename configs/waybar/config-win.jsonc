@@ -36,12 +36,12 @@
     "custom/startmenu": {
       "format": "󰍲",
       "tooltip": "Start (Win)",
-      "on-click": "rofi -show drun -theme ~/.config/rofi/win11.rasi"
+      "on-click": "omarchy-win11-startmenu"
     },
     "custom/search": {
       "format": "󰍉  Search",
       "tooltip": "Type here to search",
-      "on-click": "rofi -show drun -theme ~/.config/rofi/win11.rasi"
+      "on-click": "omarchy-win11-startmenu"
     },
     "custom/taskview": {
       "format": "󱂬",

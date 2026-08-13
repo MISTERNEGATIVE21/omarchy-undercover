@@ -1,0 +1,196 @@
+#!/usr/bin/env python3
+"""
+Interactive Wi-Fi Network Scanner & Connector for Omarchy Hyprland
+Scans live nearby SSIDs, shows signal bars & security, and provides password connect dialog.
+"""
+
+import sys
+import subprocess
+import gi
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+from gi.repository import Gtk, Adw, GLib
+
+CSS = """
+window.wifi-manager {
+    background-color: rgba(24, 25, 34, 0.96);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+}
+.wifi-card {
+    background-color: rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 6px;
+}
+"""
+
+class WifiManagerWindow(Adw.Window):
+    def __init__(self, app):
+        super().__init__(application=app, title="Wi-Fi Networks")
+        self.set_default_size(420, 520)
+        self.add_css_class("wifi-manager")
+
+        p = Gtk.CssProvider()
+        p.load_from_data(CSS.encode())
+        Gtk.StyleContext.add_provider_for_display(self.get_display(), p, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        header = Adw.HeaderBar()
+        header.set_title_widget(Gtk.Label(label="<b>Wi-Fi Networks</b>", use_markup=True))
+        vbox.append(header)
+
+        self.scroll = Gtk.ScrolledWindow()
+        self.scroll.set_vexpand(True)
+        self.list_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        self.list_box.set_margin_top(12)
+        self.list_box.set_margin_bottom(12)
+        self.list_box.set_margin_start(14)
+        self.list_box.set_margin_end(14)
+        self.scroll.set_child(self.list_box)
+        vbox.append(self.scroll)
+
+        # Refresh button at bottom
+        btn_refresh = Gtk.Button(label="🔄 Scan Networks")
+        btn_refresh.set_margin_bottom(12)
+        btn_refresh.set_margin_start(14)
+        btn_refresh.set_margin_end(14)
+        btn_refresh.connect("clicked", lambda b: self.scan_networks())
+        vbox.append(btn_refresh)
+
+        self.set_content(vbox)
+        self.scan_networks()
+
+    def scan_networks(self):
+        while child := self.list_box.get_first_child():
+            self.list_box.remove(child)
+
+        lbl_scanning = Gtk.Label(label="Scanning for nearby networks...")
+        self.list_box.append(lbl_scanning)
+
+        # Get active SSID
+        active_ssid = ""
+        try:
+            out = subprocess.check_output(["nmcli", "-t", "-f", "ACTIVE,SSID", "dev", "wifi"], text=True)
+            for line in out.splitlines():
+                if line.startswith("yes:"):
+                    active_ssid = line.split(":", 1)[1]
+        except Exception:
+            pass
+
+        # Scan list
+        networks = []
+        try:
+            out = subprocess.check_output(["nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY", "dev", "wifi", "list"], text=True)
+            seen = set()
+            for line in out.splitlines():
+                parts = line.split(":")
+                if len(parts) >= 2 and parts[0]:
+                    ssid = parts[0]
+                    if ssid not in seen:
+                        seen.add(ssid)
+                        sig = int(parts[1]) if parts[1].isdigit() else 50
+                        sec = parts[2] if len(parts) > 2 else "Open"
+                        networks.append((ssid, sig, sec))
+        except Exception:
+            pass
+
+        while child := self.list_box.get_first_child():
+            self.list_box.remove(child)
+
+        if not networks:
+            self.list_box.append(Gtk.Label(label="No Wi-Fi networks found."))
+            return
+
+        for ssid, sig, sec in networks:
+            card = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+            card.add_css_class("wifi-card")
+
+            # Signal Icon
+            icon = "󰤨" if sig > 70 else ("󰤥" if sig > 45 else "󰤢")
+            lbl_icon = Gtk.Label(label=icon)
+            lbl_icon.set_markup(f'<span size="large">{icon}</span>')
+
+            info_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+            lbl_name = Gtk.Label(label=ssid)
+            lbl_name.set_markup(f"<b>{ssid}</b>")
+            lbl_name.set_halign(Gtk.Align.START)
+            
+            lbl_sec = Gtk.Label(label=f"Signal: {sig}% • {sec}")
+            lbl_sec.set_halign(Gtk.Align.START)
+            lbl_sec.set_opacity(0.7)
+
+            info_box.append(lbl_name)
+            info_box.append(lbl_sec)
+
+            card.append(lbl_icon)
+            card.append(info_box)
+
+            sep = Gtk.Box()
+            sep.set_hexpand(True)
+            card.append(sep)
+
+            if ssid == active_ssid:
+                lbl_conn = Gtk.Label(label="✔ Connected")
+                lbl_conn.set_markup('<span color="#00f2fe"><b>✔ Connected</b></span>')
+                card.append(lbl_conn)
+            else:
+                btn_conn = Gtk.Button(label="Connect")
+                btn_conn.connect("clicked", lambda b, s=ssid, sc=sec: self.prompt_password(s, sc))
+                card.append(btn_conn)
+
+            self.list_box.append(card)
+
+    def prompt_password(self, ssid, security):
+        if "WPA" in security or "WEP" in security or "802.1X" in security:
+            dlg = Adw.MessageDialog(
+                transient_for=self,
+                heading=f"Connect to {ssid}",
+                body="Enter the network security password:"
+            )
+            dlg.add_response("cancel", "Cancel")
+            dlg.add_response("connect", "Connect")
+            dlg.set_response_appearance("connect", Adw.ResponseAppearance.SUGGESTED)
+
+            entry = Gtk.PasswordEntry()
+            entry.set_show_peek_icon(True)
+            entry.set_margin_top(8)
+            dlg.set_extra_child(entry)
+
+            dlg.connect("response", lambda d, r: self.on_connect_response(r, ssid, entry.get_text()))
+            dlg.present()
+        else:
+            self.connect_wifi(ssid, "")
+
+    def on_connect_response(self, resp, ssid, pwd):
+        if resp == "connect":
+            self.connect_wifi(ssid, pwd)
+
+    def connect_wifi(self, ssid, password):
+        cmd = ["nmcli", "dev", "wifi", "connect", ssid]
+        if password:
+            cmd.extend(["password", password])
+        try:
+            out = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
+            self.scan_networks()
+        except subprocess.CalledProcessError as e:
+            err_dlg = Adw.MessageDialog(
+                transient_for=self,
+                heading="Connection Failed",
+                body=f"{e.output}"
+            )
+            err_dlg.add_response("ok", "OK")
+            err_dlg.present()
+
+class WifiApp(Adw.Application):
+    def __init__(self):
+        super().__init__(application_id="org.omarchy.wifi.manager")
+
+    def do_activate(self):
+        win = WifiManagerWindow(self)
+        win.present()
+
+if __name__ == "__main__":
+    app = WifiApp()
+    sys.exit(app.run(sys.argv))

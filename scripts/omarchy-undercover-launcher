@@ -1,48 +1,41 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Copyright (C) 2026 John Varghese
+# Copyright (C) 2026 misternegative21
 # Omarchy Hyprland Undercover Launcher
 # License: GPL-3.0-or-later
-#
-# omarchy:summary=Start menu launcher wrapper for Omarchy Undercover (with toggle/retract)
-# omarchy:args=[drun|run|window]
-# omarchy:examples=omarchy-undercover-launcher
 # ==============================================================================
 
-# Instant retract if rofi or wofi is already running
+# 1. Instant toggle if already running
+if pkill -f "omarchy-win11-startmenu" 2>/dev/null; then
+    exit 0
+fi
 if pkill -x rofi 2>/dev/null; then
     exit 0
 fi
 
-if pkill -x wofi 2>/dev/null; then
-    exit 0
+# 2. Check current mode
+STATE_FILE="$HOME/.config/omarchy-undercover/state"
+MODE="mac-dark"
+if [[ -f "$STATE_FILE" ]]; then
+    MODE=$(cat "$STATE_FILE")
 fi
 
-if command -v rofi &>/dev/null; then
-    ROFI_THEME="$HOME/.config/rofi/windows11.rasi"
-    if [[ ! -f "$ROFI_THEME" ]]; then
-        ROFI_THEME="$HOME/.config/omarchy-undercover/rofi/windows11.rasi"
+if [[ "$MODE" == *"win11"* ]] || [[ "$MODE" == *"windows"* ]]; then
+    if command -v omarchy-win11-startmenu &>/dev/null; then
+        exec omarchy-win11-startmenu
+    elif [[ -f "$HOME/.local/bin/omarchy-win11-startmenu" ]]; then
+        exec "$HOME/.local/bin/omarchy-win11-startmenu"
     fi
+fi
 
-    if [[ -f "$ROFI_THEME" ]]; then
-        rofi -show drun -theme "$ROFI_THEME"
-    else
-        rofi -show drun
-    fi
-elif command -v wofi &>/dev/null; then
-    WOFI_CONF="$HOME/.config/omarchy-undercover/wofi/config"
-    WOFI_STYLE="$HOME/.config/omarchy-undercover/wofi/style.css"
-    if [[ -f "$WOFI_CONF" ]] && [[ -f "$WOFI_STYLE" ]]; then
-        wofi --show drun --conf "$WOFI_CONF" --style "$WOFI_STYLE"
-    else
-        wofi --show drun
-    fi
-elif command -v omarchy-launch-walker &>/dev/null; then
-    omarchy-launch-walker
+# Default to Spotlight macOS Rofi
+ROFI_THEME="$HOME/.config/rofi/mac.rasi"
+if [[ "$MODE" == *"win11"* ]] && [[ -f "$HOME/.config/rofi/win11.rasi" ]]; then
+    ROFI_THEME="$HOME/.config/rofi/win11.rasi"
+fi
+
+if command -v rofi &>/dev/null && [[ -f "$ROFI_THEME" ]]; then
+    exec rofi -show drun -theme "$ROFI_THEME"
 else
-    if command -v omarchy-notification-send &>/dev/null; then
-        omarchy-notification-send "Omarchy Undercover Error" "No application launcher found (rofi, wofi, or walker)" -g "󰅙" -u "critical"
-    else
-        notify-send "Omarchy Undercover Error" "No launcher found (rofi, wofi, or walker)"
-    fi
+    exec rofi -show drun
 fi

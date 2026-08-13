@@ -1,0 +1,329 @@
+#!/usr/bin/env python3
+"""
+Windows 11 Start Menu & System Power Center for Omarchy Hyprland
+Features:
+- Windows 11 Fluent Mica glassmorphism pinned apps grid
+- Instant app search filter
+- User profile strip with Account Lock / Sign out
+- Full Power Menu: Lock, Sign Out, Sleep, Hibernate, Restart, Shut Down
+- Integrated Live Wi-Fi & Bluetooth Device Scanner with Password Connect Modal
+"""
+
+import sys
+import os
+import shutil
+import subprocess
+import getpass
+from pathlib import Path
+
+import gi
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+from gi.repository import Gtk, Adw, Gio, GLib, Gdk
+
+USERNAME = getpass.getuser()
+
+PINNED_APPS = [
+    ("󰖟", "Browser", "xdg-open https://"),
+    ("󰉋", "Files", "nautilus"),
+    ("󰞷", "Terminal", "uwsm-app -- xdg-terminal-exec"),
+    ("󰒓", "Settings", "omarchy-undercover-settings -s"),
+    ("󰨞", "VS Code", "code"),
+    ("󰌔", "Store", "omarchy-undercover-settings -s"),
+    ("󰕼", "Media Player", "vlc"),
+    ("󰃭", "Calendar", "omarchy-win11-notifications"),
+    ("󰄀", "Snipping Tool", "omarchy screenshot"),
+    ("󰗃", "Videos", "xdg-open https://youtube.com"),
+    ("󰓇", "Music", "xdg-open https://spotify.com"),
+    ("󰑴", "Calculator", "gnome-calculator"),
+    ("󰂞", "Action Center", "omarchy-win11-notifications"),
+    ("󱂬", "Task Manager", "uwsm-app -- xdg-terminal-exec -e btop"),
+    ("󰈙", "Notepad", "gedit"),
+    ("󰍬", "Weather", "omarchy-win11-notifications"),
+    ("󰤨", "Wi-Fi Networks", "WIFI_SCAN"),
+    ("󰂯", "Bluetooth", "BT_SCAN"),
+]
+
+CSS = """
+window.win11-start {
+    background-color: rgba(30, 31, 40, 0.96);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65);
+}
+
+.search-bar {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    padding: 8px 14px;
+    font-size: 13px;
+}
+
+.pinned-tile {
+    background-color: transparent;
+    border-radius: 8px;
+    padding: 8px 4px;
+    min-width: 78px;
+    min-height: 72px;
+    border: none;
+    transition: background-color 0.15s ease;
+}
+.pinned-tile:hover {
+    background-color: rgba(255, 255, 255, 0.09);
+}
+
+.pinned-icon {
+    font-size: 26px;
+    color: #00d2ff;
+}
+
+.pinned-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: #ffffff;
+    margin-top: 4px;
+}
+
+.bottom-strip {
+    background-color: rgba(20, 21, 28, 0.92);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 10px 16px;
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+}
+
+.user-pill {
+    background-color: transparent;
+    border-radius: 8px;
+    padding: 4px 8px;
+    border: none;
+}
+.user-pill:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.power-btn {
+    background-color: transparent;
+    border-radius: 8px;
+    padding: 8px 12px;
+    border: none;
+    color: #ffffff;
+    font-size: 18px;
+}
+.power-btn:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.power-menu-item {
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 13px;
+    color: #ffffff;
+}
+"""
+
+class Win11StartWindow(Gtk.Window):
+    def __init__(self, app):
+        super().__init__(application=app, title="Start")
+        self.set_default_size(540, 640)
+        self.set_resizable(False)
+        self.add_css_class("win11-start")
+
+        p = Gtk.CssProvider()
+        p.load_from_data(CSS.encode())
+        Gtk.StyleContext.add_provider_for_display(self.get_display(), p, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        self.set_child(main_box)
+
+        # Top padding & Search Box
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        content_box.set_margin_top(16)
+        content_box.set_margin_bottom(12)
+        content_box.set_margin_start(18)
+        content_box.set_margin_end(18)
+        content_box.set_vexpand(True)
+
+        self.search_entry = Gtk.Entry()
+        self.search_entry.set_placeholder_text("Type here to search...")
+        self.search_entry.add_css_class("search-bar")
+        self.search_entry.connect("changed", self.on_search_changed)
+        content_box.append(self.search_entry)
+
+        # Header for Pinned
+        hdr_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        lbl_pinned = Gtk.Label(label="Pinned")
+        lbl_pinned.set_markup("<b>Pinned</b>")
+        lbl_pinned.set_halign(Gtk.Align.START)
+        lbl_pinned.set_hexpand(True)
+        hdr_box.append(lbl_pinned)
+        content_box.append(hdr_box)
+
+        # Pinned Grid
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll.set_vexpand(True)
+
+        self.grid = Gtk.Grid()
+        self.grid.set_column_spacing(8)
+        self.grid.set_row_spacing(8)
+        self.grid.set_column_homogeneous(True)
+
+        self.tiles = []
+        for i, (icon, label, cmd) in enumerate(PINNED_APPS):
+            btn = Gtk.Button()
+            btn.add_css_class("pinned-tile")
+            
+            box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+            lbl_icon = Gtk.Label(label=icon)
+            lbl_icon.add_css_class("pinned-icon")
+            
+            lbl_name = Gtk.Label(label=label)
+            lbl_name.add_css_class("pinned-label")
+            
+            box.append(lbl_icon)
+            box.append(lbl_name)
+            btn.set_child(box)
+            btn.connect("clicked", lambda b, c=cmd: self.launch_app(c))
+            
+            self.tiles.append((label.lower(), btn))
+            self.grid.attach(btn, i % 6, i // 6, 1, 1)
+
+        scroll.set_child(self.grid)
+        content_box.append(scroll)
+        main_box.append(content_box)
+
+        # ================= BOTTOM USER & POWER BAR =================
+        bottom_strip = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        bottom_strip.add_css_class("bottom-strip")
+
+        # User Pill
+        btn_user = Gtk.Button()
+        btn_user.add_css_class("user-pill")
+        user_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        u_avatar = Gtk.Label(label="👤")
+        u_name = Gtk.Label(label=USERNAME)
+        u_name.set_markup(f"<b>{USERNAME}</b>")
+        user_box.append(u_avatar)
+        user_box.append(u_name)
+        btn_user.set_child(user_box)
+        btn_user.connect("clicked", self.open_user_menu)
+
+        # Power Button with Popover
+        btn_power = Gtk.Button(label="⏻")
+        btn_power.add_css_class("power-btn")
+        btn_power.connect("clicked", self.open_power_menu)
+
+        bottom_strip.append(btn_user)
+        
+        sep = Gtk.Box()
+        sep.set_hexpand(True)
+        bottom_strip.append(sep)
+        
+        bottom_strip.append(btn_power)
+        main_box.append(bottom_strip)
+
+    def launch_app(self, cmd):
+        self.destroy()
+        if cmd == "WIFI_SCAN":
+            subprocess.Popen(["omarchy-wifi-manager"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        elif cmd == "BT_SCAN":
+            subprocess.Popen(["omarchy-bluetooth-manager"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        else:
+            subprocess.Popen(["bash", "-c", cmd], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    def on_search_changed(self, entry):
+        text = entry.get_text().strip().lower()
+        for label, btn in self.tiles:
+            if not text or text in label:
+                btn.set_visible(True)
+            else:
+                btn.set_visible(False)
+
+    def open_power_menu(self, btn):
+        pop = Gtk.Popover()
+        pop.set_parent(btn)
+        
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        box.set_margin_top(8)
+        box.set_margin_bottom(8)
+        box.set_margin_start(8)
+        box.set_margin_end(8)
+
+        actions = [
+            ("🔒 Lock Session", self.action_lock),
+            ("🚪 Sign Out", self.action_logout),
+            ("💤 Sleep / Suspend", self.action_suspend),
+            ("❄️ Hibernate", self.action_hibernate),
+            ("🔄 Restart", self.action_reboot),
+            ("⏻ Shut Down", self.action_shutdown),
+        ]
+
+        for label, handler in actions:
+            b = Gtk.Button(label=label)
+            b.add_css_class("power-menu-item")
+            b.set_halign(Gtk.Align.FILL)
+            b.connect("clicked", lambda x, h=handler: (pop.popdown(), h()))
+            box.append(b)
+
+        pop.set_child(box)
+        pop.popup()
+
+    def open_user_menu(self, btn):
+        pop = Gtk.Popover()
+        pop.set_parent(btn)
+        
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        box.set_margin_top(8)
+        box.set_margin_bottom(8)
+        box.set_margin_start(8)
+        box.set_margin_end(8)
+
+        b_lock = Gtk.Button(label="🔒 Lock Account")
+        b_lock.connect("clicked", lambda x: (pop.popdown(), self.action_lock()))
+        
+        b_signout = Gtk.Button(label="🚪 Sign Out")
+        b_signout.connect("clicked", lambda x: (pop.popdown(), self.action_logout()))
+
+        box.append(b_lock)
+        box.append(b_signout)
+        pop.set_child(box)
+        pop.popup()
+
+    def action_lock(self):
+        self.destroy()
+        subprocess.run(["loginctl", "lock-session"], check=False)
+
+    def action_logout(self):
+        self.destroy()
+        subprocess.run(["hyprctl", "dispatch", "exit"], check=False)
+
+    def action_suspend(self):
+        self.destroy()
+        subprocess.run(["systemctl", "suspend"], check=False)
+
+    def action_hibernate(self):
+        self.destroy()
+        subprocess.run(["systemctl", "hibernate"], check=False)
+
+    def action_reboot(self):
+        self.destroy()
+        subprocess.run(["systemctl", "reboot"], check=False)
+
+    def action_shutdown(self):
+        self.destroy()
+        subprocess.run(["systemctl", "poweroff"], check=False)
+
+class Win11StartApp(Adw.Application):
+    def __init__(self):
+        super().__init__(application_id="org.omarchy.win11.startmenu")
+
+    def do_activate(self):
+        win = Win11StartWindow(self)
+        win.present()
+
+if __name__ == "__main__":
+    app = Win11StartApp()
+    sys.exit(app.run(sys.argv))

@@ -31,7 +31,7 @@
     "custom/apple-logo": {
       "format": "  ",
       "tooltip": "Apple Menu",
-      "on-click": "rofi -show drun -theme ~/.config/rofi/mac.rasi"
+      "on-click": "omarchy-mac-applemenu"
     },
     "custom/finder-title": {
       "format": "Finder",

@@ -1,0 +1,164 @@
+#!/usr/bin/env python3
+"""
+Interactive Bluetooth Device Manager for Omarchy Hyprland
+Scans nearby Bluetooth devices, shows paired status, and allows 1-click connect/pair/disconnect.
+"""
+
+import sys
+import subprocess
+import gi
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+from gi.repository import Gtk, Adw, GLib
+
+CSS = """
+window.bt-manager {
+    background-color: rgba(24, 25, 34, 0.96);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+}
+.bt-card {
+    background-color: rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 6px;
+}
+"""
+
+class BluetoothManagerWindow(Adw.Window):
+    def __init__(self, app):
+        super().__init__(application=app, title="Bluetooth Devices")
+        self.set_default_size(420, 520)
+        self.add_css_class("bt-manager")
+
+        p = Gtk.CssProvider()
+        p.load_from_data(CSS.encode())
+        Gtk.StyleContext.add_provider_for_display(self.get_display(), p, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        header = Adw.HeaderBar()
+        header.set_title_widget(Gtk.Label(label="<b>Bluetooth Devices</b>", use_markup=True))
+        vbox.append(header)
+
+        # Power switch
+        top_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        top_bar.set_margin_top(12)
+        top_bar.set_margin_start(14)
+        top_bar.set_margin_end(14)
+
+        lbl_power = Gtk.Label(label="Bluetooth Adapter Power")
+        lbl_power.set_hexpand(True)
+        lbl_power.set_halign(Gtk.Align.START)
+
+        self.sw_power = Gtk.Switch()
+        is_powered = False
+        try:
+            out = subprocess.check_output(["bluetoothctl", "show"], text=True)
+            is_powered = "Powered: yes" in out
+        except Exception:
+            pass
+        self.sw_power.set_active(is_powered)
+        self.sw_power.connect("notify::active", self.on_power_toggled)
+
+        top_bar.append(lbl_power)
+        top_bar.append(self.sw_power)
+        vbox.append(top_bar)
+
+        self.scroll = Gtk.ScrolledWindow()
+        self.scroll.set_vexpand(True)
+        self.list_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        self.list_box.set_margin_top(12)
+        self.list_box.set_margin_bottom(12)
+        self.list_box.set_margin_start(14)
+        self.list_box.set_margin_end(14)
+        self.scroll.set_child(self.list_box)
+        vbox.append(self.scroll)
+
+        # Refresh button at bottom
+        btn_refresh = Gtk.Button(label="🔄 Scan Devices")
+        btn_refresh.set_margin_bottom(12)
+        btn_refresh.set_margin_start(14)
+        btn_refresh.set_margin_end(14)
+        btn_refresh.connect("clicked", lambda b: self.scan_devices())
+        vbox.append(btn_refresh)
+
+        self.set_content(vbox)
+        self.scan_devices()
+
+    def on_power_toggled(self, sw, param):
+        act = sw.get_active()
+        subprocess.run(["bluetoothctl", "power", "on" if act else "off"], check=False)
+        self.scan_devices()
+
+    def scan_devices(self):
+        while child := self.list_box.get_first_child():
+            self.list_box.remove(child)
+
+        devices = []
+        try:
+            out = subprocess.check_output(["bluetoothctl", "devices"], text=True)
+            for line in out.splitlines():
+                parts = line.split(" ", 2)
+                if len(parts) >= 3:
+                    mac = parts[1]
+                    name = parts[2]
+                    # Check connected
+                    info = subprocess.check_output(["bluetoothctl", "info", mac], text=True)
+                    connected = "Connected: yes" in info
+                    devices.append((mac, name, connected))
+        except Exception:
+            pass
+
+        if not devices:
+            self.list_box.append(Gtk.Label(label="No paired Bluetooth devices found.\nTurn on scanning to discover new devices."))
+            return
+
+        for mac, name, conn in devices:
+            card = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+            card.add_css_class("bt-card")
+
+            lbl_icon = Gtk.Label(label="󰂯")
+            lbl_icon.set_markup('<span size="large">󰂯</span>')
+
+            info_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+            lbl_name = Gtk.Label(label=name)
+            lbl_name.set_markup(f"<b>{name}</b>")
+            lbl_name.set_halign(Gtk.Align.START)
+            
+            lbl_mac = Gtk.Label(label=mac)
+            lbl_mac.set_halign(Gtk.Align.START)
+            lbl_mac.set_opacity(0.6)
+
+            info_box.append(lbl_name)
+            info_box.append(lbl_mac)
+
+            card.append(lbl_icon)
+            card.append(info_box)
+
+            sep = Gtk.Box()
+            sep.set_hexpand(True)
+            card.append(sep)
+
+            if conn:
+                btn_disc = Gtk.Button(label="Disconnect")
+                btn_disc.connect("clicked", lambda b, m=mac: (subprocess.run(["bluetoothctl", "disconnect", m], check=False), self.scan_devices()))
+                card.append(btn_disc)
+            else:
+                btn_conn = Gtk.Button(label="Connect")
+                btn_conn.connect("clicked", lambda b, m=mac: (subprocess.run(["bluetoothctl", "connect", m], check=False), self.scan_devices()))
+                card.append(btn_conn)
+
+            self.list_box.append(card)
+
+class BluetoothApp(Adw.Application):
+    def __init__(self):
+        super().__init__(application_id="org.omarchy.bluetooth.manager")
+
+    def do_activate(self):
+        win = BluetoothManagerWindow(self)
+        win.present()
+
+if __name__ == "__main__":
+    app = BluetoothApp()
+    sys.exit(app.run(sys.argv))

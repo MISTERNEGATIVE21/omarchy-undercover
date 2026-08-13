@@ -1,0 +1,212 @@
+#!/usr/bin/env python3
+"""
+macOS Apple Menu () & System Action Hub for Omarchy Hyprland
+Features:
+- About This Mac Hardware Information Dialog
+- System Settings launcher
+- Real live Wi-Fi and Bluetooth Quick Selectors
+- Force Quit Application Switcher
+- Full System Power Actions: Sleep, Restart, Shut Down, Lock Screen, Log Out
+"""
+
+import sys
+import os
+import shutil
+import subprocess
+import getpass
+import platform
+import psutil
+from pathlib import Path
+
+import gi
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+from gi.repository import Gtk, Adw, Gio, GLib, Gdk
+
+USERNAME = getpass.getuser()
+
+CSS = """
+window.mac-apple-menu {
+    background-color: rgba(26, 26, 36, 0.96);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+.apple-menu-item {
+    background-color: transparent;
+    border-radius: 6px;
+    padding: 6px 12px;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    transition: background-color 0.12s ease;
+}
+.apple-menu-item:hover {
+    background-color: #007aff;
+    color: #ffffff;
+}
+
+.apple-sep {
+    background-color: rgba(255, 255, 255, 0.12);
+    min-height: 1px;
+    margin: 4px 6px;
+}
+
+.about-card {
+    background-color: rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    padding: 16px;
+}
+"""
+
+class MacAppleMenuWindow(Gtk.Window):
+    def __init__(self, app):
+        super().__init__(application=app, title="Apple Menu")
+        self.set_default_size(240, 360)
+        self.set_resizable(False)
+        self.add_css_class("mac-apple-menu")
+
+        p = Gtk.CssProvider()
+        p.load_from_data(CSS.encode())
+        Gtk.StyleContext.add_provider_for_display(self.get_display(), p, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        box.set_margin_top(8)
+        box.set_margin_bottom(8)
+        box.set_margin_start(8)
+        box.set_margin_end(8)
+        self.set_child(box)
+
+        items = [
+            ("  About This Mac", self.open_about_mac),
+            ("SEP", None),
+            ("⚙️  System Settings...", lambda: self.launch("omarchy-undercover-settings -s")),
+            ("🛍️  App Store...", lambda: self.launch("omarchy-undercover-settings -s")),
+            ("SEP", None),
+            ("📶  Wi-Fi Networks...", lambda: self.launch("omarchy-wifi-manager")),
+            ("󰂯  Bluetooth Devices...", lambda: self.launch("omarchy-bluetooth-manager")),
+            ("SEP", None),
+            ("🔄  Force Quit Applications...", lambda: self.launch("uwsm-app -- xdg-terminal-exec -e btop")),
+            ("SEP", None),
+            ("💤  Sleep", self.action_suspend),
+            ("🔄  Restart...", self.action_reboot),
+            ("⏻  Shut Down...", self.action_shutdown),
+            ("SEP", None),
+            ("🔒  Lock Screen", self.action_lock),
+            (f"🚪  Log Out {USERNAME}...", self.action_logout),
+        ]
+
+        for label, handler in items:
+            if label == "SEP":
+                sep = Gtk.Box()
+                sep.add_css_class("apple-sep")
+                box.append(sep)
+            else:
+                btn = Gtk.Button(label=label)
+                btn.add_css_class("apple-menu-item")
+                btn.set_halign(Gtk.Align.FILL)
+                btn.connect("clicked", lambda b, h=handler: h())
+                box.append(btn)
+
+    def launch(self, cmd):
+        self.destroy()
+        subprocess.Popen(["bash", "-c", cmd], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    def open_about_mac(self):
+        self.destroy()
+        dlg = AboutMacDialog()
+        dlg.present()
+
+    def action_lock(self):
+        self.destroy()
+        subprocess.run(["loginctl", "lock-session"], check=False)
+
+    def action_logout(self):
+        self.destroy()
+        subprocess.run(["hyprctl", "dispatch", "exit"], check=False)
+
+    def action_suspend(self):
+        self.destroy()
+        subprocess.run(["systemctl", "suspend"], check=False)
+
+    def action_reboot(self):
+        self.destroy()
+        subprocess.run(["systemctl", "reboot"], check=False)
+
+    def action_shutdown(self):
+        self.destroy()
+        subprocess.run(["systemctl", "poweroff"], check=False)
+
+class AboutMacDialog(Adw.Window):
+    def __init__(self):
+        super().__init__(title="About This Mac")
+        self.set_default_size(360, 420)
+        self.set_resizable(False)
+
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        box.set_margin_top(24)
+        box.set_margin_bottom(24)
+        box.set_margin_start(24)
+        box.set_margin_end(24)
+        box.set_halign(Gtk.Align.CENTER)
+        self.set_content(box)
+
+        # Apple Logo Emblem
+        lbl_logo = Gtk.Label()
+        lbl_logo.set_markup('<span size="48000" color="#00f2fe"></span>')
+        box.append(lbl_logo)
+
+        # OS Details
+        lbl_os = Gtk.Label()
+        lbl_os.set_markup('<span size="large" weight="bold">macOS Sequoia</span>')
+        lbl_ver = Gtk.Label(label="Version 15.1 (Omarchy Undercover v2.5.0)")
+        lbl_ver.set_opacity(0.7)
+        box.append(lbl_os)
+        box.append(lbl_ver)
+
+        # Specs Card
+        card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        card.add_css_class("about-card")
+        card.set_margin_top(8)
+
+        mem = psutil.virtual_memory()
+        cpu_count = psutil.cpu_count(logical=True)
+        uname = platform.uname()
+
+        specs = [
+            ("Chip", f"{cpu_count}-Core Processor"),
+            ("Memory", f"{mem.total / (1024**3):.1f} GB Unified Memory"),
+            ("Kernel", f"{uname.system} {uname.release}"),
+            ("Host", f"{uname.node}"),
+        ]
+
+        for k, v in specs:
+            r = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+            kl = Gtk.Label(label=f"<b>{k}:</b>  ")
+            kl.set_use_markup(True)
+            vl = Gtk.Label(label=v)
+            r.append(kl)
+            r.append(vl)
+            card.append(r)
+
+        box.append(card)
+
+        btn_settings = Gtk.Button(label="System Settings...")
+        btn_settings.add_css_class("suggested-action")
+        btn_settings.set_margin_top(6)
+        btn_settings.connect("clicked", lambda b: (self.destroy(), subprocess.Popen(["omarchy-undercover-settings", "-s"])))
+        box.append(btn_settings)
+
+class MacAppleMenuApp(Adw.Application):
+    def __init__(self):
+        super().__init__(application_id="org.omarchy.mac.applemenu")
+
+    def do_activate(self):
+        win = MacAppleMenuWindow(self)
+        win.present()
+
+if __name__ == "__main__":
+    app = MacAppleMenuApp()
+    sys.exit(app.run(sys.argv))
