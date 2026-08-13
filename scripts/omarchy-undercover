@@ -742,8 +742,8 @@ EOF
     local enable_dock
     enable_dock=$(read_setting "ENABLE_MAC_DOCK" "true")
     if [[ "$enable_dock" == "true" ]]; then
-        pkill -f omarchy-mac-dock 2>/dev/null || true
-        nohup omarchy-mac-dock >/dev/null 2>&1 &
+        pkill -f "quickshell.*mac-dock" 2>/dev/null || true
+        nohup quickshell -p "$CONFIG_DIR/quickshell/mac-dock" >/dev/null 2>&1 &
         disown 2>/dev/null || true
     fi
 
@@ -759,7 +759,7 @@ switch_to_win11() {
     fi
 
     msg "Switching to Windows 11 ($variant)..."
-    pkill -f omarchy-mac-dock 2>/dev/null || true
+    pkill -f "quickshell.*mac-dock" 2>/dev/null || true
     if [[ ! -f "$BASELINE_FILE" ]]; then
         backup_original_configs
     fi

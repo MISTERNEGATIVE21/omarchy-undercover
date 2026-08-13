@@ -34,16 +34,16 @@ BarWidget {
         implicitWidth: 38
         implicitHeight: root.bar ? root.bar.barSize - 6 : 32
         radius: 6
-        color: itemMouse.containsMouse ? (root.bar ? root.bar.hoverBackground : "rgba(255,255,255,0.12)") : "transparent"
-        border.color: itemMouse.containsMouse ? "rgba(255,255,255,0.15)" : "transparent"
+        color: itemMouse.containsMouse ? (root.bar && root.bar.hoverBackground !== undefined ? root.bar.hoverBackground : Qt.rgba(1, 1, 1, 0.12)) : "transparent"
+        border.color: itemMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.15) : "transparent"
         border.width: 1
 
         Text {
           anchors.centerIn: parent
           text: modelData.icon
-          font.family: root.bar ? root.bar.fontFamily : "sans-serif"
+          font.family: root.bar && root.bar.fontFamily !== undefined ? root.bar.fontFamily : "sans-serif"
           font.pixelSize: modelData.isStart ? 17 : 14
-          color: modelData.isStart ? "#0078d4" : (root.bar ? root.bar.foreground : "#ffffff")
+          color: modelData.isStart ? "#0078d4" : (root.bar && root.bar.foreground !== undefined ? root.bar.foreground : "#ffffff")
         }
 
         // Active running indicator (blue line at bottom)
@@ -65,11 +65,14 @@ BarWidget {
           cursorShape: Qt.PointingHandCursor
           acceptedButtons: Qt.LeftButton | Qt.RightButton
           onClicked: function(mouse) {
-            if (!root.bar) return
             if (modelData.isStart && mouse.button === Qt.RightButton) {
-              root.bar.run("omarchy-undercover-settings --page system")
+              if (root.bar) root.bar.run("omarchy-undercover-settings --page system")
             } else {
-              root.bar.run(modelData.exec)
+              if (root.bar) {
+                root.bar.run(modelData.exec)
+              } else {
+                Quickshell.execDetached(modelData.exec)
+              }
             }
           }
         }

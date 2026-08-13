@@ -15,9 +15,9 @@ ShellRoot {
       bottom: 8
     }
 
-    WlLayer.layer: WlLayer.Top
-    WlLayer.namespace: "omarchy-bar"
-    exclusiveZone: 70
+    WlrLayershell.layer: WlrLayer.Top
+    WlrLayershell.namespace: "omarchy-bar"
+    exclusionMode: ExclusionMode.Auto
     color: "transparent"
 
     implicitWidth: dockCard.implicitWidth + 24
@@ -38,8 +38,8 @@ ShellRoot {
       implicitHeight: 64
 
       radius: 20
-      color: "rgba(30, 30, 40, 0.82)"
-      border.color: "rgba(255, 255, 255, 0.22)"
+      color: Qt.rgba(0.12, 0.12, 0.16, 0.85)
+      border.color: Qt.rgba(1, 1, 1, 0.22)
       border.width: 1
 
       RowLayout {
@@ -79,8 +79,8 @@ ShellRoot {
               anchors.bottomMargin: 8
               anchors.horizontalCenter: parent.horizontalCenter
               radius: 6
-              color: "rgba(18, 18, 24, 0.94)"
-              border.color: "rgba(255, 255, 255, 0.22)"
+              color: Qt.rgba(0.08, 0.08, 0.10, 0.94)
+              border.color: Qt.rgba(1, 1, 1, 0.22)
               border.width: 1
               implicitWidth: tipText.implicitWidth + 12
               implicitHeight: tipText.implicitHeight + 6
@@ -139,7 +139,7 @@ ShellRoot {
         Rectangle {
           implicitWidth: 1
           implicitHeight: 36
-          color: "rgba(255, 255, 255, 0.22)"
+          color: Qt.rgba(1, 1, 1, 0.22)
           Layout.alignment: Qt.AlignVCenter
           Layout.leftMargin: 2
           Layout.rightMargin: 2
@@ -147,6 +147,7 @@ ShellRoot {
 
         // Trash Bin Item
         Item {
+          id: trashItem
           implicitWidth: dockWindow.baseIconSize
           implicitHeight: dockWindow.baseIconSize + 8
 
@@ -158,13 +159,13 @@ ShellRoot {
           }
 
           Rectangle {
-            visible: isTrashHovered
+            visible: trashItem.isTrashHovered
             anchors.bottom: trashText.top
             anchors.bottomMargin: 8
             anchors.horizontalCenter: parent.horizontalCenter
             radius: 6
-            color: "rgba(18, 18, 24, 0.94)"
-            border.color: "rgba(255, 255, 255, 0.22)"
+            color: Qt.rgba(0.08, 0.08, 0.10, 0.94)
+            border.color: Qt.rgba(1, 1, 1, 0.22)
             border.width: 1
             implicitWidth: trashTip.implicitWidth + 12
             implicitHeight: trashTip.implicitHeight + 6
@@ -184,8 +185,8 @@ ShellRoot {
             id: trashText
             anchors.centerIn: parent
             text: "🗑️"
-            font.pixelSize: Math.round(26 * trashScale)
-            z: isTrashHovered ? 20 : 1
+            font.pixelSize: Math.round(26 * trashItem.trashScale)
+            z: trashItem.isTrashHovered ? 20 : 1
           }
 
           MouseArea {
