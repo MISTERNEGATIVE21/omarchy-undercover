@@ -24,17 +24,13 @@ package() {
     install -d "$pkgdir/usr/share/licenses/$pkgname"
 
     # Install scripts
-    install -m 755 "$srcdir/scripts/omarchy-undercover" "$pkgdir/usr/bin/omarchy-undercover"
-    install -m 755 "$srcdir/scripts/omarchy-undercover-setup" "$pkgdir/usr/bin/omarchy-undercover-setup"
-    install -m 755 "$srcdir/scripts/omarchy-undercover-settings" "$pkgdir/usr/bin/omarchy-undercover-settings"
-    install -m 755 "$srcdir/scripts/omarchy-undercover-launcher" "$pkgdir/usr/bin/omarchy-undercover-launcher"
-    install -m 755 "$srcdir/scripts/omarchy-undercover-wallpaper" "$pkgdir/usr/bin/omarchy-undercover-wallpaper"
-    install -m 755 "$srcdir/scripts/omarchy-undercover-show-desktop" "$pkgdir/usr/bin/omarchy-undercover-show-desktop"
-    install -m 755 "$srcdir/scripts/omarchy-undercover-minimize" "$pkgdir/usr/bin/omarchy-undercover-minimize"
-    install -m 755 "$srcdir/scripts/omarchy-undercover-new-desktop" "$pkgdir/usr/bin/omarchy-undercover-new-desktop"
-
-    # Install common.sh to share/scripts and bin
+    for script_file in "$srcdir/scripts/"*; do
+        if [ -f "$script_file" ] && [ -x "$script_file" ]; then
+            install -m 755 "$script_file" "$pkgdir/usr/bin/$(basename "$script_file")"
+        fi
+    done
     install -m 644 "$srcdir/scripts/common.sh" "$pkgdir/usr/share/omarchy-undercover/scripts/common.sh"
+    install -m 755 "$srcdir/scripts/common.sh" "$pkgdir/usr/bin/omarchy-undercover-common.sh"
     install -m 755 "$srcdir/uninstall.sh" "$pkgdir/usr/bin/omarchy-undercover-uninstall"
 
     # Install configuration files

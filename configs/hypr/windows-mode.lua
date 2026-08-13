@@ -214,8 +214,8 @@ hl.bind("ALT + F4", hl.dsp.window.close(), { description = "Close window" })
 -- Win + Q: Quick assist (terminal) - handy replacement for Win+W (widgets)
 hl.bind("SUPER + Q", hl.dsp.exec_cmd("xdg-terminal-exec"), { description = "Terminal (quick)" })
 
--- Win + B: Toggle Taskbar Visibility (Instant hide / reveal)
-hl.bind("SUPER + B", hl.dsp.exec_cmd("pkill -SIGUSR1 -x waybar"), { description = "Toggle taskbar visibility" })
+-- Win + B: Toggle Taskbar Visibility (Instant hide / reveal for Quickshell & Waybar)
+hl.bind("SUPER + B", hl.dsp.exec_cmd("omarchy-undercover-toggle-bar"), { description = "Toggle taskbar visibility" })
 
 -- Win + Alt + B: Toggle Intelligent Edge Auto-Hide Daemon
 hl.bind("SUPER + ALT + B", hl.dsp.exec_cmd("omarchy-undercover-autohide --toggle"), { description = "Toggle edge auto-hide" })
@@ -223,6 +223,14 @@ hl.bind("SUPER + ALT + B", hl.dsp.exec_cmd("omarchy-undercover-autohide --toggle
 -- Super + Alt + U: Toggle Undercover Mode
 hl.bind("SUPER + ALT + U", hl.dsp.exec_cmd("omarchy-undercover --toggle"), { description = "Toggle undercover mode" })
 
--- Compositor blur for Mica taskbar and start menu
-hl.layer_rule({ match = { namespace = "waybar" }, blur = true })
-hl.layer_rule({ match = { namespace = "rofi" }, blur = true })
+-- Compositor blur & mica styling for Quickshell surfaces and legacy components
+hl.layer_rule({ match = { namespace = "omarchy-bar" }, blur = true, ignore_alpha = true })
+hl.layer_rule({ match = { namespace = "omarchy-menu" }, blur = true, ignore_alpha = true })
+hl.layer_rule({ match = { namespace = "omarchy-notifications" }, blur = true, ignore_alpha = true })
+hl.layer_rule({ match = { namespace = "omarchy-osd" }, blur = true, ignore_alpha = true })
+hl.layer_rule({ match = { namespace = "omarchy-keyboard-panel" }, blur = true, ignore_alpha = true })
+hl.layer_rule({ match = { namespace = "omarchy-clipboard" }, blur = true, ignore_alpha = true })
+hl.layer_rule({ match = { namespace = "omarchy-image-selector" }, blur = true, ignore_alpha = true })
+hl.layer_rule({ match = { namespace = "omarchy-emojis" }, blur = true, ignore_alpha = true })
+hl.layer_rule({ match = { namespace = "waybar" }, blur = true, ignore_alpha = true })
+hl.layer_rule({ match = { namespace = "rofi" }, blur = true, ignore_alpha = true })

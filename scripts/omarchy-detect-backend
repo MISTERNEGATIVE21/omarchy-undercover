@@ -1,0 +1,197 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Omarchy Undercover - Backend & Version Detection Engine
+# License: GPL-3.0-or-later
+#
+# Detects Omarchy version and active status bar / desktop shell backend:
+# - Omarchy >= 4.0: Native Quickshell (omarchy-shell / shell.json)
+# - Omarchy < 4.0: Legacy Waybar (waybar / mako / rofi)
+# ==============================================================================
+
+set -euo pipefail
+
+CONFIG_DIR="${HOME}/.config/omarchy-undercover"
+SETTINGS_FILE="${CONFIG_DIR}/settings.conf"
+
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# 1. Detect Omarchy Version string (e.g. "4.0.0.r1726...", "3.2.1", or "legacy")
+detect_omarchy_version() {
+    local ver=""
+    if command_exists omarchy; then
+        ver=$(omarchy version 2>/dev/null | head -n 1 || true)
+    fi
+    if [[ -z "$ver" && -f "/usr/share/omarchy/version" ]]; then
+        ver=$(cat "/usr/share/omarchy/version" 2>/dev/null | head -n 1 || true)
+    fi
+    if [[ -z "$ver" && -n "${OMARCHY_PATH:-}" && -f "${OMARCHY_PATH}/version" ]]; then
+        ver=$(cat "${OMARCHY_PATH}/version" 2>/dev/null | head -n 1 || true)
+    fi
+
+    if [[ -n "$ver" ]]; then
+        echo "$ver"
+    else
+        echo "legacy"
+    fi
+}
+
+# Extract major version number (e.g. 4, 3, 0)
+get_omarchy_major_version() {
+    local full_ver
+    full_ver=$(detect_omarchy_version)
+    if [[ "$full_ver" =~ ^([0-9]+) ]]; then
+        echo "${BASH_REMATCH[1]}"
+    else
+        echo "0"
+    fi
+}
+
+# Check if Quickshell / Omarchy shell is present & supported
+is_quickshell_supported() {
+    local major
+    major=$(get_omarchy_major_version)
+    if (( major >= 4 )); then
+        return 0
+    fi
+    if command_exists omarchy-shell || command_exists quickshell; then
+        if [[ -d "/usr/share/omarchy/shell" || -f "$HOME/.config/omarchy/shell.json" ]]; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+# Determine target backend taking into account user setting override
+# Setting SHELL_BACKEND can be: auto (default), quickshell, or waybar
+detect_shell_backend() {
+    local pref="auto"
+    if [[ -f "$SETTINGS_FILE" ]]; then
+        local found
+        found=$(grep -E "^SHELL_BACKEND=" "$SETTINGS_FILE" 2>/dev/null | tail -1 | cut -d= -f2- || true)
+        [[ -n "$found" ]] && pref="$found"
+    fi
+
+    case "$pref" in
+        quickshell|qs|omarchy-shell)
+            echo "quickshell"
+            return 0
+            ;;
+        waybar|legacy)
+            echo "waybar"
+            return 0
+            ;;
+        auto|*)
+            if is_quickshell_supported; then
+                echo "quickshell"
+            elif command_exists waybar; then
+                echo "waybar"
+            elif is_quickshell_supported; then
+                echo "quickshell"
+            else
+                echo "waybar"
+            fi
+            return 0
+            ;;
+    esac
+}
+
+# Toggle active status bar visibility safely without crashes
+toggle_active_bar() {
+    local backend
+    backend=$(detect_shell_backend)
+    if [[ "$backend" == "quickshell" ]]; then
+        if command_exists omarchy; then
+            omarchy toggle bar >/dev/null 2>&1 || true
+        elif command_exists omarchy-toggle-bar; then
+            omarchy-toggle-bar >/dev/null 2>&1 || true
+        elif command_exists omarchy-toggle; then
+            omarchy-toggle bar-off toggle >/dev/null 2>&1 || true
+        else
+            pkill -SIGUSR1 -x waybar 2>/dev/null || true
+        fi
+    else
+        pkill -SIGUSR1 -x waybar 2>/dev/null || true
+    fi
+}
+
+# Reload active status bar
+reload_active_bar() {
+    local backend
+    backend=$(detect_shell_backend)
+    if [[ "$backend" == "quickshell" ]]; then
+        # Terminate any conflicting legacy waybar instances
+        pkill -9 -x waybar 2>/dev/null || true
+
+        if command_exists omarchy; then
+            omarchy restart shell >/dev/null 2>&1 || true
+        elif command_exists omarchy-restart-shell; then
+            omarchy-restart-shell >/dev/null 2>&1 || true
+        fi
+    else
+        # Reload waybar
+        pkill -9 -x waybar 2>/dev/null || true
+        sleep 0.15
+        nohup waybar >/tmp/waybar.log 2>&1 &
+        disown 2>/dev/null || true
+    fi
+}
+
+# Output format dispatcher
+case "${1:-}" in
+    --version|-v)
+        detect_omarchy_version
+        ;;
+    --major)
+        get_omarchy_major_version
+        ;;
+    --is-quickshell)
+        if is_quickshell_supported; then
+            echo "true"
+            exit 0
+        else
+            echo "false"
+            exit 1
+        fi
+        ;;
+    --toggle-bar|-t)
+        toggle_active_bar
+        ;;
+    --reload-bar|-r)
+        reload_active_bar
+        ;;
+    --json|-j)
+        ver=$(detect_omarchy_version)
+        major=$(get_omarchy_major_version)
+        backend=$(detect_shell_backend)
+        qs_supp=$(is_quickshell_supported && echo "true" || echo "false")
+        cat <<EOF
+{
+  "omarchy_version": "$ver",
+  "omarchy_major": $major,
+  "shell_backend": "$backend",
+  "quickshell_supported": $qs_supp,
+  "waybar_installed": $(command_exists waybar && echo "true" || echo "false")
+}
+EOF
+        ;;
+    --help|-h)
+        cat <<USAGE
+Usage: omarchy-detect-backend [OPTION]
+
+Options:
+  (no args)          Print active backend ('quickshell' or 'waybar')
+  --version, -v      Print full Omarchy version string
+  --major            Print Omarchy major version number
+  --is-quickshell    Exit 0 if Quickshell is supported, 1 otherwise
+  --toggle-bar, -t   Toggle active status bar visibility
+  --reload-bar, -r   Reload active status bar daemon
+  --json, -j         Print detailed backend & version JSON
+  --help, -h         Show this help message
+USAGE
+        ;;
+    *)
+        detect_shell_backend
+        ;;
+esac

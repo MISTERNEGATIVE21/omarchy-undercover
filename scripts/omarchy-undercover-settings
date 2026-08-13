@@ -581,9 +581,40 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         page.set_icon_name("utilities-system-monitor-symbolic")
 
         group = Adw.PreferencesGroup(
-            title="Protocol Health & Integrity",
-            description="Inspect running waybar singletons, socket health, and configuration state."
+            title="Desktop Shell & Protocol Integrity",
+            description="Inspect active desktop status bar engine (Quickshell / Waybar), socket health, and configuration state."
         )
+
+        # Backend Selector
+        curr_backend = read_setting("SHELL_BACKEND", "auto")
+        row_engine = Adw.ComboRow(title="Shell Engine Backend", subtitle="Select status bar architecture (Quickshell for Omarchy 4.0+, Waybar for legacy)")
+        model = Gtk.StringList()
+        model.append("Automatic Detection (Quickshell / Waybar)")
+        model.append("Quickshell (Omarchy 4.0+ Native)")
+        model.append("Waybar (Legacy)")
+        row_engine.set_model(model)
+
+        if curr_backend == "quickshell":
+            row_engine.set_selected(1)
+        elif curr_backend == "waybar":
+            row_engine.set_selected(2)
+        else:
+            row_engine.set_selected(0)
+
+        def on_engine_changed(combo, param):
+            idx = combo.get_selected()
+            val = "auto"
+            if idx == 1:
+                val = "quickshell"
+            elif idx == 2:
+                val = "waybar"
+            write_setting("SHELL_BACKEND", val)
+            cli = find_cli()
+            subprocess.run([cli, "--backend", val], check=False)
+            self.show_toast(f"Shell backend switched to: {val}")
+
+        row_engine.connect("notify::selected", on_engine_changed)
+        group.add(row_engine)
 
         row_stat = Adw.ActionRow(title="System Integrity Verifier", subtitle="Run deep verification on configs, fonts, and assets")
         btn_verify = Gtk.Button(label="Run Diagnostics")
@@ -591,9 +622,9 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         row_stat.add_suffix(btn_verify)
         group.add(row_stat)
 
-        row_wb = Adw.ActionRow(title="Waybar Singleton Reload", subtitle="Enforce clean single-process reload")
-        btn_wb = Gtk.Button(label="Restart Waybar")
-        btn_wb.connect("clicked", lambda b: (subprocess.run([find_cli(), "--verify"], check=False), self.show_toast("Waybar reloaded cleanly!")))
+        row_wb = Adw.ActionRow(title="Status Bar / Shell Reload", subtitle="Enforce clean reload of Quickshell or Waybar")
+        btn_wb = Gtk.Button(label="Restart Bar")
+        btn_wb.connect("clicked", lambda b: (subprocess.run(["omarchy-detect-backend", "--reload-bar"], check=False), self.show_toast("Status bar reloaded cleanly!")))
         row_wb.add_suffix(btn_wb)
         group.add(row_wb)
 

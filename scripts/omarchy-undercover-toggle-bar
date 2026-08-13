@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Omarchy Undercover - Unified Status Bar Toggle Helper
+# License: GPL-3.0-or-later
+#
+# Toggles bar visibility for Quickshell (Omarchy 4.0+) or Waybar (legacy)
+# ==============================================================================
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [[ -x "$SCRIPT_DIR/omarchy-detect-backend" ]]; then
+    exec "$SCRIPT_DIR/omarchy-detect-backend" --toggle-bar "$@"
+elif command -v omarchy-detect-backend &>/dev/null; then
+    exec omarchy-detect-backend --toggle-bar "$@"
+elif command -v omarchy &>/dev/null; then
+    exec omarchy toggle bar
+else
+    pkill -SIGUSR1 -x waybar 2>/dev/null || true
+fi

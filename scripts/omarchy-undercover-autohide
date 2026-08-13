@@ -2,12 +2,14 @@
 """
 Intelligent Mouse-Edge Auto-Hide Daemon for Omarchy Undercover (v2.5.0)
 High-performance Wayland edge detection daemon for macOS Dock & Windows 11 Taskbar.
+Supports both Quickshell (Omarchy 4.0+) and Waybar (legacy).
 """
 
 import sys
 import os
 import time
 import json
+import shutil
 import subprocess
 import signal
 
@@ -16,12 +18,21 @@ PID_FILE = os.path.join(CONFIG_DIR, "autohide.pid")
 STATE_FILE = os.path.join(CONFIG_DIR, "state")
 SETTINGS_FILE = os.path.join(CONFIG_DIR, "settings.conf")
 
+def get_backend():
+    try:
+        out = subprocess.check_output(["omarchy-detect-backend"], text=True)
+        return out.strip()
+    except Exception:
+        pass
+    if shutil.which("omarchy-shell") or shutil.which("quickshell"):
+        return "quickshell"
+    return "waybar"
+
 def get_screen_metrics():
     try:
         out = subprocess.check_output(["hyprctl", "monitors", "-j"], text=True)
         data = json.loads(out)
         if data and len(data) > 0:
-            # Find focused monitor
             focused = next((m for m in data if m.get("focused")), data[0])
             h = focused.get("height", 1440)
             scale = focused.get("scale", 1.0)
@@ -40,15 +51,32 @@ def get_cursor_y():
         pass
     return 0
 
-def signal_waybar_toggle():
-    subprocess.run(["pkill", "-SIGUSR1", "-x", "waybar"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+def signal_bar_toggle():
+    backend = get_backend()
+    if backend == "quickshell":
+        if shutil.which("omarchy-undercover-toggle-bar"):
+            subprocess.run(["omarchy-undercover-toggle-bar"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        elif shutil.which("omarchy"):
+            subprocess.run(["omarchy", "toggle", "bar"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        else:
+            subprocess.run(["pkill", "-SIGUSR1", "-x", "waybar"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    else:
+        subprocess.run(["pkill", "-SIGUSR1", "-x", "waybar"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-def is_waybar_running():
-    try:
-        out = subprocess.check_output(["pgrep", "-x", "waybar"], text=True)
-        return bool(out.strip())
-    except Exception:
-        return False
+def is_bar_running():
+    backend = get_backend()
+    if backend == "quickshell":
+        try:
+            out = subprocess.check_output(["pgrep", "-f", "omarchy-shell|quickshell"], text=True)
+            return bool(out.strip())
+        except Exception:
+            return True
+    else:
+        try:
+            out = subprocess.check_output(["pgrep", "-x", "waybar"], text=True)
+            return bool(out.strip())
+        except Exception:
+            return False
 
 def run_daemon():
     os.makedirs(CONFIG_DIR, exist_ok=True)
@@ -64,13 +92,13 @@ def run_daemon():
 
     # Initial hide after 1.5s
     time.sleep(1.5)
-    if is_waybar_running():
-        signal_waybar_toggle()
+    if is_bar_running():
+        signal_bar_toggle()
         bar_visible = False
 
     while True:
         time.sleep(0.06)
-        if not is_waybar_running():
+        if not is_bar_running():
             continue
 
         y = get_cursor_y()
@@ -78,14 +106,14 @@ def run_daemon():
         if y >= trigger_y:
             away_since = None
             if not bar_visible:
-                signal_waybar_toggle()
+                signal_bar_toggle()
                 bar_visible = True
         elif y < leave_y:
             if bar_visible:
                 if away_since is None:
                     away_since = time.time()
                 elif (time.time() - away_since) > 0.40:  # 400ms natural dwell time
-                    signal_waybar_toggle()
+                    signal_bar_toggle()
                     bar_visible = False
                     away_since = None
             else:
@@ -119,15 +147,24 @@ def stop_daemon():
             pass
     # Kill any lingering instances
     subprocess.run(["pkill", "-f", "omarchy-undercover-autohide"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    # Ensure waybar is visible
+    # Ensure bar is visible
     time.sleep(0.2)
-    # If waybar is hidden, toggle to visible
-    try:
-        out = subprocess.check_output(["hyprctl", "layers"], text=True)
-        if "waybar" not in out:
-            signal_waybar_toggle()
-    except Exception:
-        pass
+    backend = get_backend()
+    if backend == "quickshell":
+        # Check if bar-off flag exists and remove it
+        bar_off_flag = os.path.expanduser("~/.local/state/omarchy/toggles/bar-off")
+        if os.path.exists(bar_off_flag):
+            try:
+                os.remove(bar_off_flag)
+            except Exception:
+                pass
+    else:
+        try:
+            out = subprocess.check_output(["hyprctl", "layers"], text=True)
+            if "waybar" not in out:
+                signal_bar_toggle()
+        except Exception:
+            pass
     print("Autohide daemon stopped (Bar kept visible).")
 
 def is_running():

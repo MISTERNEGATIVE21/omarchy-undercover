@@ -39,7 +39,85 @@ notify_omarchy() {
     fi
 }
 
-# Omarchy System Reload Helpers
+# ---------------------------------------------------------------------------
+# Omarchy Version & Shell Backend Auto-Detection
+# ---------------------------------------------------------------------------
+
+detect_omarchy_version() {
+    local ver=""
+    if command_exists omarchy; then
+        ver=$(omarchy version 2>/dev/null | head -n 1 || true)
+    fi
+    if [[ -z "$ver" && -f "/usr/share/omarchy/version" ]]; then
+        ver=$(cat "/usr/share/omarchy/version" 2>/dev/null | head -n 1 || true)
+    fi
+    if [[ -z "$ver" && -n "${OMARCHY_PATH:-}" && -f "${OMARCHY_PATH}/version" ]]; then
+        ver=$(cat "${OMARCHY_PATH}/version" 2>/dev/null | head -n 1 || true)
+    fi
+
+    if [[ -n "$ver" ]]; then
+        echo "$ver"
+    else
+        echo "legacy"
+    fi
+}
+
+get_omarchy_major_version() {
+    local full_ver
+    full_ver=$(detect_omarchy_version)
+    if [[ "$full_ver" =~ ^([0-9]+) ]]; then
+        echo "${BASH_REMATCH[1]}"
+    else
+        echo "0"
+    fi
+}
+
+is_quickshell_supported() {
+    local major
+    major=$(get_omarchy_major_version)
+    if (( major >= 4 )); then
+        return 0
+    fi
+    if command_exists omarchy-shell || command_exists quickshell; then
+        if [[ -d "/usr/share/omarchy/shell" || -f "$HOME/.config/omarchy/shell.json" ]]; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+detect_shell_backend() {
+    local pref
+    pref=$(read_setting "SHELL_BACKEND" "auto")
+
+    case "$pref" in
+        quickshell|qs|omarchy-shell)
+            echo "quickshell"
+            return 0
+            ;;
+        waybar|legacy)
+            echo "waybar"
+            return 0
+            ;;
+        auto|*)
+            if is_quickshell_supported; then
+                echo "quickshell"
+            elif command_exists waybar; then
+                echo "waybar"
+            elif is_quickshell_supported; then
+                echo "quickshell"
+            else
+                echo "waybar"
+            fi
+            return 0
+            ;;
+    esac
+}
+
+# ---------------------------------------------------------------------------
+# Omarchy System Reload & Bar Helpers
+# ---------------------------------------------------------------------------
+
 omarchy_reload_waybar() {
     # 1. Kill any existing waybar processes
     pkill -9 -x waybar 2>/dev/null || true
@@ -65,6 +143,45 @@ omarchy_reload_waybar() {
     elif [[ ${#pids[@]} -eq 0 ]]; then
         nohup waybar >/tmp/waybar.log 2>&1 &
         disown 2>/dev/null || true
+    fi
+}
+
+omarchy_reload_quickshell() {
+    # Kill any leftover waybar processes so they do not overlap with quickshell
+    pkill -9 -x waybar 2>/dev/null || true
+
+    if command_exists omarchy; then
+        omarchy restart shell 2>/dev/null || true
+    elif command_exists omarchy-restart-shell; then
+        omarchy-restart-shell 2>/dev/null || true
+    fi
+}
+
+omarchy_reload_bar() {
+    local backend
+    backend=$(detect_shell_backend)
+    if [[ "$backend" == "quickshell" ]]; then
+        omarchy_reload_quickshell
+    else
+        omarchy_reload_waybar
+    fi
+}
+
+omarchy_toggle_bar() {
+    local backend
+    backend=$(detect_shell_backend)
+    if [[ "$backend" == "quickshell" ]]; then
+        if command_exists omarchy; then
+            omarchy toggle bar 2>/dev/null || true
+        elif command_exists omarchy-toggle-bar; then
+            omarchy-toggle-bar 2>/dev/null || true
+        elif command_exists omarchy-toggle; then
+            omarchy-toggle bar-off toggle 2>/dev/null || true
+        else
+            pkill -SIGUSR1 -x waybar 2>/dev/null || true
+        fi
+    else
+        pkill -SIGUSR1 -x waybar 2>/dev/null || true
     fi
 }
 
@@ -155,6 +272,8 @@ create_manifest() {
     cat <<EOF > "$backup_dir/manifest.json"
 {
   "timestamp": "$timestamp",
+  "omarchy_version": "$(detect_omarchy_version)",
+  "shell_backend": "$(detect_shell_backend)",
   "gtk_theme": "$gtk_theme",
   "icon_theme": "$icon_theme",
   "cursor_theme": "$cursor_theme"

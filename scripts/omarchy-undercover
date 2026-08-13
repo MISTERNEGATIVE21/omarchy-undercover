@@ -342,7 +342,72 @@ apply_waybar_windows() {
         if command -v omarchy-undercover-taskbar-autohide &>/dev/null; then
             omarchy-undercover-taskbar-autohide --set "$visibility"
         fi
-        msg "Windows 11 taskbar applied ($visibility)."
+        msg "Windows 11 waybar taskbar deployed ($visibility)."
+    fi
+}
+
+apply_shell_windows() {
+    local backend
+    backend=$(detect_shell_backend)
+
+    if [[ "$backend" == "quickshell" ]]; then
+        local src
+        src=$(project_file "shell/shell-win.json")
+        if [[ -z "$src" || ! -f "$src" ]]; then
+            src="${SCRIPT_DIR}/../configs/shell/shell-win.json"
+        fi
+        if [[ -f "$src" ]]; then
+            mkdir -p "$HOME/.config/omarchy"
+            cp -f "$src" "$HOME/.config/omarchy/shell.json"
+            msg "Windows 11 Quickshell taskbar applied (Omarchy 4.0 bottom bar)."
+        fi
+    fi
+
+    # Always prepare Waybar config as well for seamless fallback
+    apply_waybar_windows
+}
+
+apply_shell_mac() {
+    local backend
+    backend=$(detect_shell_backend)
+
+    if [[ "$backend" == "quickshell" ]]; then
+        local src
+        src=$(project_file "shell/shell-mac.json")
+        if [[ -z "$src" || ! -f "$src" ]]; then
+            src="${SCRIPT_DIR}/../configs/shell/shell-mac.json"
+        fi
+        if [[ -f "$src" ]]; then
+            mkdir -p "$HOME/.config/omarchy"
+            cp -f "$src" "$HOME/.config/omarchy/shell.json"
+            msg "Apple macOS Sequoia Quickshell menu bar applied (Omarchy 4.0 top bar)."
+        fi
+    fi
+
+    # Deploy Waybar mac config for fallback/dual support
+    if [[ -f "$CONFIG_DIR/waybar/config-mac.jsonc" ]]; then
+        mkdir -p "$HOME/.config/waybar"
+        cp -f "$CONFIG_DIR/waybar/config-mac.jsonc" "$HOME/.config/waybar/config.jsonc"
+        cp -f "$CONFIG_DIR/waybar/style-mac.css" "$HOME/.config/waybar/style.css"
+    fi
+}
+
+restore_shell_from_baseline() {
+    local baseline="$1"
+    if [[ -f "$baseline/omarchy/shell.json" ]]; then
+        mkdir -p "$HOME/.config/omarchy"
+        cp -f "$baseline/omarchy/shell.json" "$HOME/.config/omarchy/shell.json"
+        msg "Restored original Omarchy Quickshell layout."
+    elif is_quickshell_supported; then
+        local def_src
+        def_src=$(project_file "shell/shell-default.json")
+        if [[ -z "$def_src" || ! -f "$def_src" ]]; then
+            def_src="${SCRIPT_DIR}/../configs/shell/shell-default.json"
+        fi
+        if [[ -f "$def_src" ]]; then
+            mkdir -p "$HOME/.config/omarchy"
+            cp -f "$def_src" "$HOME/.config/omarchy/shell.json"
+        fi
     fi
 }
 
@@ -409,6 +474,11 @@ backup_original_configs() {
     fi
 
     backup_config_dir "waybar" "$cur_backup"
+    backup_config_dir "omarchy" "$cur_backup"
+    if [[ -f "$HOME/.config/omarchy/shell.json" ]]; then
+        mkdir -p "$cur_backup/omarchy"
+        cp -f "$HOME/.config/omarchy/shell.json" "$cur_backup/omarchy/"
+    fi
     backup_config_dir "rofi" "$cur_backup"
     backup_config_dir "wofi" "$cur_backup"
     backup_config_dir "gtk-3.0" "$cur_backup"
@@ -610,11 +680,8 @@ EOF
         cp -f "$CONFIG_DIR/gtk/mac-style.css" "$HOME/.config/gtk-3.0/gtk.css" 2>/dev/null || true
     fi
 
-    # Deploy Waybar mac config
-    if [[ -f "$CONFIG_DIR/waybar/config-mac.jsonc" ]]; then
-        cp -f "$CONFIG_DIR/waybar/config-mac.jsonc" "$HOME/.config/waybar/config.jsonc"
-        cp -f "$CONFIG_DIR/waybar/style-mac.css" "$HOME/.config/waybar/style.css"
-    fi
+    # Deploy shell configuration (Quickshell or Waybar)
+    apply_shell_mac
 
     # Deploy mac Rofi theme
     if [[ -f "$CONFIG_DIR/rofi/mac.rasi" ]]; then
@@ -635,7 +702,7 @@ EOF
         omarchy-play-sound mac-switch 2>/dev/null || true
     fi
 
-    omarchy_reload_waybar
+    omarchy_reload_bar
     omarchy_reload_hyprland
     msg "Switched to Apple macOS Sequoia ($variant) — done!"
 }
@@ -729,11 +796,8 @@ EOF
         cp -f "$CONFIG_DIR/gtk/win11-style.css" "$HOME/.config/gtk-3.0/gtk.css" 2>/dev/null || true
     fi
 
-    # Deploy Waybar win11 config
-    if [[ -f "$CONFIG_DIR/waybar/config-win.jsonc" ]]; then
-        cp -f "$CONFIG_DIR/waybar/config-win.jsonc" "$HOME/.config/waybar/config.jsonc"
-        cp -f "$CONFIG_DIR/waybar/style-win.css" "$HOME/.config/waybar/style.css"
-    fi
+    # Deploy shell configuration (Quickshell or Waybar)
+    apply_shell_windows
 
     # Deploy win11 Rofi theme
     local rofi_src="$CONFIG_DIR/rofi/win11.rasi"
@@ -758,7 +822,7 @@ EOF
         omarchy-play-sound win11-switch 2>/dev/null || true
     fi
 
-    omarchy_reload_waybar
+    omarchy_reload_bar
     omarchy_reload_hyprland
     msg "Switched to Windows 11 ($variant) — done!"
 }
@@ -782,6 +846,7 @@ switch_to_omarchy() {
         local baseline
         baseline=$(cat "$BASELINE_FILE")
         if [[ -d "$baseline" ]]; then
+            restore_shell_from_baseline "$baseline"
             restore_config_dir "waybar" "$baseline"
             restore_config_dir "rofi" "$baseline"
             restore_config_dir "wofi" "$baseline"
@@ -796,7 +861,7 @@ switch_to_omarchy() {
     if command_exists gsettings; then
         gsettings set org.gnome.desktop.wm.preferences button-layout "close:minimize,maximize" 2>/dev/null || true
     fi
-    omarchy_reload_waybar
+    omarchy_reload_bar
     omarchy_reload_hyprland
     msg "Restored original Omarchy desktop!"
 }
@@ -822,6 +887,7 @@ restore_baseline() {
                 mkdir -p "$HOME/.config/hypr"
                 cp "$baseline/hypr/hyprland.conf" "$HOME/.config/hypr/"
             fi
+            restore_shell_from_baseline "$baseline"
             restore_config_dir "waybar" "$baseline"
             restore_config_dir "rofi" "$baseline"
             restore_config_dir "wofi" "$baseline"
@@ -836,7 +902,7 @@ restore_baseline() {
 
     restore_undercover_nautilus "$baseline"
 
-    omarchy_reload_waybar
+    omarchy_reload_bar
     omarchy_reload_hyprland
 
     rm -f "$STATE_FILE"
@@ -845,6 +911,10 @@ restore_baseline() {
 
 verify_integrity() {
     msg "Verifying integrity..."
+    echo "Omarchy Version: $(detect_omarchy_version)"
+    local backend
+    backend=$(detect_shell_backend)
+    echo "Active Shell Backend: $backend (Quickshell supported: $(is_quickshell_supported && echo 'Yes' || echo 'No'))"
     if [[ -f "$STATE_FILE" ]]; then
         echo "State: $(cat "$STATE_FILE")"
     else
@@ -879,9 +949,9 @@ show_status() {
     if [[ -f "$STATE_FILE" ]]; then
         local state
         state=$(cat "$STATE_FILE")
-        echo "Omarchy Undercover: $state mode"
+        echo "Omarchy Undercover: $state mode [Backend: $(detect_shell_backend)]"
     else
-        echo "Omarchy Undercover: default mode"
+        echo "Omarchy Undercover: default mode [Backend: $(detect_shell_backend)]"
     fi
 }
 
@@ -893,6 +963,7 @@ show_help() {
     echo "  -mac-light, --mac-light                 Switch to Apple macOS Sequoia Light mode"
     echo "  -w11, --w11, --win11, --enable          Switch to Windows 11 (dark by default)"
     echo "  -w11-light, --win11-light               Switch to Windows 11 Light mode"
+    echo "  --backend [auto|quickshell|waybar]      Select or show desktop status bar engine"
     echo "  --toggle                                Advance to next mode in 5-mode cycle"
     echo "  --disable, --omarchy                    Switch to original Omarchy mode & theming"
     echo "  --restore                               Restore from baseline backup"
@@ -932,6 +1003,22 @@ fi
 case "$1" in
     --toggle)
         toggle_mode
+        ;;
+    --backend)
+        if [[ -n "${2:-}" ]]; then
+            case "$2" in
+                auto|quickshell|waybar)
+                    write_setting "SHELL_BACKEND" "$2"
+                    msg "Shell backend set to: $2 (Active: $(detect_shell_backend))"
+                    omarchy_reload_bar
+                    ;;
+                *)
+                    error "Invalid backend: $2 (choose: auto, quickshell, waybar)"
+                    ;;
+            esac
+        else
+            echo "Current backend preference: $(read_setting "SHELL_BACKEND" "auto") (Active: $(detect_shell_backend))"
+        fi
         ;;
     -mac|--mac|--macOS|-apple|--apple|-app|-ios|--ios)
         if [[ "${2:-}" == "--light" || "${2:-}" == "light" ]]; then

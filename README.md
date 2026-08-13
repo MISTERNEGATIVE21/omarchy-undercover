@@ -95,21 +95,51 @@ omarchy-undercover -w11
 
 # 🌅 Switch to Windows 11 Fluent (Light mode)
 omarchy-undercover -w11-light
-
-# 🔄 Cycle to next mode in 4-mode sequence
-omarchy-undercover --toggle
 ```
 
-### Auto-Hide Daemon Control
+### Engine & Desktop Customization
 ```bash
-# Enable smart mouse edge auto-hide (HiDPI calibrated)
-omarchy-undercover --autohide on
+# 🔍 Detect Omarchy version and active status bar backend
+omarchy-detect-backend --json
 
-# Disable auto-hide (keep dock permanently visible)
-omarchy-undercover --autohide off
+# ⚙️ Switch or enforce shell backend preference (auto, quickshell, waybar)
+omarchy-undercover --backend quickshell
+omarchy-undercover --backend waybar
+omarchy-undercover --backend auto
+
+# 🚀 Toggle bar visibility across Quickshell (Omarchy 4.0+) & Waybar
+omarchy-undercover-toggle-bar
+
+# 🎛️ Toggle edge-sensing auto-hide daemon
+omarchy-undercover --autohide
+
+# 🔄 Restore original baseline configuration
+omarchy-undercover --restore
+
+# 🩺 Deep protocol integrity verification
+omarchy-undercover --verify
 ```
 
-### GUI Control Center & System Settings
+---
+
+## ⚡ Dual-Engine Architecture (Quickshell & Waybar)
+
+Omarchy Undercover features **intelligent zero-configuration dual-engine architecture**:
+
+1. **Omarchy 4.0+ Native (Quickshell)**:
+   - On Omarchy 4.0+, the status bar and layer surfaces run on native **Quickshell** (`omarchy-shell`).
+   - Windows 11 mode automatically deploys Fluent bottom taskbar layout and clock configurations to `~/.config/omarchy/shell.json`.
+   - macOS Sequoia mode deploys Apple top menu bar with center-anchored clock.
+   - Comprehensive Hyprland Lua layer rules (`omarchy-bar`, `omarchy-menu`, `omarchy-notifications`, `omarchy-osd`) ensure smooth compositor blur without graphical tearing or flickering.
+
+2. **Legacy Omarchy & Standalone Waybar**:
+   - For Omarchy < 4.0 or custom setups, all Waybar configurations (`configs/waybar/*`), Rofi themes, and Mako configs are preserved intact.
+   - Seamlessly falls back to Waybar if Quickshell is not available.
+   - You can explicitly force the engine using `omarchy-undercover --backend <quickshell|waybar|auto>`.
+
+---
+
+## 🛠️ GUI Control Center
 ```bash
 # Launch GTK4 / Libadwaita Undercover Settings App (with 5-second evaporating splash)
 omarchy-undercover-settings
