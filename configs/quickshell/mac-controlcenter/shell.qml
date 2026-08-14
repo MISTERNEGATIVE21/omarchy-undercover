@@ -1,6 +1,7 @@
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 
@@ -28,8 +29,56 @@ ShellRoot {
     property bool wifiOn: true
     property bool btOn: true
     property bool dndOn: false
-    property real displayBrightness: 85
-    property real masterVolume: 70
+    property int displayBrightness: 85
+    property int masterVolume: 70
+    property string wifiSsid: "Home Network"
+    property string btDeviceName: "Active Device"
+
+    // Helper runner
+    function runCmd(cmd) {
+      Quickshell.execDetached(["bash", "-c", cmd])
+    }
+
+    // 1. Live State Poller
+    Process {
+      id: statePoller
+      command: [
+        "bash", "-c",
+        "wifi=$(nmcli radio wifi 2>/dev/null || echo 'disabled'); " +
+        "bt=$(bluetoothctl show 2>/dev/null | grep -q 'Powered: yes' && echo '1' || echo '0'); " +
+        "vol=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null | awk '{print int($2*100)}' || echo '70'); " +
+        "bri=$(brightnessctl -m 2>/dev/null | cut -d, -f4 | tr -d '%' || echo '85'); " +
+        "ssid=$(nmcli -t -f active,ssid dev wifi 2>/dev/null | grep '^yes:' | cut -d: -f2 || echo 'Home Network'); " +
+        "echo \"$wifi|$bt|$vol|$bri|$ssid\""
+      ]
+      stdout: SplitParser {
+        onRead: function(line) {
+          if (!line) return
+          var parts = line.trim().split("|")
+          if (parts.length >= 5) {
+            controlCenterWindow.wifiOn = (parts[0].indexOf("enabled") !== -1)
+            controlCenterWindow.btOn = (parts[1] === "1")
+            var v = parseInt(parts[2])
+            if (!isNaN(v)) controlCenterWindow.masterVolume = Math.max(0, Math.min(100, v))
+            var b = parseInt(parts[3])
+            if (!isNaN(b)) controlCenterWindow.displayBrightness = Math.max(5, Math.min(100, b))
+            if (parts[4]) controlCenterWindow.wifiSsid = parts[4]
+          }
+        }
+      }
+    }
+
+    Timer {
+      interval: 2000
+      running: true
+      repeat: true
+      triggeredOnStart: true
+      onTriggered: {
+        if (!statePoller.running) {
+          statePoller.running = true
+        }
+      }
+    }
 
     Rectangle {
       id: bg
@@ -44,7 +93,7 @@ ShellRoot {
         anchors.margins: 14
         spacing: 12
 
-        // 1. Top Section: 2 Columns (Connectivity on Left, Quick toggles on Right)
+        // 1. Top Section: Connectivity Hub + Focus
         RowLayout {
           Layout.fillWidth: true
           spacing: 10
@@ -75,14 +124,14 @@ ShellRoot {
                 ColumnLayout {
                   spacing: 0
                   Text { text: "Wi-Fi"; color: "#ffffff"; font.pixelSize: 11.5; font.weight: Font.DemiBold }
-                  Text { text: controlCenterWindow.wifiOn ? "Home Network" : "Off"; color: Qt.rgba(1, 1, 1, 0.5); font.pixelSize: 10 }
+                  Text { text: controlCenterWindow.wifiOn ? controlCenterWindow.wifiSsid : "Off"; color: Qt.rgba(1, 1, 1, 0.5); font.pixelSize: 10 }
                 }
                 MouseArea {
                   anchors.fill: parent
                   cursorShape: Qt.PointingHandCursor
                   onClicked: {
                     controlCenterWindow.wifiOn = !controlCenterWindow.wifiOn
-                    Quickshell.execDetached("nmcli radio wifi " + (controlCenterWindow.wifiOn ? "on" : "off"))
+                    controlCenterWindow.runCmd("nmcli radio wifi " + (controlCenterWindow.wifiOn ? "on" : "off"))
                   }
                 }
               }
@@ -100,14 +149,14 @@ ShellRoot {
                 ColumnLayout {
                   spacing: 0
                   Text { text: "Bluetooth"; color: "#ffffff"; font.pixelSize: 11.5; font.weight: Font.DemiBold }
-                  Text { text: controlCenterWindow.btOn ? "AirPods Pro" : "Off"; color: Qt.rgba(1, 1, 1, 0.5); font.pixelSize: 10 }
+                  Text { text: controlCenterWindow.btOn ? "On" : "Off"; color: Qt.rgba(1, 1, 1, 0.5); font.pixelSize: 10 }
                 }
                 MouseArea {
                   anchors.fill: parent
                   cursorShape: Qt.PointingHandCursor
                   onClicked: {
                     controlCenterWindow.btOn = !controlCenterWindow.btOn
-                    Quickshell.execDetached("bluetoothctl power " + (controlCenterWindow.btOn ? "on" : "off"))
+                    controlCenterWindow.runCmd("bluetoothctl power " + (controlCenterWindow.btOn ? "on" : "off"))
                   }
                 }
               }
@@ -131,7 +180,7 @@ ShellRoot {
             }
           }
 
-          // Right Column: Do Not Disturb & Stage Manager
+          // Right Column: Do Not Disturb & Screen Mirroring
           ColumnLayout {
             Layout.fillWidth: true
             spacing: 10
@@ -171,7 +220,7 @@ ShellRoot {
                 anchors.centerIn: parent
                 spacing: 8
                 Text { text: "🪞"; font.pixelSize: 15 }
-                Text { text: "Screen Mirroring"; color: "#ffffff"; font.pixelSize: 11; font.weight: Font.DemiBold }
+                Text { text: "Stage Manager"; color: "#ffffff"; font.pixelSize: 11; font.weight: Font.DemiBold }
               }
             }
           }
@@ -215,9 +264,9 @@ ShellRoot {
                   anchors.fill: parent
                   cursorShape: Qt.PointingHandCursor
                   onClicked: function(mouse) {
-                    var pct = Math.max(10, Math.min(100, Math.round((mouse.x / width) * 100)))
+                    var pct = Math.max(5, Math.min(100, Math.round((mouse.x / width) * 100)))
                     controlCenterWindow.displayBrightness = pct
-                    Quickshell.execDetached("brightnessctl set " + pct + "% || true")
+                    controlCenterWindow.runCmd("brightnessctl set " + pct + "% || true")
                   }
                 }
               }
@@ -265,7 +314,7 @@ ShellRoot {
                   onClicked: function(mouse) {
                     var pct = Math.max(0, Math.min(100, Math.round((mouse.x / width) * 100)))
                     controlCenterWindow.masterVolume = pct
-                    Quickshell.execDetached("wpctl set-volume @DEFAULT_AUDIO_SINK@ " + (pct / 100.0))
+                    controlCenterWindow.runCmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ " + (pct / 100.0) + " || pactl set-sink-volume @DEFAULT_SINK@ " + pct + "% || true")
                   }
                 }
               }
@@ -303,9 +352,33 @@ ShellRoot {
 
             RowLayout {
               spacing: 8
-              Text { text: "⏮️"; font.pixelSize: 13 }
-              Text { text: "▶️"; font.pixelSize: 15 }
-              Text { text: "⏭️"; font.pixelSize: 13 }
+              Text {
+                text: "⏮️"
+                font.pixelSize: 13
+                MouseArea {
+                  anchors.fill: parent
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: controlCenterWindow.runCmd("playerctl previous || true")
+                }
+              }
+              Text {
+                text: "⏯️"
+                font.pixelSize: 15
+                MouseArea {
+                  anchors.fill: parent
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: controlCenterWindow.runCmd("playerctl play-pause || true")
+                }
+              }
+              Text {
+                text: "⏭️"
+                font.pixelSize: 13
+                MouseArea {
+                  anchors.fill: parent
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: controlCenterWindow.runCmd("playerctl next || true")
+                }
+              }
             }
           }
         }

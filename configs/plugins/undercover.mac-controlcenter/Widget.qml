@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import qs.Ui
 
 BarWidget {
@@ -18,7 +19,7 @@ BarWidget {
       if (root.bar) {
         root.bar.run("omarchy-mac-controlcenter")
       } else {
-        Quickshell.execDetached("omarchy-mac-controlcenter")
+        Quickshell.execDetached(["omarchy-mac-controlcenter"])
       }
     }
   }

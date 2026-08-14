@@ -129,7 +129,7 @@ ShellRoot {
               hoverEnabled: true
               cursorShape: Qt.PointingHandCursor
               onClicked: {
-                Quickshell.execDetached(modelData.exec)
+                Quickshell.execDetached(["bash", "-c", modelData.exec])
               }
             }
           }
@@ -195,7 +195,7 @@ ShellRoot {
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onClicked: {
-              Quickshell.execDetached("nautilus trash:/// || thunar trash:/// || dolphin trash:/")
+              Quickshell.execDetached(["bash", "-c", "nautilus trash:/// || thunar trash:/// || dolphin trash:/"])
             }
           }
         }

@@ -1,6 +1,7 @@
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 
@@ -29,8 +30,60 @@ ShellRoot {
     property bool btEnabled: true
     property bool nightLightEnabled: false
     property bool batterySaverEnabled: false
-    property real volumeVal: 75
-    property real brightnessVal: 80
+    property int volumeVal: 70
+    property int brightnessVal: 80
+    property int batteryPct: 90
+    property string wifiSsid: "Connected"
+    property string btDevice: "Active"
+
+    // Helper runner
+    function runCmd(cmd) {
+      Quickshell.execDetached(["bash", "-c", cmd])
+    }
+
+    // 1. Live State Polling Process
+    Process {
+      id: statePoller
+      command: [
+        "bash", "-c",
+        "wifi=$(nmcli radio wifi 2>/dev/null || echo 'disabled'); " +
+        "bt=$(bluetoothctl show 2>/dev/null | grep -q 'Powered: yes' && echo '1' || echo '0'); " +
+        "vol=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null | awk '{print int($2*100)}' || echo '70'); " +
+        "bri=$(brightnessctl -m 2>/dev/null | cut -d, -f4 | tr -d '%' || echo '80'); " +
+        "bat=$(cat /sys/class/power_supply/BAT*/capacity 2>/dev/null | head -1 || echo '90'); " +
+        "ssid=$(nmcli -t -f active,ssid dev wifi 2>/dev/null | grep '^yes:' | cut -d: -f2 || echo 'Connected'); " +
+        "echo \"$wifi|$bt|$vol|$bri|$bat|$ssid\""
+      ]
+      stdout: SplitParser {
+        onRead: function(line) {
+          if (!line) return
+          var parts = line.trim().split("|")
+          if (parts.length >= 6) {
+            actionCenterWindow.wifiEnabled = (parts[0].indexOf("enabled") !== -1)
+            actionCenterWindow.btEnabled = (parts[1] === "1")
+            var v = parseInt(parts[2])
+            if (!isNaN(v)) actionCenterWindow.volumeVal = Math.max(0, Math.min(100, v))
+            var b = parseInt(parts[3])
+            if (!isNaN(b)) actionCenterWindow.brightnessVal = Math.max(5, Math.min(100, b))
+            var bt = parseInt(parts[4])
+            if (!isNaN(bt)) actionCenterWindow.batteryPct = Math.max(1, Math.min(100, bt))
+            if (parts[5]) actionCenterWindow.wifiSsid = parts[5]
+          }
+        }
+      }
+    }
+
+    Timer {
+      interval: 2000
+      running: true
+      repeat: true
+      triggeredOnStart: true
+      onTriggered: {
+        if (!statePoller.running) {
+          statePoller.running = true
+        }
+      }
+    }
 
     Rectangle {
       id: bg
@@ -72,7 +125,7 @@ ShellRoot {
               cursorShape: Qt.PointingHandCursor
               onClicked: {
                 actionCenterWindow.wifiEnabled = !actionCenterWindow.wifiEnabled
-                Quickshell.execDetached("nmcli radio wifi " + (actionCenterWindow.wifiEnabled ? "on" : "off"))
+                actionCenterWindow.runCmd("nmcli radio wifi " + (actionCenterWindow.wifiEnabled ? "on" : "off"))
               }
             }
           }
@@ -97,7 +150,7 @@ ShellRoot {
               cursorShape: Qt.PointingHandCursor
               onClicked: {
                 actionCenterWindow.btEnabled = !actionCenterWindow.btEnabled
-                Quickshell.execDetached("bluetoothctl power " + (actionCenterWindow.btEnabled ? "on" : "off"))
+                actionCenterWindow.runCmd("bluetoothctl power " + (actionCenterWindow.btEnabled ? "on" : "off"))
               }
             }
           }
@@ -121,7 +174,7 @@ ShellRoot {
               anchors.fill: parent
               cursorShape: Qt.PointingHandCursor
               onClicked: {
-                Quickshell.execDetached("rfkill toggle all")
+                actionCenterWindow.runCmd("rfkill toggle all")
               }
             }
           }
@@ -170,12 +223,12 @@ ShellRoot {
               cursorShape: Qt.PointingHandCursor
               onClicked: {
                 actionCenterWindow.nightLightEnabled = !actionCenterWindow.nightLightEnabled
-                Quickshell.execDetached("hyprsunset -t 4500 || pkill hyprsunset")
+                actionCenterWindow.runCmd("hyprsunset -t 4500 || pkill hyprsunset || true")
               }
             }
           }
 
-          // Accessibility Tile
+          // Settings Shortcut Tile
           Rectangle {
             Layout.fillWidth: true
             implicitHeight: 64
@@ -187,14 +240,15 @@ ShellRoot {
             ColumnLayout {
               anchors.centerIn: parent
               spacing: 3
-              Text { anchors.horizontalCenter: parent.horizontalCenter; text: "♿"; font.pixelSize: 18 }
-              Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Access"; font.pixelSize: 11; font.weight: Font.DemiBold; color: "#ffffff" }
+              Text { anchors.horizontalCenter: parent.horizontalCenter; text: "⚙️"; font.pixelSize: 18 }
+              Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Settings"; font.pixelSize: 11; font.weight: Font.DemiBold; color: "#ffffff" }
             }
             MouseArea {
               anchors.fill: parent
               cursorShape: Qt.PointingHandCursor
               onClicked: {
-                Quickshell.execDetached("omarchy-undercover-settings")
+                Qt.quit()
+                actionCenterWindow.runCmd("omarchy-undercover-settings")
               }
             }
           }
@@ -208,9 +262,10 @@ ShellRoot {
           Text { text: "☀️"; font.pixelSize: 16 }
 
           Rectangle {
+            id: briTrack
             Layout.fillWidth: true
-            implicitHeight: 6
-            radius: 3
+            implicitHeight: 8
+            radius: 4
             color: Qt.rgba(1, 1, 1, 0.15)
 
             Rectangle {
@@ -218,7 +273,7 @@ ShellRoot {
               anchors.top: parent.top
               anchors.bottom: parent.bottom
               width: parent.width * (actionCenterWindow.brightnessVal / 100.0)
-              radius: 3
+              radius: 4
               color: "#0078d4"
             }
 
@@ -226,9 +281,9 @@ ShellRoot {
               anchors.fill: parent
               cursorShape: Qt.PointingHandCursor
               onClicked: function(mouse) {
-                var pct = Math.max(10, Math.min(100, Math.round((mouse.x / width) * 100)))
+                var pct = Math.max(5, Math.min(100, Math.round((mouse.x / width) * 100)))
                 actionCenterWindow.brightnessVal = pct
-                Quickshell.execDetached("brightnessctl set " + pct + "% || true")
+                actionCenterWindow.runCmd("brightnessctl set " + pct + "% || true")
               }
             }
           }
@@ -249,9 +304,10 @@ ShellRoot {
           Text { text: "🔊"; font.pixelSize: 16 }
 
           Rectangle {
+            id: volTrack
             Layout.fillWidth: true
-            implicitHeight: 6
-            radius: 3
+            implicitHeight: 8
+            radius: 4
             color: Qt.rgba(1, 1, 1, 0.15)
 
             Rectangle {
@@ -259,7 +315,7 @@ ShellRoot {
               anchors.top: parent.top
               anchors.bottom: parent.bottom
               width: parent.width * (actionCenterWindow.volumeVal / 100.0)
-              radius: 3
+              radius: 4
               color: "#0078d4"
             }
 
@@ -269,7 +325,7 @@ ShellRoot {
               onClicked: function(mouse) {
                 var pct = Math.max(0, Math.min(100, Math.round((mouse.x / width) * 100)))
                 actionCenterWindow.volumeVal = pct
-                Quickshell.execDetached("wpctl set-volume @DEFAULT_AUDIO_SINK@ " + (pct / 100.0))
+                actionCenterWindow.runCmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ " + (pct / 100.0) + " || pactl set-sink-volume @DEFAULT_SINK@ " + pct + "% || true")
               }
             }
           }
@@ -284,7 +340,7 @@ ShellRoot {
 
         Item { Layout.fillHeight: true }
 
-        // 4. Footer: Battery & Settings Shortcut
+        // 4. Footer: Live Battery & Settings Shortcut
         Rectangle {
           Layout.fillWidth: true
           implicitHeight: 48
@@ -300,7 +356,12 @@ ShellRoot {
             RowLayout {
               spacing: 6
               Text { text: "🔋"; font.pixelSize: 14 }
-              Text { text: "94% • Fully Charged"; color: "#ffffff"; font.pixelSize: 11.5; font.weight: Font.DemiBold }
+              Text {
+                text: actionCenterWindow.batteryPct + "% • " + actionCenterWindow.wifiSsid
+                color: "#ffffff"
+                font.pixelSize: 11.5
+                font.weight: Font.DemiBold
+              }
             }
 
             Item { Layout.fillWidth: true }
@@ -318,7 +379,7 @@ ShellRoot {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
                   Qt.quit()
-                  Quickshell.execDetached("omarchy-undercover-settings")
+                  actionCenterWindow.runCmd("omarchy-undercover-settings")
                 }
               }
             }

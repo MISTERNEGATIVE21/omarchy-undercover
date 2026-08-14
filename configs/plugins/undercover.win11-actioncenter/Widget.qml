@@ -53,7 +53,7 @@ BarWidget {
         if (root.bar) {
           root.bar.run("omarchy-win11-actioncenter")
         } else {
-          Quickshell.execDetached("omarchy-win11-actioncenter")
+          Quickshell.execDetached(["omarchy-win11-actioncenter"])
         }
       }
     }

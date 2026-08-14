@@ -26,6 +26,10 @@ ShellRoot {
     property bool showAllApps: false
     property bool showPowerPopup: false
 
+    function runCmd(cmd) {
+      Quickshell.execDetached(["bash", "-c", cmd])
+    }
+
     property var pinnedApps: [
       { name: "Edge", icon: "🌐", exec: "xdg-open https://microsoft.com || firefox" },
       { name: "Word", icon: "📝", exec: "libreoffice --writer || abiword || xdg-open https://office.com" },
@@ -99,7 +103,7 @@ ShellRoot {
             cursorShape: Qt.IBeamCursor
             onClicked: {
               Qt.quit()
-              Quickshell.execDetached("rofi -show drun -theme ~/.config/rofi/windows11.rasi")
+              startWindow.runCmd("rofi -show drun -theme ~/.config/rofi/windows11.rasi")
             }
           }
         }
@@ -135,7 +139,7 @@ ShellRoot {
               cursorShape: Qt.PointingHandCursor
               onClicked: {
                 Qt.quit()
-                Quickshell.execDetached("rofi -show drun -theme ~/.config/rofi/windows11.rasi")
+                startWindow.runCmd("rofi -show drun -theme ~/.config/rofi/windows11.rasi")
               }
             }
           }
@@ -185,7 +189,7 @@ ShellRoot {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
                   Qt.quit()
-                  Quickshell.execDetached(modelData.exec)
+                  startWindow.runCmd(modelData.exec)
                 }
               }
             }
@@ -224,7 +228,7 @@ ShellRoot {
               cursorShape: Qt.PointingHandCursor
               onClicked: {
                 Qt.quit()
-                Quickshell.execDetached("nautilus recent:/// || thunar")
+                startWindow.runCmd("nautilus recent:/// || thunar")
               }
             }
           }
@@ -281,7 +285,7 @@ ShellRoot {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
                   Qt.quit()
-                  Quickshell.execDetached(modelData.exec)
+                  startWindow.runCmd(modelData.exec)
                 }
               }
             }
@@ -338,7 +342,7 @@ ShellRoot {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
                   Qt.quit()
-                  Quickshell.execDetached("omarchy-undercover-settings")
+                  startWindow.runCmd("omarchy-undercover-settings")
                 }
               }
             }
@@ -403,7 +407,7 @@ ShellRoot {
               cursorShape: Qt.PointingHandCursor
               onClicked: {
                 Qt.quit()
-                Quickshell.execDetached("hyprlock || swaylock || loginctl lock-session")
+                startWindow.runCmd("hyprlock || swaylock || loginctl lock-session")
               }
             }
           }
@@ -427,7 +431,7 @@ ShellRoot {
               cursorShape: Qt.PointingHandCursor
               onClicked: {
                 Qt.quit()
-                Quickshell.execDetached("systemctl suspend")
+                startWindow.runCmd("systemctl suspend")
               }
             }
           }
@@ -451,7 +455,7 @@ ShellRoot {
               cursorShape: Qt.PointingHandCursor
               onClicked: {
                 Qt.quit()
-                Quickshell.execDetached("systemctl reboot")
+                startWindow.runCmd("systemctl reboot")
               }
             }
           }
@@ -475,7 +479,7 @@ ShellRoot {
               cursorShape: Qt.PointingHandCursor
               onClicked: {
                 Qt.quit()
-                Quickshell.execDetached("systemctl poweroff")
+                startWindow.runCmd("systemctl poweroff")
               }
             }
           }

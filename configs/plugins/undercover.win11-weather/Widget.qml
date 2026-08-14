@@ -87,13 +87,13 @@ BarWidget {
           if (root.bar) {
             root.bar.run("xdg-open https://www.msn.com/weather")
           } else {
-            Quickshell.execDetached("xdg-open https://www.msn.com/weather")
+            Quickshell.execDetached(["xdg-open", "https://www.msn.com/weather"])
           }
         } else {
           if (root.bar) {
             root.bar.run("omarchy-win11-widgets")
           } else {
-            Quickshell.execDetached("omarchy-win11-widgets")
+            Quickshell.execDetached(["omarchy-win11-widgets"])
           }
         }
       }

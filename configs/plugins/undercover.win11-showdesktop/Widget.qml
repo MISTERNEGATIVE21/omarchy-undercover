@@ -34,7 +34,7 @@ BarWidget {
         if (root.bar) {
           root.bar.run("omarchy-undercover-show-desktop")
         } else {
-          Quickshell.execDetached("omarchy-undercover-show-desktop")
+          Quickshell.execDetached(["omarchy-undercover-show-desktop"])
         }
       }
     }
