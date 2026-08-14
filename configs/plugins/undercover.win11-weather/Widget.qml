@@ -11,6 +11,7 @@ BarWidget {
   implicitWidth: weatherContainer.implicitWidth + 8
   implicitHeight: root.bar ? root.bar.barSize : 40
 
+  property bool isDark: true
   property bool showWeather: true
   property string tempText: "72°F"
   property string conditionText: "Partly sunny"
@@ -21,6 +22,19 @@ BarWidget {
       root.bar.run(cmd)
     } else {
       Quickshell.execDetached(["bash", "-c", cmd])
+    }
+  }
+
+  // Theme state poller
+  Process {
+    id: statePoller
+    running: true
+    command: ["bash", "-c", "cat $HOME/.config/omarchy-undercover/state 2>/dev/null || echo 'win11-dark'"]
+    stdout: SplitParser {
+      onRead: function(line) {
+        var s = String(line).trim()
+        root.isDark = (s.indexOf("light") === -1)
+      }
     }
   }
 
@@ -57,6 +71,7 @@ BarWidget {
     triggeredOnStart: true
     onTriggered: {
       if (!weatherPoller.running) weatherPoller.running = true
+      if (!statePoller.running) statePoller.running = true
     }
   }
 
@@ -69,8 +84,12 @@ BarWidget {
     implicitWidth: Math.max(104, row.implicitWidth + 16)
     implicitHeight: root.bar ? root.bar.barSize - 8 : 34
     radius: 4
-    color: weatherMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.09) : "transparent"
-    border.color: weatherMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+    color: weatherMouse.containsMouse
+           ? (root.isDark ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(0, 0, 0, 0.06))
+           : "transparent"
+    border.color: weatherMouse.containsMouse
+                  ? (root.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08))
+                  : "transparent"
     border.width: 1
 
     RowLayout {
@@ -90,20 +109,20 @@ BarWidget {
           font.family: "Segoe UI"
           font.pixelSize: 11
           font.weight: Font.DemiBold
-          color: root.bar && root.bar.foreground !== undefined ? root.bar.foreground : "#ffffff"
+          color: root.isDark ? "#ffffff" : "#1a1a1a"
         }
         Text {
           text: root.conditionText
           font.family: "Segoe UI"
           font.pixelSize: 9
-          color: Qt.rgba(1, 1, 1, 0.72)
+          color: root.isDark ? Qt.rgba(1, 1, 1, 0.72) : Qt.rgba(0, 0, 0, 0.60)
           elide: Text.ElideRight
           Layout.maximumWidth: 68
         }
       }
     }
 
-    // Hover tooltip with full weather details
+    // Hover tooltip
     Rectangle {
       id: tooltip
       visible: weatherMouse.containsMouse
@@ -113,8 +132,8 @@ BarWidget {
       implicitWidth: tooltipText.implicitWidth + 14
       implicitHeight: 24
       radius: 5
-      color: Qt.rgba(0.13, 0.14, 0.18, 0.96)
-      border.color: Qt.rgba(1, 1, 1, 0.15)
+      color: root.isDark ? Qt.rgba(0.13, 0.14, 0.18, 0.96) : Qt.rgba(0.98, 0.98, 0.99, 0.98)
+      border.color: root.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.12)
       border.width: 1
       z: 100
 
@@ -124,7 +143,7 @@ BarWidget {
         text: "Widgets • " + root.tempText + " " + root.conditionText + " • MSN Weather"
         font.family: "Segoe UI"
         font.pixelSize: 10.5
-        color: "#ffffff"
+        color: root.isDark ? "#ffffff" : "#1a1a1a"
       }
     }
 

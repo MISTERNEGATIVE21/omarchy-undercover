@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Io
 import qs.Ui
 
 BarWidget {
@@ -10,6 +11,8 @@ BarWidget {
   implicitWidth: taskbarRow.implicitWidth + 8
   implicitHeight: root.bar ? root.bar.barSize : 44
 
+  property bool isDark: true
+
   function runCmd(cmd) {
     if (root.bar) {
       root.bar.run(cmd)
@@ -18,7 +21,30 @@ BarWidget {
     }
   }
 
-  // Windows 11 Taskbar Apps (Clean, polished, authentic Fluent SVG assets)
+  // Theme state poller
+  Process {
+    id: statePoller
+    running: true
+    command: ["bash", "-c", "cat $HOME/.config/omarchy-undercover/state 2>/dev/null || echo 'win11-dark'"]
+    stdout: SplitParser {
+      onRead: function(line) {
+        var s = String(line).trim()
+        root.isDark = (s.indexOf("light") === -1)
+      }
+    }
+  }
+
+  Timer {
+    interval: 4000
+    running: true
+    repeat: true
+    triggeredOnStart: true
+    onTriggered: {
+      if (!statePoller.running) statePoller.running = true
+    }
+  }
+
+  // Windows 11 Taskbar Apps
   property var winApps: [
     { id: "start", name: "Start", isStart: true, iconFile: "start.svg", exec: "omarchy-win11-start", running: false, visible: true },
     { id: "taskview", name: "Task View", isTaskView: true, iconFile: "taskview.svg", exec: "rofi -show window -theme ~/.config/rofi/windows11.rasi", running: false, visible: true },
@@ -45,9 +71,9 @@ BarWidget {
         radius: 5
 
         color: itemMouse.pressed
-               ? Qt.rgba(1, 1, 1, 0.14)
-               : (itemMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent")
-        border.color: itemMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.10) : "transparent"
+               ? (root.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.10))
+               : (itemMouse.containsMouse ? (root.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05)) : "transparent")
+        border.color: itemMouse.containsMouse ? (root.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.07)) : "transparent"
         border.width: 1
 
         scale: itemMouse.pressed ? 0.95 : (itemMouse.containsMouse ? 1.05 : 1.0)
@@ -70,25 +96,25 @@ BarWidget {
               width: 7.5
               height: 7.5
               radius: 1.2
-              color: itemMouse.containsMouse ? "#60cdff" : "#0078d4"
+              color: root.isDark ? (itemMouse.containsMouse ? "#60cdff" : "#0078d4") : (itemMouse.containsMouse ? "#0078d4" : "#005fb8")
             }
             Rectangle {
               width: 7.5
               height: 7.5
               radius: 1.2
-              color: itemMouse.containsMouse ? "#60cdff" : "#0078d4"
+              color: root.isDark ? (itemMouse.containsMouse ? "#60cdff" : "#0078d4") : (itemMouse.containsMouse ? "#0078d4" : "#005fb8")
             }
             Rectangle {
               width: 7.5
               height: 7.5
               radius: 1.2
-              color: itemMouse.containsMouse ? "#60cdff" : "#0078d4"
+              color: root.isDark ? (itemMouse.containsMouse ? "#60cdff" : "#0078d4") : (itemMouse.containsMouse ? "#0078d4" : "#005fb8")
             }
             Rectangle {
               width: 7.5
               height: 7.5
               radius: 1.2
-              color: itemMouse.containsMouse ? "#60cdff" : "#0078d4"
+              color: root.isDark ? (itemMouse.containsMouse ? "#60cdff" : "#0078d4") : (itemMouse.containsMouse ? "#0078d4" : "#005fb8")
             }
           }
         }
@@ -110,7 +136,7 @@ BarWidget {
             mipmap: true
           }
 
-          // Active Running Indicator Bar (Windows 11 blue indicator pill)
+          // Active Running Indicator Bar
           Rectangle {
             visible: modelData.running
             anchors.bottom: parent.bottom
@@ -119,14 +145,14 @@ BarWidget {
             width: itemMouse.containsMouse ? 20 : 16
             height: 3
             radius: 1.5
-            color: "#60cdff"
+            color: root.isDark ? "#60cdff" : "#0067c0"
             Behavior on width {
               NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
             }
           }
         }
 
-        // Tooltip showing clean app name on hover
+        // Tooltip
         Rectangle {
           id: tooltip
           visible: itemMouse.containsMouse
@@ -136,8 +162,8 @@ BarWidget {
           implicitWidth: tooltipText.implicitWidth + 14
           implicitHeight: 24
           radius: 5
-          color: Qt.rgba(0.13, 0.14, 0.18, 0.96)
-          border.color: Qt.rgba(1, 1, 1, 0.15)
+          color: root.isDark ? Qt.rgba(0.13, 0.14, 0.18, 0.96) : Qt.rgba(0.98, 0.98, 0.99, 0.98)
+          border.color: root.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.12)
           border.width: 1
           z: 100
 
@@ -147,7 +173,7 @@ BarWidget {
             text: modelData.name
             font.family: "Segoe UI"
             font.pixelSize: 11
-            color: "#ffffff"
+            color: root.isDark ? "#ffffff" : "#1a1a1a"
           }
         }
 
