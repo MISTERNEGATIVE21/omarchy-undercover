@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# =============================================================================
+# 🪟 Windows 11 Native Quickshell Action Center Dispatcher
+# =============================================================================
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_DIR="$HOME/.config/omarchy-undercover"
+
+QS_SRC="$CONFIG_DIR/quickshell/win11-actioncenter"
+if [[ ! -d "$QS_SRC" && -d "${SCRIPT_DIR}/../configs/quickshell/win11-actioncenter" ]]; then
+    QS_SRC="${SCRIPT_DIR}/../configs/quickshell/win11-actioncenter"
+fi
+
+if pgrep -f "quickshell.*win11-actioncenter" >/dev/null; then
+    pkill -f "quickshell.*win11-actioncenter"
+    exit 0
+fi
+
+if command -v quickshell >/dev/null 2>&1 && [[ -d "$QS_SRC" ]]; then
+    exec quickshell -p "$QS_SRC"
+else
+    exec python3 "${SCRIPT_DIR}/omarchy-undercover-settings" --page hardware
+fi

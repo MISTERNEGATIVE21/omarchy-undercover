@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# =============================================================================
+# 🪟 Windows 11 Native Quickshell Start Menu Dispatcher
+# =============================================================================
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_DIR="$HOME/.config/omarchy-undercover"
+
+QS_SRC="$CONFIG_DIR/quickshell/win11-start"
+if [[ ! -d "$QS_SRC" && -d "${SCRIPT_DIR}/../configs/quickshell/win11-start" ]]; then
+    QS_SRC="${SCRIPT_DIR}/../configs/quickshell/win11-start"
+fi
+
+if pgrep -f "quickshell.*win11-start" >/dev/null; then
+    pkill -f "quickshell.*win11-start"
+    exit 0
+fi
+
+if command -v quickshell >/dev/null 2>&1 && [[ -d "$QS_SRC" ]]; then
+    exec quickshell -p "$QS_SRC"
+else
+    exec rofi -show drun -theme ~/.config/rofi/windows11.rasi
+fi

@@ -2,74 +2,102 @@
    macOS Sequoia Traffic Light Window Controls (GTK3 & GTK4 / Libadwaita)
    ============================================================================= */
 
+/* Window Controls Container: Left-aligned spacing */
 headerbar windowcontrols,
-.titlebar windowcontrols {
+.titlebar windowcontrols,
+windowcontrols {
     margin-left: 8px;
     margin-right: 8px;
+    spacing: 8px;
 }
 
-windowcontrols > button,
+/* Base Circular Button Styling */
+windowcontrols button,
 headerbar button.titlebutton,
 .titlebar button.titlebutton,
 button.titlebutton {
-    border-radius: 9999px !important;
-    min-width: 13px !important;
-    min-height: 13px !important;
-    max-width: 13px !important;
-    max-height: 13px !important;
-    margin: 0 4px !important;
-    padding: 0 !important;
-    box-shadow: none !important;
-    -gtk-icon-size: 0px !important;
+    border-radius: 9999px;
+    min-width: 13px;
+    min-height: 13px;
+    max-width: 13px;
+    max-height: 13px;
+    margin: 0 4px;
+    padding: 0;
+    box-shadow: none;
+    background-clip: padding-box;
+    -gtk-icon-size: 0;
 }
 
-windowcontrols > button image,
+/* Hide default icons when not hovered */
+windowcontrols button image,
 headerbar button.titlebutton image,
 .titlebar button.titlebutton image {
-    opacity: 0 !important;
+    opacity: 0;
 }
 
 /* Close Button (Red) */
-windowcontrols > button.close,
+windowcontrols button.close,
 headerbar button.titlebutton.close,
 .titlebar button.titlebutton.close,
 button.titlebutton.close {
-    background-color: #FF5F56 !important;
-    background-image: none !important;
-    border: 1px solid rgba(180, 40, 40, 0.45) !important;
+    background-color: #FF5F56;
+    background-image: none;
+    border: 1px solid rgba(190, 40, 40, 0.5);
+    color: #4d0000;
 }
-windowcontrols > button.close:hover,
+windowcontrols button.close:hover,
 headerbar button.titlebutton.close:hover,
 button.titlebutton.close:hover {
-    background-color: #FF3B30 !important;
+    background-color: #FF3B30;
+}
+windowcontrols button.close:hover image,
+headerbar button.titlebutton.close:hover image {
+    opacity: 0.8;
 }
 
 /* Minimize Button (Yellow) */
-windowcontrols > button.minimize,
+windowcontrols button.minimize,
 headerbar button.titlebutton.minimize,
 .titlebar button.titlebutton.minimize,
 button.titlebutton.minimize {
-    background-color: #FFBD2E !important;
-    background-image: none !important;
-    border: 1px solid rgba(180, 130, 20, 0.45) !important;
+    background-color: #FFBD2E;
+    background-image: none;
+    border: 1px solid rgba(190, 130, 20, 0.5);
+    color: #593b00;
 }
-windowcontrols > button.minimize:hover,
+windowcontrols button.minimize:hover,
 headerbar button.titlebutton.minimize:hover,
 button.titlebutton.minimize:hover {
-    background-color: #FFCC00 !important;
+    background-color: #FFCC00;
+}
+windowcontrols button.minimize:hover image,
+headerbar button.titlebutton.minimize:hover image {
+    opacity: 0.8;
 }
 
-/* Maximize Button (Green) */
-windowcontrols > button.maximize,
+/* Maximize / Zoom Button (Green) */
+windowcontrols button.maximize,
 headerbar button.titlebutton.maximize,
 .titlebar button.titlebutton.maximize,
 button.titlebutton.maximize {
-    background-color: #27C93F !important;
-    background-image: none !important;
-    border: 1px solid rgba(30, 140, 40, 0.45) !important;
+    background-color: #27C93F;
+    background-image: none;
+    border: 1px solid rgba(30, 140, 40, 0.5);
+    color: #004d00;
 }
-windowcontrols > button.maximize:hover,
+windowcontrols button.maximize:hover,
 headerbar button.titlebutton.maximize:hover,
 button.titlebutton.maximize:hover {
-    background-color: #34C759 !important;
+    background-color: #34C759;
+}
+windowcontrols button.maximize:hover image,
+headerbar button.titlebutton.maximize:hover image {
+    opacity: 0.8;
+}
+
+/* Back / Forward / Extra buttons in headerbars keep standard look */
+headerbar > button:not(.titlebutton):not(windowcontrols button) {
+    border-radius: 6px;
+    min-width: 24px;
+    min-height: 24px;
 }

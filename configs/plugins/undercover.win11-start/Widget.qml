@@ -1,6 +1,4 @@
 import QtQuick
-import QtQuick.Layouts
-import Quickshell
 import qs.Ui
 
 BarWidget {
@@ -15,14 +13,14 @@ BarWidget {
     anchors.fill: parent
     bar: root.bar
     text: "󰍲"
-    tooltipText: "Start"
+    tooltipText: "Start (Super)"
     horizontalMargin: 8
     onPressed: function(btn) {
       if (!root.bar) return
       if (btn === Qt.RightButton) {
         root.bar.run("omarchy-undercover-settings --page system")
       } else {
-        root.bar.run("omarchy-undercover-launcher")
+        root.bar.run("omarchy-win11-start")
       }
     }
   }

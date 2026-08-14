@@ -2,46 +2,39 @@
    Windows 11 Fluent Window Controls (GTK3 & GTK4 / Libadwaita)
    ============================================================================= */
 
-headerbar windowcontrols,
-.titlebar windowcontrols {
-    margin-right: 0px;
-}
-
 windowcontrols > button,
 headerbar button.titlebutton,
 .titlebar button.titlebutton,
 button.titlebutton {
-    border-radius: 0px !important;
-    min-width: 44px !important;
-    min-height: 30px !important;
-    margin: 0 !important;
-    padding: 0 8px !important;
-    border: none !important;
-    background-color: transparent !important;
-    background-image: none !important;
-    box-shadow: none !important;
-    color: rgba(255, 255, 255, 0.9) !important;
-    transition: background-color 0.1s ease;
+    border-radius: 0;
+    min-width: 44px;
+    min-height: 30px;
+    margin: 0;
+    padding: 0 8px;
+    border: none;
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
+    color: rgba(255, 255, 255, 0.9);
 }
 
 windowcontrols > button image,
-headerbar button.titlebutton image {
-    opacity: 1 !important;
+headerbar button.titlebutton image,
+.titlebar button.titlebutton image {
+    opacity: 1;
 }
 
-/* Minimize & Maximize Hover */
-windowcontrols > button.minimize:hover,
-headerbar button.titlebutton.minimize:hover,
-windowcontrols > button.maximize:hover,
-headerbar button.titlebutton.maximize:hover {
-    background-color: rgba(255, 255, 255, 0.12) !important;
+windowcontrols > button:hover,
+headerbar button.titlebutton:hover,
+.titlebar button.titlebutton:hover,
+button.titlebutton:hover {
+    background-color: rgba(255, 255, 255, 0.12);
 }
 
-/* Close Button Hover (Windows Red #c42b1c) */
+/* Close button on Windows turns red on hover */
 windowcontrols > button.close:hover,
 headerbar button.titlebutton.close:hover,
-.titlebar button.titlebutton.close:hover,
 button.titlebutton.close:hover {
-    background-color: #c42b1c !important;
-    color: #ffffff !important;
+    background-color: #c42b1c;
+    color: #ffffff;
 }

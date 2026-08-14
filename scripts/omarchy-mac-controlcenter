@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# =============================================================================
+# 🍏 macOS Sequoia Native Quickshell Control Center Dispatcher
+# =============================================================================
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_DIR="$HOME/.config/omarchy-undercover"
+
+QS_SRC="$CONFIG_DIR/quickshell/mac-controlcenter"
+if [[ ! -d "$QS_SRC" && -d "${SCRIPT_DIR}/../configs/quickshell/mac-controlcenter" ]]; then
+    QS_SRC="${SCRIPT_DIR}/../configs/quickshell/mac-controlcenter"
+fi
+
+if pgrep -f "quickshell.*mac-controlcenter" >/dev/null; then
+    pkill -f "quickshell.*mac-controlcenter"
+    exit 0
+fi
+
+if command -v quickshell >/dev/null 2>&1 && [[ -d "$QS_SRC" ]]; then
+    exec quickshell -p "$QS_SRC"
+else
+    exec python3 "${SCRIPT_DIR}/omarchy-undercover-settings" --page hardware
+fi

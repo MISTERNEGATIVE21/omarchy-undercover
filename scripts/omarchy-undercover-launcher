@@ -21,10 +21,10 @@ if [[ -f "$STATE_FILE" ]]; then
 fi
 
 if [[ "$MODE" == *"win11"* ]] || [[ "$MODE" == *"windows"* ]]; then
-    if command -v omarchy-win11-startmenu &>/dev/null; then
-        exec omarchy-win11-startmenu
-    elif [[ -f "$HOME/.local/bin/omarchy-win11-startmenu" ]]; then
-        exec "$HOME/.local/bin/omarchy-win11-startmenu"
+    if command -v omarchy-win11-start &>/dev/null; then
+        exec omarchy-win11-start
+    elif [[ -f "$HOME/.local/bin/omarchy-win11-start" ]]; then
+        exec "$HOME/.local/bin/omarchy-win11-start"
     fi
 fi
 

@@ -11,7 +11,7 @@ BarWidget {
   implicitHeight: root.bar ? root.bar.barSize : 38
 
   property var winApps: [
-    { name: "Start", icon: "󰍲", exec: "omarchy-undercover-launcher", running: false, isStart: true },
+    { name: "Start", icon: "󰍲", exec: "omarchy-win11-start", running: false, isStart: true },
     { name: "Search", icon: "🔍", exec: "omarchy-undercover-launcher", running: false, isSearch: true },
     { name: "Task View", icon: "󰕓", exec: "rofi -show window -theme ~/.config/rofi/windows11.rasi", running: false },
     { name: "Copilot", icon: "󰚩", exec: "xdg-terminal-exec", running: false },

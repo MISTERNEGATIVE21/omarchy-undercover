@@ -14,12 +14,11 @@ BarWidget {
     bar: root.bar
     text: "󰕓"
     tooltipText: "Control Center"
-    onPressed: function(btn) {
-      if (!root.bar) return
-      if (btn === Qt.RightButton) {
-        root.bar.run("omarchy-mac-wifi")
+    onPressed: function() {
+      if (root.bar) {
+        root.bar.run("omarchy-mac-controlcenter")
       } else {
-        root.bar.run("omarchy-mac-widgets")
+        Quickshell.execDetached("omarchy-mac-controlcenter")
       }
     }
   }
