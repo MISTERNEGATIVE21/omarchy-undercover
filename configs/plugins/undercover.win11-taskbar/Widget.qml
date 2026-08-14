@@ -18,7 +18,7 @@ BarWidget {
     }
   }
 
-  // Windows 11 Taskbar Apps (Clean icon-only, authentic SVG assets, no fake search icons)
+  // Windows 11 Taskbar Apps (Clean, polished, authentic Fluent SVG assets)
   property var winApps: [
     { id: "start", name: "Start", isStart: true, iconFile: "start.svg", exec: "omarchy-win11-start", running: false, visible: true },
     { id: "taskview", name: "Task View", isTaskView: true, iconFile: "taskview.svg", exec: "rofi -show window -theme ~/.config/rofi/windows11.rasi", running: false, visible: true },
@@ -40,12 +40,20 @@ BarWidget {
       Rectangle {
         id: itemBox
         visible: modelData.visible
-        implicitWidth: 40
+        implicitWidth: 42
         implicitHeight: root.bar ? root.bar.barSize - 6 : 38
-        radius: 4
-        color: itemMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.09) : "transparent"
-        border.color: itemMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+        radius: 5
+
+        color: itemMouse.pressed
+               ? Qt.rgba(1, 1, 1, 0.14)
+               : (itemMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent")
+        border.color: itemMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.10) : "transparent"
         border.width: 1
+
+        scale: itemMouse.pressed ? 0.95 : (itemMouse.containsMouse ? 1.05 : 1.0)
+        Behavior on scale {
+          NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
+        }
 
         // 1. Windows 11 Start Icon (Authentic Vector 4-Square Grid)
         Item {
@@ -55,8 +63,8 @@ BarWidget {
           GridLayout {
             anchors.centerIn: parent
             columns: 2
-            rowSpacing: 2
-            columnSpacing: 2
+            rowSpacing: 2.2
+            columnSpacing: 2.2
 
             Rectangle {
               width: 7.5
@@ -108,10 +116,13 @@ BarWidget {
             anchors.bottom: parent.bottom
             anchors.bottomMargin: 1
             anchors.horizontalCenter: parent.horizontalCenter
-            width: 16
+            width: itemMouse.containsMouse ? 20 : 16
             height: 3
             radius: 1.5
             color: "#60cdff"
+            Behavior on width {
+              NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+            }
           }
         }
 

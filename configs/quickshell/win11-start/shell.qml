@@ -1,8 +1,10 @@
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 
 ShellRoot {
   PanelWindow {
@@ -23,13 +25,16 @@ ShellRoot {
     implicitWidth: 620
     implicitHeight: 700
 
-    property bool showAllApps: false
+    property string searchFilter: ""
+    property int currentView: 0 // 0: Pinned, 1: All Apps, 2: Search Results
     property bool showPowerPopup: false
 
     function runCmd(cmd) {
+      Qt.quit()
       Quickshell.execDetached(["bash", "-c", cmd])
     }
 
+    // Pinned Applications
     property var pinnedApps: [
       { name: "Edge", icon: "🌐", exec: "xdg-open https://microsoft.com || firefox" },
       { name: "Word", icon: "📝", exec: "libreoffice --writer || abiword || xdg-open https://office.com" },
@@ -51,14 +56,59 @@ ShellRoot {
       { name: "Weather", icon: "🌤️", exec: "omarchy-win11-widgets" }
     ]
 
+    // Complete All-Apps Catalog (Alphabetical A-Z Drawer)
+    property var allAppsList: [
+      { name: "Alacritty Terminal", icon: "💻", category: "A", exec: "alacritty || xdg-terminal-exec" },
+      { name: "App Store / Packages", icon: "🛍️", category: "A", exec: "pamac-manager || gnome-software" },
+      { name: "Bluetooth Manager", icon: "󰂯", category: "B", exec: "omarchy-mac-bluetooth || blueman-manager" },
+      { name: "Calculator", icon: "🔢", category: "C", exec: "gnome-calculator || kcalc" },
+      { name: "Calendar", icon: "📅", category: "C", exec: "gnome-calendar || korganizer" },
+      { name: "Camera", icon: "📷", category: "C", exec: "cheese || kamoso" },
+      { name: "Clock & Alarms", icon: "⏰", category: "C", exec: "gnome-clocks || kclock" },
+      { name: "Discord", icon: "💬", category: "D", exec: "discord || vesktop" },
+      { name: "Document Viewer", icon: "📑", category: "D", exec: "evince || okular" },
+      { name: "File Explorer", icon: "📁", category: "F", exec: "nautilus computer:/// || thunar" },
+      { name: "Firefox Browser", icon: "🦊", category: "F", exec: "firefox" },
+      { name: "GIMP Image Editor", icon: "🎨", category: "G", exec: "gimp" },
+      { name: "Google Chrome", icon: "🌐", category: "G", exec: "google-chrome-stable || chromium" },
+      { name: "LibreOffice Calc", icon: "📊", category: "L", exec: "libreoffice --calc" },
+      { name: "LibreOffice Writer", icon: "📝", category: "L", exec: "libreoffice --writer" },
+      { name: "LibreOffice Impress", icon: "📽️", category: "L", exec: "libreoffice --impress" },
+      { name: "Mail / Thunderbird", icon: "✉️", category: "M", exec: "thunderbird || evolution" },
+      { name: "Microsoft Edge", icon: "🌐", category: "M", exec: "xdg-open https://microsoft.com || firefox" },
+      { name: "Music / Media Player", icon: "🎵", category: "M", exec: "spotify || vlc || celluloid" },
+      { name: "Notepad / Text Editor", icon: "🗒️", category: "N", exec: "gedit || kate || mousepad" },
+      { name: "Omarchy Settings", icon: "🕵️", category: "O", exec: "omarchy-undercover-settings" },
+      { name: "Paint / Drawing", icon: "🎨", category: "P", exec: "drawing || pinta" },
+      { name: "Photos / Image Viewer", icon: "🖼️", category: "P", exec: "eog || gwenview || loupe" },
+      { name: "Screen Recorder", icon: "🎥", category: "S", exec: "obs || wf-recorder" },
+      { name: "Settings", icon: "⚙️", category: "S", exec: "omarchy-undercover-settings" },
+      { name: "Spotify", icon: "🎵", category: "S", exec: "spotify" },
+      { name: "System Monitor", icon: "📈", category: "S", exec: "gnome-system-monitor || btop" },
+      { name: "Task View / Switcher", icon: "⧉", category: "T", exec: "rofi -show window" },
+      { name: "Terminal Console", icon: "💻", category: "T", exec: "xdg-terminal-exec" },
+      { name: "VS Code", icon: "🧑‍💻", category: "V", exec: "code || vscodium" },
+      { name: "VLC Media Player", icon: "🎬", category: "V", exec: "vlc" },
+      { name: "Weather & Widgets", icon: "🌤️", category: "W", exec: "omarchy-win11-widgets" },
+      { name: "Wi-Fi Manager", icon: "󰤨", category: "W", exec: "omarchy-mac-wifi || nm-connection-editor" }
+    ]
+
     property var recommendedItems: [
       { name: "omarchy-undercover.sh", time: "Just now", icon: "📄", exec: "xdg-open ~/.config/omarchy-undercover" },
-      { name: "Sequoia-Design-System.pdf", time: "2h ago", icon: "📑", exec: "xdg-open ~/Documents" },
+      { name: "Windows-11-Fluent-Design.pdf", time: "2h ago", icon: "📑", exec: "xdg-open ~/Documents" },
       { name: "Project-Roadmap-2026.docx", time: "Yesterday at 4:15 PM", icon: "📘", exec: "xdg-open ~/Documents" },
       { name: "hyprland-config.lua", time: "Yesterday at 11:30 AM", icon: "⚙️", exec: "xdg-open ~/.config/hypr" },
-      { name: "msn-weather-report.json", time: "3 days ago", icon: "📊", exec: "omarchy-win11-widgets" },
       { name: "system-diagnostics.log", time: "5 days ago", icon: "📝", exec: "omarchy-undercover --status" }
     ]
+
+    // Filtered search results
+    function getFilteredApps() {
+      if (!startWindow.searchFilter || startWindow.searchFilter.trim() === "") return []
+      var q = startWindow.searchFilter.toLowerCase().trim()
+      return startWindow.allAppsList.filter(function(app) {
+        return app.name.toLowerCase().indexOf(q) !== -1 || app.exec.toLowerCase().indexOf(q) !== -1
+      })
+    }
 
     Rectangle {
       id: bg
@@ -71,20 +121,20 @@ ShellRoot {
       ColumnLayout {
         anchors.fill: parent
         anchors.margins: 20
-        spacing: 14
+        spacing: 12
 
-        // 1. Search Box & Close Button Row
+        // 1. Top Search Bar with Live Real-Time TextInput
         RowLayout {
           Layout.fillWidth: true
           spacing: 10
 
           Rectangle {
             Layout.fillWidth: true
-            implicitHeight: 40
-            radius: 20
-            color: Qt.rgba(1, 1, 1, 0.08)
-            border.color: Qt.rgba(1, 1, 1, 0.14)
-            border.width: 1
+            implicitHeight: 42
+            radius: 21
+            color: searchInput.activeFocus ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.08)
+            border.color: searchInput.activeFocus ? "#0078d4" : Qt.rgba(1, 1, 1, 0.14)
+            border.width: 1.5
 
             RowLayout {
               anchors.fill: parent
@@ -93,25 +143,67 @@ ShellRoot {
               spacing: 10
 
               Text { text: "🔍"; font.pixelSize: 13; color: Qt.rgba(1, 1, 1, 0.7) }
-              Text {
-                text: "Type here to search apps, settings, and files..."
-                color: Qt.rgba(1, 1, 1, 0.5)
-                font.family: "Segoe UI"
-                font.pixelSize: 12
-                Layout.fillWidth: true
-              }
-            }
 
-            MouseArea {
-              anchors.fill: parent
-              cursorShape: Qt.IBeamCursor
-              onClicked: {
-                Qt.quit()
-                startWindow.runCmd("rofi -show drun -theme ~/.config/rofi/windows11.rasi")
+              TextInput {
+                id: searchInput
+                Layout.fillWidth: true
+                font.family: "Segoe UI"
+                font.pixelSize: 12.5
+                color: "#ffffff"
+                clip: true
+                selectByMouse: true
+                selectionColor: "#0078d4"
+
+                Text {
+                  visible: !searchInput.text && !searchInput.inputMethodComposing
+                  text: "Type here to search apps, settings, and documents..."
+                  color: Qt.rgba(1, 1, 1, 0.45)
+                  font.family: "Segoe UI"
+                  font.pixelSize: 12.5
+                  anchors.verticalCenter: parent.verticalCenter
+                }
+
+                onTextChanged: {
+                  startWindow.searchFilter = text
+                  if (text.trim().length > 0) {
+                    startWindow.currentView = 2
+                  } else {
+                    startWindow.currentView = 0
+                  }
+                }
+
+                onAccepted: {
+                  var res = startWindow.getFilteredApps()
+                  if (res.length > 0) {
+                    startWindow.runCmd(res[0].exec)
+                  } else if (text.trim().length > 0) {
+                    startWindow.runCmd("xdg-open 'https://www.bing.com/search?q=" + encodeURIComponent(text.trim()) + "'")
+                  }
+                }
+              }
+
+              // Clear button
+              Rectangle {
+                visible: searchInput.text.length > 0
+                implicitWidth: 20
+                implicitHeight: 20
+                radius: 10
+                color: Qt.rgba(1, 1, 1, 0.15)
+                Text { anchors.centerIn: parent; text: "✕"; color: "#ffffff"; font.pixelSize: 10 }
+                MouseArea {
+                  anchors.fill: parent
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: {
+                    searchInput.text = ""
+                    startWindow.searchFilter = ""
+                    startWindow.currentView = 0
+                  }
+                }
               }
             }
           }
 
+          // Close button
           Rectangle {
             implicitWidth: 32
             implicitHeight: 32
@@ -133,186 +225,391 @@ ShellRoot {
           }
         }
 
-        // 2. Pinned Apps Header
-        RowLayout {
+        // ================= VIEW 0: PINNED APPS & RECOMMENDED =================
+        ColumnLayout {
+          visible: startWindow.currentView === 0
           Layout.fillWidth: true
-          Text {
-            text: "Pinned"
-            color: "#ffffff"
-            font.family: "Segoe UI"
-            font.pixelSize: 13.5
-            font.weight: Font.DemiBold
+          Layout.fillHeight: true
+          spacing: 12
+
+          // Pinned Header
+          RowLayout {
             Layout.fillWidth: true
-          }
-          Rectangle {
-            implicitWidth: 80
-            implicitHeight: 26
-            radius: 6
-            color: allAppsMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.10) : "transparent"
             Text {
-              anchors.centerIn: parent
-              text: "All apps >"
-              color: "#60cdff"
+              text: "Pinned"
+              color: "#ffffff"
               font.family: "Segoe UI"
-              font.pixelSize: 11.5
+              font.pixelSize: 13.5
               font.weight: Font.DemiBold
-            }
-            MouseArea {
-              id: allAppsMouse
-              anchors.fill: parent
-              hoverEnabled: true
-              cursorShape: Qt.PointingHandCursor
-              onClicked: {
-                Qt.quit()
-                startWindow.runCmd("rofi -show drun -theme ~/.config/rofi/windows11.rasi")
-              }
-            }
-          }
-        }
-
-        // 3. Pinned Apps Grid (6 cols x 3 rows)
-        GridLayout {
-          Layout.fillWidth: true
-          columns: 6
-          rowSpacing: 10
-          columnSpacing: 6
-
-          Repeater {
-            model: startWindow.pinnedApps
-
-            Rectangle {
               Layout.fillWidth: true
-              implicitHeight: 74
-              radius: 8
-              color: tileMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
-              border.color: tileMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.15) : "transparent"
-              border.width: 1
-
-              ColumnLayout {
+            }
+            Rectangle {
+              implicitWidth: 84
+              implicitHeight: 26
+              radius: 6
+              color: allAppsMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.10) : "transparent"
+              Text {
                 anchors.centerIn: parent
-                spacing: 4
-
-                Text {
-                  anchors.horizontalCenter: parent.horizontalCenter
-                  text: modelData.icon
-                  font.pixelSize: 26
-                }
-                Text {
-                  anchors.horizontalCenter: parent.horizontalCenter
-                  text: modelData.name
-                  color: "#ffffff"
-                  font.family: "Segoe UI"
-                  font.pixelSize: 11
-                  elide: Text.ElideRight
-                }
+                text: "All apps >"
+                color: "#60cdff"
+                font.family: "Segoe UI"
+                font.pixelSize: 11.5
+                font.weight: Font.DemiBold
               }
-
               MouseArea {
-                id: tileMouse
+                id: allAppsMouse
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
-                  Qt.quit()
-                  startWindow.runCmd(modelData.exec)
+                  startWindow.currentView = 1
+                }
+              }
+            }
+          }
+
+          // Pinned Grid (6 cols x 3 rows)
+          GridLayout {
+            Layout.fillWidth: true
+            columns: 6
+            rowSpacing: 10
+            columnSpacing: 6
+
+            Repeater {
+              model: startWindow.pinnedApps
+
+              Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 74
+                radius: 8
+                color: tileMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+                border.color: tileMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.15) : "transparent"
+                border.width: 1
+
+                ColumnLayout {
+                  anchors.centerIn: parent
+                  spacing: 4
+
+                  Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: modelData.icon
+                    font.pixelSize: 26
+                  }
+                  Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: modelData.name
+                    color: "#ffffff"
+                    font.family: "Segoe UI"
+                    font.pixelSize: 11
+                    elide: Text.ElideRight
+                  }
+                }
+
+                MouseArea {
+                  id: tileMouse
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: startWindow.runCmd(modelData.exec)
+                }
+              }
+            }
+          }
+
+          // Recommended Header
+          RowLayout {
+            Layout.fillWidth: true
+            Layout.topMargin: 4
+            Text {
+              text: "Recommended"
+              color: "#ffffff"
+              font.family: "Segoe UI"
+              font.pixelSize: 13.5
+              font.weight: Font.DemiBold
+              Layout.fillWidth: true
+            }
+            Rectangle {
+              implicitWidth: 64
+              implicitHeight: 26
+              radius: 6
+              color: moreMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.10) : "transparent"
+              Text {
+                anchors.centerIn: parent
+                text: "More >"
+                color: "#60cdff"
+                font.family: "Segoe UI"
+                font.pixelSize: 11.5
+                font.weight: Font.DemiBold
+              }
+              MouseArea {
+                id: moreMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: startWindow.runCmd("nautilus recent:/// || thunar")
+              }
+            }
+          }
+
+          // Recommended Files Grid
+          GridLayout {
+            Layout.fillWidth: true
+            columns: 2
+            rowSpacing: 6
+            columnSpacing: 10
+
+            Repeater {
+              model: startWindow.recommendedItems
+
+              Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 46
+                radius: 8
+                color: recMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.10) : "transparent"
+
+                RowLayout {
+                  anchors.fill: parent
+                  anchors.leftMargin: 10
+                  anchors.rightMargin: 10
+                  spacing: 10
+
+                  Text { text: modelData.icon; font.pixelSize: 18 }
+                  ColumnLayout {
+                    spacing: 1
+                    Layout.fillWidth: true
+                    Text {
+                      text: modelData.name
+                      color: "#ffffff"
+                      font.family: "Segoe UI"
+                      font.pixelSize: 11.5
+                      font.weight: Font.DemiBold
+                      elide: Text.ElideRight
+                      Layout.fillWidth: true
+                    }
+                    Text {
+                      text: modelData.time
+                      color: Qt.rgba(1, 1, 1, 0.5)
+                      font.family: "Segoe UI"
+                      font.pixelSize: 10
+                    }
+                  }
+                }
+
+                MouseArea {
+                  id: recMouse
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: startWindow.runCmd(modelData.exec)
                 }
               }
             }
           }
         }
 
-        // 4. Recommended Section Header
-        RowLayout {
+        // ================= VIEW 1: ALL APPS A-Z DRAWER =================
+        ColumnLayout {
+          visible: startWindow.currentView === 1
           Layout.fillWidth: true
-          Layout.topMargin: 4
-          Text {
-            text: "Recommended"
-            color: "#ffffff"
-            font.family: "Segoe UI"
-            font.pixelSize: 13.5
-            font.weight: Font.DemiBold
+          Layout.fillHeight: true
+          spacing: 10
+
+          // Back Button Header
+          RowLayout {
             Layout.fillWidth: true
-          }
-          Rectangle {
-            implicitWidth: 64
-            implicitHeight: 26
-            radius: 6
-            color: moreMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.10) : "transparent"
-            Text {
-              anchors.centerIn: parent
-              text: "More >"
-              color: "#60cdff"
-              font.family: "Segoe UI"
-              font.pixelSize: 11.5
-              font.weight: Font.DemiBold
-            }
-            MouseArea {
-              id: moreMouse
-              anchors.fill: parent
-              hoverEnabled: true
-              cursorShape: Qt.PointingHandCursor
-              onClicked: {
-                Qt.quit()
-                startWindow.runCmd("nautilus recent:/// || thunar")
-              }
-            }
-          }
-        }
-
-        // 5. Recommended Files Grid (2 cols x 3 rows)
-        GridLayout {
-          Layout.fillWidth: true
-          columns: 2
-          rowSpacing: 6
-          columnSpacing: 10
-
-          Repeater {
-            model: startWindow.recommendedItems
+            spacing: 8
 
             Rectangle {
-              Layout.fillWidth: true
-              implicitHeight: 46
-              radius: 8
-              color: recMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.10) : "transparent"
-
+              implicitWidth: 72
+              implicitHeight: 28
+              radius: 6
+              color: backM.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.06)
               RowLayout {
+                anchors.centerIn: parent
+                spacing: 4
+                Text { text: "‹"; font.pixelSize: 14; color: "#60cdff"; font.weight: Font.Bold }
+                Text { text: "Back"; color: "#60cdff"; font.family: "Segoe UI"; font.pixelSize: 11.5; font.weight: Font.DemiBold }
+              }
+              MouseArea {
+                id: backM
                 anchors.fill: parent
-                anchors.leftMargin: 10
-                anchors.rightMargin: 10
-                spacing: 10
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: startWindow.currentView = 0
+              }
+            }
 
-                Text { text: modelData.icon; font.pixelSize: 18 }
-                ColumnLayout {
-                  spacing: 1
-                  Layout.fillWidth: true
+            Text {
+              text: "All Apps"
+              color: "#ffffff"
+              font.family: "Segoe UI"
+              font.pixelSize: 14
+              font.weight: Font.Bold
+            }
+          }
+
+          // Scrollable All-Apps List
+          ScrollView {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            clip: true
+
+            ListView {
+              id: allAppsView
+              width: parent.width
+              model: startWindow.allAppsList
+              spacing: 3
+
+              delegate: Rectangle {
+                width: allAppsView.width
+                implicitHeight: 40
+                radius: 6
+                color: appRowM.containsMouse ? Qt.rgba(1, 1, 1, 0.10) : "transparent"
+
+                RowLayout {
+                  anchors.fill: parent
+                  anchors.leftMargin: 12
+                  anchors.rightMargin: 12
+                  spacing: 12
+
+                  Text { text: modelData.icon; font.pixelSize: 18 }
                   Text {
                     text: modelData.name
                     color: "#ffffff"
                     font.family: "Segoe UI"
-                    font.pixelSize: 11.5
+                    font.pixelSize: 12
                     font.weight: Font.DemiBold
-                    elide: Text.ElideRight
                     Layout.fillWidth: true
                   }
                   Text {
-                    text: modelData.time
-                    color: Qt.rgba(1, 1, 1, 0.5)
+                    text: modelData.category
+                    color: Qt.rgba(1, 1, 1, 0.4)
                     font.family: "Segoe UI"
                     font.pixelSize: 10
+                    font.weight: Font.Bold
                   }
                 }
-              }
 
-              MouseArea {
-                id: recMouse
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                  Qt.quit()
-                  startWindow.runCmd(modelData.exec)
+                MouseArea {
+                  id: appRowM
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: startWindow.runCmd(modelData.exec)
                 }
               }
+            }
+          }
+        }
+
+        // ================= VIEW 2: LIVE SEARCH RESULTS =================
+        ColumnLayout {
+          visible: startWindow.currentView === 2
+          Layout.fillWidth: true
+          Layout.fillHeight: true
+          spacing: 10
+
+          Text {
+            text: "Search Results for \"" + startWindow.searchFilter + "\""
+            color: Qt.rgba(1, 1, 1, 0.7)
+            font.family: "Segoe UI"
+            font.pixelSize: 12
+            font.weight: Font.DemiBold
+          }
+
+          ScrollView {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            clip: true
+
+            ListView {
+              id: searchResultsView
+              width: parent.width
+              model: startWindow.getFilteredApps()
+              spacing: 4
+
+              delegate: Rectangle {
+                width: searchResultsView.width
+                implicitHeight: 44
+                radius: 8
+                color: searchRowM.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.05)
+                border.color: Qt.rgba(1, 1, 1, 0.08)
+
+                RowLayout {
+                  anchors.fill: parent
+                  anchors.leftMargin: 12
+                  anchors.rightMargin: 12
+                  spacing: 12
+
+                  Text { text: modelData.icon; font.pixelSize: 20 }
+                  ColumnLayout {
+                    spacing: 1
+                    Layout.fillWidth: true
+                    Text {
+                      text: modelData.name
+                      color: "#ffffff"
+                      font.family: "Segoe UI"
+                      font.pixelSize: 12.5
+                      font.weight: Font.DemiBold
+                    }
+                    Text {
+                      text: "App • " + modelData.exec
+                      color: Qt.rgba(1, 1, 1, 0.45)
+                      font.family: "Segoe UI"
+                      font.pixelSize: 9.5
+                      elide: Text.ElideRight
+                    }
+                  }
+                  Text {
+                    text: "Open ➔"
+                    color: "#60cdff"
+                    font.family: "Segoe UI"
+                    font.pixelSize: 11
+                  }
+                }
+
+                MouseArea {
+                  id: searchRowM
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: startWindow.runCmd(modelData.exec)
+                }
+              }
+            }
+          }
+
+          // Web Search Fallback Action Card
+          Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: 44
+            radius: 8
+            color: webSearchM.containsMouse ? Qt.rgba(0, 120, 212, 0.3) : Qt.rgba(1, 1, 1, 0.06)
+            border.color: Qt.rgba(0, 120, 212, 0.5)
+
+            RowLayout {
+              anchors.fill: parent
+              anchors.leftMargin: 12
+              anchors.rightMargin: 12
+              spacing: 10
+
+              Text { text: "🌐"; font.pixelSize: 16 }
+              Text {
+                text: "Search the web for \"" + startWindow.searchFilter + "\""
+                color: "#60cdff"
+                font.family: "Segoe UI"
+                font.pixelSize: 12
+                font.weight: Font.DemiBold
+                Layout.fillWidth: true
+              }
+            }
+
+            MouseArea {
+              id: webSearchM
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: startWindow.runCmd("xdg-open 'https://www.bing.com/search?q=" + encodeURIComponent(startWindow.searchFilter) + "'")
             }
           }
         }
