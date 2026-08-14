@@ -766,26 +766,45 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         group_radio = Adw.PreferencesGroup(title="Wireless & Radios", description="Real hardware network switches")
 
         # Wi-Fi
-        row_wifi = Adw.SwitchRow(title="Wi-Fi Radio")
+        row_wifi = Adw.ActionRow(title="Wi-Fi Network Manager", subtitle="Launch native Quickshell Wi-Fi scanner and network picker")
         wifi_on = False
         try:
             wifi_on = "enabled" in subprocess.check_output(["nmcli", "radio", "wifi"], text=True)
         except Exception:
             pass
-        row_wifi.set_active(wifi_on)
-        row_wifi.connect("notify::active", lambda r, p: subprocess.run(["nmcli", "radio", "wifi", "on" if r.get_active() else "off"], check=False))
+        sw_wifi = Gtk.Switch()
+        sw_wifi.set_active(wifi_on)
+        sw_wifi.set_valign(Gtk.Align.CENTER)
+        sw_wifi.connect("notify::active", lambda r, p: subprocess.run(["nmcli", "radio", "wifi", "on" if r.get_active() else "off"], check=False))
+        btn_open_wifi = Gtk.Button(label="Open Wi-Fi Flyout")
+        btn_open_wifi.connect("clicked", lambda b: subprocess.Popen(["omarchy-mac-wifi" if "mac" in read_state() else "omarchy-win11-wifi"]))
+        row_wifi.add_suffix(sw_wifi)
+        row_wifi.add_suffix(btn_open_wifi)
         group_radio.add(row_wifi)
 
         # Bluetooth
-        row_bt = Adw.SwitchRow(title="Bluetooth Power")
+        row_bt = Adw.ActionRow(title="Bluetooth Device Manager", subtitle="Launch native Quickshell Bluetooth paired devices manager")
         bt_on = False
         try:
             bt_on = "Powered: yes" in subprocess.check_output(["bluetoothctl", "show"], text=True)
         except Exception:
             pass
-        row_bt.set_active(bt_on)
-        row_bt.connect("notify::active", lambda r, p: subprocess.run(["bluetoothctl", "power", "on" if r.get_active() else "off"], check=False))
+        sw_bt = Gtk.Switch()
+        sw_bt.set_active(bt_on)
+        sw_bt.set_valign(Gtk.Align.CENTER)
+        sw_bt.connect("notify::active", lambda r, p: subprocess.run(["bluetoothctl", "power", "on" if r.get_active() else "off"], check=False))
+        btn_open_bt = Gtk.Button(label="Open Bluetooth Flyout")
+        btn_open_bt.connect("clicked", lambda b: subprocess.Popen(["omarchy-mac-bluetooth" if "mac" in read_state() else "omarchy-win11-bluetooth"]))
+        row_bt.add_suffix(sw_bt)
+        row_bt.add_suffix(btn_open_bt)
         group_radio.add(row_bt)
+
+        # Sound
+        row_sound_btn = Adw.ActionRow(title="Sound Output Switcher", subtitle="Launch native Quickshell audio sink mixer")
+        btn_open_snd = Gtk.Button(label="Open Sound Flyout")
+        btn_open_snd.connect("clicked", lambda b: subprocess.Popen(["omarchy-mac-sound" if "mac" in read_state() else "omarchy-win11-sound"]))
+        row_sound_btn.add_suffix(btn_open_snd)
+        group_radio.add(row_sound_btn)
 
         page.add(group_radio)
 
