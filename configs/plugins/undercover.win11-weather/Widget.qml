@@ -8,7 +8,7 @@ BarWidget {
   id: root
   moduleName: "undercover.win11-weather"
 
-  implicitWidth: weatherContainer.implicitWidth
+  implicitWidth: weatherContainer.implicitWidth + 8
   implicitHeight: root.bar ? root.bar.barSize : 40
 
   property bool showWeather: true
@@ -64,6 +64,8 @@ BarWidget {
     id: weatherContainer
     visible: root.showWeather
     anchors.verticalCenter: parent.verticalCenter
+    anchors.left: parent.left
+    anchors.leftMargin: 4
     implicitWidth: Math.max(104, row.implicitWidth + 16)
     implicitHeight: root.bar ? root.bar.barSize - 8 : 34
     radius: 4
@@ -78,7 +80,7 @@ BarWidget {
 
       Text {
         text: root.weatherIcon
-        font.pixelSize: 15
+        font.pixelSize: 16
       }
 
       ColumnLayout {
@@ -96,7 +98,7 @@ BarWidget {
           font.pixelSize: 9
           color: Qt.rgba(1, 1, 1, 0.72)
           elide: Text.ElideRight
-          Layout.maximumWidth: 70
+          Layout.maximumWidth: 68
         }
       }
     }
