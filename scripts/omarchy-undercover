@@ -759,7 +759,8 @@ switch_to_win11() {
     fi
 
     msg "Switching to Windows 11 ($variant)..."
-    pkill -f "quickshell.*mac-dock" 2>/dev/null || true
+    pkill -9 -f "mac-dock" 2>/dev/null || true
+    pkill -9 -f "omarchy-mac-dock" 2>/dev/null || true
     if [[ ! -f "$BASELINE_FILE" ]]; then
         backup_original_configs
     fi
@@ -886,6 +887,8 @@ switch_to_omarchy() {
     msg "Restoring original Omarchy desktop..."
     echo "omarchy" > "$STATE_FILE"
     write_setting "MODE" "omarchy"
+    pkill -9 -f "mac-dock" 2>/dev/null || true
+    pkill -9 -f "omarchy-mac-dock" 2>/dev/null || true
     killall swaybg 2>/dev/null || true
     disable_windows_hyprland 2>/dev/null || true
     rm -f "$HOME/.config/gtk-4.0/gtk.css" "$HOME/.config/gtk-3.0/gtk.css" 2>/dev/null || true
@@ -919,6 +922,8 @@ switch_to_hyprland() {
 
 restore_baseline() {
     msg "Restoring system from baseline backup..."
+    pkill -9 -f "mac-dock" 2>/dev/null || true
+    pkill -9 -f "omarchy-mac-dock" 2>/dev/null || true
     killall swaybg 2>/dev/null || true
     disable_windows_hyprland
 

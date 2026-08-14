@@ -452,7 +452,8 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
             if row.get_active():
                 subprocess.Popen(["omarchy-mac-dock"])
             else:
-                subprocess.run(["pkill", "-f", "omarchy-mac-dock"], check=False)
+                subprocess.run(["pkill", "-9", "-f", "mac-dock"], check=False)
+                subprocess.run(["pkill", "-9", "-f", "omarchy-mac-dock"], check=False)
             self.show_toast("macOS Dock preference updated.")
         row_mac_dock.connect("notify::active", on_mac_dock_toggled)
         group_mac.add(row_mac_dock)
