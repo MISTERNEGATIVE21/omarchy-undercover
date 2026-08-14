@@ -6,32 +6,17 @@
   },
   "bar": {
     "position": "bottom",
-    "transparent": true,
+    "transparent": false,
     "centerAnchor": "",
     "layout": {
       "left": [
         {
           "id": "undercover.win11-weather"
-        },
-        {
-          "id": "undercover.win11-start"
-        },
-        {
-          "id": "undercover.win11-search"
-        },
-        {
-          "id": "undercover.win11-taskview"
-        },
-        {
-          "id": "undercover.win11-copilot"
-        },
-        {
-          "id": "omarchy.workspaces"
         }
       ],
       "center": [
         {
-          "id": "omarchy.media"
+          "id": "undercover.win11-taskbar"
         }
       ],
       "right": [
@@ -43,9 +28,12 @@
         },
         {
           "id": "omarchy.clock",
-          "format": "HH:mm\ndd/MM/yyyy",
+          "format": "h:mm A\nM/d/yyyy",
           "formatAlt": "dddd, MMMM d, yyyy\nHH:mm:ss",
           "verticalFormat": "HH\n—\nmm"
+        },
+        {
+          "id": "undercover.win11-showdesktop"
         }
       ]
     }

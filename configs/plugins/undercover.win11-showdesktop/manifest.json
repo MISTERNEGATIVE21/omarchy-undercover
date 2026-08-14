@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "undercover.win11-showdesktop",
+  "name": "Windows 11 Show Desktop Sliver",
+  "version": "1.0.0",
+  "author": "misternegative21",
+  "description": "Authentic Windows 11 far-right taskbar sliver to reveal desktop",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "Widget.qml"
+  },
+  "barWidget": {
+    "displayName": "Show Desktop",
+    "category": "Window Management",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
