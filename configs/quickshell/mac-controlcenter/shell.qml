@@ -24,7 +24,7 @@ ShellRoot {
     color: "transparent"
 
     implicitWidth: 360
-    implicitHeight: 440
+    implicitHeight: 480
 
     property bool wifiOn: true
     property bool btOn: true
@@ -91,7 +91,46 @@ ShellRoot {
       ColumnLayout {
         anchors.fill: parent
         anchors.margins: 14
-        spacing: 12
+        spacing: 10
+
+        // Header with Title and Close Button
+        RowLayout {
+          Layout.fillWidth: true
+          spacing: 10
+
+          Text {
+            text: "Control Center"
+            color: "#ffffff"
+            font.pixelSize: 14
+            font.weight: Font.Bold
+            Layout.fillWidth: true
+          }
+
+          Rectangle {
+            implicitWidth: 24
+            implicitHeight: 24
+            radius: 12
+            color: closeMouse.containsMouse ? "#ff5f56" : Qt.rgba(1, 1, 1, 0.12)
+            border.color: Qt.rgba(1, 1, 1, 0.15)
+            border.width: 1
+
+            Text {
+              anchors.centerIn: parent
+              text: "✕"
+              color: "#ffffff"
+              font.pixelSize: 10
+              font.weight: Font.Bold
+            }
+
+            MouseArea {
+              id: closeMouse
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: Qt.quit()
+            }
+          }
+        }
 
         // 1. Top Section: Connectivity Hub + Focus
         RowLayout {

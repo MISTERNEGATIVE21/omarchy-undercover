@@ -24,7 +24,7 @@ ShellRoot {
     color: "transparent"
 
     implicitWidth: 380
-    implicitHeight: 460
+    implicitHeight: 500
 
     property bool wifiEnabled: true
     property bool btEnabled: true
@@ -96,7 +96,42 @@ ShellRoot {
       ColumnLayout {
         anchors.fill: parent
         anchors.margins: 18
-        spacing: 14
+        spacing: 12
+
+        // Header with Title and Close Button
+        RowLayout {
+          Layout.fillWidth: true
+          spacing: 10
+
+          Text {
+            text: "Quick Settings"
+            color: "#ffffff"
+            font.family: "Segoe UI"
+            font.pixelSize: 15
+            font.weight: Font.DemiBold
+            Layout.fillWidth: true
+          }
+
+          Rectangle {
+            implicitWidth: 28
+            implicitHeight: 28
+            radius: 6
+            color: closeMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+            Text {
+              anchors.centerIn: parent
+              text: "✕"
+              color: "#ffffff"
+              font.pixelSize: 12
+            }
+            MouseArea {
+              id: closeMouse
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: Qt.quit()
+            }
+          }
+        }
 
         // 1. Quick Toggles Grid (3 cols x 2 rows)
         GridLayout {

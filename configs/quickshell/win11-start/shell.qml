@@ -73,37 +73,62 @@ ShellRoot {
         anchors.margins: 20
         spacing: 14
 
-        // 1. Search Box
-        Rectangle {
+        // 1. Search Box & Close Button Row
+        RowLayout {
           Layout.fillWidth: true
-          implicitHeight: 40
-          radius: 20
-          color: Qt.rgba(1, 1, 1, 0.08)
-          border.color: Qt.rgba(1, 1, 1, 0.14)
-          border.width: 1
+          spacing: 10
 
-          RowLayout {
-            anchors.fill: parent
-            anchors.leftMargin: 14
-            anchors.rightMargin: 14
-            spacing: 10
+          Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: 40
+            radius: 20
+            color: Qt.rgba(1, 1, 1, 0.08)
+            border.color: Qt.rgba(1, 1, 1, 0.14)
+            border.width: 1
 
-            Text { text: "🔍"; font.pixelSize: 13; color: Qt.rgba(1, 1, 1, 0.7) }
-            Text {
-              text: "Type here to search apps, settings, and files..."
-              color: Qt.rgba(1, 1, 1, 0.5)
-              font.family: "Segoe UI"
-              font.pixelSize: 12
-              Layout.fillWidth: true
+            RowLayout {
+              anchors.fill: parent
+              anchors.leftMargin: 14
+              anchors.rightMargin: 14
+              spacing: 10
+
+              Text { text: "🔍"; font.pixelSize: 13; color: Qt.rgba(1, 1, 1, 0.7) }
+              Text {
+                text: "Type here to search apps, settings, and files..."
+                color: Qt.rgba(1, 1, 1, 0.5)
+                font.family: "Segoe UI"
+                font.pixelSize: 12
+                Layout.fillWidth: true
+              }
+            }
+
+            MouseArea {
+              anchors.fill: parent
+              cursorShape: Qt.IBeamCursor
+              onClicked: {
+                Qt.quit()
+                startWindow.runCmd("rofi -show drun -theme ~/.config/rofi/windows11.rasi")
+              }
             }
           }
 
-          MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.IBeamCursor
-            onClicked: {
-              Qt.quit()
-              startWindow.runCmd("rofi -show drun -theme ~/.config/rofi/windows11.rasi")
+          Rectangle {
+            implicitWidth: 32
+            implicitHeight: 32
+            radius: 6
+            color: startCloseM.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+            Text {
+              anchors.centerIn: parent
+              text: "✕"
+              color: "#ffffff"
+              font.pixelSize: 13
+            }
+            MouseArea {
+              id: startCloseM
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: Qt.quit()
             }
           }
         }
