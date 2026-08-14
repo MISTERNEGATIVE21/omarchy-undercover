@@ -25,6 +25,7 @@ ShellRoot {
     implicitWidth: 620
     implicitHeight: 700
 
+    property bool isDark: true
     property string searchFilter: ""
     property int currentView: 0 // 0: Pinned, 1: All Apps, 2: Search Results
     property bool showPowerPopup: false
@@ -32,6 +33,29 @@ ShellRoot {
     function runCmd(cmd) {
       Qt.quit()
       Quickshell.execDetached(["bash", "-c", cmd])
+    }
+
+    // Dynamic theme state poller
+    Process {
+      id: statePoller
+      running: true
+      command: ["bash", "-c", "cat $HOME/.config/omarchy-undercover/state 2>/dev/null || echo 'win11-dark'"]
+      stdout: SplitParser {
+        onRead: function(line) {
+          var s = String(line).trim()
+          startWindow.isDark = (s.indexOf("light") === -1)
+        }
+      }
+    }
+
+    Timer {
+      interval: 4000
+      running: true
+      repeat: true
+      triggeredOnStart: true
+      onTriggered: {
+        if (!statePoller.running) statePoller.running = true
+      }
     }
 
     // Pinned Applications
@@ -60,7 +84,7 @@ ShellRoot {
     property var allAppsList: [
       { name: "Alacritty Terminal", icon: "💻", category: "A", exec: "alacritty || xdg-terminal-exec" },
       { name: "App Store / Packages", icon: "🛍️", category: "A", exec: "pamac-manager || gnome-software" },
-      { name: "Bluetooth Manager", icon: "󰂯", category: "B", exec: "omarchy-mac-bluetooth || blueman-manager" },
+      { name: "Bluetooth Manager", icon: "󰂯", category: "B", exec: "omarchy-win11-bluetooth || blueman-manager" },
       { name: "Calculator", icon: "🔢", category: "C", exec: "gnome-calculator || kcalc" },
       { name: "Calendar", icon: "📅", category: "C", exec: "gnome-calendar || korganizer" },
       { name: "Camera", icon: "📷", category: "C", exec: "cheese || kamoso" },
@@ -83,6 +107,7 @@ ShellRoot {
       { name: "Photos / Image Viewer", icon: "🖼️", category: "P", exec: "eog || gwenview || loupe" },
       { name: "Screen Recorder", icon: "🎥", category: "S", exec: "obs || wf-recorder" },
       { name: "Settings", icon: "⚙️", category: "S", exec: "omarchy-undercover-settings" },
+      { name: "Sound Mixer", icon: "🔊", category: "S", exec: "omarchy-win11-sound || pavucontrol" },
       { name: "Spotify", icon: "🎵", category: "S", exec: "spotify" },
       { name: "System Monitor", icon: "📈", category: "S", exec: "gnome-system-monitor || btop" },
       { name: "Task View / Switcher", icon: "⧉", category: "T", exec: "rofi -show window" },
@@ -90,7 +115,7 @@ ShellRoot {
       { name: "VS Code", icon: "🧑‍💻", category: "V", exec: "code || vscodium" },
       { name: "VLC Media Player", icon: "🎬", category: "V", exec: "vlc" },
       { name: "Weather & Widgets", icon: "🌤️", category: "W", exec: "omarchy-win11-widgets" },
-      { name: "Wi-Fi Manager", icon: "󰤨", category: "W", exec: "omarchy-mac-wifi || nm-connection-editor" }
+      { name: "Wi-Fi Manager", icon: "󰤨", category: "W", exec: "omarchy-win11-wifi || nm-connection-editor" }
     ]
 
     property var recommendedItems: [
@@ -114,8 +139,8 @@ ShellRoot {
       id: bg
       anchors.fill: parent
       radius: 16
-      color: Qt.rgba(0.11, 0.12, 0.16, 0.96)
-      border.color: Qt.rgba(1, 1, 1, 0.14)
+      color: startWindow.isDark ? Qt.rgba(0.12, 0.12, 0.16, 0.96) : Qt.rgba(0.97, 0.97, 0.98, 0.98)
+      border.color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.10)
       border.width: 1
 
       ColumnLayout {
@@ -132,8 +157,10 @@ ShellRoot {
             Layout.fillWidth: true
             implicitHeight: 42
             radius: 21
-            color: searchInput.activeFocus ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.08)
-            border.color: searchInput.activeFocus ? "#0078d4" : Qt.rgba(1, 1, 1, 0.14)
+            color: searchInput.activeFocus
+                   ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08))
+                   : (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05))
+            border.color: searchInput.activeFocus ? (startWindow.isDark ? "#60cdff" : "#0067c0") : (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.10))
             border.width: 1.5
 
             RowLayout {
@@ -142,22 +169,22 @@ ShellRoot {
               anchors.rightMargin: 14
               spacing: 10
 
-              Text { text: "🔍"; font.pixelSize: 13; color: Qt.rgba(1, 1, 1, 0.7) }
+              Text { text: "🔍"; font.pixelSize: 13; color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.7) : Qt.rgba(0, 0, 0, 0.6) }
 
               TextInput {
                 id: searchInput
                 Layout.fillWidth: true
                 font.family: "Segoe UI"
                 font.pixelSize: 12.5
-                color: "#ffffff"
+                color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
                 clip: true
                 selectByMouse: true
-                selectionColor: "#0078d4"
+                selectionColor: startWindow.isDark ? "#0078d4" : "#0067c0"
 
                 Text {
                   visible: !searchInput.text && !searchInput.inputMethodComposing
                   text: "Type here to search apps, settings, and documents..."
-                  color: Qt.rgba(1, 1, 1, 0.45)
+                  color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0, 0, 0, 0.45)
                   font.family: "Segoe UI"
                   font.pixelSize: 12.5
                   anchors.verticalCenter: parent.verticalCenter
@@ -188,8 +215,8 @@ ShellRoot {
                 implicitWidth: 20
                 implicitHeight: 20
                 radius: 10
-                color: Qt.rgba(1, 1, 1, 0.15)
-                Text { anchors.centerIn: parent; text: "✕"; color: "#ffffff"; font.pixelSize: 10 }
+                color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.10)
+                Text { anchors.centerIn: parent; text: "✕"; color: startWindow.isDark ? "#ffffff" : "#1a1a1a"; font.pixelSize: 10 }
                 MouseArea {
                   anchors.fill: parent
                   cursorShape: Qt.PointingHandCursor
@@ -208,11 +235,11 @@ ShellRoot {
             implicitWidth: 32
             implicitHeight: 32
             radius: 6
-            color: startCloseM.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+            color: startCloseM.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
             Text {
               anchors.centerIn: parent
               text: "✕"
-              color: "#ffffff"
+              color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
               font.pixelSize: 13
             }
             MouseArea {
@@ -237,7 +264,7 @@ ShellRoot {
             Layout.fillWidth: true
             Text {
               text: "Pinned"
-              color: "#ffffff"
+              color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
               font.family: "Segoe UI"
               font.pixelSize: 13.5
               font.weight: Font.DemiBold
@@ -247,11 +274,11 @@ ShellRoot {
               implicitWidth: 84
               implicitHeight: 26
               radius: 6
-              color: allAppsMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.10) : "transparent"
+              color: allAppsMouse.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.06)) : "transparent"
               Text {
                 anchors.centerIn: parent
                 text: "All apps >"
-                color: "#60cdff"
+                color: startWindow.isDark ? "#60cdff" : "#0067c0"
                 font.family: "Segoe UI"
                 font.pixelSize: 11.5
                 font.weight: Font.DemiBold
@@ -282,8 +309,8 @@ ShellRoot {
                 Layout.fillWidth: true
                 implicitHeight: 74
                 radius: 8
-                color: tileMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
-                border.color: tileMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.15) : "transparent"
+                color: tileMouse.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
+                border.color: tileMouse.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.10)) : "transparent"
                 border.width: 1
 
                 ColumnLayout {
@@ -298,7 +325,7 @@ ShellRoot {
                   Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: modelData.name
-                    color: "#ffffff"
+                    color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
                     font.family: "Segoe UI"
                     font.pixelSize: 11
                     elide: Text.ElideRight
@@ -322,7 +349,7 @@ ShellRoot {
             Layout.topMargin: 4
             Text {
               text: "Recommended"
-              color: "#ffffff"
+              color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
               font.family: "Segoe UI"
               font.pixelSize: 13.5
               font.weight: Font.DemiBold
@@ -332,11 +359,11 @@ ShellRoot {
               implicitWidth: 64
               implicitHeight: 26
               radius: 6
-              color: moreMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.10) : "transparent"
+              color: moreMouse.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.06)) : "transparent"
               Text {
                 anchors.centerIn: parent
                 text: "More >"
-                color: "#60cdff"
+                color: startWindow.isDark ? "#60cdff" : "#0067c0"
                 font.family: "Segoe UI"
                 font.pixelSize: 11.5
                 font.weight: Font.DemiBold
@@ -365,7 +392,7 @@ ShellRoot {
                 Layout.fillWidth: true
                 implicitHeight: 46
                 radius: 8
-                color: recMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.10) : "transparent"
+                color: recMouse.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.06)) : "transparent"
 
                 RowLayout {
                   anchors.fill: parent
@@ -379,7 +406,7 @@ ShellRoot {
                     Layout.fillWidth: true
                     Text {
                       text: modelData.name
-                      color: "#ffffff"
+                      color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
                       font.family: "Segoe UI"
                       font.pixelSize: 11.5
                       font.weight: Font.DemiBold
@@ -388,7 +415,7 @@ ShellRoot {
                     }
                     Text {
                       text: modelData.time
-                      color: Qt.rgba(1, 1, 1, 0.5)
+                      color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.5)
                       font.family: "Segoe UI"
                       font.pixelSize: 10
                     }
@@ -423,12 +450,12 @@ ShellRoot {
               implicitWidth: 72
               implicitHeight: 28
               radius: 6
-              color: backM.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.06)
+              color: backM.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04))
               RowLayout {
                 anchors.centerIn: parent
                 spacing: 4
-                Text { text: "‹"; font.pixelSize: 14; color: "#60cdff"; font.weight: Font.Bold }
-                Text { text: "Back"; color: "#60cdff"; font.family: "Segoe UI"; font.pixelSize: 11.5; font.weight: Font.DemiBold }
+                Text { text: "‹"; font.pixelSize: 14; color: startWindow.isDark ? "#60cdff" : "#0067c0"; font.weight: Font.Bold }
+                Text { text: "Back"; color: startWindow.isDark ? "#60cdff" : "#0067c0"; font.family: "Segoe UI"; font.pixelSize: 11.5; font.weight: Font.DemiBold }
               }
               MouseArea {
                 id: backM
@@ -441,7 +468,7 @@ ShellRoot {
 
             Text {
               text: "All Apps"
-              color: "#ffffff"
+              color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
               font.family: "Segoe UI"
               font.pixelSize: 14
               font.weight: Font.Bold
@@ -464,7 +491,7 @@ ShellRoot {
                 width: allAppsView.width
                 implicitHeight: 40
                 radius: 6
-                color: appRowM.containsMouse ? Qt.rgba(1, 1, 1, 0.10) : "transparent"
+                color: appRowM.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.06)) : "transparent"
 
                 RowLayout {
                   anchors.fill: parent
@@ -475,7 +502,7 @@ ShellRoot {
                   Text { text: modelData.icon; font.pixelSize: 18 }
                   Text {
                     text: modelData.name
-                    color: "#ffffff"
+                    color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
                     font.family: "Segoe UI"
                     font.pixelSize: 12
                     font.weight: Font.DemiBold
@@ -483,7 +510,7 @@ ShellRoot {
                   }
                   Text {
                     text: modelData.category
-                    color: Qt.rgba(1, 1, 1, 0.4)
+                    color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(0, 0, 0, 0.4)
                     font.family: "Segoe UI"
                     font.pixelSize: 10
                     font.weight: Font.Bold
@@ -511,7 +538,7 @@ ShellRoot {
 
           Text {
             text: "Search Results for \"" + startWindow.searchFilter + "\""
-            color: Qt.rgba(1, 1, 1, 0.7)
+            color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.7) : Qt.rgba(0, 0, 0, 0.6)
             font.family: "Segoe UI"
             font.pixelSize: 12
             font.weight: Font.DemiBold
@@ -532,8 +559,8 @@ ShellRoot {
                 width: searchResultsView.width
                 implicitHeight: 44
                 radius: 8
-                color: searchRowM.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.05)
-                border.color: Qt.rgba(1, 1, 1, 0.08)
+                color: searchRowM.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.05) : Qt.rgba(0, 0, 0, 0.03))
+                border.color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.06)
 
                 RowLayout {
                   anchors.fill: parent
@@ -547,14 +574,14 @@ ShellRoot {
                     Layout.fillWidth: true
                     Text {
                       text: modelData.name
-                      color: "#ffffff"
+                      color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
                       font.family: "Segoe UI"
                       font.pixelSize: 12.5
                       font.weight: Font.DemiBold
                     }
                     Text {
                       text: "App • " + modelData.exec
-                      color: Qt.rgba(1, 1, 1, 0.45)
+                      color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0, 0, 0, 0.45)
                       font.family: "Segoe UI"
                       font.pixelSize: 9.5
                       elide: Text.ElideRight
@@ -562,7 +589,7 @@ ShellRoot {
                   }
                   Text {
                     text: "Open ➔"
-                    color: "#60cdff"
+                    color: startWindow.isDark ? "#60cdff" : "#0067c0"
                     font.family: "Segoe UI"
                     font.pixelSize: 11
                   }
@@ -584,8 +611,8 @@ ShellRoot {
             Layout.fillWidth: true
             implicitHeight: 44
             radius: 8
-            color: webSearchM.containsMouse ? Qt.rgba(0, 120, 212, 0.3) : Qt.rgba(1, 1, 1, 0.06)
-            border.color: Qt.rgba(0, 120, 212, 0.5)
+            color: webSearchM.containsMouse ? (startWindow.isDark ? Qt.rgba(0, 120, 212, 0.3) : Qt.rgba(0, 120, 212, 0.15)) : (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04))
+            border.color: startWindow.isDark ? Qt.rgba(0, 120, 212, 0.5) : Qt.rgba(0, 120, 212, 0.3)
 
             RowLayout {
               anchors.fill: parent
@@ -596,7 +623,7 @@ ShellRoot {
               Text { text: "🌐"; font.pixelSize: 16 }
               Text {
                 text: "Search the web for \"" + startWindow.searchFilter + "\""
-                color: "#60cdff"
+                color: startWindow.isDark ? "#60cdff" : "#0067c0"
                 font.family: "Segoe UI"
                 font.pixelSize: 12
                 font.weight: Font.DemiBold
@@ -621,8 +648,8 @@ ShellRoot {
           Layout.fillWidth: true
           implicitHeight: 52
           radius: 10
-          color: Qt.rgba(0.08, 0.08, 0.11, 0.85)
-          border.color: Qt.rgba(1, 1, 1, 0.08)
+          color: startWindow.isDark ? Qt.rgba(0.08, 0.08, 0.11, 0.85) : Qt.rgba(0.92, 0.92, 0.94, 0.90)
+          border.color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.06)
 
           RowLayout {
             anchors.fill: parent
@@ -636,12 +663,12 @@ ShellRoot {
                 implicitWidth: 32
                 implicitHeight: 32
                 radius: 16
-                color: "#0078d4"
+                color: startWindow.isDark ? "#0078d4" : "#0067c0"
                 Text { anchors.centerIn: parent; text: "👤"; font.pixelSize: 16 }
               }
               Text {
                 text: "User"
-                color: "#ffffff"
+                color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
                 font.family: "Segoe UI"
                 font.pixelSize: 12.5
                 font.weight: Font.DemiBold
@@ -655,7 +682,7 @@ ShellRoot {
               implicitWidth: 36
               implicitHeight: 36
               radius: 6
-              color: setMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+              color: setMouse.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
               Text { anchors.centerIn: parent; text: "⚙️"; font.pixelSize: 14 }
               MouseArea {
                 id: setMouse
@@ -674,8 +701,8 @@ ShellRoot {
               implicitWidth: 36
               implicitHeight: 36
               radius: 6
-              color: powerMouse.containsMouse || startWindow.showPowerPopup ? Qt.rgba(1, 1, 1, 0.14) : "transparent"
-              Text { anchors.centerIn: parent; text: "⏻"; color: "#ffffff"; font.pixelSize: 15 }
+              color: powerMouse.containsMouse || startWindow.showPowerPopup ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.10)) : "transparent"
+              Text { anchors.centerIn: parent; text: "⏻"; color: startWindow.isDark ? "#ffffff" : "#1a1a1a"; font.pixelSize: 15 }
               MouseArea {
                 id: powerMouse
                 anchors.fill: parent
@@ -700,8 +727,8 @@ ShellRoot {
         implicitWidth: 140
         implicitHeight: 130
         radius: 10
-        color: Qt.rgba(0.14, 0.15, 0.20, 0.98)
-        border.color: Qt.rgba(1, 1, 1, 0.18)
+        color: startWindow.isDark ? Qt.rgba(0.14, 0.15, 0.20, 0.98) : Qt.rgba(0.98, 0.98, 0.99, 0.98)
+        border.color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.18) : Qt.rgba(0, 0, 0, 0.14)
         border.width: 1
         z: 200
 
@@ -714,13 +741,13 @@ ShellRoot {
             Layout.fillWidth: true
             implicitHeight: 28
             radius: 6
-            color: lockM.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+            color: lockM.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
             RowLayout {
               anchors.fill: parent
               anchors.leftMargin: 8
               spacing: 8
               Text { text: "🔒"; font.pixelSize: 11 }
-              Text { text: "Lock"; color: "#ffffff"; font.pixelSize: 11 }
+              Text { text: "Lock"; color: startWindow.isDark ? "#ffffff" : "#1a1a1a"; font.pixelSize: 11 }
             }
             MouseArea {
               id: lockM
@@ -738,13 +765,13 @@ ShellRoot {
             Layout.fillWidth: true
             implicitHeight: 28
             radius: 6
-            color: sleepM.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+            color: sleepM.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
             RowLayout {
               anchors.fill: parent
               anchors.leftMargin: 8
               spacing: 8
               Text { text: "💤"; font.pixelSize: 11 }
-              Text { text: "Sleep"; color: "#ffffff"; font.pixelSize: 11 }
+              Text { text: "Sleep"; color: startWindow.isDark ? "#ffffff" : "#1a1a1a"; font.pixelSize: 11 }
             }
             MouseArea {
               id: sleepM
@@ -762,13 +789,13 @@ ShellRoot {
             Layout.fillWidth: true
             implicitHeight: 28
             radius: 6
-            color: restartM.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+            color: restartM.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
             RowLayout {
               anchors.fill: parent
               anchors.leftMargin: 8
               spacing: 8
               Text { text: "🔄"; font.pixelSize: 11 }
-              Text { text: "Restart"; color: "#ffffff"; font.pixelSize: 11 }
+              Text { text: "Restart"; color: startWindow.isDark ? "#ffffff" : "#1a1a1a"; font.pixelSize: 11 }
             }
             MouseArea {
               id: restartM
@@ -786,13 +813,13 @@ ShellRoot {
             Layout.fillWidth: true
             implicitHeight: 28
             radius: 6
-            color: shutM.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+            color: shutM.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
             RowLayout {
               anchors.fill: parent
               anchors.leftMargin: 8
               spacing: 8
               Text { text: "⏻"; color: "#ff5f56"; font.pixelSize: 11 }
-              Text { text: "Shut down"; color: "#ffffff"; font.pixelSize: 11 }
+              Text { text: "Shut down"; color: startWindow.isDark ? "#ffffff" : "#1a1a1a"; font.pixelSize: 11 }
             }
             MouseArea {
               id: shutM
