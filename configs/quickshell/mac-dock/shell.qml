@@ -1,5 +1,7 @@
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Hyprland
+import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 
@@ -27,6 +29,30 @@ ShellRoot {
     property real maxMagnification: 1.35
     property string homeDir: Quickshell.env("HOME")
     property string iconBasePath: homeDir + "/.local/share/icons/mac-dock/"
+
+    // Strict Theme Isolation Watcher: If state is not macOS mode, exit immediately
+    Process {
+      id: stateWatcher
+      running: true
+      command: ["bash", "-c", "cat $HOME/.config/omarchy-undercover/state 2>/dev/null || echo 'mac-dark'"]
+      stdout: SplitParser {
+        onRead: function(line) {
+          var s = String(line).trim()
+          if (s && s.indexOf("mac") !== 0) {
+            Qt.quit()
+          }
+        }
+      }
+    }
+
+    Timer {
+      interval: 1500
+      running: true
+      repeat: true
+      onTriggered: {
+        if (!stateWatcher.running) stateWatcher.running = true
+      }
+    }
 
     Rectangle {
       id: dockCard
@@ -82,12 +108,12 @@ ShellRoot {
               color: Qt.rgba(0.08, 0.08, 0.10, 0.94)
               border.color: Qt.rgba(1, 1, 1, 0.22)
               border.width: 1
-              implicitWidth: tipText.implicitWidth + 12
-              implicitHeight: tipText.implicitHeight + 6
+              implicitWidth: tooltipText.implicitWidth + 12
+              implicitHeight: tooltipText.implicitHeight + 6
               z: 100
 
               Text {
-                id: tipText
+                id: tooltipText
                 anchors.centerIn: parent
                 text: modelData.name
                 color: "#ffffff"
@@ -100,9 +126,9 @@ ShellRoot {
             Image {
               id: iconImage
               anchors.centerIn: parent
-              width: dockWindow.baseIconSize * appItem.currentScale
-              height: dockWindow.baseIconSize * appItem.currentScale
-              source: "file://" + dockWindow.iconBasePath + modelData.icon
+              width: Math.round(dockWindow.baseIconSize * appItem.currentScale)
+              height: Math.round(dockWindow.baseIconSize * appItem.currentScale)
+              source: dockWindow.iconBasePath + modelData.icon
               sourceSize.width: 64
               sourceSize.height: 64
               fillMode: Image.PreserveAspectFit
@@ -111,11 +137,11 @@ ShellRoot {
               z: appItem.isHovered ? 20 : 1
             }
 
-            // Running indicator dot
+            // Active Dot Indicator (macOS style running indicator)
             Rectangle {
               visible: modelData.running
               anchors.bottom: parent.bottom
-              anchors.bottomMargin: 0
+              anchors.bottomMargin: -3
               anchors.horizontalCenter: parent.horizontalCenter
               width: 4
               height: 4

@@ -6,6 +6,17 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_DIR="$HOME/.config/omarchy-undercover"
+STATE_FILE="$CONFIG_DIR/state"
+
+# Check active theme mode
+if [[ -f "$STATE_FILE" ]]; then
+    CURRENT_STATE=$(cat "$STATE_FILE" 2>/dev/null || echo "")
+    if [[ "$CURRENT_STATE" != mac* ]]; then
+        echo "macOS dock disabled: current desktop mode is $CURRENT_STATE" >&2
+        pkill -9 -f "quickshell.*mac-dock" 2>/dev/null || true
+        exit 0
+    fi
+fi
 
 QS_DOCK_SRC="$CONFIG_DIR/quickshell/mac-dock"
 if [[ ! -d "$QS_DOCK_SRC" && -d "${SCRIPT_DIR}/../configs/quickshell/mac-dock" ]]; then
@@ -13,13 +24,12 @@ if [[ ! -d "$QS_DOCK_SRC" && -d "${SCRIPT_DIR}/../configs/quickshell/mac-dock" ]
 fi
 
 # Kill any previous instance of the dock
-pkill -f "quickshell.*mac-dock" 2>/dev/null || true
-pkill -f "omarchy-mac-dock-gtk" 2>/dev/null || true
+pkill -9 -f "quickshell.*mac-dock" 2>/dev/null || true
+pkill -9 -f "omarchy-mac-dock-gtk" 2>/dev/null || true
 
 if command -v quickshell >/dev/null 2>&1 && [[ -d "$QS_DOCK_SRC" ]]; then
     exec quickshell -p "$QS_DOCK_SRC"
 else
-    # Fallback to python GTK layer if needed
     echo "Quickshell not available or dock config missing." >&2
     exit 1
 fi
