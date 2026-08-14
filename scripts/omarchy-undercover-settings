@@ -534,23 +534,55 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         row_taskbar_op.add_suffix(scale_taskbar_op)
         group_win.add(row_taskbar_op)
 
-        # Show Weather Ticker on Taskbar
-        row_win_weather = Adw.SwitchRow(title="Show Weather Ticker", subtitle="Displays live temperature and opens Windows 11 Widgets Board on click")
-        row_win_weather.set_active(read_setting("SHOW_WIN_WEATHER", "true").lower() == "true")
-        row_win_weather.connect("notify::active", lambda r, p: write_setting("SHOW_WIN_WEATHER", "true" if r.get_active() else "false"))
-        group_win.add(row_win_weather)
+        # Search Mode
+        curr_search = read_setting("SEARCH_MODE", "box")
+        row_search_mode = Adw.ComboRow(title="Search on Taskbar", subtitle="Choose between full search box, search icon only, or hidden")
+        model_search = Gtk.StringList()
+        model_search.append("Search Box (Full Pill)")
+        model_search.append("Search Icon Only")
+        model_search.append("Hidden")
+        row_search_mode.set_model(model_search)
+        search_idx = 0 if curr_search == "box" else (1 if curr_search == "icon" else 2)
+        row_search_mode.set_selected(search_idx)
+        def on_search_mode_changed(combo, param):
+            val = "box" if combo.get_selected() == 0 else ("icon" if combo.get_selected() == 1 else "hidden")
+            write_setting("SEARCH_MODE", val)
+            write_setting("SHOW_WIN_SEARCH", "false" if val == "hidden" else "true")
+            cli = find_cli()
+            subprocess.run([cli, "-w11"], check=False)
+            self.show_toast(f"Search mode set to: {val.capitalize()}")
+        row_search_mode.connect("notify::selected", on_search_mode_changed)
+        group_win.add(row_search_mode)
 
-        # Show Search Pill
-        row_win_search = Adw.SwitchRow(title="Show Search Box Pill", subtitle="Displays Windows 11 search bar on taskbar")
-        row_win_search.set_active(read_setting("SHOW_WIN_SEARCH", "true").lower() == "true")
-        row_win_search.connect("notify::active", lambda r, p: write_setting("SHOW_WIN_SEARCH", "true" if r.get_active() else "false"))
-        group_win.add(row_win_search)
+        # Show Task View Button
+        row_win_taskview = Adw.SwitchRow(title="Show Task View Button", subtitle="Displays virtual desktop & window switcher button next to search")
+        row_win_taskview.set_active(read_setting("SHOW_WIN_TASKVIEW", "true").lower() == "true")
+        row_win_taskview.connect("notify::active", lambda r, p: write_setting("SHOW_WIN_TASKVIEW", "true" if r.get_active() else "false"))
+        group_win.add(row_win_taskview)
 
         # Show Copilot Button
         row_win_copilot = Adw.SwitchRow(title="Show Copilot AI Button", subtitle="Displays Copilot assistant icon next to search")
         row_win_copilot.set_active(read_setting("SHOW_WIN_COPILOT", "true").lower() == "true")
         row_win_copilot.connect("notify::active", lambda r, p: write_setting("SHOW_WIN_COPILOT", "true" if r.get_active() else "false"))
         group_win.add(row_win_copilot)
+
+        # Show Weather Ticker on Taskbar
+        row_win_weather = Adw.SwitchRow(title="Show Weather & Widgets Ticker", subtitle="Displays live temperature on bottom-left and opens Widgets Board on click")
+        row_win_weather.set_active(read_setting("SHOW_WIN_WEATHER", "true").lower() == "true")
+        row_win_weather.connect("notify::active", lambda r, p: write_setting("SHOW_WIN_WEATHER", "true" if r.get_active() else "false"))
+        group_win.add(row_win_weather)
+
+        # Automatically hide taskbar
+        row_win_autohide = Adw.SwitchRow(title="Automatically Hide Taskbar", subtitle="Hides taskbar when not in use and reveals on bottom mouse edge contact")
+        row_win_autohide.set_active(read_setting("AUTOHIDE", "false").lower() == "true")
+        def on_autohide_toggled(r, p):
+            val = r.get_active()
+            write_setting("AUTOHIDE", "true" if val else "false")
+            cli = find_cli()
+            subprocess.run([cli, "--autohide", "on" if val else "off"], check=False)
+            self.show_toast(f"Taskbar auto-hide {'enabled' if val else 'disabled'}")
+        row_win_autohide.connect("notify::active", on_autohide_toggled)
+        group_win.add(row_win_autohide)
 
         page.add(group_win)
         self.stack.add_titled(page, "dock_taskbar", "Dock & Taskbar")
