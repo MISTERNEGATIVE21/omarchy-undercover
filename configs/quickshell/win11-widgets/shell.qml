@@ -1,5 +1,7 @@
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Hyprland
+import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 
@@ -21,14 +23,67 @@ ShellRoot {
     WlrLayershell.namespace: "omarchy-menu"
     color: "transparent"
 
-    implicitWidth: 500
-    implicitHeight: 760
+    implicitWidth: 520
+    implicitHeight: 780
+
+    property bool wifiEnabled: true
+    property bool btEnabled: true
+    property int volumeVal: 70
+    property int brightnessVal: 80
+    property int batteryPct: 90
+    property string wifiSsid: "Connected"
+
+    function runCmd(cmd) {
+      Quickshell.execDetached(["bash", "-c", cmd])
+    }
+
+    // Live Hardware Poller
+    Process {
+      id: statePoller
+      command: [
+        "bash", "-c",
+        "wifi=$(nmcli radio wifi 2>/dev/null || echo 'disabled'); " +
+        "bt=$(bluetoothctl show 2>/dev/null | grep -q 'Powered: yes' && echo '1' || echo '0'); " +
+        "vol=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null | awk '{print int($2*100)}' || echo '70'); " +
+        "bri=$(brightnessctl -m 2>/dev/null | cut -d, -f4 | tr -d '%' || echo '80'); " +
+        "bat=$(cat /sys/class/power_supply/BAT*/capacity 2>/dev/null | head -1 || echo '90'); " +
+        "ssid=$(nmcli -t -f active,ssid dev wifi 2>/dev/null | grep '^yes:' | cut -d: -f2 || echo 'Connected'); " +
+        "echo \"$wifi|$bt|$vol|$bri|$bat|$ssid\""
+      ]
+      stdout: SplitParser {
+        onRead: function(line) {
+          if (!line) return
+          var parts = line.trim().split("|")
+          if (parts.length >= 6) {
+            widgetsWindow.wifiEnabled = (parts[0].indexOf("enabled") !== -1)
+            widgetsWindow.btEnabled = (parts[1] === "1")
+            var v = parseInt(parts[2])
+            if (!isNaN(v)) widgetsWindow.volumeVal = Math.max(0, Math.min(100, v))
+            var b = parseInt(parts[3])
+            if (!isNaN(b)) widgetsWindow.brightnessVal = Math.max(5, Math.min(100, b))
+            var bt = parseInt(parts[4])
+            if (!isNaN(bt)) widgetsWindow.batteryPct = Math.max(1, Math.min(100, bt))
+            if (parts[5]) widgetsWindow.wifiSsid = parts[5]
+          }
+        }
+      }
+    }
+
+    Timer {
+      interval: 2000
+      running: true
+      repeat: true
+      triggeredOnStart: true
+      onTriggered: {
+        if (!statePoller.running) statePoller.running = true
+      }
+    }
 
     Rectangle {
       id: bg
       anchors.fill: parent
       radius: 16
-      color: Qt.rgba(0.09, 0.10, 0.13, 0.95)
+      color: Qt.rgba(0.09, 0.10, 0.13, 0.96)
       border.color: Qt.rgba(1, 1, 1, 0.14)
       border.width: 1
 
@@ -43,8 +98,9 @@ ShellRoot {
           spacing: 10
 
           Text {
-            text: "Widgets"
+            text: "Widgets Board"
             color: "#ffffff"
+            font.family: "Segoe UI"
             font.pixelSize: 20
             font.weight: Font.Bold
             Layout.fillWidth: true
@@ -69,26 +125,161 @@ ShellRoot {
           }
         }
 
-        // Search pill
+        // 1. Live Connectivity & Hardware Status Card
         Rectangle {
           Layout.fillWidth: true
-          implicitHeight: 36
-          radius: 8
-          color: Qt.rgba(1, 1, 1, 0.06)
+          implicitHeight: 146
+          radius: 12
+          color: Qt.rgba(1, 1, 1, 0.07)
           border.color: Qt.rgba(1, 1, 1, 0.10)
-          border.width: 1
 
-          RowLayout {
+          ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 8
-            spacing: 8
+            anchors.margins: 12
+            spacing: 10
 
-            Text { text: "🔍"; color: Qt.rgba(1, 1, 1, 0.6) }
-            Text { text: "Search widgets, web, and MSN feed"; color: Qt.rgba(1, 1, 1, 0.5); font.pixelSize: 11.5; Layout.fillWidth: true }
+            // Top row: Wi-Fi, Bluetooth, Battery Toggles
+            RowLayout {
+              Layout.fillWidth: true
+              spacing: 10
+
+              // Wi-Fi Button
+              Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 44
+                radius: 8
+                color: widgetsWindow.wifiEnabled ? "#0078d4" : Qt.rgba(1, 1, 1, 0.08)
+                RowLayout {
+                  anchors.centerIn: parent
+                  spacing: 6
+                  Text { text: "󰤨"; font.pixelSize: 15; color: "#ffffff" }
+                  Text {
+                    text: widgetsWindow.wifiEnabled ? widgetsWindow.wifiSsid : "Wi-Fi Off"
+                    font.family: "Segoe UI"
+                    font.pixelSize: 11
+                    font.weight: Font.DemiBold
+                    color: "#ffffff"
+                    elide: Text.ElideRight
+                  }
+                }
+                MouseArea {
+                  anchors.fill: parent
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: {
+                    widgetsWindow.wifiEnabled = !widgetsWindow.wifiEnabled
+                    widgetsWindow.runCmd("nmcli radio wifi " + (widgetsWindow.wifiEnabled ? "on" : "off"))
+                  }
+                }
+              }
+
+              // Bluetooth Button
+              Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 44
+                radius: 8
+                color: widgetsWindow.btEnabled ? "#0078d4" : Qt.rgba(1, 1, 1, 0.08)
+                RowLayout {
+                  anchors.centerIn: parent
+                  spacing: 6
+                  Text { text: "󰂯"; font.pixelSize: 15; color: "#ffffff" }
+                  Text {
+                    text: widgetsWindow.btEnabled ? "Bluetooth On" : "Bluetooth Off"
+                    font.family: "Segoe UI"
+                    font.pixelSize: 11
+                    font.weight: Font.DemiBold
+                    color: "#ffffff"
+                  }
+                }
+                MouseArea {
+                  anchors.fill: parent
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: {
+                    widgetsWindow.btEnabled = !widgetsWindow.btEnabled
+                    widgetsWindow.runCmd("bluetoothctl power " + (widgetsWindow.btEnabled ? "on" : "off"))
+                  }
+                }
+              }
+
+              // Battery Pill
+              Rectangle {
+                implicitWidth: 70
+                implicitHeight: 44
+                radius: 8
+                color: Qt.rgba(1, 1, 1, 0.08)
+                RowLayout {
+                  anchors.centerIn: parent
+                  spacing: 4
+                  Text { text: "🔋"; font.pixelSize: 13 }
+                  Text { text: widgetsWindow.batteryPct + "%"; font.family: "Segoe UI"; font.pixelSize: 11; font.weight: Font.Bold; color: "#ffffff" }
+                }
+              }
+            }
+
+            // Sound Volume Slider Row
+            RowLayout {
+              Layout.fillWidth: true
+              spacing: 8
+              Text { text: "🔊"; font.pixelSize: 13 }
+              Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 6
+                radius: 3
+                color: Qt.rgba(1, 1, 1, 0.15)
+                Rectangle {
+                  anchors.left: parent.left
+                  anchors.top: parent.top
+                  anchors.bottom: parent.bottom
+                  width: parent.width * (widgetsWindow.volumeVal / 100.0)
+                  radius: 3
+                  color: "#0078d4"
+                }
+                MouseArea {
+                  anchors.fill: parent
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: function(mouse) {
+                    var pct = Math.max(0, Math.min(100, Math.round((mouse.x / width) * 100)))
+                    widgetsWindow.volumeVal = pct
+                    widgetsWindow.runCmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ " + (pct / 100.0) + " || pactl set-sink-volume @DEFAULT_SINK@ " + pct + "% || true")
+                  }
+                }
+              }
+              Text { text: widgetsWindow.volumeVal + "%"; font.family: "Segoe UI"; font.pixelSize: 10.5; color: "#ffffff"; implicitWidth: 30 }
+            }
+
+            // Brightness Slider Row
+            RowLayout {
+              Layout.fillWidth: true
+              spacing: 8
+              Text { text: "☀️"; font.pixelSize: 13 }
+              Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 6
+                radius: 3
+                color: Qt.rgba(1, 1, 1, 0.15)
+                Rectangle {
+                  anchors.left: parent.left
+                  anchors.top: parent.top
+                  anchors.bottom: parent.bottom
+                  width: parent.width * (widgetsWindow.brightnessVal / 100.0)
+                  radius: 3
+                  color: "#0078d4"
+                }
+                MouseArea {
+                  anchors.fill: parent
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: function(mouse) {
+                    var pct = Math.max(5, Math.min(100, Math.round((mouse.x / width) * 100)))
+                    widgetsWindow.brightnessVal = pct
+                    widgetsWindow.runCmd("brightnessctl set " + pct + "% || true")
+                  }
+                }
+              }
+              Text { text: widgetsWindow.brightnessVal + "%"; font.family: "Segoe UI"; font.pixelSize: 10.5; color: "#ffffff"; implicitWidth: 30 }
+            }
           }
         }
 
-        // Weather + Stocks Cards Grid
+        // 2. Weather & Stocks Cards Grid
         RowLayout {
           Layout.fillWidth: true
           spacing: 10
@@ -98,106 +289,162 @@ ShellRoot {
             Layout.fillWidth: true
             implicitHeight: 120
             radius: 12
-            color: Qt.rgba(1, 1, 1, 0.05)
-            border.color: Qt.rgba(1, 1, 1, 0.08)
+            color: Qt.rgba(1, 1, 1, 0.07)
+            border.color: Qt.rgba(1, 1, 1, 0.10)
 
             ColumnLayout {
               anchors.fill: parent
               anchors.margins: 12
               spacing: 4
 
-              Text { text: "WEATHER • LOCAL"; color: Qt.rgba(1, 1, 1, 0.55); font.pixelSize: 10; font.weight: Font.Bold }
               RowLayout {
-                Text { text: "72°F"; color: "#ffffff"; font.pixelSize: 26; font.weight: Font.ExtraBold }
+                Text { text: "MSN WEATHER"; color: Qt.rgba(1, 1, 1, 0.55); font.family: "Segoe UI"; font.pixelSize: 9.5; font.weight: Font.Bold; Layout.fillWidth: true }
+                Text { text: "📍 Cupertino"; color: Qt.rgba(1, 1, 1, 0.6); font.family: "Segoe UI"; font.pixelSize: 9.5 }
+              }
+
+              RowLayout {
+                spacing: 8
+                Text { text: "🌤️"; font.pixelSize: 26 }
                 ColumnLayout {
-                  Text { text: "Partly Sunny"; color: "#ffffff"; font.pixelSize: 11; font.weight: Font.Bold }
-                  Text { text: "H: 76° L: 58° • 0% Rain"; color: Qt.rgba(1, 1, 1, 0.6); font.pixelSize: 10 }
+                  spacing: 0
+                  Text { text: "72°F"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 22; font.weight: Font.Bold }
+                  Text { text: "Partly sunny • H: 76° L: 58°"; color: Qt.rgba(1, 1, 1, 0.7); font.family: "Segoe UI"; font.pixelSize: 10 }
                 }
               }
             }
+
+            MouseArea {
+              anchors.fill: parent
+              cursorShape: Qt.PointingHandCursor
+              onClicked: widgetsWindow.runCmd("xdg-open https://www.msn.com/weather")
+            }
           }
 
-          // Stocks Card
+          // Stock Market Watchlist Card
           Rectangle {
             Layout.fillWidth: true
             implicitHeight: 120
             radius: 12
-            color: Qt.rgba(1, 1, 1, 0.05)
-            border.color: Qt.rgba(1, 1, 1, 0.08)
+            color: Qt.rgba(1, 1, 1, 0.07)
+            border.color: Qt.rgba(1, 1, 1, 0.10)
 
             ColumnLayout {
               anchors.fill: parent
               anchors.margins: 12
-              spacing: 3
+              spacing: 4
 
-              Text { text: "WATCHLIST • MARKETS"; color: Qt.rgba(1, 1, 1, 0.55); font.pixelSize: 10; font.weight: Font.Bold }
+              Text { text: "WATCHLIST • MSN MONEY"; color: Qt.rgba(1, 1, 1, 0.55); font.family: "Segoe UI"; font.pixelSize: 9.5; font.weight: Font.Bold }
+
               RowLayout {
-                Text { text: "MSFT $448.20"; color: "#ffffff"; font.pixelSize: 11; font.weight: Font.Bold; Layout.fillWidth: true }
-                Text { text: "+1.82%"; color: "#27c460"; font.pixelSize: 11; font.weight: Font.Bold }
+                Text { text: "MSFT"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 11; font.weight: Font.Bold; Layout.fillWidth: true }
+                Text { text: "$448.20"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 11; font.weight: Font.DemiBold }
+                Text { text: "+1.25%"; color: "#27c460"; font.family: "Segoe UI"; font.pixelSize: 10.5; font.weight: Font.Bold }
               }
+
               RowLayout {
-                Text { text: "NVDA $128.40"; color: "#ffffff"; font.pixelSize: 11; font.weight: Font.Bold; Layout.fillWidth: true }
-                Text { text: "+3.45%"; color: "#27c460"; font.pixelSize: 11; font.weight: Font.Bold }
+                Text { text: "AAPL"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 11; font.weight: Font.Bold; Layout.fillWidth: true }
+                Text { text: "$224.50"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 11; font.weight: Font.DemiBold }
+                Text { text: "+0.85%"; color: "#27c460"; font.family: "Segoe UI"; font.pixelSize: 10.5; font.weight: Font.Bold }
               }
+
               RowLayout {
-                Text { text: "NASDAQ 18.4K"; color: "#ffffff"; font.pixelSize: 11; font.weight: Font.Bold; Layout.fillWidth: true }
-                Text { text: "+1.20%"; color: "#27c460"; font.pixelSize: 11; font.weight: Font.Bold }
+                Text { text: "NVDA"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 11; font.weight: Font.Bold; Layout.fillWidth: true }
+                Text { text: "$128.90"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 11; font.weight: Font.DemiBold }
+                Text { text: "+3.10%"; color: "#27c460"; font.family: "Segoe UI"; font.pixelSize: 10.5; font.weight: Font.Bold }
               }
+            }
+
+            MouseArea {
+              anchors.fill: parent
+              cursorShape: Qt.PointingHandCursor
+              onClicked: widgetsWindow.runCmd("xdg-open https://www.msn.com/money")
             }
           }
         }
 
-        // To-Do & Calendar Card
+        // 3. Microsoft To-Do Checklist Card
         Rectangle {
           Layout.fillWidth: true
-          implicitHeight: 100
+          implicitHeight: 130
           radius: 12
-          color: Qt.rgba(1, 1, 1, 0.05)
-          border.color: Qt.rgba(1, 1, 1, 0.08)
+          color: Qt.rgba(1, 1, 1, 0.07)
+          border.color: Qt.rgba(1, 1, 1, 0.10)
 
           ColumnLayout {
             anchors.fill: parent
             anchors.margins: 12
-            spacing: 4
+            spacing: 6
 
-            Text { text: "📋 TO-DO & CALENDAR"; color: Qt.rgba(1, 1, 1, 0.55); font.pixelSize: 10; font.weight: Font.Bold }
-            Text { text: "✔ Review Omarchy Undercover v2.5 PR"; color: Qt.rgba(1, 1, 1, 0.7); font.pixelSize: 11 }
-            Text { text: "□ Architecture Review with Design Team (10:30 AM)"; color: "#ffffff"; font.pixelSize: 11; font.weight: Font.DemiBold }
+            RowLayout {
+              Text { text: "MICROSOFT TO-DO"; color: Qt.rgba(1, 1, 1, 0.55); font.family: "Segoe UI"; font.pixelSize: 9.5; font.weight: Font.Bold; Layout.fillWidth: true }
+              Text { text: "3 tasks left"; color: "#60cdff"; font.family: "Segoe UI"; font.pixelSize: 9.5; font.weight: Font.DemiBold }
+            }
+
+            RowLayout {
+              spacing: 8
+              Text { text: "☑️"; font.pixelSize: 12 }
+              Text { text: "Deploy Quickshell Windows 11 widgets"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 11.5; Layout.fillWidth: true }
+            }
+            RowLayout {
+              spacing: 8
+              Text { text: "⬜"; font.pixelSize: 12 }
+              Text { text: "Review Omarchy Undercover v2.5 documentation"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 11.5; Layout.fillWidth: true }
+            }
+            RowLayout {
+              spacing: 8
+              Text { text: "⬜"; font.pixelSize: 12 }
+              Text { text: "Configure multi-monitor taskbar mirrors"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 11.5; Layout.fillWidth: true }
+            }
           }
         }
 
-        // MSN Curated News Headlines
-        Text { text: "TOP STORIES & TRENDING NEWS"; color: Qt.rgba(1, 1, 1, 0.55); font.pixelSize: 10; font.weight: Font.Bold; Layout.topMargin: 4 }
-
+        // 4. MSN News Feed Card
         Rectangle {
           Layout.fillWidth: true
-          Layout.fillHeight: true
+          implicitHeight: 140
           radius: 12
-          color: Qt.rgba(1, 1, 1, 0.04)
-          border.color: Qt.rgba(1, 1, 1, 0.06)
+          color: Qt.rgba(1, 1, 1, 0.07)
+          border.color: Qt.rgba(1, 1, 1, 0.10)
 
           ColumnLayout {
             anchors.fill: parent
             anchors.margins: 12
-            spacing: 8
+            spacing: 6
 
-            ColumnLayout {
-              spacing: 2
-              Text { text: "TECHNOLOGY"; color: "#0078d4"; font.pixelSize: 10; font.weight: Font.Bold }
-              Text { text: "Next-Gen AI Silicon Achieves 4x Performance Leap in Workstations"; color: "#ffffff"; font.pixelSize: 12; font.weight: Font.DemiBold; wrapMode: Text.WordWrap; Layout.fillWidth: true }
-              Text { text: "MSN Tech • 1h ago"; color: Qt.rgba(1, 1, 1, 0.45); font.pixelSize: 10 }
+            RowLayout {
+              Text { text: "TOP STORIES • MSN NEWS"; color: Qt.rgba(1, 1, 1, 0.55); font.family: "Segoe UI"; font.pixelSize: 9.5; font.weight: Font.Bold; Layout.fillWidth: true }
+              Text { text: "Refresh ↻"; color: "#60cdff"; font.family: "Segoe UI"; font.pixelSize: 9.5; font.weight: Font.DemiBold }
             }
 
-            Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: Qt.rgba(1, 1, 1, 0.06) }
+            RowLayout {
+              spacing: 8
+              Text { text: "📰"; font.pixelSize: 15 }
+              ColumnLayout {
+                spacing: 1
+                Text { text: "Omarchy Undercover Releases Full Quickshell Suite"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 11.5; font.weight: Font.Bold }
+                Text { text: "Pure QML widgets and 60fps animations arrive for Hyprland — TechNews • 15m ago"; color: Qt.rgba(1, 1, 1, 0.6); font.family: "Segoe UI"; font.pixelSize: 9.5 }
+              }
+            }
 
-            ColumnLayout {
-              spacing: 2
-              Text { text: "FINANCE"; color: "#0078d4"; font.pixelSize: 10; font.weight: Font.Bold }
-              Text { text: "Global Markets Rally on Strong Cloud Earnings & AI Infrastructure"; color: "#ffffff"; font.pixelSize: 12; font.weight: Font.DemiBold; wrapMode: Text.WordWrap; Layout.fillWidth: true }
-              Text { text: "Wall Street Journal • 2h ago"; color: Qt.rgba(1, 1, 1, 0.45); font.pixelSize: 10 }
+            RowLayout {
+              spacing: 8
+              Text { text: "🚀"; font.pixelSize: 15 }
+              ColumnLayout {
+                spacing: 1
+                Text { text: "Next-Gen AI Desktop Experiences Launch on Wayland"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 11.5; font.weight: Font.Bold }
+                Text { text: "Fluent design and mica glassmorphism revolutionize Linux desktops — TheVerge • 1h ago"; color: Qt.rgba(1, 1, 1, 0.6); font.family: "Segoe UI"; font.pixelSize: 9.5 }
+              }
             }
           }
+
+          MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: widgetsWindow.runCmd("xdg-open https://www.msn.com/news")
+          }
         }
+
+        Item { Layout.fillHeight: true }
       }
     }
   }

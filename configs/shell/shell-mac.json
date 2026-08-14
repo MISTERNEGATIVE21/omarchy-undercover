@@ -33,16 +33,22 @@
           "id": "undercover.mac-battery"
         },
         {
+          "id": "undercover.mac-sound"
+        },
+        {
+          "id": "undercover.mac-bluetooth"
+        },
+        {
           "id": "undercover.mac-wifi"
+        },
+        {
+          "id": "undercover.mac-controlcenter"
         },
         {
           "id": "undercover.mac-spotlight"
         },
         {
           "id": "undercover.mac-siri"
-        },
-        {
-          "id": "undercover.mac-controlcenter"
         }
       ]
     }
