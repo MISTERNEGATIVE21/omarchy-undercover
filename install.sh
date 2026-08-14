@@ -125,8 +125,12 @@ main() {
 
     # Step 3: Vector Icon Engines & SVGs
     run_animated_step "3" "8" "line" "Deploying vector app icons, dock suite, and custom emblems" '
+        mkdir -p "$ICONS_DIR/win11" "$ICONS_DIR/mac-dock"
         if [[ -d "$SCRIPT_DIR/assets/mac-dock" ]]; then
             cp -rf "$SCRIPT_DIR/assets/mac-dock/"* "$ICONS_DIR/mac-dock/" 2>/dev/null || true
+        fi
+        if [[ -d "$SCRIPT_DIR/assets/icons/win11" ]]; then
+            cp -rf "$SCRIPT_DIR/assets/icons/win11/"* "$ICONS_DIR/win11/" 2>/dev/null || true
         fi
         if [[ -d "$SCRIPT_DIR/assets/icons" ]]; then
             cp -rf "$SCRIPT_DIR/assets/icons/"* "$ICONS_DIR/hicolor/scalable/apps/" 2>/dev/null || true

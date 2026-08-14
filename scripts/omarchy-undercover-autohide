@@ -17,6 +17,7 @@ CONFIG_DIR = os.path.expanduser("~/.config/omarchy-undercover")
 PID_FILE = os.path.join(CONFIG_DIR, "autohide.pid")
 STATE_FILE = os.path.join(CONFIG_DIR, "state")
 SETTINGS_FILE = os.path.join(CONFIG_DIR, "settings.conf")
+BAR_OFF_FLAG = os.path.expanduser("~/.local/state/omarchy/toggles/bar-off")
 
 def get_backend():
     try:
@@ -34,12 +35,13 @@ def get_screen_metrics():
         data = json.loads(out)
         if data and len(data) > 0:
             focused = next((m for m in data if m.get("focused")), data[0])
-            h = focused.get("height", 1440)
+            h = focused.get("height", 1080)
             scale = focused.get("scale", 1.0)
+            # In Hyprland 0.40+, cursorpos reports logical coordinates (height / scale)
             return int(h / scale)
     except Exception:
         pass
-    return 900
+    return 1080
 
 def get_cursor_y():
     try:
@@ -51,17 +53,32 @@ def get_cursor_y():
         pass
     return 0
 
-def signal_bar_toggle():
+def set_bar_visible(visible):
     backend = get_backend()
     if backend == "quickshell":
-        if shutil.which("omarchy-undercover-toggle-bar"):
-            subprocess.run(["omarchy-undercover-toggle-bar"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        elif shutil.which("omarchy"):
-            subprocess.run(["omarchy", "toggle", "bar"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        os.makedirs(os.path.dirname(BAR_OFF_FLAG), exist_ok=True)
+        if visible:
+            if os.path.exists(BAR_OFF_FLAG):
+                try:
+                    os.remove(BAR_OFF_FLAG)
+                except Exception:
+                    pass
         else:
-            subprocess.run(["pkill", "-SIGUSR1", "-x", "waybar"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if not os.path.exists(BAR_OFF_FLAG):
+                try:
+                    with open(BAR_OFF_FLAG, "w") as f:
+                        pass
+                except Exception:
+                    pass
     else:
-        subprocess.run(["pkill", "-SIGUSR1", "-x", "waybar"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # Waybar SIGUSR1
+        try:
+            out = subprocess.check_output(["hyprctl", "layers"], text=True)
+            is_showing = ("waybar" in out)
+            if (visible and not is_showing) or (not visible and is_showing):
+                subprocess.run(["pkill", "-SIGUSR1", "-x", "waybar"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception:
+            pass
 
 def is_bar_running():
     backend = get_backend()
@@ -84,20 +101,20 @@ def run_daemon():
         f.write(str(os.getpid()))
 
     screen_h = get_screen_metrics()
-    trigger_y = screen_h - 15  # bottom 15px triggers reveal
-    leave_y = screen_h - 90    # above dock/taskbar area
+    trigger_y = screen_h - 12  # bottom 12px triggers reveal
+    leave_y = screen_h - 75    # above dock/taskbar area
 
     bar_visible = True
     away_since = None
 
-    # Initial hide after 1.5s
-    time.sleep(1.5)
+    # Initial hide after 1.2s
+    time.sleep(1.2)
     if is_bar_running():
-        signal_bar_toggle()
+        set_bar_visible(False)
         bar_visible = False
 
     while True:
-        time.sleep(0.06)
+        time.sleep(0.05)
         if not is_bar_running():
             continue
 
@@ -106,14 +123,14 @@ def run_daemon():
         if y >= trigger_y:
             away_since = None
             if not bar_visible:
-                signal_bar_toggle()
+                set_bar_visible(True)
                 bar_visible = True
         elif y < leave_y:
             if bar_visible:
                 if away_since is None:
                     away_since = time.time()
-                elif (time.time() - away_since) > 0.40:  # 400ms natural dwell time
-                    signal_bar_toggle()
+                elif (time.time() - away_since) > 0.35:  # 350ms natural dwell time
+                    set_bar_visible(False)
                     bar_visible = False
                     away_since = None
             else:
@@ -145,60 +162,49 @@ def stop_daemon():
             os.remove(PID_FILE)
         except Exception:
             pass
-    # Kill any lingering instances
+    # Kill lingering instances
     subprocess.run(["pkill", "-f", "omarchy-undercover-autohide"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     # Ensure bar is visible
-    time.sleep(0.2)
-    backend = get_backend()
-    if backend == "quickshell":
-        # Check if bar-off flag exists and remove it
-        bar_off_flag = os.path.expanduser("~/.local/state/omarchy/toggles/bar-off")
-        if os.path.exists(bar_off_flag):
-            try:
-                os.remove(bar_off_flag)
-            except Exception:
-                pass
-    else:
-        try:
-            out = subprocess.check_output(["hyprctl", "layers"], text=True)
-            if "waybar" not in out:
-                signal_bar_toggle()
-        except Exception:
-            pass
+    time.sleep(0.1)
+    set_bar_visible(True)
     print("Autohide daemon stopped (Bar kept visible).")
 
 def is_running():
-    if os.path.exists(PID_FILE):
-        try:
-            with open(PID_FILE, "r") as f:
-                pid = int(f.read().strip())
-            os.kill(pid, 0)
-            return True
-        except OSError:
-            try:
-                os.remove(PID_FILE)
-            except Exception:
-                pass
-    return False
+    if not os.path.exists(PID_FILE):
+        return False
+    try:
+        with open(PID_FILE, "r") as f:
+            pid = int(f.read().strip())
+        os.kill(pid, 0)
+        return True
+    except (ValueError, OSError):
+        return False
+
+def toggle_daemon():
+    if is_running():
+        stop_daemon()
+    else:
+        start_daemon()
 
 def main():
-    if len(sys.argv) > 1:
-        arg = sys.argv[1].lower()
-        if arg in ["--start", "start", "on", "--on"]:
-            start_daemon()
-        elif arg in ["--stop", "stop", "off", "--off"]:
-            stop_daemon()
-        elif arg in ["--toggle", "toggle"]:
-            if is_running():
-                stop_daemon()
-            else:
-                start_daemon()
-        elif arg in ["--status", "status"]:
-            print("running" if is_running() else "stopped")
+    if len(sys.argv) < 2:
+        toggle_daemon()
+        return
+
+    cmd = sys.argv[1]
+    if cmd in ("--start", "-s", "start"):
+        start_daemon()
+    elif cmd in ("--stop", "-k", "stop"):
+        stop_daemon()
+    elif cmd in ("--toggle", "-t", "toggle"):
+        toggle_daemon()
+    elif cmd in ("--status", "status"):
+        if is_running():
+            print("Autohide daemon is running.")
         else:
-            print("Usage: omarchy-undercover-autohide [--start | --stop | --toggle | --status]")
+            print("Autohide daemon is stopped.")
     else:
-        run_daemon()
+        print("Usage: omarchy-undercover-autohide [--start | --stop | --toggle | --status]")
 
 if __name__ == "__main__":
     main()

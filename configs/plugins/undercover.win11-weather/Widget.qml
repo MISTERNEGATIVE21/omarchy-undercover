@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Io
 import qs.Ui
 
 BarWidget {
@@ -11,16 +12,63 @@ BarWidget {
   implicitHeight: root.bar ? root.bar.barSize : 40
 
   property bool showWeather: true
+  property string tempText: "72°F"
+  property string conditionText: "Partly sunny"
+  property string weatherIcon: "🌤️"
+
+  function runCmd(cmd) {
+    if (root.bar) {
+      root.bar.run(cmd)
+    } else {
+      Quickshell.execDetached(["bash", "-c", cmd])
+    }
+  }
+
+  // Periodic weather updater
+  Process {
+    id: weatherPoller
+    command: [
+      "bash", "-c",
+      "curl -s --max-time 2 'wttr.in/?format=%t+%C' 2>/dev/null | grep -E '[0-9]' || echo '+72°F Partly sunny'"
+    ]
+    stdout: SplitParser {
+      onRead: function(line) {
+        if (!line) return
+        var trimmed = line.trim()
+        var parts = trimmed.split(" ")
+        if (parts.length >= 2) {
+          root.tempText = parts[0].replace("+", "")
+          root.conditionText = parts.slice(1).join(" ")
+          var cond = root.conditionText.toLowerCase()
+          if (cond.indexOf("rain") !== -1 || cond.indexOf("drizzle") !== -1) root.weatherIcon = "🌧️"
+          else if (cond.indexOf("snow") !== -1) root.weatherIcon = "❄️"
+          else if (cond.indexOf("cloud") !== -1 || cond.indexOf("overcast") !== -1) root.weatherIcon = "☁️"
+          else if (cond.indexOf("sun") !== -1 || cond.indexOf("clear") !== -1) root.weatherIcon = "🌤️"
+          else root.weatherIcon = "🌤️"
+        }
+      }
+    }
+  }
+
+  Timer {
+    interval: 600000 // 10 minutes
+    running: true
+    repeat: true
+    triggeredOnStart: true
+    onTriggered: {
+      if (!weatherPoller.running) weatherPoller.running = true
+    }
+  }
 
   Rectangle {
     id: weatherContainer
     visible: root.showWeather
     anchors.verticalCenter: parent.verticalCenter
-    implicitWidth: row.implicitWidth + 14
-    implicitHeight: root.bar ? root.bar.barSize - 8 : 32
+    implicitWidth: Math.max(104, row.implicitWidth + 16)
+    implicitHeight: root.bar ? root.bar.barSize - 8 : 34
     radius: 4
-    color: weatherMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
-    border.color: weatherMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.10) : "transparent"
+    color: weatherMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.09) : "transparent"
+    border.color: weatherMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
     border.width: 1
 
     RowLayout {
@@ -29,24 +77,26 @@ BarWidget {
       spacing: 6
 
       Text {
-        text: "🌤️"
-        font.pixelSize: 14
+        text: root.weatherIcon
+        font.pixelSize: 15
       }
 
       ColumnLayout {
         spacing: -1
         Text {
-          text: "72°F"
+          text: root.tempText
           font.family: "Segoe UI"
           font.pixelSize: 11
           font.weight: Font.DemiBold
           color: root.bar && root.bar.foreground !== undefined ? root.bar.foreground : "#ffffff"
         }
         Text {
-          text: "Partly sunny"
+          text: root.conditionText
           font.family: "Segoe UI"
           font.pixelSize: 9
-          color: Qt.rgba(1, 1, 1, 0.7)
+          color: Qt.rgba(1, 1, 1, 0.72)
+          elide: Text.ElideRight
+          Layout.maximumWidth: 70
         }
       }
     }
@@ -58,10 +108,10 @@ BarWidget {
       anchors.bottom: parent.top
       anchors.bottomMargin: 6
       anchors.left: parent.left
-      implicitWidth: tooltipText.implicitWidth + 12
+      implicitWidth: tooltipText.implicitWidth + 14
       implicitHeight: 24
       radius: 5
-      color: Qt.rgba(0.15, 0.16, 0.20, 0.96)
+      color: Qt.rgba(0.13, 0.14, 0.18, 0.96)
       border.color: Qt.rgba(1, 1, 1, 0.15)
       border.width: 1
       z: 100
@@ -69,7 +119,7 @@ BarWidget {
       Text {
         id: tooltipText
         anchors.centerIn: parent
-        text: "Widgets • 72°F Partly Sunny • MSN Weather"
+        text: "Widgets • " + root.tempText + " " + root.conditionText + " • MSN Weather"
         font.family: "Segoe UI"
         font.pixelSize: 10.5
         color: "#ffffff"
@@ -84,17 +134,9 @@ BarWidget {
       acceptedButtons: Qt.LeftButton | Qt.RightButton
       onClicked: function(mouse) {
         if (mouse.button === Qt.RightButton) {
-          if (root.bar) {
-            root.bar.run("xdg-open https://www.msn.com/weather")
-          } else {
-            Quickshell.execDetached(["xdg-open", "https://www.msn.com/weather"])
-          }
+          root.runCmd("xdg-open https://www.msn.com/weather")
         } else {
-          if (root.bar) {
-            root.bar.run("omarchy-win11-widgets")
-          } else {
-            Quickshell.execDetached(["omarchy-win11-widgets"])
-          }
+          root.runCmd("omarchy-win11-widgets")
         }
       }
     }
