@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 # =============================================================================
-# 🍏 macOS Sequoia Native Quickshell Wi-Fi Manager Dispatcher
+# 🪟 Windows 11 Fluent Native Quickshell Wi-Fi Manager Dispatcher
 # =============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_DIR="$HOME/.config/omarchy-undercover"
 
-QS_SRC="$CONFIG_DIR/quickshell/mac-wifi"
-if [[ ! -d "$QS_SRC" && -d "${SCRIPT_DIR}/../configs/quickshell/mac-wifi" ]]; then
-    QS_SRC="${SCRIPT_DIR}/../configs/quickshell/mac-wifi"
+QS_SRC="$CONFIG_DIR/quickshell/win11-wifi"
+if [[ ! -d "$QS_SRC" && -d "${SCRIPT_DIR}/../configs/quickshell/win11-wifi" ]]; then
+    QS_SRC="${SCRIPT_DIR}/../configs/quickshell/win11-wifi"
 fi
 
-if pgrep -f "quickshell.*mac-wifi" >/dev/null; then
-    pkill -f "quickshell.*mac-wifi"
+if pgrep -f "quickshell.*win11-wifi" >/dev/null; then
+    pkill -f "quickshell.*win11-wifi"
     exit 0
 fi
 
