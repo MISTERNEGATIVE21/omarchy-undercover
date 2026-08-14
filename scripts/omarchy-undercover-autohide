@@ -37,11 +37,10 @@ def get_screen_metrics():
             focused = next((m for m in data if m.get("focused")), data[0])
             h = focused.get("height", 1080)
             scale = focused.get("scale", 1.0)
-            # In Hyprland 0.40+, cursorpos reports logical coordinates (height / scale)
             return int(h / scale)
     except Exception:
         pass
-    return 1080
+    return 900
 
 def get_cursor_y():
     try:
@@ -101,35 +100,45 @@ def run_daemon():
         f.write(str(os.getpid()))
 
     screen_h = get_screen_metrics()
-    trigger_y = screen_h - 12  # bottom 12px triggers reveal
-    leave_y = screen_h - 75    # above dock/taskbar area
+    trigger_y = screen_h - 8         # Bottom 8px edge triggers immediate reveal
+    taskbar_region_y = screen_h - 56 # Taskbar / dock region boundary
 
     bar_visible = True
     away_since = None
 
-    # Initial hide after 1.2s
-    time.sleep(1.2)
+    # Initial hide after launch
+    time.sleep(1.0)
     if is_bar_running():
         set_bar_visible(False)
         bar_visible = False
 
     while True:
-        time.sleep(0.05)
+        time.sleep(0.04)
         if not is_bar_running():
             continue
 
         y = get_cursor_y()
 
+        # 1. When mouse touches the bottom screen edge: Reveal immediately
         if y >= trigger_y:
             away_since = None
             if not bar_visible:
                 set_bar_visible(True)
                 bar_visible = True
-        elif y < leave_y:
+
+        # 2. When mouse is hovering inside the taskbar / dock region: REMAIN VISIBLE
+        elif y >= taskbar_region_y:
+            away_since = None
+            if not bar_visible:
+                set_bar_visible(True)
+                bar_visible = True
+
+        # 3. When mouse is away from the taskbar / dock region: Hide after debounce
+        else:
             if bar_visible:
                 if away_since is None:
                     away_since = time.time()
-                elif (time.time() - away_since) > 0.35:  # 350ms natural dwell time
+                elif (time.time() - away_since) > 0.25:  # 250ms smooth dwell buffer
                     set_bar_visible(False)
                     bar_visible = False
                     away_since = None

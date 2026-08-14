@@ -496,6 +496,38 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         row_dock_op.add_suffix(scale_dock_op)
         group_mac.add(row_dock_op)
 
+        # Dock Style (Floating vs Bottom-Attached)
+        curr_dock_style = read_setting("DOCK_STYLE", "floating")
+        row_dock_style = Adw.ComboRow(title="Dock Layout Style", subtitle="Choose between macOS Sequoia floating glass or screen-bottom attached")
+        model_dock_style = Gtk.StringList()
+        model_dock_style.append("Floating (Sequoia Frosted Glass)")
+        model_dock_style.append("Attached to Bottom Screen Edge")
+        row_dock_style.set_model(model_dock_style)
+        row_dock_style.set_selected(0 if curr_dock_style == "floating" else 1)
+        def on_dock_style_changed(combo, param):
+            val = "floating" if combo.get_selected() == 0 else "bottom"
+            write_setting("DOCK_STYLE", val)
+            subprocess.Popen(["omarchy-mac-dock"])
+            self.show_toast(f"Dock style set to: {val.capitalize()}")
+        row_dock_style.connect("notify::selected", on_dock_style_changed)
+        group_mac.add(row_dock_style)
+
+        # Dock Visibility Mode
+        row_mac_autohide = Adw.ComboRow(title="Dock Visibility Behavior", subtitle="Choose whether the dock is permanently visible or intelligently auto-hides on hover")
+        model_mac_vis = Gtk.StringList()
+        model_mac_vis.append("Permanently Visible (Always On Screen)")
+        model_mac_vis.append("Intelligent Auto-Hide (Reveals on Hover, Stays While Inside)")
+        row_mac_autohide.set_model(model_mac_vis)
+        row_mac_autohide.set_selected(1 if read_setting("AUTOHIDE", "false").lower() == "true" else 0)
+        def on_mac_autohide_changed(combo, param):
+            val = (combo.get_selected() == 1)
+            write_setting("AUTOHIDE", "true" if val else "false")
+            cli = find_cli()
+            subprocess.run([cli, "--autohide", "on" if val else "off"], check=False)
+            self.show_toast(f"Dock visibility: {'Intelligent Auto-Hide' if val else 'Permanently Visible'}")
+        row_mac_autohide.connect("notify::selected", on_mac_autohide_changed)
+        group_mac.add(row_mac_autohide)
+
         page.add(group_mac)
 
         # 2. Windows 11 Fluent Taskbar Preferences
@@ -522,6 +554,22 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         row_align.connect("notify::selected", on_align_changed)
         group_win.add(row_align)
 
+        # Taskbar Visibility Mode (Permanent vs Intelligent Auto-Hide)
+        row_win_vis = Adw.ComboRow(title="Taskbar Visibility Behavior", subtitle="Choose whether taskbar is permanently visible or intelligently auto-hides on hover")
+        model_win_vis = Gtk.StringList()
+        model_win_vis.append("Permanently Visible (Always On Screen)")
+        model_win_vis.append("Intelligent Auto-Hide (Reveals on Hover, Stays While Inside)")
+        row_win_vis.set_model(model_win_vis)
+        row_win_vis.set_selected(1 if read_setting("AUTOHIDE", "false").lower() == "true" else 0)
+        def on_win_vis_changed(combo, param):
+            val = (combo.get_selected() == 1)
+            write_setting("AUTOHIDE", "true" if val else "false")
+            cli = find_cli()
+            subprocess.run([cli, "--autohide", "on" if val else "off"], check=False)
+            self.show_toast(f"Taskbar visibility: {'Intelligent Auto-Hide' if val else 'Permanently Visible'}")
+        row_win_vis.connect("notify::selected", on_win_vis_changed)
+        group_win.add(row_win_vis)
+
         # Taskbar Opacity
         row_taskbar_op = Adw.ActionRow(title="Taskbar Opacity / Alpha", subtitle="Transparency level of the Windows 11 taskbar")
         scale_taskbar_op = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 30, 100, 1)
@@ -535,55 +583,17 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         row_taskbar_op.add_suffix(scale_taskbar_op)
         group_win.add(row_taskbar_op)
 
-        # Search Mode
-        curr_search = read_setting("SEARCH_MODE", "box")
-        row_search_mode = Adw.ComboRow(title="Search on Taskbar", subtitle="Choose between full search box, search icon only, or hidden")
-        model_search = Gtk.StringList()
-        model_search.append("Search Box (Full Pill)")
-        model_search.append("Search Icon Only")
-        model_search.append("Hidden")
-        row_search_mode.set_model(model_search)
-        search_idx = 0 if curr_search == "box" else (1 if curr_search == "icon" else 2)
-        row_search_mode.set_selected(search_idx)
-        def on_search_mode_changed(combo, param):
-            val = "box" if combo.get_selected() == 0 else ("icon" if combo.get_selected() == 1 else "hidden")
-            write_setting("SEARCH_MODE", val)
-            write_setting("SHOW_WIN_SEARCH", "false" if val == "hidden" else "true")
-            cli = find_cli()
-            subprocess.run([cli, "-w11"], check=False)
-            self.show_toast(f"Search mode set to: {val.capitalize()}")
-        row_search_mode.connect("notify::selected", on_search_mode_changed)
-        group_win.add(row_search_mode)
-
         # Show Task View Button
-        row_win_taskview = Adw.SwitchRow(title="Show Task View Button", subtitle="Displays virtual desktop & window switcher button next to search")
+        row_win_taskview = Adw.SwitchRow(title="Show Task View Button", subtitle="Displays virtual desktop & window switcher button next to start")
         row_win_taskview.set_active(read_setting("SHOW_WIN_TASKVIEW", "true").lower() == "true")
         row_win_taskview.connect("notify::active", lambda r, p: write_setting("SHOW_WIN_TASKVIEW", "true" if r.get_active() else "false"))
         group_win.add(row_win_taskview)
-
-        # Show Copilot Button
-        row_win_copilot = Adw.SwitchRow(title="Show Copilot AI Button", subtitle="Displays Copilot assistant icon next to search")
-        row_win_copilot.set_active(read_setting("SHOW_WIN_COPILOT", "true").lower() == "true")
-        row_win_copilot.connect("notify::active", lambda r, p: write_setting("SHOW_WIN_COPILOT", "true" if r.get_active() else "false"))
-        group_win.add(row_win_copilot)
 
         # Show Weather Ticker on Taskbar
         row_win_weather = Adw.SwitchRow(title="Show Weather & Widgets Ticker", subtitle="Displays live temperature on bottom-left and opens Widgets Board on click")
         row_win_weather.set_active(read_setting("SHOW_WIN_WEATHER", "true").lower() == "true")
         row_win_weather.connect("notify::active", lambda r, p: write_setting("SHOW_WIN_WEATHER", "true" if r.get_active() else "false"))
         group_win.add(row_win_weather)
-
-        # Automatically hide taskbar
-        row_win_autohide = Adw.SwitchRow(title="Automatically Hide Taskbar", subtitle="Hides taskbar when not in use and reveals on bottom mouse edge contact")
-        row_win_autohide.set_active(read_setting("AUTOHIDE", "false").lower() == "true")
-        def on_autohide_toggled(r, p):
-            val = r.get_active()
-            write_setting("AUTOHIDE", "true" if val else "false")
-            cli = find_cli()
-            subprocess.run([cli, "--autohide", "on" if val else "off"], check=False)
-            self.show_toast(f"Taskbar auto-hide {'enabled' if val else 'disabled'}")
-        row_win_autohide.connect("notify::active", on_autohide_toggled)
-        group_win.add(row_win_autohide)
 
         page.add(group_win)
         self.stack.add_titled(page, "dock_taskbar", "Dock & Taskbar")
