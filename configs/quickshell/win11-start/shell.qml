@@ -15,7 +15,7 @@ ShellRoot {
       bottom: true
     }
     margins {
-      bottom: 54
+      bottom: 48
     }
 
     WlrLayershell.layer: WlrLayer.Overlay
@@ -23,13 +23,14 @@ ShellRoot {
     color: "transparent"
 
     implicitWidth: 620
-    implicitHeight: 700
+    implicitHeight: 630
 
     property bool isDark: true
     property bool isTransparent: true
     property string searchFilter: ""
     property int currentView: 0 // 0: Pinned, 1: All Apps, 2: Search Results
     property bool showPowerPopup: false
+    property string homeDir: Quickshell.env("HOME")
 
     Shortcut {
       sequence: "Escape"
@@ -81,66 +82,66 @@ ShellRoot {
       }
     }
 
-    // Pinned Applications
+    // Pinned Applications (6x3 grid)
     property var pinnedApps: [
-      { name: "Browser", icon: "🌐", exec: "omarchy-browser" },
-      { name: "Word", icon: "📝", exec: "libreoffice --writer || abiword || omarchy-browser https://office.com" },
-      { name: "Excel", icon: "📊", exec: "libreoffice --calc || gnumeric || xdg-open https://office.com" },
-      { name: "PowerPoint", icon: "📽️", exec: "libreoffice --impress || xdg-open https://office.com" },
-      { name: "Store", icon: "🛍️", exec: "pamac-manager || gnome-software || discover" },
-      { name: "Photos", icon: "🖼️", exec: "eog || gwenview || loupe" },
-      { name: "Settings", icon: "⚙️", exec: "omarchy-undercover-settings" },
-      { name: "Terminal", icon: "💻", exec: "xdg-terminal-exec" },
-      { name: "Explorer", icon: "📁", exec: "nautilus computer:/// || thunar || dolphin" },
-      { name: "Calculator", icon: "🔢", exec: "gnome-calculator || kcalc || galculator" },
-      { name: "Spotify", icon: "🎵", exec: "spotify || omarchy-win11-widgets" },
-      { name: "Antigravity", icon: "🚀", exec: "antigravity-ide || code || vscodium" },
-      { name: "VS Code", icon: "🧑‍💻", exec: "code || vscodium || cursor" },
-      { name: "Chat", icon: "💬", exec: "discord || telegram-desktop || slack" },
-      { name: "Notepad", icon: "🗒️", exec: "gedit || kate || mousepad || gnome-text-editor" },
-      { name: "Mail", icon: "✉️", exec: "thunderbird || evolution || geary" },
-      { name: "Paint", icon: "🎨", exec: "drawing || gimp || inkscape || pinta" },
-      { name: "Clock", icon: "⏰", exec: "gnome-clocks || kclock" },
-      { name: "Weather", icon: "🌤️", exec: "omarchy-win11-widgets" }
+      { name: "Edge", icon: "🌐", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/microsoft-edge.svg", exec: "omarchy-browser" },
+      { name: "Word", icon: "📝", iconUrl: "", exec: "libreoffice --writer || abiword || omarchy-browser https://office.com" },
+      { name: "Excel", icon: "📊", iconUrl: "", exec: "libreoffice --calc || gnumeric || xdg-open https://office.com" },
+      { name: "PowerPoint", icon: "📽️", iconUrl: "", exec: "libreoffice --impress || xdg-open https://office.com" },
+      { name: "Store", icon: "🛍️", iconUrl: "", exec: "pamac-manager || gnome-software || discover" },
+      { name: "Photos", icon: "🖼️", iconUrl: "", exec: "eog || gwenview || loupe" },
+      { name: "Settings", icon: "⚙️", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/settings.svg", exec: "omarchy-undercover-settings" },
+      { name: "Terminal", icon: "💻", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/terminal.svg", exec: "xdg-terminal-exec" },
+      { name: "Explorer", icon: "📁", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/explorer.svg", exec: "nautilus computer:/// || thunar || dolphin" },
+      { name: "Calculator", icon: "🔢", iconUrl: "", exec: "gnome-calculator || kcalc || galculator" },
+      { name: "Spotify", icon: "🎵", iconUrl: "", exec: "spotify || omarchy-win11-widgets" },
+      { name: "Antigravity", icon: "🚀", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/antigravity-ide.svg", exec: "antigravity-ide || code || vscodium" },
+      { name: "VS Code", icon: "🧑‍💻", iconUrl: "", exec: "code || vscodium || cursor" },
+      { name: "Chat", icon: "💬", iconUrl: "", exec: "discord || telegram-desktop || slack" },
+      { name: "Notepad", icon: "🗒️", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/notepad.svg", exec: "gedit || kate || mousepad || gnome-text-editor" },
+      { name: "Mail", icon: "✉️", iconUrl: "", exec: "thunderbird || evolution || geary" },
+      { name: "Paint", icon: "🎨", iconUrl: "", exec: "drawing || gimp || inkscape || pinta" },
+      { name: "Weather", icon: "🌤️", iconUrl: "", exec: "omarchy-win11-widgets" }
     ]
 
     // Complete All-Apps Catalog (Alphabetical A-Z Drawer)
     property var allAppsList: [
-      { name: "Antigravity IDE", icon: "🚀", category: "A", exec: "antigravity-ide || code || vscodium" },
-      { name: "Alacritty Terminal", icon: "💻", category: "A", exec: "alacritty || xdg-terminal-exec" },
-      { name: "App Store / Packages", icon: "🛍️", category: "A", exec: "pamac-manager || gnome-software" },
-      { name: "Bluetooth Manager", icon: "󰂯", category: "B", exec: "omarchy-win11-bluetooth || blueman-manager" },
-      { name: "Calculator", icon: "🔢", category: "C", exec: "gnome-calculator || kcalc" },
-      { name: "Calendar", icon: "📅", category: "C", exec: "gnome-calendar || korganizer" },
-      { name: "Camera", icon: "📷", category: "C", exec: "cheese || kamoso" },
-      { name: "Clock & Alarms", icon: "⏰", category: "C", exec: "gnome-clocks || kclock" },
-      { name: "Discord", icon: "💬", category: "D", exec: "discord || vesktop" },
-      { name: "Document Viewer", icon: "📑", category: "D", exec: "evince || okular" },
-      { name: "File Explorer", icon: "📁", category: "F", exec: "nautilus computer:/// || thunar" },
-      { name: "Firefox Browser", icon: "🦊", category: "F", exec: "firefox" },
-      { name: "GIMP Image Editor", icon: "🎨", category: "G", exec: "gimp" },
-      { name: "Google Chrome", icon: "🌐", category: "G", exec: "google-chrome-stable || chromium" },
-      { name: "LibreOffice Calc", icon: "📊", category: "L", exec: "libreoffice --calc" },
-      { name: "LibreOffice Writer", icon: "📝", category: "L", exec: "libreoffice --writer" },
-      { name: "LibreOffice Impress", icon: "📽️", category: "L", exec: "libreoffice --impress" },
-      { name: "Mail / Thunderbird", icon: "✉️", category: "M", exec: "thunderbird || evolution" },
-      { name: "Microsoft Edge", icon: "🌐", category: "M", exec: "xdg-open https://microsoft.com || firefox" },
-      { name: "Music / Media Player", icon: "🎵", category: "M", exec: "spotify || vlc || celluloid" },
-      { name: "Notepad / Text Editor", icon: "🗒️", category: "N", exec: "gedit || kate || mousepad" },
-      { name: "Omarchy Settings", icon: "🕵️", category: "O", exec: "omarchy-undercover-settings" },
-      { name: "Paint / Drawing", icon: "🎨", category: "P", exec: "drawing || pinta" },
-      { name: "Photos / Image Viewer", icon: "🖼️", category: "P", exec: "eog || gwenview || loupe" },
-      { name: "Screen Recorder", icon: "🎥", category: "S", exec: "obs || wf-recorder" },
-      { name: "Settings", icon: "⚙️", category: "S", exec: "omarchy-undercover-settings" },
-      { name: "Sound Mixer", icon: "🔊", category: "S", exec: "omarchy-win11-sound || pavucontrol" },
-      { name: "Spotify", icon: "🎵", category: "S", exec: "spotify" },
-      { name: "System Monitor", icon: "📈", category: "S", exec: "gnome-system-monitor || btop" },
-      { name: "Task View / Switcher", icon: "⧉", category: "T", exec: "rofi -show window" },
-      { name: "Terminal Console", icon: "💻", category: "T", exec: "xdg-terminal-exec" },
-      { name: "VS Code", icon: "🧑‍💻", category: "V", exec: "code || vscodium" },
-      { name: "VLC Media Player", icon: "🎬", category: "V", exec: "vlc" },
-      { name: "Weather & Widgets", icon: "🌤️", category: "W", exec: "omarchy-win11-widgets" },
-      { name: "Wi-Fi Manager", icon: "󰤨", category: "W", exec: "omarchy-win11-wifi || nm-connection-editor" }
+      { name: "Antigravity IDE", icon: "🚀", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/antigravity-ide.svg", category: "A", exec: "antigravity-ide || code || vscodium" },
+      { name: "Alacritty Terminal", icon: "💻", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/terminal.svg", category: "A", exec: "alacritty || xdg-terminal-exec" },
+      { name: "App Store / Software", icon: "🛍️", iconUrl: "", category: "A", exec: "pamac-manager || gnome-software || discover" },
+      { name: "Bluetooth Manager", icon: "🔷", iconUrl: "", category: "B", exec: "omarchy-win11-bluetooth || blueman-manager" },
+      { name: "Browser (Edge)", icon: "🌐", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/microsoft-edge.svg", category: "B", exec: "omarchy-browser" },
+      { name: "Calculator", icon: "🔢", iconUrl: "", category: "C", exec: "gnome-calculator || kcalc" },
+      { name: "Calendar", icon: "📅", iconUrl: "", category: "C", exec: "gnome-calendar || korganizer" },
+      { name: "Camera", icon: "📷", iconUrl: "", category: "C", exec: "cheese || kamoso" },
+      { name: "Clock & Alarms", icon: "⏰", iconUrl: "", category: "C", exec: "gnome-clocks || kclock" },
+      { name: "Discord", icon: "💬", iconUrl: "", category: "D", exec: "discord || vesktop" },
+      { name: "Document Viewer", icon: "📑", iconUrl: "", category: "D", exec: "evince || okular" },
+      { name: "File Explorer", icon: "📁", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/explorer.svg", category: "F", exec: "nautilus computer:/// || thunar" },
+      { name: "Firefox Browser", icon: "🦊", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/firefox.svg", category: "F", exec: "firefox" },
+      { name: "GIMP Image Editor", icon: "🎨", iconUrl: "", category: "G", exec: "gimp" },
+      { name: "Google Chrome", icon: "🌐", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/google-chrome.svg", category: "G", exec: "google-chrome-stable || chromium" },
+      { name: "LibreOffice Calc", icon: "📊", iconUrl: "", category: "L", exec: "libreoffice --calc" },
+      { name: "LibreOffice Writer", icon: "📝", iconUrl: "", category: "L", exec: "libreoffice --writer" },
+      { name: "LibreOffice Impress", icon: "📽️", iconUrl: "", category: "L", exec: "libreoffice --impress" },
+      { name: "Mail / Thunderbird", icon: "✉️", iconUrl: "", category: "M", exec: "thunderbird || evolution" },
+      { name: "Microsoft Edge", icon: "🌐", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/microsoft-edge.svg", category: "M", exec: "omarchy-browser" },
+      { name: "Music / Media Player", icon: "🎵", iconUrl: "", category: "M", exec: "spotify || vlc || celluloid" },
+      { name: "Notepad Text Editor", icon: "🗒️", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/notepad.svg", category: "N", exec: "gedit || kate || mousepad" },
+      { name: "Omarchy Settings", icon: "🕵️", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/settings.svg", category: "O", exec: "omarchy-undercover-settings" },
+      { name: "Paint / Drawing", icon: "🎨", iconUrl: "", category: "P", exec: "drawing || pinta" },
+      { name: "Photos / Image Viewer", icon: "🖼️", iconUrl: "", category: "P", exec: "eog || gwenview || loupe" },
+      { name: "Screen Recorder", icon: "🎥", iconUrl: "", category: "S", exec: "obs || wf-recorder" },
+      { name: "Settings", icon: "⚙️", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/settings.svg", category: "S", exec: "omarchy-undercover-settings" },
+      { name: "Sound Mixer", icon: "🔊", iconUrl: "", category: "S", exec: "omarchy-win11-sound || pavucontrol" },
+      { name: "Spotify", icon: "🎵", iconUrl: "", category: "S", exec: "spotify" },
+      { name: "System Monitor", icon: "📈", iconUrl: "", category: "S", exec: "gnome-system-monitor || btop" },
+      { name: "Task View / Switcher", icon: "⧉", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/taskview.svg", category: "T", exec: "rofi -show window" },
+      { name: "Terminal Console", icon: "💻", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/terminal.svg", category: "T", exec: "xdg-terminal-exec" },
+      { name: "VS Code", icon: "🧑‍💻", iconUrl: "", category: "V", exec: "code || vscodium" },
+      { name: "VLC Media Player", icon: "🎬", iconUrl: "", category: "V", exec: "vlc" },
+      { name: "Weather & Widgets", icon: "🌤️", iconUrl: "", category: "W", exec: "omarchy-win11-widgets" },
+      { name: "Wi-Fi Manager", icon: "📶", iconUrl: "", category: "W", exec: "omarchy-win11-wifi || nm-connection-editor" }
     ]
 
     property var recommendedItems: [
@@ -163,17 +164,17 @@ ShellRoot {
     Rectangle {
       id: bg
       anchors.fill: parent
-      radius: 16
+      radius: 14
       color: startWindow.isDark 
-             ? (startWindow.isTransparent ? Qt.rgba(0.12, 0.12, 0.16, 0.85) : "#202024")
-             : (startWindow.isTransparent ? Qt.rgba(0.97, 0.97, 0.98, 0.88) : "#f5f5f8")
+             ? (startWindow.isTransparent ? Qt.rgba(0.12, 0.12, 0.16, 0.88) : "#202024")
+             : (startWindow.isTransparent ? Qt.rgba(0.97, 0.97, 0.98, 0.90) : "#f5f5f8")
       border.color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.10)
       border.width: 1
 
       ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 20
-        spacing: 12
+        anchors.margins: 18
+        spacing: 10
 
         // 1. Top Search Bar with Live Real-Time TextInput
         RowLayout {
@@ -182,21 +183,33 @@ ShellRoot {
 
           Rectangle {
             Layout.fillWidth: true
-            implicitHeight: 42
-            radius: 21
+            implicitHeight: 40
+            radius: 20
             color: searchInput.activeFocus
                    ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08))
                    : (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05))
             border.color: searchInput.activeFocus ? (startWindow.isDark ? "#60cdff" : "#0067c0") : (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.10))
-            border.width: 1.5
+            border.width: 1
 
             RowLayout {
               anchors.fill: parent
               anchors.leftMargin: 14
-              anchors.rightMargin: 14
+              anchors.rightMargin: 12
               spacing: 10
 
-              Text { text: "🔍"; font.pixelSize: 13; color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.7) : Qt.rgba(0, 0, 0, 0.6) }
+              Item {
+                implicitWidth: 16
+                implicitHeight: 16
+                Layout.alignment: Qt.AlignVCenter
+                Image {
+                  anchors.centerIn: parent
+                  width: 16
+                  height: 16
+                  source: "file://" + startWindow.homeDir + "/.local/share/icons/win11/search.svg"
+                  fillMode: Image.PreserveAspectFit
+                  opacity: 0.7
+                }
+              }
 
               TextInput {
                 id: searchInput
@@ -279,424 +292,516 @@ ShellRoot {
           }
         }
 
-        // ================= VIEW 0: PINNED APPS & RECOMMENDED =================
-        ColumnLayout {
-          visible: startWindow.currentView === 0
+        // 2. Main StackLayout for seamless View Switching
+        StackLayout {
+          id: viewsStack
+          currentIndex: startWindow.currentView
           Layout.fillWidth: true
           Layout.fillHeight: true
-          spacing: 12
 
-          // Pinned Header
-          RowLayout {
+          // ================= VIEW 0: PINNED APPS & RECOMMENDED =================
+          ColumnLayout {
             Layout.fillWidth: true
-            Text {
-              text: "Pinned"
-              color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
-              font.family: "Segoe UI"
-              font.pixelSize: 14
-              font.weight: Font.DemiBold
+            Layout.fillHeight: true
+            spacing: 10
+
+            // Pinned Header
+            RowLayout {
               Layout.fillWidth: true
-            }
-            Rectangle {
-              implicitWidth: 84
-              implicitHeight: 26
-              radius: 6
-              color: allAppsMouse.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.06)) : "transparent"
               Text {
-                anchors.centerIn: parent
-                text: "All apps >"
-                color: startWindow.isDark ? "#60cdff" : "#0067c0"
+                text: "Pinned"
+                color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
                 font.family: "Segoe UI"
-                font.pixelSize: 12
+                font.pixelSize: 13
                 font.weight: Font.DemiBold
-              }
-              MouseArea {
-                id: allAppsMouse
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                  startWindow.currentView = 1
-                }
-              }
-            }
-          }
-
-          // Pinned Grid (6 cols x 3 rows)
-          GridLayout {
-            Layout.fillWidth: true
-            columns: 6
-            rowSpacing: 10
-            columnSpacing: 6
-
-            Repeater {
-              model: startWindow.pinnedApps
-
-              Rectangle {
                 Layout.fillWidth: true
-                implicitHeight: 74
-                radius: 8
-                color: tileMouse.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
-                border.color: tileMouse.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.10)) : "transparent"
-                border.width: 1
-
-                ColumnLayout {
+              }
+              Rectangle {
+                implicitWidth: 80
+                implicitHeight: 24
+                radius: 5
+                color: allAppsMouse.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.06)) : "transparent"
+                Text {
                   anchors.centerIn: parent
-                  spacing: 4
-
-                  Text {
-                    Layout.alignment: Qt.AlignHCenter
-                    text: modelData.icon
-                    font.pixelSize: 26
-                  }
-                  Text {
-                    Layout.alignment: Qt.AlignHCenter
-                    text: modelData.name
-                    color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
-                    font.family: "Segoe UI"
-                    font.pixelSize: 11
-                    elide: Text.ElideRight
-                  }
+                  text: "All apps >"
+                  color: startWindow.isDark ? "#60cdff" : "#0067c0"
+                  font.family: "Segoe UI"
+                  font.pixelSize: 11
+                  font.weight: Font.DemiBold
                 }
-
                 MouseArea {
-                  id: tileMouse
+                  id: allAppsMouse
                   anchors.fill: parent
                   hoverEnabled: true
                   cursorShape: Qt.PointingHandCursor
-                  onClicked: startWindow.runCmd(modelData.exec)
+                  onClicked: {
+                    startWindow.currentView = 1
+                  }
                 }
               }
             }
-          }
 
-          // Recommended Header
-          RowLayout {
-            Layout.fillWidth: true
-            Layout.topMargin: 4
-            Text {
-              text: "Recommended"
-              color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
-              font.family: "Segoe UI"
-              font.pixelSize: 14
-              font.weight: Font.DemiBold
+            // 6x3 Grid of Pinned Apps
+            GridLayout {
+              columns: 6
+              rowSpacing: 8
+              columnSpacing: 6
               Layout.fillWidth: true
-            }
-            Rectangle {
-              implicitWidth: 64
-              implicitHeight: 26
-              radius: 6
-              color: moreMouse.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.06)) : "transparent"
-              Text {
-                anchors.centerIn: parent
-                text: "More >"
-                color: startWindow.isDark ? "#60cdff" : "#0067c0"
-                font.family: "Segoe UI"
-                font.pixelSize: 12
-                font.weight: Font.DemiBold
-              }
-              MouseArea {
-                id: moreMouse
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: startWindow.runCmd("nautilus recent:/// || thunar")
-              }
-            }
-          }
 
-          // Recommended Files Grid
-          GridLayout {
-            Layout.fillWidth: true
-            columns: 2
-            rowSpacing: 6
-            columnSpacing: 10
+              Repeater {
+                model: startWindow.pinnedApps
 
-            Repeater {
-              model: startWindow.recommendedItems
+                Rectangle {
+                  Layout.fillWidth: true
+                  implicitHeight: 68
+                  radius: 8
+                  color: tileMouse.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.06)) : "transparent"
 
-              Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: 46
-                radius: 8
-                color: recMouse.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.06)) : "transparent"
-
-                RowLayout {
-                  anchors.fill: parent
-                  anchors.leftMargin: 10
-                  anchors.rightMargin: 10
-                  spacing: 10
-
-                  Text { text: modelData.icon; font.pixelSize: 18 }
                   ColumnLayout {
-                    spacing: 1
-                    Layout.fillWidth: true
+                    anchors.centerIn: parent
+                    spacing: 4
+
+                    Item {
+                      Layout.alignment: Qt.AlignHCenter
+                      implicitWidth: 32
+                      implicitHeight: 32
+
+                      Image {
+                        anchors.centerIn: parent
+                        width: 28
+                        height: 28
+                        source: (modelData.iconUrl && modelData.iconUrl.length > 0) ? modelData.iconUrl : ""
+                        visible: modelData.iconUrl && modelData.iconUrl.length > 0
+                        fillMode: Image.PreserveAspectFit
+                        smooth: true
+                      }
+
+                      Rectangle {
+                        anchors.centerIn: parent
+                        width: 30
+                        height: 30
+                        radius: 7
+                        visible: !modelData.iconUrl || modelData.iconUrl.length === 0
+                        color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05)
+                        Text {
+                          anchors.centerIn: parent
+                          text: modelData.icon
+                          font.pixelSize: 18
+                        }
+                      }
+                    }
+
                     Text {
+                      Layout.alignment: Qt.AlignHCenter
                       text: modelData.name
                       color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
                       font.family: "Segoe UI"
-                      font.pixelSize: 12
-                      font.weight: Font.DemiBold
+                      font.pixelSize: 11
                       elide: Text.ElideRight
-                      Layout.fillWidth: true
-                    }
-                    Text {
-                      text: modelData.time
-                      color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.5)
-                      font.family: "Segoe UI"
-                      font.pixelSize: 10
                     }
                   }
-                }
 
-                MouseArea {
-                  id: recMouse
-                  anchors.fill: parent
-                  hoverEnabled: true
-                  cursorShape: Qt.PointingHandCursor
-                  onClicked: startWindow.runCmd(modelData.exec)
+                  MouseArea {
+                    id: tileMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: startWindow.runCmd(modelData.exec)
+                  }
                 }
               }
             }
+
+            // Recommended Header
+            RowLayout {
+              Layout.fillWidth: true
+              Layout.topMargin: 2
+              Text {
+                text: "Recommended"
+                color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
+                font.family: "Segoe UI"
+                font.pixelSize: 13
+                font.weight: Font.DemiBold
+                Layout.fillWidth: true
+              }
+              Rectangle {
+                implicitWidth: 60
+                implicitHeight: 24
+                radius: 5
+                color: moreMouse.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.06)) : "transparent"
+                Text {
+                  anchors.centerIn: parent
+                  text: "More >"
+                  color: startWindow.isDark ? "#60cdff" : "#0067c0"
+                  font.family: "Segoe UI"
+                  font.pixelSize: 11
+                }
+                MouseArea {
+                  id: moreMouse
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: startWindow.runCmd("xdg-open ~/Documents")
+                }
+              }
+            }
+
+            // 2-Column Recommended Items Grid
+            GridLayout {
+              columns: 2
+              columnSpacing: 8
+              rowSpacing: 4
+              Layout.fillWidth: true
+
+              Repeater {
+                model: startWindow.recommendedItems
+
+                Rectangle {
+                  Layout.fillWidth: true
+                  implicitHeight: 40
+                  radius: 7
+                  color: recMouse.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.06)) : "transparent"
+
+                  RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 8
+                    anchors.rightMargin: 8
+                    spacing: 8
+
+                    Text { text: modelData.icon; font.pixelSize: 16 }
+                    ColumnLayout {
+                      spacing: 1
+                      Layout.fillWidth: true
+                      Text {
+                        text: modelData.name
+                        color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
+                        font.family: "Segoe UI"
+                        font.pixelSize: 11
+                        font.weight: Font.DemiBold
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
+                      }
+                      Text {
+                        text: modelData.time
+                        color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.5)
+                        font.family: "Segoe UI"
+                        font.pixelSize: 9
+                      }
+                    }
+                  }
+
+                  MouseArea {
+                    id: recMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: startWindow.runCmd(modelData.exec)
+                  }
+                }
+              }
+            }
+
+            Item { Layout.fillHeight: true }
           }
-        }
 
-        // ================= VIEW 1: ALL APPS A-Z DRAWER =================
-        ColumnLayout {
-          visible: startWindow.currentView === 1
-          Layout.fillWidth: true
-          Layout.fillHeight: true
-          spacing: 10
-
-          // Back Button Header
-          RowLayout {
+          // ================= VIEW 1: ALL APPS A-Z DRAWER =================
+          ColumnLayout {
             Layout.fillWidth: true
+            Layout.fillHeight: true
             spacing: 8
 
-            Rectangle {
-              implicitWidth: 72
-              implicitHeight: 28
-              radius: 6
-              color: backM.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04))
-              RowLayout {
-                anchors.centerIn: parent
-                spacing: 4
-                Text { text: "‹"; font.pixelSize: 14; color: startWindow.isDark ? "#60cdff" : "#0067c0"; font.weight: Font.Bold }
-                Text { text: "Back"; color: startWindow.isDark ? "#60cdff" : "#0067c0"; font.family: "Segoe UI"; font.pixelSize: 12; font.weight: Font.DemiBold }
-              }
-              MouseArea {
-                id: backM
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: startWindow.currentView = 0
-              }
-            }
+            // Back Button Header
+            RowLayout {
+              Layout.fillWidth: true
+              spacing: 8
 
-            Text {
-              text: "All Apps"
-              color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
-              font.family: "Segoe UI"
-              font.pixelSize: 14
-              font.weight: Font.Bold
-            }
-          }
-
-          // Scrollable All-Apps List
-          ScrollView {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            clip: true
-
-            ListView {
-              id: allAppsView
-              width: parent.width
-              model: startWindow.allAppsList
-              spacing: 3
-
-              delegate: Rectangle {
-                width: allAppsView.width
-                implicitHeight: 40
+              Rectangle {
+                implicitWidth: 68
+                implicitHeight: 26
                 radius: 6
-                color: appRowM.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.06)) : "transparent"
-
+                color: backM.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04))
                 RowLayout {
-                  anchors.fill: parent
-                  anchors.leftMargin: 12
-                  anchors.rightMargin: 12
-                  spacing: 12
-
-                  Text { text: modelData.icon; font.pixelSize: 18 }
-                  Text {
-                    text: modelData.name
-                    color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
-                    font.family: "Segoe UI"
-                    font.pixelSize: 12
-                    font.weight: Font.DemiBold
-                    Layout.fillWidth: true
-                  }
-                  Text {
-                    text: modelData.category
-                    color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(0, 0, 0, 0.4)
-                    font.family: "Segoe UI"
-                    font.pixelSize: 10
-                    font.weight: Font.Bold
-                  }
+                  anchors.centerIn: parent
+                  spacing: 4
+                  Text { text: "‹"; font.pixelSize: 13; color: startWindow.isDark ? "#60cdff" : "#0067c0"; font.weight: Font.Bold }
+                  Text { text: "Back"; color: startWindow.isDark ? "#60cdff" : "#0067c0"; font.family: "Segoe UI"; font.pixelSize: 11; font.weight: Font.DemiBold }
                 }
-
                 MouseArea {
-                  id: appRowM
+                  id: backM
                   anchors.fill: parent
                   hoverEnabled: true
                   cursorShape: Qt.PointingHandCursor
-                  onClicked: startWindow.runCmd(modelData.exec)
+                  onClicked: startWindow.currentView = 0
                 }
               }
+
+              Text {
+                text: "All Apps"
+                color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
+                font.family: "Segoe UI"
+                font.pixelSize: 13
+                font.weight: Font.Bold
+              }
             }
-          }
-        }
 
-        // ================= VIEW 2: LIVE SEARCH RESULTS =================
-        ColumnLayout {
-          visible: startWindow.currentView === 2
-          Layout.fillWidth: true
-          Layout.fillHeight: true
-          spacing: 10
+            // Scrollable All-Apps List with zero clipping
+            ScrollView {
+              Layout.fillWidth: true
+              Layout.fillHeight: true
+              clip: true
+              ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
-          Text {
-            text: "Search Results for \"" + startWindow.searchFilter + "\""
-            color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.7) : Qt.rgba(0, 0, 0, 0.6)
-            font.family: "Segoe UI"
-            font.pixelSize: 12
-            font.weight: Font.DemiBold
-          }
+              ListView {
+                id: allAppsView
+                width: parent.width
+                model: startWindow.allAppsList
+                spacing: 3
+                boundsBehavior: Flickable.StopAtBounds
+                bottomMargin: 10
 
-          ScrollView {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            clip: true
+                delegate: Rectangle {
+                  width: allAppsView.width
+                  implicitHeight: 38
+                  radius: 6
+                  color: appRowM.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.06)) : "transparent"
 
-            ListView {
-              id: searchResultsView
-              width: parent.width
-              model: startWindow.getFilteredApps()
-              spacing: 4
+                  RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 10
+                    spacing: 10
 
-              delegate: Rectangle {
-                width: searchResultsView.width
-                implicitHeight: 44
-                radius: 8
-                color: searchRowM.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.05) : Qt.rgba(0, 0, 0, 0.03))
-                border.color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.06)
+                    Item {
+                      implicitWidth: 26
+                      implicitHeight: 26
+                      Layout.alignment: Qt.AlignVCenter
 
-                RowLayout {
-                  anchors.fill: parent
-                  anchors.leftMargin: 12
-                  anchors.rightMargin: 12
-                  spacing: 12
+                      Image {
+                        anchors.centerIn: parent
+                        width: 22
+                        height: 22
+                        source: (modelData.iconUrl && modelData.iconUrl.length > 0) ? modelData.iconUrl : ""
+                        visible: modelData.iconUrl && modelData.iconUrl.length > 0
+                        fillMode: Image.PreserveAspectFit
+                        smooth: true
+                      }
 
-                  Text { text: modelData.icon; font.pixelSize: 20 }
-                  ColumnLayout {
-                    spacing: 1
-                    Layout.fillWidth: true
+                      Rectangle {
+                        anchors.centerIn: parent
+                        width: 24
+                        height: 24
+                        radius: 6
+                        visible: !modelData.iconUrl || modelData.iconUrl.length === 0
+                        color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05)
+                        Text {
+                          anchors.centerIn: parent
+                          text: modelData.icon
+                          font.pixelSize: 14
+                        }
+                      }
+                    }
+
                     Text {
                       text: modelData.name
                       color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
                       font.family: "Segoe UI"
                       font.pixelSize: 12
                       font.weight: Font.DemiBold
+                      Layout.fillWidth: true
                     }
+
                     Text {
-                      text: "App • " + modelData.exec
-                      color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0, 0, 0, 0.45)
+                      text: modelData.category
+                      color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(0, 0, 0, 0.4)
                       font.family: "Segoe UI"
                       font.pixelSize: 10
-                      elide: Text.ElideRight
+                      font.weight: Font.Bold
                     }
                   }
-                  Text {
-                    text: "Open ➔"
-                    color: startWindow.isDark ? "#60cdff" : "#0067c0"
-                    font.family: "Segoe UI"
-                    font.pixelSize: 11
-                  }
-                }
 
-                MouseArea {
-                  id: searchRowM
-                  anchors.fill: parent
-                  hoverEnabled: true
-                  cursorShape: Qt.PointingHandCursor
-                  onClicked: startWindow.runCmd(modelData.exec)
+                  MouseArea {
+                    id: appRowM
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: startWindow.runCmd(modelData.exec)
+                  }
                 }
               }
             }
           }
 
-          // Web Search Fallback Action Card
-          Rectangle {
+          // ================= VIEW 2: LIVE SEARCH RESULTS =================
+          ColumnLayout {
             Layout.fillWidth: true
-            implicitHeight: 44
-            radius: 8
-            color: webSearchM.containsMouse ? (startWindow.isDark ? Qt.rgba(0, 120, 212, 0.3) : Qt.rgba(0, 120, 212, 0.15)) : (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04))
-            border.color: startWindow.isDark ? Qt.rgba(0, 120, 212, 0.5) : Qt.rgba(0, 120, 212, 0.3)
+            Layout.fillHeight: true
+            spacing: 8
 
-            RowLayout {
-              anchors.fill: parent
-              anchors.leftMargin: 12
-              anchors.rightMargin: 12
-              spacing: 10
+            Text {
+              text: "Search Results for \"" + startWindow.searchFilter + "\""
+              color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.7) : Qt.rgba(0, 0, 0, 0.6)
+              font.family: "Segoe UI"
+              font.pixelSize: 12
+              font.weight: Font.DemiBold
+            }
 
-              Text { text: "🌐"; font.pixelSize: 16 }
-              Text {
-                text: "Search the web for \"" + startWindow.searchFilter + "\""
-                color: startWindow.isDark ? "#60cdff" : "#0067c0"
-                font.family: "Segoe UI"
-                font.pixelSize: 12
-                font.weight: Font.DemiBold
-                Layout.fillWidth: true
+            ScrollView {
+              Layout.fillWidth: true
+              Layout.fillHeight: true
+              clip: true
+              ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+              ListView {
+                id: searchResultsView
+                width: parent.width
+                model: startWindow.getFilteredApps()
+                spacing: 3
+                boundsBehavior: Flickable.StopAtBounds
+                bottomMargin: 10
+
+                delegate: Rectangle {
+                  width: searchResultsView.width
+                  implicitHeight: 42
+                  radius: 7
+                  color: searchRowM.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.05) : Qt.rgba(0, 0, 0, 0.03))
+                  border.color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.06)
+
+                  RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 10
+                    spacing: 10
+
+                    Item {
+                      implicitWidth: 26
+                      implicitHeight: 26
+                      Layout.alignment: Qt.AlignVCenter
+
+                      Image {
+                        anchors.centerIn: parent
+                        width: 22
+                        height: 22
+                        source: (modelData.iconUrl && modelData.iconUrl.length > 0) ? modelData.iconUrl : ""
+                        visible: modelData.iconUrl && modelData.iconUrl.length > 0
+                        fillMode: Image.PreserveAspectFit
+                        smooth: true
+                      }
+
+                      Rectangle {
+                        anchors.centerIn: parent
+                        width: 24
+                        height: 24
+                        radius: 6
+                        visible: !modelData.iconUrl || modelData.iconUrl.length === 0
+                        color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05)
+                        Text {
+                          anchors.centerIn: parent
+                          text: modelData.icon
+                          font.pixelSize: 14
+                        }
+                      }
+                    }
+
+                    ColumnLayout {
+                      spacing: 1
+                      Layout.fillWidth: true
+                      Text {
+                        text: modelData.name
+                        color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
+                        font.family: "Segoe UI"
+                        font.pixelSize: 12
+                        font.weight: Font.DemiBold
+                      }
+                      Text {
+                        text: "App • " + modelData.exec
+                        color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0, 0, 0, 0.45)
+                        font.family: "Segoe UI"
+                        font.pixelSize: 9
+                        elide: Text.ElideRight
+                      }
+                    }
+                    Text {
+                      text: "Open ➔"
+                      color: startWindow.isDark ? "#60cdff" : "#0067c0"
+                      font.family: "Segoe UI"
+                      font.pixelSize: 11
+                    }
+                  }
+
+                  MouseArea {
+                    id: searchRowM
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: startWindow.runCmd(modelData.exec)
+                  }
+                }
               }
             }
 
-            MouseArea {
-              id: webSearchM
-              anchors.fill: parent
-              hoverEnabled: true
-              cursorShape: Qt.PointingHandCursor
-              onClicked: startWindow.runCmd("omarchy-browser 'https://www.bing.com/search?q=" + encodeURIComponent(startWindow.searchFilter) + "'")
+            // Web Search Fallback Action Card
+            Rectangle {
+              Layout.fillWidth: true
+              implicitHeight: 40
+              radius: 7
+              color: webSearchM.containsMouse ? (startWindow.isDark ? Qt.rgba(0, 120, 212, 0.3) : Qt.rgba(0, 120, 212, 0.15)) : (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04))
+              border.color: startWindow.isDark ? Qt.rgba(0, 120, 212, 0.5) : Qt.rgba(0, 120, 212, 0.3)
+
+              RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 12
+                anchors.rightMargin: 12
+                spacing: 10
+
+                Text { text: "🌐"; font.pixelSize: 15 }
+                Text {
+                  text: "Search the web for \"" + startWindow.searchFilter + "\""
+                  color: startWindow.isDark ? "#60cdff" : "#0067c0"
+                  font.family: "Segoe UI"
+                  font.pixelSize: 11
+                  font.weight: Font.DemiBold
+                  Layout.fillWidth: true
+                }
+              }
+
+              MouseArea {
+                id: webSearchM
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: startWindow.runCmd("omarchy-browser 'https://www.bing.com/search?q=" + encodeURIComponent(startWindow.searchFilter) + "'")
+              }
             }
           }
         }
 
-        Item { Layout.fillHeight: true }
-
-        // 6. User Profile & Power Footer
+        // 3. User Profile & Power Footer (Permanently pinned at bottom)
         Rectangle {
           Layout.fillWidth: true
-          implicitHeight: 52
-          radius: 10
+          implicitHeight: 48
+          radius: 9
           color: startWindow.isDark ? Qt.rgba(0.08, 0.08, 0.11, 0.85) : Qt.rgba(0.92, 0.92, 0.94, 0.90)
           border.color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.06)
 
           RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 14
-            anchors.rightMargin: 14
+            anchors.leftMargin: 12
+            anchors.rightMargin: 12
 
             // User Profile
             RowLayout {
               spacing: 10
               Rectangle {
-                implicitWidth: 32
-                implicitHeight: 32
-                radius: 16
+                implicitWidth: 30
+                implicitHeight: 30
+                radius: 15
                 color: startWindow.isDark ? "#0078d4" : "#0067c0"
                 Text {
                   anchors.centerIn: parent
                   text: (Quickshell.env("USER") ? Quickshell.env("USER").substring(0, 1).toUpperCase() : "U")
                   color: "#ffffff"
                   font.family: "Segoe UI"
-                  font.pixelSize: 13
+                  font.pixelSize: 12
                   font.weight: Font.Bold
                 }
               }
@@ -706,14 +811,14 @@ ShellRoot {
                   text: Quickshell.env("USER") ? (Quickshell.env("USER").charAt(0).toUpperCase() + Quickshell.env("USER").slice(1)) : "Personal Account"
                   color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
                   font.family: "Segoe UI"
-                  font.pixelSize: 12
+                  font.pixelSize: 11
                   font.weight: Font.DemiBold
                 }
                 Text {
                   text: "Personal Account"
                   color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0, 0, 0, 0.45)
                   font.family: "Segoe UI"
-                  font.pixelSize: 10
+                  font.pixelSize: 9
                 }
               }
             }
@@ -722,8 +827,8 @@ ShellRoot {
 
             // Settings Shortcut
             Rectangle {
-              implicitWidth: 36
-              implicitHeight: 36
+              implicitWidth: 32
+              implicitHeight: 32
               radius: 6
               color: setMouse.containsMouse ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
               Text { anchors.centerIn: parent; text: "⚙️"; font.pixelSize: 14 }
@@ -741,11 +846,11 @@ ShellRoot {
 
             // Power Button
             Rectangle {
-              implicitWidth: 36
-              implicitHeight: 36
+              implicitWidth: 32
+              implicitHeight: 32
               radius: 6
               color: powerMouse.containsMouse || startWindow.showPowerPopup ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.10)) : "transparent"
-              Text { anchors.centerIn: parent; text: "⏻"; color: startWindow.isDark ? "#ffffff" : "#1a1a1a"; font.pixelSize: 16 }
+              Text { anchors.centerIn: parent; text: "⏻"; color: startWindow.isDark ? "#ffffff" : "#1a1a1a"; font.pixelSize: 15 }
               MouseArea {
                 id: powerMouse
                 anchors.fill: parent
@@ -760,20 +865,20 @@ ShellRoot {
         }
       }
 
-      // Redesigned Fluent Power Popup Card
+      // ================= POWER FLYOUT POPUP CARD =================
       Rectangle {
+        id: powerFlyout
         visible: startWindow.showPowerPopup
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: 62
         anchors.right: parent.right
-        anchors.rightMargin: 16
-        implicitWidth: 210
-        implicitHeight: 200
+        anchors.bottom: parent.bottom
+        anchors.rightMargin: 18
+        anchors.bottomMargin: 72
+        width: 220
+        height: 220
         radius: 12
-        color: startWindow.isDark ? Qt.rgba(0.14, 0.15, 0.20, 0.98) : Qt.rgba(0.98, 0.98, 0.99, 0.98)
-        border.color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.18) : Qt.rgba(0, 0, 0, 0.14)
+        color: startWindow.isDark ? Qt.rgba(0.14, 0.14, 0.18, 0.98) : Qt.rgba(0.98, 0.98, 1.0, 0.98)
+        border.color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.18) : Qt.rgba(0, 0, 0, 0.12)
         border.width: 1
-        z: 200
 
         ColumnLayout {
           anchors.fill: parent
