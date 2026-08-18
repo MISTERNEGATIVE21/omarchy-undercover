@@ -1,4 +1,4 @@
-# 🕵️ Omarchy Undercover (v2.5.0)
+# 🕵️ Omarchy Undercover (v3.0.0)
 
 ```
   ██████╗ ███╗   ███╗ █████╗ ██████╗  ██████╗██╗  ██╗██╗   ██╗
@@ -15,7 +15,7 @@
   ╚═════╝ ╚═╝  ╚═══╝╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝   ╚═══╝  ╚══════╝╚═╝  ╚═╝
 ```
 
-[![Release](https://img.shields.io/badge/Release-v2.5.0-blue.svg?style=for-the-badge)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases)
+[![Release](https://img.shields.io/badge/Release-v3.0.0-blue.svg?style=for-the-badge)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases)
 [![Compositor](https://img.shields.io/badge/Compositor-Hyprland-00f2fe.svg?style=for-the-badge)](https://hyprland.org)
 [![Theme Engine](https://img.shields.io/badge/Theme-Omarchy-ff2d55.svg?style=for-the-badge)](https://github.com/MISTERNEGATIVE21/omarchy-undercover)
 [![License](https://img.shields.io/badge/License-GPL--3.0-green.svg?style=for-the-badge)](LICENSE)

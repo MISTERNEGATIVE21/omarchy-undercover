@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# 🕵️ OMARCHY UNDERCOVER — BASECAMP / CHARM TUI INSTALLER (v2.5.0)
+# 🕵️ OMARCHY UNDERCOVER — BASECAMP / CHARM TUI INSTALLER (v3.0.0)
 # Interactive Terminal Installer with Smooth Multi-Stage Animations & Styling
 #
 # Copyright (C) 2026 misternegative21
@@ -71,12 +71,12 @@ print_header_box() {
             --bold \
             "🕵️  OMARCHY UNDERCOVER  •  THE ULTIMATE DESKTOP TRANSFORMATION SUITE" \
             "   macOS Sequoia Frosted Glass  ╳  Windows 11 Fluent Acrylic        " \
-            "   Release v2.5.0  •  Engineered by misternegative21                "
+            "   Release v3.0.0  •  Engineered by misternegative21                "
     else
         echo -e "${BLUE}${BOLD}┌────────────────────────────────────────────────────────────────────────┐${NC}"
         echo -e "${BLUE}${BOLD}│${WHITE}  🕵️  OMARCHY UNDERCOVER  •  THE ULTIMATE DESKTOP TRANSFORMATION SUITE   ${BLUE}│${NC}"
         echo -e "${BLUE}${BOLD}│${CYAN}   macOS Sequoia Frosted Glass  ╳  Windows 11 Fluent Acrylic         ${BLUE}│${NC}"
-        echo -e "${BLUE}${BOLD}│${GRAY}   Release v2.5.0  •  Engineered by misternegative21                 ${BLUE}│${NC}"
+        echo -e "${BLUE}${BOLD}│${GRAY}   Release v3.0.0  •  Engineered by misternegative21                 ${BLUE}│${NC}"
         echo -e "${BLUE}${BOLD}└────────────────────────────────────────────────────────────────────────┘${NC}"
         echo ""
     fi

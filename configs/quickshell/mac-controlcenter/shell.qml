@@ -162,7 +162,7 @@ ShellRoot {
                 }
                 ColumnLayout {
                   spacing: 0
-                  Text { text: "Wi-Fi"; color: "#ffffff"; font.pixelSize: 11.5; font.weight: Font.DemiBold }
+                  Text { text: "Wi-Fi"; color: "#ffffff"; font.pixelSize: 12; font.weight: Font.DemiBold }
                   Text { text: controlCenterWindow.wifiOn ? controlCenterWindow.wifiSsid : "Off"; color: Qt.rgba(1, 1, 1, 0.5); font.pixelSize: 10 }
                 }
                 MouseArea {
@@ -187,7 +187,7 @@ ShellRoot {
                 }
                 ColumnLayout {
                   spacing: 0
-                  Text { text: "Bluetooth"; color: "#ffffff"; font.pixelSize: 11.5; font.weight: Font.DemiBold }
+                  Text { text: "Bluetooth"; color: "#ffffff"; font.pixelSize: 12; font.weight: Font.DemiBold }
                   Text { text: controlCenterWindow.btOn ? "On" : "Off"; color: Qt.rgba(1, 1, 1, 0.5); font.pixelSize: 10 }
                 }
                 MouseArea {
@@ -212,7 +212,7 @@ ShellRoot {
                 }
                 ColumnLayout {
                   spacing: 0
-                  Text { text: "AirDrop"; color: "#ffffff"; font.pixelSize: 11.5; font.weight: Font.DemiBold }
+                  Text { text: "AirDrop"; color: "#ffffff"; font.pixelSize: 12; font.weight: Font.DemiBold }
                   Text { text: "Contacts Only"; color: Qt.rgba(1, 1, 1, 0.5); font.pixelSize: 10 }
                 }
               }
@@ -385,7 +385,7 @@ ShellRoot {
             ColumnLayout {
               spacing: 1
               Layout.fillWidth: true
-              Text { text: "Apple Music"; color: "#ffffff"; font.pixelSize: 11.5; font.weight: Font.Bold }
+              Text { text: "Apple Music"; color: "#ffffff"; font.pixelSize: 12; font.weight: Font.Bold }
               Text { text: "Now Playing • Spatial Audio"; color: Qt.rgba(1, 1, 1, 0.5); font.pixelSize: 10 }
             }
 

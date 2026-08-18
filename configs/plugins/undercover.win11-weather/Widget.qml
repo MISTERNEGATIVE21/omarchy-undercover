@@ -142,7 +142,7 @@ BarWidget {
         anchors.centerIn: parent
         text: "Widgets • " + root.tempText + " " + root.conditionText + " • MSN Weather"
         font.family: "Segoe UI"
-        font.pixelSize: 10.5
+        font.pixelSize: 10
         color: root.isDark ? "#ffffff" : "#1a1a1a"
       }
     }

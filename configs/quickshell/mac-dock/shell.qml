@@ -54,6 +54,60 @@ ShellRoot {
       }
     }
 
+    // Helper function to find matching running toplevel window
+    function getAppToplevel(matchers) {
+      if (!matchers || matchers.length === 0) return null
+      try {
+        var list = ToplevelManager.toplevels ? ToplevelManager.toplevels.values : []
+        for (var i = 0; i < list.length; i++) {
+          var tl = list[i]
+          var id = (tl.appId || "").toLowerCase()
+          var title = (tl.title || "").toLowerCase()
+          for (var m = 0; m < matchers.length; m++) {
+            var pat = matchers[m].toLowerCase()
+            if (id.indexOf(pat) !== -1 || title.indexOf(pat) !== -1) {
+              return tl
+            }
+          }
+        }
+      } catch (e) {}
+      return null
+    }
+
+    function isRunning(matchers) {
+      if (!matchers || matchers.length === 0) return false
+      return getAppToplevel(matchers) !== null
+    }
+
+    function isFocused(matchers) {
+      try {
+        var active = ToplevelManager.activeToplevel
+        if (!active || !matchers || matchers.length === 0) return false
+        var id = (active.appId || "").toLowerCase()
+        var title = (active.title || "").toLowerCase()
+        for (var m = 0; m < matchers.length; m++) {
+          var pat = matchers[m].toLowerCase()
+          if (id.indexOf(pat) !== -1 || title.indexOf(pat) !== -1) {
+            return true
+          }
+        }
+      } catch (e) {}
+      return false
+    }
+
+    property var dockApps: [
+      { name: "Finder", icon: "finder.svg", exec: "nautilus computer:/// || thunar || dolphin", matchers: ["nautilus", "thunar", "dolphin", "files", "org.gnome.nautilus"] },
+      { name: "Launchpad", icon: "launchpad.svg", exec: "rofi -show drun -theme ~/.config/rofi/mac.rasi", matchers: [] },
+      { name: "Safari", icon: "safari.svg", exec: "xdg-open https://apple.com || firefox || google-chrome-stable", matchers: ["chrome", "chromium", "firefox", "vivaldi", "edge", "brave", "zen", "safari"] },
+      { name: "Antigravity IDE", icon: "antigravity.svg", exec: "antigravity-ide || code || vscodium", matchers: ["antigravity", "code", "vscodium", "vscode", "codium"] },
+      { name: "Messages", icon: "messages.svg", exec: "omarchy-mac-widgets", matchers: ["messages"] },
+      { name: "Music", icon: "music.svg", exec: "spotify || omarchy-mac-widgets", matchers: ["spotify", "music"] },
+      { name: "Photos", icon: "photos.svg", exec: "eog || gwenview || loupe", matchers: ["eog", "gwenview", "loupe", "photos"] },
+      { name: "Terminal", icon: "terminal.svg", exec: "xdg-terminal-exec", matchers: ["kitty", "alacritty", "foot", "terminal", "wezterm", "ghostty", "ptyxis", "xterm"] },
+      { name: "System Settings", icon: "settings.svg", exec: "omarchy-undercover-settings", matchers: ["omarchy-undercover-settings", "org.omarchy.undercover.settings", "settings", "gnome-control-center"] },
+      { name: "App Store", icon: "appstore.svg", exec: "pamac-manager || gnome-software || discover", matchers: ["pamac", "software", "discover"] }
+    ]
+
     Rectangle {
       id: dockCard
       anchors.horizontalCenter: parent.horizontalCenter
@@ -74,17 +128,7 @@ ShellRoot {
         spacing: 10
 
         Repeater {
-          model: [
-            { name: "Finder", icon: "finder.svg", exec: "nautilus computer:/// || thunar || dolphin", running: true },
-            { name: "Launchpad", icon: "launchpad.svg", exec: "rofi -show drun -theme ~/.config/rofi/mac.rasi", running: false },
-            { name: "Safari", icon: "safari.svg", exec: "xdg-open https://apple.com || firefox || google-chrome-stable", running: true },
-            { name: "Messages", icon: "messages.svg", exec: "omarchy-mac-widgets", running: false },
-            { name: "Music", icon: "music.svg", exec: "spotify || omarchy-mac-widgets", running: false },
-            { name: "Photos", icon: "photos.svg", exec: "eog || gwenview || loupe", running: false },
-            { name: "Terminal", icon: "terminal.svg", exec: "xdg-terminal-exec", running: true },
-            { name: "System Settings", icon: "settings.svg", exec: "omarchy-undercover-settings", running: false },
-            { name: "App Store", icon: "appstore.svg", exec: "pamac-manager || gnome-software || discover", running: false }
-          ]
+          model: dockWindow.dockApps
 
           Item {
             id: appItem
@@ -92,6 +136,8 @@ ShellRoot {
             implicitHeight: dockWindow.baseIconSize + 8
 
             property bool isHovered: mouseArea.containsMouse
+            property bool appRunning: dockWindow.isRunning(modelData.matchers)
+            property bool appFocused: dockWindow.isFocused(modelData.matchers)
             property real currentScale: isHovered ? dockWindow.maxMagnification : 1.0
 
             Behavior on currentScale {
@@ -139,14 +185,14 @@ ShellRoot {
 
             // Active Dot Indicator (macOS style running indicator)
             Rectangle {
-              visible: modelData.running
+              visible: appItem.appRunning
               anchors.bottom: parent.bottom
               anchors.bottomMargin: -3
               anchors.horizontalCenter: parent.horizontalCenter
-              width: 4
-              height: 4
-              radius: 2
-              color: "#ffffff"
+              width: appItem.appFocused ? 6 : 4
+              height: appItem.appFocused ? 6 : 4
+              radius: appItem.appFocused ? 3 : 2
+              color: appItem.appFocused ? "#60cdff" : "#ffffff"
             }
 
             MouseArea {
@@ -155,6 +201,13 @@ ShellRoot {
               hoverEnabled: true
               cursorShape: Qt.PointingHandCursor
               onClicked: {
+                if (modelData.matchers && modelData.matchers.length > 0) {
+                  var tl = dockWindow.getAppToplevel(modelData.matchers)
+                  if (tl) {
+                    tl.activate()
+                    return
+                  }
+                }
                 Quickshell.execDetached(["bash", "-c", modelData.exec])
               }
             }

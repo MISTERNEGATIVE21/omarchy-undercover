@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# =============================================================================
+# 🌐 OMARCHY BROWSER DISPATCHER (v3.0.0)
+# Launches the configured or auto-detected default web browser
+# =============================================================================
+
+SETTINGS_FILE="$HOME/.config/omarchy-undercover/settings.conf"
+BROWSER_SETTING=""
+if [[ -f "$SETTINGS_FILE" ]]; then
+    BROWSER_SETTING=$(grep -E '^DEFAULT_BROWSER=' "$SETTINGS_FILE" 2>/dev/null | cut -d= -f2- | tr -d '"'\'' ')
+fi
+
+TARGET_URL="${1:-https://www.google.com}"
+
+if [[ -n "$BROWSER_SETTING" && "$BROWSER_SETTING" != "auto" ]]; then
+    if command -v "$BROWSER_SETTING" >/dev/null 2>&1; then
+        exec "$BROWSER_SETTING" "$TARGET_URL"
+    fi
+fi
+
+# Auto-detect default system browser via xdg-settings / xdg-mime
+DEFAULT_DESKTOP=$(xdg-settings get default-web-browser 2>/dev/null || xdg-mime query default x-scheme-handler/https 2>/dev/null || echo "")
+
+if [[ -n "$DEFAULT_DESKTOP" ]]; then
+    CMD=$(basename "$DEFAULT_DESKTOP" .desktop | sed 's/-stable//; s/-browser//')
+    if command -v "$CMD" >/dev/null 2>&1; then
+        exec "$CMD" "$TARGET_URL"
+    fi
+fi
+
+# Installed Browser Fallbacks
+for b in chromium google-chrome-stable google-chrome vivaldi firefox brave-browser brave zen-browser zen microsoft-edge-stable microsoft-edge epiphany; do
+    if command -v "$b" >/dev/null 2>&1; then
+        exec "$b" "$TARGET_URL"
+    fi
+done
+
+exec xdg-open "$TARGET_URL"

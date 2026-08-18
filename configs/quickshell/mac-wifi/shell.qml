@@ -133,7 +133,7 @@ ShellRoot {
           Text {
             text: "Wi-Fi"
             font.family: "SF Pro Text"
-            font.pixelSize: 13.5
+            font.pixelSize: 14
             font.weight: Font.Bold
             color: macWifiWindow.isDark ? "#ffffff" : "#1a1a1a"
             Layout.fillWidth: true
@@ -249,7 +249,7 @@ ShellRoot {
                 Text {
                   text: modelData.ssid
                   font.family: "SF Pro Text"
-                  font.pixelSize: 11.5
+                  font.pixelSize: 12
                   color: macWifiWindow.isDark ? "#ffffff" : "#1a1a1a"
                   Layout.fillWidth: true
                   elide: Text.ElideRight

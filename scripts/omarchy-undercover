@@ -218,7 +218,7 @@ ensure_win11_themes_installed() {
 }
 
 ensure_omarchy_quickshell_assets() {
-    local plugins_src themes_src
+    local plugins_src themes_src icons_win11_src icons_mac_src icons_apps_src
     plugins_src=$(project_file "plugins")
     if [[ -z "$plugins_src" || ! -d "$plugins_src" ]]; then
         plugins_src="${SCRIPT_DIR}/../configs/plugins"
@@ -227,14 +227,36 @@ ensure_omarchy_quickshell_assets() {
     if [[ -z "$themes_src" || ! -d "$themes_src" ]]; then
         themes_src="${SCRIPT_DIR}/../configs/omarchy-theme"
     fi
+    icons_win11_src=$(project_file "assets/icons/win11")
+    if [[ -z "$icons_win11_src" || ! -d "$icons_win11_src" ]]; then
+        icons_win11_src="${SCRIPT_DIR}/../assets/icons/win11"
+    fi
+    icons_mac_src=$(project_file "assets/mac-dock")
+    if [[ -z "$icons_mac_src" || ! -d "$icons_mac_src" ]]; then
+        icons_mac_src="${SCRIPT_DIR}/../assets/mac-dock"
+    fi
+    icons_apps_src=$(project_file "assets/icons")
+    if [[ -z "$icons_apps_src" || ! -d "$icons_apps_src" ]]; then
+        icons_apps_src="${SCRIPT_DIR}/../assets/icons"
+    fi
 
     mkdir -p "$HOME/.config/omarchy/plugins" "$HOME/.config/omarchy/themes"
+    mkdir -p "$HOME/.local/share/icons/win11" "$HOME/.local/share/icons/mac-dock" "$HOME/.local/share/icons/hicolor/scalable/apps"
 
     if [[ -d "$plugins_src" ]]; then
         cp -rf "$plugins_src/"* "$HOME/.config/omarchy/plugins/" 2>/dev/null || true
     fi
     if [[ -d "$themes_src" ]]; then
         cp -rf "$themes_src/"* "$HOME/.config/omarchy/themes/" 2>/dev/null || true
+    fi
+    if [[ -d "$icons_win11_src" ]]; then
+        cp -rf "$icons_win11_src/"* "$HOME/.local/share/icons/win11/" 2>/dev/null || true
+    fi
+    if [[ -d "$icons_mac_src" ]]; then
+        cp -rf "$icons_mac_src/"* "$HOME/.local/share/icons/mac-dock/" 2>/dev/null || true
+    fi
+    if [[ -d "$icons_apps_src" ]]; then
+        cp -rf "$icons_apps_src/"* "$HOME/.local/share/icons/hicolor/scalable/apps/" 2>/dev/null || true
     fi
 }
 
@@ -349,10 +371,20 @@ apply_waybar_windows() {
         local mode="dock"
         [[ "$visibility" == "overlay" ]] && mode="overlay"
         [[ "$visibility" == "autohide" ]] && mode="hide"
-        # intelligent keeps the solid dock mode and hides itself on maximize.
 
-        cp "$src/config.jsonc" "$HOME/.config/waybar/config.jsonc"
-        cp "$src/style.css" "$HOME/.config/waybar/style.css"
+        local cfg_src="$src/config.jsonc"
+        [[ -f "$src/config-win.jsonc" ]] && cfg_src="$src/config-win.jsonc"
+        local css_src="$src/style.css"
+        [[ -f "$src/style-win.css" ]] && css_src="$src/style-win.css"
+
+        cp "$cfg_src" "$HOME/.config/waybar/config.jsonc"
+        cp "$css_src" "$HOME/.config/waybar/style.css"
+
+        local is_trans
+        is_trans=$(read_setting "WIN11_TRANSPARENCY", "true")
+        if [[ "$is_trans" == "false" ]]; then
+            sed -i 's/rgba(32, 32, 32, [0-9.]*)/#1f1f1f/g' "$HOME/.config/waybar/style.css" 2>/dev/null || true
+        fi
 
         if ! grep -q '"mode"' "$HOME/.config/waybar/config.jsonc"; then
             sed -i 's/"position": "bottom",/"position": "bottom",\n  "mode": "'"$mode"'",/' "$HOME/.config/waybar/config.jsonc"

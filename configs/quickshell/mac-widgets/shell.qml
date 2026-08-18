@@ -227,7 +227,7 @@ ShellRoot {
                   }
                 }
               }
-              Text { text: macWidgetsWindow.masterVolume + "%"; font.pixelSize: 10.5; color: "#ffffff"; implicitWidth: 30 }
+              Text { text: macWidgetsWindow.masterVolume + "%"; font.pixelSize: 10; color: "#ffffff"; implicitWidth: 30 }
             }
 
             // Display Brightness Slider
@@ -258,7 +258,7 @@ ShellRoot {
                   }
                 }
               }
-              Text { text: macWidgetsWindow.displayBrightness + "%"; font.pixelSize: 10.5; color: "#ffffff"; implicitWidth: 30 }
+              Text { text: macWidgetsWindow.displayBrightness + "%"; font.pixelSize: 10; color: "#ffffff"; implicitWidth: 30 }
             }
           }
         }
@@ -357,21 +357,21 @@ ShellRoot {
               RowLayout {
                 spacing: 6
                 Text { text: "💻"; font.pixelSize: 14 }
-                Text { text: macWidgetsWindow.batteryPct + "%"; color: "#ffffff"; font.pixelSize: 11.5; font.weight: Font.DemiBold }
+                Text { text: macWidgetsWindow.batteryPct + "%"; color: "#ffffff"; font.pixelSize: 12; font.weight: Font.DemiBold }
               }
 
               // iPhone Battery
               RowLayout {
                 spacing: 6
                 Text { text: "📱"; font.pixelSize: 14 }
-                Text { text: "88%"; color: "#ffffff"; font.pixelSize: 11.5; font.weight: Font.DemiBold }
+                Text { text: "88%"; color: "#ffffff"; font.pixelSize: 12; font.weight: Font.DemiBold }
               }
 
               // AirPods Pro Battery
               RowLayout {
                 spacing: 6
                 Text { text: "🎧"; font.pixelSize: 14 }
-                Text { text: "100%"; color: "#ffffff"; font.pixelSize: 11.5; font.weight: Font.DemiBold }
+                Text { text: "100%"; color: "#ffffff"; font.pixelSize: 12; font.weight: Font.DemiBold }
               }
             }
           }

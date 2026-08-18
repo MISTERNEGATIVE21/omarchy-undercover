@@ -123,7 +123,7 @@ ShellRoot {
           Text {
             text: "Bluetooth"
             font.family: "SF Pro Text"
-            font.pixelSize: 13.5
+            font.pixelSize: 14
             font.weight: Font.Bold
             color: macBtWindow.isDark ? "#ffffff" : "#1a1a1a"
             Layout.fillWidth: true
@@ -211,7 +211,7 @@ ShellRoot {
                 Text {
                   text: modelData.name
                   font.family: "SF Pro Text"
-                  font.pixelSize: 11.5
+                  font.pixelSize: 12
                   color: macBtWindow.isDark ? "#ffffff" : "#1a1a1a"
                   Layout.fillWidth: true
                   elide: Text.ElideRight
@@ -219,7 +219,7 @@ ShellRoot {
                 Text {
                   text: "Connect"
                   font.family: "SF Pro Text"
-                  font.pixelSize: 10.5
+                  font.pixelSize: 10
                   color: "#007aff"
                   font.weight: Font.DemiBold
                 }

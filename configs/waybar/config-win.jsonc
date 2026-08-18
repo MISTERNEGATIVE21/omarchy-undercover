@@ -36,12 +36,12 @@
     "custom/startmenu": {
       "format": "󰍲",
       "tooltip": "Start (Win)",
-      "on-click": "omarchy-win11-startmenu"
+      "on-click": "omarchy-win11-start"
     },
     "custom/search": {
       "format": "󰍉  Search",
       "tooltip": "Type here to search",
-      "on-click": "omarchy-win11-startmenu"
+      "on-click": "omarchy-win11-start"
     },
     "custom/taskview": {
       "format": "󱂬",

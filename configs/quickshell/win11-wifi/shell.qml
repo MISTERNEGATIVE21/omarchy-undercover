@@ -224,7 +224,7 @@ ShellRoot {
             Text {
               text: "Wi-Fi"
               font.family: "Segoe UI"
-              font.pixelSize: 12.5
+              font.pixelSize: 12
               font.weight: Font.DemiBold
               color: wifiWindow.isDark ? "#ffffff" : "#1a1a1a"
               Layout.fillWidth: true
@@ -292,7 +292,7 @@ ShellRoot {
               Text {
                 text: "Connected, secured"
                 font.family: "Segoe UI"
-                font.pixelSize: 9.5
+                font.pixelSize: 10
                 color: wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.6) : Qt.rgba(0, 0, 0, 0.55)
               }
             }
@@ -306,7 +306,7 @@ ShellRoot {
                 anchors.centerIn: parent
                 text: "Disconnect"
                 font.family: "Segoe UI"
-                font.pixelSize: 10.5
+                font.pixelSize: 10
                 color: "#ff5f56"
               }
               MouseArea {
@@ -452,7 +452,7 @@ ShellRoot {
                       implicitHeight: 28
                       radius: 4
                       color: wifiWindow.isDark ? "#0078d4" : "#0067c0"
-                      Text { anchors.centerIn: parent; text: "Connect"; color: "#ffffff"; font.pixelSize: 10.5; font.weight: Font.DemiBold }
+                      Text { anchors.centerIn: parent; text: "Connect"; color: "#ffffff"; font.pixelSize: 10; font.weight: Font.DemiBold }
                       MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor

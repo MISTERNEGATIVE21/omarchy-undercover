@@ -1,6 +1,6 @@
 # Maintainer: John Varghese <john@omarchy.org>
 pkgname=omarchy-undercover
-pkgver=1.0.0
+pkgver=3.0.0
 pkgrel=1
 pkgdesc="Windows 11 desktop transformation tool for Omarchy Hyprland"
 arch=('any')
@@ -49,6 +49,10 @@ package() {
     fi
     if [ -d "$srcdir/assets/icons" ]; then
         cp -r "$srcdir/assets/icons/"* "$pkgdir/usr/share/omarchy-undercover/assets/icons/"
+    fi
+    if [ -d "$srcdir/assets/mac-dock" ]; then
+        install -d "$pkgdir/usr/share/omarchy-undercover/assets/mac-dock"
+        cp -r "$srcdir/assets/mac-dock/"* "$pkgdir/usr/share/omarchy-undercover/assets/mac-dock/"
     fi
 
     # Install desktop files & assets

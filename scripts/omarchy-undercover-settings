@@ -28,7 +28,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio, GLib, Gdk
 
 APP_ID = "org.omarchy.undercover.settings"
-VERSION = "2.5.0"
+VERSION = "3.0.0"
 
 CONFIG_DIR = Path.home() / ".config" / "omarchy-undercover"
 STATE_FILE = CONFIG_DIR / "state"
@@ -58,12 +58,38 @@ def find_cli():
         return which_path
     for c in (
         Path.home() / ".local/bin/omarchy-undercover",
-        Path.home() / ".local/share/omarchy/bin/omarchy-undercover",
+        Path("/usr/local/bin/omarchy-undercover"),
         Path("/usr/bin/omarchy-undercover"),
     ):
         if c.exists():
             return str(c)
     return "omarchy-undercover"
+
+def detect_installed_browsers():
+    """Detects available web browsers installed on the user system."""
+    browsers = []
+    candidates = [
+        ("chromium", "Chromium Web Browser", "chromium.desktop"),
+        ("google-chrome", "Google Chrome", "google-chrome.desktop"),
+        ("google-chrome-stable", "Google Chrome", "google-chrome.desktop"),
+        ("firefox", "Mozilla Firefox", "firefox.desktop"),
+        ("brave-browser", "Brave Browser", "brave-browser.desktop"),
+        ("brave", "Brave Browser", "brave-browser.desktop"),
+        ("microsoft-edge", "Microsoft Edge", "microsoft-edge.desktop"),
+        ("microsoft-edge-stable", "Microsoft Edge", "microsoft-edge.desktop"),
+        ("vivaldi", "Vivaldi Web Browser", "vivaldi-stable.desktop"),
+        ("zen-browser", "Zen Browser", "zen.desktop"),
+        ("zen", "Zen Browser", "zen.desktop"),
+        ("librewolf", "LibreWolf", "librewolf.desktop"),
+        ("opera", "Opera Web Browser", "opera.desktop"),
+        ("epiphany", "GNOME Web (Epiphany)", "org.gnome.Epiphany.desktop"),
+    ]
+    seen_cmds = set()
+    for cmd, name, desktop in candidates:
+        if cmd not in seen_cmds and shutil.which(cmd):
+            seen_cmds.add(cmd)
+            browsers.append((cmd, name, desktop))
+    return browsers
 
 def read_state():
     if STATE_FILE.exists():
@@ -583,6 +609,19 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         row_taskbar_op.add_suffix(scale_taskbar_op)
         group_win.add(row_taskbar_op)
 
+        # Windows 11 Transparency Effects
+        row_win_trans = Adw.SwitchRow(
+            title="Windows 11 Transparency Effects",
+            subtitle="Toggle frosted Mica acrylic glassmorphism vs clean solid opaque theme"
+        )
+        row_win_trans.set_active(read_setting("WIN11_TRANSPARENCY", "true").lower() == "true")
+        row_win_trans.connect("notify::active", lambda r, p: (
+            write_setting("WIN11_TRANSPARENCY", "true" if r.get_active() else "false"),
+            write_setting("BAR_TRANSPARENT", "true" if r.get_active() else "false"),
+            self.apply_transparency_live(r.get_active())
+        ))
+        group_win.add(row_win_trans)
+
         # Show Task View Button
         row_win_taskview = Adw.SwitchRow(title="Show Task View Button", subtitle="Displays virtual desktop & window switcher button next to start")
         row_win_taskview.set_active(read_setting("SHOW_WIN_TASKVIEW", "true").lower() == "true")
@@ -596,6 +635,49 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         group_win.add(row_win_weather)
 
         page.add(group_win)
+
+        # 3. Default Applications & Web Browser
+        group_browser = Adw.PreferencesGroup(
+            title="Default Applications & Web Browser",
+            description="Configure your primary web browser and application handlers."
+        )
+        installed_browsers = detect_installed_browsers()
+        row_browser = Adw.ComboRow(
+            title="Default Web Browser",
+            subtitle="Choose primary browser launched by taskbars, start menu, and widgets"
+        )
+        model_browser = Gtk.StringList()
+        model_browser.append("Auto-Detect System Default")
+        browser_keys = ["auto"]
+        for cmd, name, desktop in installed_browsers:
+            model_browser.append(f"{name} ({cmd})")
+            browser_keys.append(cmd)
+        row_browser.set_model(model_browser)
+
+        current_browser = read_setting("DEFAULT_BROWSER", "auto").lower()
+        sel_idx = 0
+        for idx, key in enumerate(browser_keys):
+            if key == current_browser:
+                sel_idx = idx
+                break
+        row_browser.set_selected(sel_idx)
+
+        def on_browser_changed(combo, param):
+            idx = combo.get_selected()
+            if 0 <= idx < len(browser_keys):
+                chosen = browser_keys[idx]
+                write_setting("DEFAULT_BROWSER", chosen)
+                if chosen != "auto":
+                    for cmd, name, desktop in installed_browsers:
+                        if cmd == chosen:
+                            subprocess.run(["xdg-settings", "set", "default-web-browser", desktop], check=False)
+                            break
+                self.show_toast(f"Default browser set to: {model_browser.get_string(idx)}")
+
+        row_browser.connect("notify::selected", on_browser_changed)
+        group_browser.add(row_browser)
+        page.add(group_browser)
+
         self.stack.add_titled(page, "dock_taskbar", "Dock & Taskbar")
 
     # ==================== PAGE 2: WALLPAPERS GALLERY ====================
@@ -640,6 +722,24 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         page.set_title("Effects & Transparency")
         page.set_icon_name("applications-graphics-symbolic")
 
+        # 0. Windows 11 Transparency Effects Group
+        group_win_trans = Adw.PreferencesGroup(
+            title="Windows 11 Transparency & Acrylic",
+            description="Toggle between authentic translucent Mica frosted glass and solid opaque Fluent themes."
+        )
+        row_win_trans_eff = Adw.SwitchRow(
+            title="Windows 11 Transparency Effects",
+            subtitle="Enable translucent acrylic/Mica background on Taskbar, Start Menu, Quick Settings, and Windows"
+        )
+        row_win_trans_eff.set_active(read_setting("WIN11_TRANSPARENCY", "true").lower() == "true")
+        row_win_trans_eff.connect("notify::active", lambda r, p: (
+            write_setting("WIN11_TRANSPARENCY", "true" if r.get_active() else "false"),
+            write_setting("BAR_TRANSPARENT", "true" if r.get_active() else "false"),
+            self.apply_transparency_live(r.get_active())
+        ))
+        group_win_trans.add(row_win_trans_eff)
+        page.add(group_win_trans)
+
         # 1. Window Transparency & Opacity
         group_opacity = Adw.PreferencesGroup(
             title="Window Transparency & Opacity",
@@ -681,19 +781,8 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         def on_bar_trans_toggled(r, p):
             is_trans = r.get_active()
             write_setting("BAR_TRANSPARENT", "true" if is_trans else "false")
-            # Update shell.json
-            shell_json = Path.home() / ".config/omarchy/shell.json"
-            if shell_json.exists():
-                try:
-                    data = json.loads(shell_json.read_text())
-                    if "bar" in data:
-                        data["bar"]["transparent"] = is_trans
-                        shell_json.write_text(json.dumps(data, indent=2))
-                except Exception:
-                    pass
-            cli = find_cli()
-            subprocess.run([cli, "--reload"], check=False)
-            self.show_toast(f"Bar transparency {'enabled' if is_trans else 'disabled'}")
+            write_setting("WIN11_TRANSPARENCY", "true" if is_trans else "false")
+            self.apply_transparency_live(is_trans)
         row_bar_trans.connect("notify::active", on_bar_trans_toggled)
         group_opacity.add(row_bar_trans)
 
@@ -756,6 +845,33 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
     def on_rounding_changed(self, val):
         write_setting("ROUNDING", str(val))
         subprocess.run(["hyprctl", "keyword", "decoration:rounding", str(val)], check=False)
+
+    def apply_transparency_live(self, is_trans):
+        if is_trans:
+            active_op = read_setting("ACTIVE_OPACITY", "0.96")
+            inact_op = read_setting("INACTIVE_OPACITY", "0.88")
+            subprocess.run(["hyprctl", "keyword", "decoration:blur:enabled", "true"], check=False)
+            subprocess.run(["hyprctl", "keyword", "decoration:active_opacity", active_op], check=False)
+            subprocess.run(["hyprctl", "keyword", "decoration:inactive_opacity", inact_op], check=False)
+        else:
+            subprocess.run(["hyprctl", "keyword", "decoration:blur:enabled", "false"], check=False)
+            subprocess.run(["hyprctl", "keyword", "decoration:active_opacity", "1.00"], check=False)
+            subprocess.run(["hyprctl", "keyword", "decoration:inactive_opacity", "1.00"], check=False)
+
+        # Update shell.json
+        shell_json = Path.home() / ".config/omarchy/shell.json"
+        if shell_json.exists():
+            try:
+                data = json.loads(shell_json.read_text())
+                if "bar" in data:
+                    data["bar"]["transparent"] = is_trans
+                    shell_json.write_text(json.dumps(data, indent=2))
+            except Exception:
+                pass
+
+        cli = find_cli()
+        subprocess.run([cli, "--reload"], check=False)
+        self.show_toast(f"Windows 11 Transparency {'enabled (Mica)' if is_trans else 'disabled (Solid)'}")
 
     # ==================== PAGE 4: HARDWARE & RADIOS ====================
     def build_hardware_page(self):

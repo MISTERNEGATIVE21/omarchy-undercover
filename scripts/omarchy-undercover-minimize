@@ -1,19 +1,13 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Copyright (C) 2026 misternegative21
-# Omarchy Undercover - Minimize Window (Win+M)
+# Omarchy Undercover - Minimize & Restore Window (Win+M / Cmd+M)
 # License: GPL-3.0-or-later
 #
-# omarchy:summary=Minimize the active window to the minimized scratchpad (toggle)
-# omarchy:args=[toggle]
+# omarchy:summary=Minimize or restore the active window to/from minimized workspace
+# omarchy:args=[toggle | restore | address]
 # omarchy:examples=omarchy-undercover-minimize
 # ==============================================================================
-#
-# Hyprland has no native minimize, so the active window is moved to the
-# special:minimized workspace. Pressing Win+M again restores it.
-#
-# Dispatch uses the Hyprland Lua form first (0.55+) and falls back to the
-# legacy hyprlang syntax for older releases.
 
 CONFIG_DIR="$HOME/.config/omarchy-undercover"
 STATE_FILE="$CONFIG_DIR/minimize_state"
@@ -30,17 +24,35 @@ move_window_to_ws() {
         return 0
     fi
     hyprctl dispatch movetoworkspacesilent "$ws,address:$addr" >/dev/null 2>&1 || true
+    hyprctl dispatch focuswindow "address:$addr" >/dev/null 2>&1 || true
 }
 
-if [[ -f "$STATE_FILE" ]]; then
-    while read -r address workspace; do
-        [[ -n "$address" ]] && move_window_to_ws "$address" "$workspace"
-    done < "$STATE_FILE"
-    rm -f "$STATE_FILE"
-    hyprctl dispatch "hl.dsp.workspace.toggle_special(\"minimized\")" >/dev/null 2>&1 || true
+# If a specific window address was requested to restore
+if [[ "${1:-}" == "address:"* ]] || [[ "${1:-}" == "0x"* ]]; then
+    target_addr="${1#address:}"
+    if [[ -f "$STATE_FILE" ]]; then
+        grep -v "^$target_addr " "$STATE_FILE" > "$STATE_FILE.tmp" 2>/dev/null || true
+        mv -f "$STATE_FILE.tmp" "$STATE_FILE"
+    fi
+    move_window_to_ws "$target_addr" "current"
     exit 0
 fi
 
+# If state file exists and has entries, restore the last minimized window
+if [[ -f "$STATE_FILE" && -s "$STATE_FILE" ]]; then
+    # Read last line
+    last_line=$(tail -n 1 "$STATE_FILE")
+    read -r address workspace <<< "$last_line"
+    if [[ -n "$address" ]]; then
+        # Remove last line
+        sed -i '$d' "$STATE_FILE"
+        [[ ! -s "$STATE_FILE" ]] && rm -f "$STATE_FILE"
+        move_window_to_ws "$address" "$workspace"
+        exit 0
+    fi
+fi
+
+# Otherwise, minimize the active window
 active=$(hyprctl activewindow -j 2>/dev/null)
 read -r address workspace <<< "$(printf '%s' "$active" | python3 -c '
 import json, sys
@@ -48,7 +60,7 @@ try:
     w = json.load(sys.stdin)
 except Exception:
     sys.exit(0)
-if w.get("mapped"):
+if w and w.get("mapped"):
     print(w.get("address", ""), w.get("workspace", {}).get("id", 1))
 ')"
 
@@ -57,5 +69,5 @@ if [[ -z "$address" || "$address" == "null" ]]; then
 fi
 [[ -z "$workspace" ]] && workspace="1"
 
-echo "$address $workspace" > "$STATE_FILE"
+echo "$address $workspace" >> "$STATE_FILE"
 move_window_to_ws "$address" "special:minimized"

@@ -207,7 +207,7 @@ ShellRoot {
             Text {
               text: "Bluetooth"
               font.family: "Segoe UI"
-              font.pixelSize: 12.5
+              font.pixelSize: 12
               font.weight: Font.DemiBold
               color: btWindow.isDark ? "#ffffff" : "#1a1a1a"
               Layout.fillWidth: true
@@ -298,7 +298,7 @@ ShellRoot {
                   Text {
                     text: modelData.mac
                     font.family: "Segoe UI"
-                    font.pixelSize: 9.5
+                    font.pixelSize: 10
                     color: btWindow.isDark ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.45)
                   }
                 }
@@ -313,7 +313,7 @@ ShellRoot {
                     anchors.centerIn: parent
                     text: "Connect"
                     font.family: "Segoe UI"
-                    font.pixelSize: 10.5
+                    font.pixelSize: 10
                     color: "#ffffff"
                   }
 

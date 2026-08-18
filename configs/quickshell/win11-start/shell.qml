@@ -26,9 +26,15 @@ ShellRoot {
     implicitHeight: 700
 
     property bool isDark: true
+    property bool isTransparent: true
     property string searchFilter: ""
     property int currentView: 0 // 0: Pinned, 1: All Apps, 2: Search Results
     property bool showPowerPopup: false
+
+    Shortcut {
+      sequence: "Escape"
+      onActivated: Qt.quit()
+    }
 
     function runCmd(cmd) {
       Qt.quit()
@@ -48,20 +54,37 @@ ShellRoot {
       }
     }
 
+    Process {
+      id: transparencyPoller
+      running: true
+      command: ["bash", "-c", "grep -E '^(WIN11_TRANSPARENCY|BAR_TRANSPARENT)=' $HOME/.config/omarchy-undercover/settings.conf 2>/dev/null || echo 'WIN11_TRANSPARENCY=true'"]
+      stdout: SplitParser {
+        onRead: function(line) {
+          var s = String(line).trim()
+          if (s.indexOf("false") !== -1) {
+            startWindow.isTransparent = false
+          } else if (s.indexOf("true") !== -1) {
+            startWindow.isTransparent = true
+          }
+        }
+      }
+    }
+
     Timer {
-      interval: 4000
+      interval: 3000
       running: true
       repeat: true
       triggeredOnStart: true
       onTriggered: {
         if (!statePoller.running) statePoller.running = true
+        if (!transparencyPoller.running) transparencyPoller.running = true
       }
     }
 
     // Pinned Applications
     property var pinnedApps: [
-      { name: "Edge", icon: "🌐", exec: "xdg-open https://microsoft.com || firefox" },
-      { name: "Word", icon: "📝", exec: "libreoffice --writer || abiword || xdg-open https://office.com" },
+      { name: "Browser", icon: "🌐", exec: "omarchy-browser" },
+      { name: "Word", icon: "📝", exec: "libreoffice --writer || abiword || omarchy-browser https://office.com" },
       { name: "Excel", icon: "📊", exec: "libreoffice --calc || gnumeric || xdg-open https://office.com" },
       { name: "PowerPoint", icon: "📽️", exec: "libreoffice --impress || xdg-open https://office.com" },
       { name: "Store", icon: "🛍️", exec: "pamac-manager || gnome-software || discover" },
@@ -71,6 +94,7 @@ ShellRoot {
       { name: "Explorer", icon: "📁", exec: "nautilus computer:/// || thunar || dolphin" },
       { name: "Calculator", icon: "🔢", exec: "gnome-calculator || kcalc || galculator" },
       { name: "Spotify", icon: "🎵", exec: "spotify || omarchy-win11-widgets" },
+      { name: "Antigravity", icon: "🚀", exec: "antigravity-ide || code || vscodium" },
       { name: "VS Code", icon: "🧑‍💻", exec: "code || vscodium || cursor" },
       { name: "Chat", icon: "💬", exec: "discord || telegram-desktop || slack" },
       { name: "Notepad", icon: "🗒️", exec: "gedit || kate || mousepad || gnome-text-editor" },
@@ -82,6 +106,7 @@ ShellRoot {
 
     // Complete All-Apps Catalog (Alphabetical A-Z Drawer)
     property var allAppsList: [
+      { name: "Antigravity IDE", icon: "🚀", category: "A", exec: "antigravity-ide || code || vscodium" },
       { name: "Alacritty Terminal", icon: "💻", category: "A", exec: "alacritty || xdg-terminal-exec" },
       { name: "App Store / Packages", icon: "🛍️", category: "A", exec: "pamac-manager || gnome-software" },
       { name: "Bluetooth Manager", icon: "󰂯", category: "B", exec: "omarchy-win11-bluetooth || blueman-manager" },
@@ -139,7 +164,9 @@ ShellRoot {
       id: bg
       anchors.fill: parent
       radius: 16
-      color: startWindow.isDark ? Qt.rgba(0.12, 0.12, 0.16, 0.96) : Qt.rgba(0.97, 0.97, 0.98, 0.98)
+      color: startWindow.isDark 
+             ? (startWindow.isTransparent ? Qt.rgba(0.12, 0.12, 0.16, 0.85) : "#202024")
+             : (startWindow.isTransparent ? Qt.rgba(0.97, 0.97, 0.98, 0.88) : "#f5f5f8")
       border.color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.10)
       border.width: 1
 
@@ -175,7 +202,7 @@ ShellRoot {
                 id: searchInput
                 Layout.fillWidth: true
                 font.family: "Segoe UI"
-                font.pixelSize: 12.5
+                font.pixelSize: 12
                 color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
                 clip: true
                 selectByMouse: true
@@ -186,7 +213,7 @@ ShellRoot {
                   text: "Type here to search apps, settings, and documents..."
                   color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0, 0, 0, 0.45)
                   font.family: "Segoe UI"
-                  font.pixelSize: 12.5
+                  font.pixelSize: 12
                   anchors.verticalCenter: parent.verticalCenter
                 }
 
@@ -204,7 +231,7 @@ ShellRoot {
                   if (res.length > 0) {
                     startWindow.runCmd(res[0].exec)
                   } else if (text.trim().length > 0) {
-                    startWindow.runCmd("xdg-open 'https://www.bing.com/search?q=" + encodeURIComponent(text.trim()) + "'")
+                    startWindow.runCmd("omarchy-browser 'https://www.bing.com/search?q=" + encodeURIComponent(text.trim()) + "'")
                   }
                 }
               }
@@ -266,7 +293,7 @@ ShellRoot {
               text: "Pinned"
               color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
               font.family: "Segoe UI"
-              font.pixelSize: 13.5
+              font.pixelSize: 14
               font.weight: Font.DemiBold
               Layout.fillWidth: true
             }
@@ -280,7 +307,7 @@ ShellRoot {
                 text: "All apps >"
                 color: startWindow.isDark ? "#60cdff" : "#0067c0"
                 font.family: "Segoe UI"
-                font.pixelSize: 11.5
+                font.pixelSize: 12
                 font.weight: Font.DemiBold
               }
               MouseArea {
@@ -318,12 +345,12 @@ ShellRoot {
                   spacing: 4
 
                   Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
+                    Layout.alignment: Qt.AlignHCenter
                     text: modelData.icon
                     font.pixelSize: 26
                   }
                   Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
+                    Layout.alignment: Qt.AlignHCenter
                     text: modelData.name
                     color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
                     font.family: "Segoe UI"
@@ -351,7 +378,7 @@ ShellRoot {
               text: "Recommended"
               color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
               font.family: "Segoe UI"
-              font.pixelSize: 13.5
+              font.pixelSize: 14
               font.weight: Font.DemiBold
               Layout.fillWidth: true
             }
@@ -365,7 +392,7 @@ ShellRoot {
                 text: "More >"
                 color: startWindow.isDark ? "#60cdff" : "#0067c0"
                 font.family: "Segoe UI"
-                font.pixelSize: 11.5
+                font.pixelSize: 12
                 font.weight: Font.DemiBold
               }
               MouseArea {
@@ -408,7 +435,7 @@ ShellRoot {
                       text: modelData.name
                       color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
                       font.family: "Segoe UI"
-                      font.pixelSize: 11.5
+                      font.pixelSize: 12
                       font.weight: Font.DemiBold
                       elide: Text.ElideRight
                       Layout.fillWidth: true
@@ -455,7 +482,7 @@ ShellRoot {
                 anchors.centerIn: parent
                 spacing: 4
                 Text { text: "‹"; font.pixelSize: 14; color: startWindow.isDark ? "#60cdff" : "#0067c0"; font.weight: Font.Bold }
-                Text { text: "Back"; color: startWindow.isDark ? "#60cdff" : "#0067c0"; font.family: "Segoe UI"; font.pixelSize: 11.5; font.weight: Font.DemiBold }
+                Text { text: "Back"; color: startWindow.isDark ? "#60cdff" : "#0067c0"; font.family: "Segoe UI"; font.pixelSize: 12; font.weight: Font.DemiBold }
               }
               MouseArea {
                 id: backM
@@ -576,14 +603,14 @@ ShellRoot {
                       text: modelData.name
                       color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
                       font.family: "Segoe UI"
-                      font.pixelSize: 12.5
+                      font.pixelSize: 12
                       font.weight: Font.DemiBold
                     }
                     Text {
                       text: "App • " + modelData.exec
                       color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0, 0, 0, 0.45)
                       font.family: "Segoe UI"
-                      font.pixelSize: 9.5
+                      font.pixelSize: 10
                       elide: Text.ElideRight
                     }
                   }
@@ -636,7 +663,7 @@ ShellRoot {
               anchors.fill: parent
               hoverEnabled: true
               cursorShape: Qt.PointingHandCursor
-              onClicked: startWindow.runCmd("xdg-open 'https://www.bing.com/search?q=" + encodeURIComponent(startWindow.searchFilter) + "'")
+              onClicked: startWindow.runCmd("omarchy-browser 'https://www.bing.com/search?q=" + encodeURIComponent(startWindow.searchFilter) + "'")
             }
           }
         }
@@ -670,7 +697,7 @@ ShellRoot {
                 text: "User"
                 color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
                 font.family: "Segoe UI"
-                font.pixelSize: 12.5
+                font.pixelSize: 12
                 font.weight: Font.DemiBold
               }
             }

@@ -1,23 +1,41 @@
 #!/usr/bin/env bash
 # =============================================================================
-# 🪟 Windows 11 Native Quickshell Start Menu Dispatcher
+# 🪟 Windows 11 Native Start Menu Dispatcher & Experience Controller
 # =============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_DIR="$HOME/.config/omarchy-undercover"
+
+# 1. Toggle if already running
+if pgrep -f "quickshell.*win11-start" >/dev/null; then
+    pkill -f "quickshell.*win11-start"
+    exit 0
+fi
+
+if pgrep -f "omarchy-win11-startmenu" >/dev/null; then
+    pkill -f "omarchy-win11-startmenu"
+    exit 0
+fi
 
 QS_SRC="$CONFIG_DIR/quickshell/win11-start"
 if [[ ! -d "$QS_SRC" && -d "${SCRIPT_DIR}/../configs/quickshell/win11-start" ]]; then
     QS_SRC="${SCRIPT_DIR}/../configs/quickshell/win11-start"
 fi
 
-if pgrep -f "quickshell.*win11-start" >/dev/null; then
-    pkill -f "quickshell.*win11-start"
-    exit 0
+# Detect backend preference
+BACKEND="auto"
+if [[ -f "$CONFIG_DIR/settings.conf" ]]; then
+    BACKEND=$(grep -E "^SHELL_BACKEND=" "$CONFIG_DIR/settings.conf" 2>/dev/null | tail -1 | cut -d= -f2- || echo "auto")
 fi
 
-if command -v quickshell >/dev/null 2>&1 && [[ -d "$QS_SRC" ]]; then
+if [[ "$BACKEND" != "waybar" ]] && command -v quickshell >/dev/null 2>&1 && [[ -d "$QS_SRC" ]]; then
     exec quickshell -p "$QS_SRC"
+elif command -v omarchy-win11-startmenu >/dev/null 2>&1; then
+    exec omarchy-win11-startmenu
+elif [[ -f "${SCRIPT_DIR}/omarchy-win11-startmenu" ]]; then
+    exec "${SCRIPT_DIR}/omarchy-win11-startmenu"
+elif [[ -f "$HOME/.local/bin/omarchy-win11-startmenu" ]]; then
+    exec "$HOME/.local/bin/omarchy-win11-startmenu"
 else
     exec rofi -show drun -theme ~/.config/rofi/windows11.rasi
 fi

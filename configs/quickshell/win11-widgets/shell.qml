@@ -243,7 +243,7 @@ ShellRoot {
                   }
                 }
               }
-              Text { text: widgetsWindow.volumeVal + "%"; font.family: "Segoe UI"; font.pixelSize: 10.5; color: "#ffffff"; implicitWidth: 30 }
+              Text { text: widgetsWindow.volumeVal + "%"; font.family: "Segoe UI"; font.pixelSize: 10; color: "#ffffff"; implicitWidth: 30 }
             }
 
             // Brightness Slider Row
@@ -274,7 +274,7 @@ ShellRoot {
                   }
                 }
               }
-              Text { text: widgetsWindow.brightnessVal + "%"; font.family: "Segoe UI"; font.pixelSize: 10.5; color: "#ffffff"; implicitWidth: 30 }
+              Text { text: widgetsWindow.brightnessVal + "%"; font.family: "Segoe UI"; font.pixelSize: 10; color: "#ffffff"; implicitWidth: 30 }
             }
           }
         }
@@ -298,8 +298,8 @@ ShellRoot {
               spacing: 4
 
               RowLayout {
-                Text { text: "MSN WEATHER"; color: Qt.rgba(1, 1, 1, 0.55); font.family: "Segoe UI"; font.pixelSize: 9.5; font.weight: Font.Bold; Layout.fillWidth: true }
-                Text { text: "📍 Cupertino"; color: Qt.rgba(1, 1, 1, 0.6); font.family: "Segoe UI"; font.pixelSize: 9.5 }
+                Text { text: "MSN WEATHER"; color: Qt.rgba(1, 1, 1, 0.55); font.family: "Segoe UI"; font.pixelSize: 10; font.weight: Font.Bold; Layout.fillWidth: true }
+                Text { text: "📍 Cupertino"; color: Qt.rgba(1, 1, 1, 0.6); font.family: "Segoe UI"; font.pixelSize: 10 }
               }
 
               RowLayout {
@@ -333,24 +333,24 @@ ShellRoot {
               anchors.margins: 12
               spacing: 4
 
-              Text { text: "WATCHLIST • MSN MONEY"; color: Qt.rgba(1, 1, 1, 0.55); font.family: "Segoe UI"; font.pixelSize: 9.5; font.weight: Font.Bold }
+              Text { text: "WATCHLIST • MSN MONEY"; color: Qt.rgba(1, 1, 1, 0.55); font.family: "Segoe UI"; font.pixelSize: 10; font.weight: Font.Bold }
 
               RowLayout {
                 Text { text: "MSFT"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 11; font.weight: Font.Bold; Layout.fillWidth: true }
                 Text { text: "$448.20"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 11; font.weight: Font.DemiBold }
-                Text { text: "+1.25%"; color: "#27c460"; font.family: "Segoe UI"; font.pixelSize: 10.5; font.weight: Font.Bold }
+                Text { text: "+1.25%"; color: "#27c460"; font.family: "Segoe UI"; font.pixelSize: 10; font.weight: Font.Bold }
               }
 
               RowLayout {
                 Text { text: "AAPL"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 11; font.weight: Font.Bold; Layout.fillWidth: true }
                 Text { text: "$224.50"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 11; font.weight: Font.DemiBold }
-                Text { text: "+0.85%"; color: "#27c460"; font.family: "Segoe UI"; font.pixelSize: 10.5; font.weight: Font.Bold }
+                Text { text: "+0.85%"; color: "#27c460"; font.family: "Segoe UI"; font.pixelSize: 10; font.weight: Font.Bold }
               }
 
               RowLayout {
                 Text { text: "NVDA"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 11; font.weight: Font.Bold; Layout.fillWidth: true }
                 Text { text: "$128.90"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 11; font.weight: Font.DemiBold }
-                Text { text: "+3.10%"; color: "#27c460"; font.family: "Segoe UI"; font.pixelSize: 10.5; font.weight: Font.Bold }
+                Text { text: "+3.10%"; color: "#27c460"; font.family: "Segoe UI"; font.pixelSize: 10; font.weight: Font.Bold }
               }
             }
 
@@ -376,24 +376,24 @@ ShellRoot {
             spacing: 6
 
             RowLayout {
-              Text { text: "MICROSOFT TO-DO"; color: Qt.rgba(1, 1, 1, 0.55); font.family: "Segoe UI"; font.pixelSize: 9.5; font.weight: Font.Bold; Layout.fillWidth: true }
-              Text { text: "3 tasks left"; color: "#60cdff"; font.family: "Segoe UI"; font.pixelSize: 9.5; font.weight: Font.DemiBold }
+              Text { text: "MICROSOFT TO-DO"; color: Qt.rgba(1, 1, 1, 0.55); font.family: "Segoe UI"; font.pixelSize: 10; font.weight: Font.Bold; Layout.fillWidth: true }
+              Text { text: "3 tasks left"; color: "#60cdff"; font.family: "Segoe UI"; font.pixelSize: 10; font.weight: Font.DemiBold }
             }
 
             RowLayout {
               spacing: 8
               Text { text: "☑️"; font.pixelSize: 12 }
-              Text { text: "Deploy Quickshell Windows 11 widgets"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 11.5; Layout.fillWidth: true }
+              Text { text: "Deploy Quickshell Windows 11 widgets"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 12; Layout.fillWidth: true }
             }
             RowLayout {
               spacing: 8
               Text { text: "⬜"; font.pixelSize: 12 }
-              Text { text: "Review Omarchy Undercover v2.5 documentation"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 11.5; Layout.fillWidth: true }
+              Text { text: "Review Omarchy Undercover v2.5 documentation"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 12; Layout.fillWidth: true }
             }
             RowLayout {
               spacing: 8
               Text { text: "⬜"; font.pixelSize: 12 }
-              Text { text: "Configure multi-monitor taskbar mirrors"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 11.5; Layout.fillWidth: true }
+              Text { text: "Configure multi-monitor taskbar mirrors"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 12; Layout.fillWidth: true }
             }
           }
         }
@@ -412,8 +412,8 @@ ShellRoot {
             spacing: 6
 
             RowLayout {
-              Text { text: "TOP STORIES • MSN NEWS"; color: Qt.rgba(1, 1, 1, 0.55); font.family: "Segoe UI"; font.pixelSize: 9.5; font.weight: Font.Bold; Layout.fillWidth: true }
-              Text { text: "Refresh ↻"; color: "#60cdff"; font.family: "Segoe UI"; font.pixelSize: 9.5; font.weight: Font.DemiBold }
+              Text { text: "TOP STORIES • MSN NEWS"; color: Qt.rgba(1, 1, 1, 0.55); font.family: "Segoe UI"; font.pixelSize: 10; font.weight: Font.Bold; Layout.fillWidth: true }
+              Text { text: "Refresh ↻"; color: "#60cdff"; font.family: "Segoe UI"; font.pixelSize: 10; font.weight: Font.DemiBold }
             }
 
             RowLayout {
@@ -421,8 +421,8 @@ ShellRoot {
               Text { text: "📰"; font.pixelSize: 15 }
               ColumnLayout {
                 spacing: 1
-                Text { text: "Omarchy Undercover Releases Full Quickshell Suite"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 11.5; font.weight: Font.Bold }
-                Text { text: "Pure QML widgets and 60fps animations arrive for Hyprland — TechNews • 15m ago"; color: Qt.rgba(1, 1, 1, 0.6); font.family: "Segoe UI"; font.pixelSize: 9.5 }
+                Text { text: "Omarchy Undercover Releases Full Quickshell Suite"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 12; font.weight: Font.Bold }
+                Text { text: "Pure QML widgets and 60fps animations arrive for Hyprland — TechNews • 15m ago"; color: Qt.rgba(1, 1, 1, 0.6); font.family: "Segoe UI"; font.pixelSize: 10 }
               }
             }
 
@@ -431,8 +431,8 @@ ShellRoot {
               Text { text: "🚀"; font.pixelSize: 15 }
               ColumnLayout {
                 spacing: 1
-                Text { text: "Next-Gen AI Desktop Experiences Launch on Wayland"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 11.5; font.weight: Font.Bold }
-                Text { text: "Fluent design and mica glassmorphism revolutionize Linux desktops — TheVerge • 1h ago"; color: Qt.rgba(1, 1, 1, 0.6); font.family: "Segoe UI"; font.pixelSize: 9.5 }
+                Text { text: "Next-Gen AI Desktop Experiences Launch on Wayland"; color: "#ffffff"; font.family: "Segoe UI"; font.pixelSize: 12; font.weight: Font.Bold }
+                Text { text: "Fluent design and mica glassmorphism revolutionize Linux desktops — TheVerge • 1h ago"; color: Qt.rgba(1, 1, 1, 0.6); font.family: "Segoe UI"; font.pixelSize: 10 }
               }
             }
           }

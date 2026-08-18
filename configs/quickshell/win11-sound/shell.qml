@@ -287,7 +287,7 @@ ShellRoot {
                 Text {
                   text: modelData.name
                   font.family: "Segoe UI"
-                  font.pixelSize: 11.5
+                  font.pixelSize: 12
                   font.weight: modelData.isDefault ? Font.DemiBold : Font.Normal
                   color: soundWindow.isDark ? "#ffffff" : "#1a1a1a"
                   Layout.fillWidth: true

@@ -136,7 +136,7 @@ ShellRoot {
           Text {
             text: "Sound"
             font.family: "SF Pro Text"
-            font.pixelSize: 13.5
+            font.pixelSize: 14
             font.weight: Font.Bold
             color: macSoundWindow.isDark ? "#ffffff" : "#1a1a1a"
             Layout.fillWidth: true
@@ -233,7 +233,7 @@ ShellRoot {
                 Text {
                   text: modelData.name
                   font.family: "SF Pro Text"
-                  font.pixelSize: 11.5
+                  font.pixelSize: 12
                   color: macSoundWindow.isDark ? "#ffffff" : "#1a1a1a"
                   Layout.fillWidth: true
                   elide: Text.ElideRight

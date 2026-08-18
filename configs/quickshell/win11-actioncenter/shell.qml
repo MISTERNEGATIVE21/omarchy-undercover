@@ -394,7 +394,7 @@ ShellRoot {
               Text {
                 text: actionCenterWindow.batteryPct + "% • " + actionCenterWindow.wifiSsid
                 color: "#ffffff"
-                font.pixelSize: 11.5
+                font.pixelSize: 12
                 font.weight: Font.DemiBold
               }
             }

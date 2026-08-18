@@ -35,6 +35,7 @@ end
 local accent        = get_setting("ACCENT", "0078d4")
 local animations_on = get_setting("ANIMATIONS", "1") == "1"
 local blur_on       = get_setting("BLUR", "1") == "1"
+local is_trans      = get_setting("WIN11_TRANSPARENCY", "true") == "true"
 local cursor_size   = tonumber(get_setting("CURSOR_SIZE", "24")) or 24
 local mode          = get_setting("MODE", "windows")
 
@@ -79,6 +80,8 @@ hl.config({
 
   decoration = {
     rounding = 10,
+    active_opacity = is_trans and 0.96 or 1.0,
+    inactive_opacity = is_trans and 0.88 or 1.0,
 
     shadow = {
       enabled = true,
@@ -88,7 +91,7 @@ hl.config({
     },
 
     blur = {
-      enabled = blur_on,
+      enabled = blur_on and is_trans,
       size = 8,
       passes = 2,
       special = true,
@@ -136,6 +139,7 @@ if animations_on then
   hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "fluent" })
   hl.animation({ leaf = "workspacesIn", enabled = true, speed = 5, bezier = "fluent", style = "fade" })
   hl.animation({ leaf = "workspacesOut", enabled = true, speed = 3, bezier = "fluent", style = "fade" })
+  hl.animation({ leaf = "specialWorkspace", enabled = true, speed = 5, bezier = "fluent", style = "slidevert" })
 else
   hl.animation({ leaf = "global", enabled = false })
 end

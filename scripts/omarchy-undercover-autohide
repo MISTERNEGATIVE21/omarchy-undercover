@@ -3,6 +3,12 @@
 Intelligent Mouse-Edge Auto-Hide Daemon for Omarchy Undercover (v2.5.0)
 High-performance Wayland edge detection daemon for macOS Dock & Windows 11 Taskbar.
 Supports both Quickshell (Omarchy 4.0+) and Waybar (legacy).
+Features:
+- Sub-pixel mouse edge triggering (6px bottom strip)
+- Active-flyout locking: taskbar stays locked visible while Start Menu, Quick Settings, Calendar or Widgets are open
+- 250ms smooth dwell buffer preventing accidental hide or jitter
+- Single-instance background daemon with start/stop/toggle/status commands
+- Fully synced with ~/.config/omarchy-undercover/settings.conf
 """
 
 import sys
@@ -52,6 +58,29 @@ def get_cursor_y():
         pass
     return 0
 
+def is_flyout_open():
+    """Returns True if Start Menu, Notifications, Quick Settings, or Widgets are active"""
+    # 1. Check quick processes
+    try:
+        out = subprocess.check_output(
+            ["pgrep", "-f", "quickshell.*win11-start|omarchy-win11-startmenu|omarchy-win11-notifications|omarchy-win11-widgets|omarchy-win11-bluetooth|omarchy-win11-sound|omarchy-mac-widgets|omarchy-mac-controlcenter"],
+            text=True
+        )
+        if out.strip():
+            return True
+    except Exception:
+        pass
+
+    # 2. Check Hyprland layers
+    try:
+        layers = subprocess.check_output(["hyprctl", "layers", "-j"], text=True)
+        if "omarchy-menu" in layers or "omarchy-notifications" in layers or "omarchy-osd" in layers:
+            return True
+    except Exception:
+        pass
+
+    return False
+
 def set_bar_visible(visible):
     backend = get_backend()
     if backend == "quickshell":
@@ -100,15 +129,15 @@ def run_daemon():
         f.write(str(os.getpid()))
 
     screen_h = get_screen_metrics()
-    trigger_y = screen_h - 8         # Bottom 8px edge triggers immediate reveal
+    trigger_y = screen_h - 6         # Bottom 6px edge triggers immediate reveal
     taskbar_region_y = screen_h - 56 # Taskbar / dock region boundary
 
     bar_visible = True
     away_since = None
 
     # Initial hide after launch
-    time.sleep(1.0)
-    if is_bar_running():
+    time.sleep(0.6)
+    if is_bar_running() and not is_flyout_open():
         set_bar_visible(False)
         bar_visible = False
 
@@ -117,9 +146,17 @@ def run_daemon():
         if not is_bar_running():
             continue
 
+        # If any start menu or flyout is open, lock the taskbar visible
+        if is_flyout_open():
+            away_since = None
+            if not bar_visible:
+                set_bar_visible(True)
+                bar_visible = True
+            continue
+
         y = get_cursor_y()
 
-        # 1. When mouse touches the bottom screen edge: Reveal immediately
+        # 1. When mouse touches bottom screen edge: Reveal immediately
         if y >= trigger_y:
             away_since = None
             if not bar_visible:
@@ -133,7 +170,7 @@ def run_daemon():
                 set_bar_visible(True)
                 bar_visible = True
 
-        # 3. When mouse is away from the taskbar / dock region: Hide after debounce
+        # 3. When mouse is away: Hide after debounce
         else:
             if bar_visible:
                 if away_since is None:

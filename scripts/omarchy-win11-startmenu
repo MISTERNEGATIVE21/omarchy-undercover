@@ -1,16 +1,26 @@
 #!/usr/bin/env python3
 """
-Windows 11 Start Menu & System Power Center for Omarchy Hyprland
+Windows 11 Native Fluent Start Menu & Experience Center for Omarchy Hyprland
 Features:
-- Windows 11 Fluent Mica glassmorphism pinned apps grid
-- Instant app search filter
-- User profile strip with Account Lock / Sign out
-- Full Power Menu: Lock, Sign Out, Sleep, Hibernate, Restart, Shut Down
-- Integrated Live Wi-Fi & Bluetooth Device Scanner with Password Connect Modal
+- Authentic Windows 11 Fluent Mica Glassmorphism & Solid Mode support
+- Dynamic Dark / Light theme detection from Omarchy settings
+- Instant real-time app search filter with Web Search fallback
+- 6x3 Pinned Apps Grid with Windows 11 Fluent iconography
+- "All apps >" Alphabetical A-Z App Drawer with instant search
+- Recommended Documents & Quick Shortcuts section
+- User Profile Strip with Account Lock & Sign Out
+- Complete Power Hub: Lock, Sign Out, Sleep, Hibernate, Restart, Shut Down
+- Auto-dismiss on focus loss, Escape key, or app launch
+- Instant process toggle (single instance)
+
+Copyright (C) 2026 misternegative21
+License: GPL-3.0-or-later
 """
 
 import sys
 import os
+import signal
+import json
 import shutil
 import subprocess
 import getpass
@@ -22,180 +32,501 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio, GLib, Gdk
 
 USERNAME = getpass.getuser()
+CONFIG_DIR = Path.home() / ".config" / "omarchy-undercover"
+SETTINGS_FILE = CONFIG_DIR / "settings.conf"
+STATE_FILE = CONFIG_DIR / "state"
+
+def read_setting(key, default=""):
+    if SETTINGS_FILE.exists():
+        try:
+            for line in SETTINGS_FILE.read_text().splitlines():
+                if line.startswith(key + "="):
+                    return line.split("=", 1)[1].strip()
+        except OSError:
+            pass
+    return default
+
+def is_dark_mode():
+    state = "win11-dark"
+    if STATE_FILE.exists():
+        try:
+            state = STATE_FILE.read_text().strip()
+        except OSError:
+            pass
+    variant = read_setting("THEME_VARIANT", "dark").lower()
+    return "light" not in state and variant != "light"
+
+def is_transparency_enabled():
+    val = read_setting("WIN11_TRANSPARENCY", "")
+    if val == "":
+        val = read_setting("BAR_TRANSPARENT", "true")
+    return val.lower() == "true"
 
 PINNED_APPS = [
-    ("󰖟", "Browser", "xdg-open https://"),
-    ("󰉋", "Files", "nautilus"),
-    ("󰞷", "Terminal", "uwsm-app -- xdg-terminal-exec"),
-    ("󰒓", "Settings", "omarchy-undercover-settings -s"),
-    ("󰨞", "VS Code", "code"),
-    ("󰌔", "Store", "omarchy-undercover-settings -s"),
-    ("󰕼", "Media Player", "vlc"),
-    ("󰃭", "Calendar", "omarchy-win11-notifications"),
-    ("󰄀", "Snipping Tool", "omarchy screenshot"),
-    ("󰗃", "Videos", "xdg-open https://youtube.com"),
-    ("󰓇", "Music", "xdg-open https://spotify.com"),
-    ("󰑴", "Calculator", "gnome-calculator"),
-    ("󰂞", "Action Center", "omarchy-win11-notifications"),
-    ("󱂬", "Task Manager", "uwsm-app -- xdg-terminal-exec -e btop"),
-    ("󰈙", "Notepad", "gedit"),
-    ("󰍬", "Weather", "omarchy-win11-notifications"),
-    ("󰤨", "Wi-Fi Networks", "WIFI_SCAN"),
-    ("󰂯", "Bluetooth", "BT_SCAN"),
+    ("🌐", "Browser", "omarchy-browser"),
+    ("📝", "Word", "libreoffice --writer || abiword || omarchy-browser https://office.com"),
+    ("📊", "Excel", "libreoffice --calc || gnumeric || xdg-open https://office.com"),
+    ("📽️", "PowerPoint", "libreoffice --impress || xdg-open https://office.com"),
+    ("🛍️", "Store", "pamac-manager || gnome-software || discover || omarchy-undercover-settings -s"),
+    ("🖼️", "Photos", "eog || gwenview || loupe"),
+    ("⚙️", "Settings", "omarchy-undercover-settings"),
+    ("💻", "Terminal", "uwsm-app -- xdg-terminal-exec || alacritty"),
+    ("📁", "Explorer", "env GTK_THEME=Win11-Dark nautilus computer:/// || thunar || dolphin"),
+    ("🔢", "Calculator", "gnome-calculator || kcalc || galculator"),
+    ("🎵", "Spotify", "spotify || xdg-open https://spotify.com"),
+    ("🚀", "Antigravity", "antigravity-ide || code || vscodium"),
+    ("🧑‍💻", "VS Code", "code || vscodium || cursor"),
+    ("💬", "Chat", "discord || telegram-desktop || slack"),
+    ("🗒️", "Notepad", "gedit || kate || mousepad || gnome-text-editor"),
+    ("✉️", "Mail", "thunderbird || evolution || geary"),
+    ("🎨", "Paint", "drawing || gimp || inkscape || pinta"),
+    ("⏰", "Clock", "gnome-clocks || kclock || omarchy-win11-notifications"),
+    ("🌤️", "Weather", "omarchy-win11-widgets || omarchy-win11-notifications"),
 ]
 
-CSS = """
-window.win11-start {
-    background-color: rgba(30, 31, 40, 0.96);
-    border-radius: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65);
-}
+RECOMMENDED_ITEMS = [
+    ("📄", "omarchy-undercover.sh", "Just now", "xdg-open ~/.config/omarchy-undercover"),
+    ("📑", "Windows-11-Fluent-Design.pdf", "2h ago", "xdg-open ~/Documents || xdg-open ~"),
+    ("📘", "Project-Roadmap-2026.docx", "Yesterday at 4:15 PM", "xdg-open ~/Documents || xdg-open ~"),
+    ("⚙️", "hyprland-config.lua", "Yesterday at 11:30 AM", "xdg-open ~/.config/hypr || xdg-open ~"),
+    ("📝", "system-diagnostics.log", "5 days ago", "omarchy-undercover --status"),
+]
 
-.search-bar {
-    background-color: rgba(255, 255, 255, 0.08);
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #ffffff;
-    padding: 8px 14px;
-    font-size: 13px;
-}
+ALL_APPS_LIST = [
+    ("🚀", "Antigravity IDE", "A", "antigravity-ide || code || vscodium"),
+    ("💻", "Alacritty Terminal", "A", "alacritty || xdg-terminal-exec"),
+    ("🛍️", "App Store / Software", "A", "pamac-manager || gnome-software || discover"),
+    ("󰂯", "Bluetooth Devices", "B", "omarchy-win11-bluetooth || omarchy-bluetooth-manager"),
+    ("🔢", "Calculator", "C", "gnome-calculator || kcalc"),
+    ("📅", "Calendar & Agenda", "C", "gnome-calendar || korganizer || omarchy-win11-notifications"),
+    ("📷", "Camera", "C", "cheese || kamoso"),
+    ("⏰", "Clock & Alarms", "C", "gnome-clocks || kclock"),
+    ("💬", "Discord", "D", "discord || vesktop"),
+    ("📑", "Document Viewer", "D", "evince || okular"),
+    ("📁", "File Explorer", "F", "nautilus computer:/// || thunar"),
+    ("🦊", "Firefox Browser", "F", "firefox"),
+    ("🎨", "GIMP Image Editor", "G", "gimp"),
+    ("🌐", "Google Chrome", "G", "google-chrome-stable || chromium"),
+    ("📊", "LibreOffice Calc", "L", "libreoffice --calc"),
+    ("📽️", "LibreOffice Impress", "L", "libreoffice --impress"),
+    ("📝", "LibreOffice Writer", "L", "libreoffice --writer"),
+    ("✉️", "Mail / Thunderbird", "M", "thunderbird || evolution"),
+    ("🌐", "Web Browser", "B", "omarchy-browser"),
+    ("🎵", "Music & Media Player", "M", "spotify || vlc || celluloid"),
+    ("🗒️", "Notepad Text Editor", "N", "gedit || kate || mousepad"),
+    ("🕵️", "Omarchy Undercover Settings", "O", "omarchy-undercover-settings"),
+    ("🎨", "Paint / Drawing", "P", "drawing || pinta"),
+    ("🖼️", "Photos Viewer", "P", "eog || gwenview || loupe"),
+    ("🎥", "Screen Recorder", "S", "obs || wf-recorder"),
+    ("⚙️", "Settings & Control Center", "S", "omarchy-undercover-settings"),
+    ("🔊", "Sound & Volume Mixer", "S", "omarchy-win11-sound || pavucontrol"),
+    ("🎵", "Spotify", "S", "spotify"),
+    ("📈", "System Task Manager", "S", "gnome-system-monitor || uwsm-app -- xdg-terminal-exec -e btop"),
+    ("⧉", "Task View / Switcher", "T", "rofi -show window -theme ~/.config/rofi/windows11.rasi"),
+    ("💻", "Terminal Console", "T", "xdg-terminal-exec"),
+    ("🧑‍💻", "VS Code Editor", "V", "code || vscodium || cursor"),
+    ("🎬", "VLC Media Player", "V", "vlc"),
+    ("🌤️", "Weather & Widgets", "W", "omarchy-win11-widgets"),
+    ("󰤨", "Wi-Fi Network Connections", "W", "omarchy-win11-wifi || omarchy-wifi-manager"),
+]
 
-.pinned-tile {
-    background-color: transparent;
-    border-radius: 8px;
-    padding: 8px 4px;
-    min-width: 78px;
-    min-height: 72px;
-    border: none;
-    transition: background-color 0.15s ease;
-}
-.pinned-tile:hover {
-    background-color: rgba(255, 255, 255, 0.09);
-}
+def build_css(dark=True, transparent=True):
+    if dark:
+        bg_color = "rgba(32, 32, 36, 0.85)" if transparent else "#202024"
+        sub_bg = "rgba(24, 24, 28, 0.90)" if transparent else "#18181c"
+        border_color = "rgba(255, 255, 255, 0.12)"
+        search_bg = "rgba(255, 255, 255, 0.08)"
+        search_focus = "rgba(255, 255, 255, 0.12)"
+        text_color = "#ffffff"
+        text_muted = "rgba(255, 255, 255, 0.65)"
+        hover_bg = "rgba(255, 255, 255, 0.09)"
+        accent_color = "#60cdff"
+    else:
+        bg_color = "rgba(245, 245, 248, 0.88)" if transparent else "#f5f5f8"
+        sub_bg = "rgba(235, 235, 240, 0.92)" if transparent else "#ebebf0"
+        border_color = "rgba(0, 0, 0, 0.10)"
+        search_bg = "rgba(0, 0, 0, 0.05)"
+        search_focus = "rgba(0, 0, 0, 0.08)"
+        text_color = "#1a1a1a"
+        text_muted = "rgba(0, 0, 0, 0.60)"
+        hover_bg = "rgba(0, 0, 0, 0.06)"
+        accent_color = "#0067c0"
 
-.pinned-icon {
-    font-size: 26px;
-    color: #00d2ff;
-}
+    return f"""
+    window.win11-start-window {{
+        background-color: {bg_color};
+        border-radius: 16px;
+        border: 1px solid {border_color};
+        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.65);
+    }}
 
-.pinned-label {
-    font-size: 11px;
-    font-weight: 500;
-    color: #ffffff;
-    margin-top: 4px;
-}
+    .search-container {{
+        background-color: {search_bg};
+        border-radius: 20px;
+        border: 1.5px solid {border_color};
+        padding: 4px 12px;
+        transition: all 0.15s ease;
+    }}
+    .search-container:focus-within {{
+        background-color: {search_focus};
+        border-color: {accent_color};
+    }}
 
-.bottom-strip {
-    background-color: rgba(20, 21, 28, 0.92);
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 10px 16px;
-    border-bottom-left-radius: 14px;
-    border-bottom-right-radius: 14px;
-}
+    .search-entry {{
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        color: {text_color};
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 13px;
+    }}
+    .search-entry:focus {{
+        border: none;
+        box-shadow: none;
+        outline: none;
+    }}
 
-.user-pill {
-    background-color: transparent;
-    border-radius: 8px;
-    padding: 4px 8px;
-    border: none;
-}
-.user-pill:hover {
-    background-color: rgba(255, 255, 255, 0.08);
-}
+    .section-title {{
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        color: {text_color};
+    }}
 
-.power-btn {
-    background-color: transparent;
-    border-radius: 8px;
-    padding: 8px 12px;
-    border: none;
-    color: #ffffff;
-    font-size: 18px;
-}
-.power-btn:hover {
-    background-color: rgba(255, 255, 255, 0.12);
-}
+    .all-apps-btn {{
+        background-color: transparent;
+        border-radius: 6px;
+        padding: 4px 10px;
+        border: none;
+        color: {accent_color};
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 11.5px;
+        font-weight: 600;
+    }}
+    .all-apps-btn:hover {{
+        background-color: {hover_bg};
+    }}
 
-.power-menu-item {
-    border-radius: 6px;
-    padding: 8px 14px;
-    font-size: 13px;
-    color: #ffffff;
-}
-"""
+    .pinned-tile {{
+        background-color: transparent;
+        border-radius: 8px;
+        padding: 6px 2px;
+        min-width: 82px;
+        min-height: 72px;
+        border: none;
+        transition: background-color 0.12s ease, transform 0.12s ease;
+    }}
+    .pinned-tile:hover {{
+        background-color: {hover_bg};
+    }}
 
-class Win11StartWindow(Gtk.Window):
+    .pinned-icon {{
+        font-size: 26px;
+    }}
+
+    .pinned-label {{
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 11px;
+        font-weight: 500;
+        color: {text_color};
+        margin-top: 2px;
+    }}
+
+    .rec-item {{
+        background-color: transparent;
+        border-radius: 8px;
+        padding: 6px 10px;
+        border: none;
+        transition: background-color 0.12s ease;
+    }}
+    .rec-item:hover {{
+        background-color: {hover_bg};
+    }}
+
+    .rec-title {{
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        color: {text_color};
+    }}
+
+    .rec-sub {{
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 10.5px;
+        color: {text_muted};
+    }}
+
+    .bottom-strip {{
+        background-color: {sub_bg};
+        border-top: 1px solid {border_color};
+        padding: 10px 18px;
+        border-bottom-left-radius: 16px;
+        border-bottom-right-radius: 16px;
+    }}
+
+    .user-pill {{
+        background-color: transparent;
+        border-radius: 8px;
+        padding: 4px 10px;
+        border: none;
+    }}
+    .user-pill:hover {{
+        background-color: {hover_bg};
+    }}
+
+    .power-btn {{
+        background-color: transparent;
+        border-radius: 8px;
+        padding: 6px 12px;
+        border: none;
+        color: {text_color};
+        font-size: 17px;
+    }}
+    .power-btn:hover {{
+        background-color: {hover_bg};
+    }}
+
+    .action-pop-btn {{
+        background-color: transparent;
+        border-radius: 6px;
+        padding: 8px 14px;
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 12.5px;
+        color: {text_color};
+        border: none;
+    }}
+    .action-pop-btn:hover {{
+        background-color: {hover_bg};
+    }}
+
+    .app-drawer-row {{
+        background-color: transparent;
+        border-radius: 8px;
+        padding: 6px 10px;
+        border: none;
+    }}
+    .app-drawer-row:hover {{
+        background-color: {hover_bg};
+    }}
+    """
+
+class Win11StartMenuWindow(Gtk.Window):
     def __init__(self, app):
-        super().__init__(application=app, title="Start")
-        self.set_default_size(540, 640)
+        super().__init__(application=app, title="Windows 11 Start Menu")
+        self.set_default_size(600, 680)
         self.set_resizable(False)
-        self.add_css_class("win11-start")
+        self.set_decorated(False)
+        self.add_css_class("win11-start-window")
 
-        p = Gtk.CssProvider()
-        p.load_from_data(CSS.encode())
-        Gtk.StyleContext.add_provider_for_display(self.get_display(), p, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        self.dark = is_dark_mode()
+        self.transparent = is_transparency_enabled()
 
+        # Load CSS
+        css_data = build_css(dark=self.dark, transparent=self.transparent)
+        provider = Gtk.CssProvider()
+        provider.load_from_data(css_data.encode())
+        Gtk.StyleContext.add_provider_for_display(
+            self.get_display(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
+        # Key controller for Escape key auto-dismiss
+        key_controller = Gtk.EventControllerKey()
+        key_controller.connect("key-pressed", self.on_key_pressed)
+        self.add_controller(key_controller)
+
+        # Focus / Click-away controller
+        focus_controller = Gtk.EventControllerFocus()
+        focus_controller.connect("leave", self.on_focus_leave)
+        self.add_controller(focus_controller)
+
+        # Main Layout Box
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         self.set_child(main_box)
 
-        # Top padding & Search Box
-        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        content_box.set_margin_top(16)
+        # Content container
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+        content_box.set_margin_top(18)
         content_box.set_margin_bottom(12)
-        content_box.set_margin_start(18)
-        content_box.set_margin_end(18)
+        content_box.set_margin_start(20)
+        content_box.set_margin_end(20)
         content_box.set_vexpand(True)
+        main_box.append(content_box)
+
+        # 1. Search Bar
+        search_wrap = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        search_wrap.add_css_class("search-container")
+
+        lbl_search_ico = Gtk.Label(label="🔍")
+        lbl_search_ico.set_margin_start(4)
+        search_wrap.append(lbl_search_ico)
 
         self.search_entry = Gtk.Entry()
-        self.search_entry.set_placeholder_text("Type here to search...")
-        self.search_entry.add_css_class("search-bar")
+        self.search_entry.set_placeholder_text("Type here to search apps, settings, and documents...")
+        self.search_entry.add_css_class("search-entry")
+        self.search_entry.set_hexpand(True)
         self.search_entry.connect("changed", self.on_search_changed)
-        content_box.append(self.search_entry)
+        self.search_entry.connect("activate", self.on_search_activate)
+        search_wrap.append(self.search_entry)
 
-        # Header for Pinned
-        hdr_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        # Clear button
+        self.btn_clear = Gtk.Button(label="✕")
+        self.btn_clear.add_css_class("all-apps-btn")
+        self.btn_clear.set_visible(False)
+        self.btn_clear.connect("clicked", lambda b: self.clear_search())
+        search_wrap.append(self.btn_clear)
+
+        content_box.append(search_wrap)
+
+        # 2. Main View Stack (Pinned Grid vs All Apps vs Search Results)
+        self.stack = Gtk.Stack()
+        self.stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
+        self.stack.set_transition_duration(150)
+        self.stack.set_vexpand(True)
+        content_box.append(self.stack)
+
+        # --- VIEW 0: PINNED & RECOMMENDED ---
+        self.view_pinned = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        
+        # Pinned Header
+        pinned_hdr = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         lbl_pinned = Gtk.Label(label="Pinned")
-        lbl_pinned.set_markup("<b>Pinned</b>")
+        lbl_pinned.add_css_class("section-title")
         lbl_pinned.set_halign(Gtk.Align.START)
         lbl_pinned.set_hexpand(True)
-        hdr_box.append(lbl_pinned)
-        content_box.append(hdr_box)
+        pinned_hdr.append(lbl_pinned)
 
-        # Pinned Grid
-        scroll = Gtk.ScrolledWindow()
-        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        scroll.set_vexpand(True)
+        btn_all_apps = Gtk.Button(label="All apps >")
+        btn_all_apps.add_css_class("all-apps-btn")
+        btn_all_apps.connect("clicked", lambda b: self.switch_view("all_apps"))
+        pinned_hdr.append(btn_all_apps)
+        self.view_pinned.append(pinned_hdr)
 
-        self.grid = Gtk.Grid()
-        self.grid.set_column_spacing(8)
-        self.grid.set_row_spacing(8)
-        self.grid.set_column_homogeneous(True)
+        # 6x3 Pinned Grid
+        grid_pinned = Gtk.Grid()
+        grid_pinned.set_column_spacing(6)
+        grid_pinned.set_row_spacing(6)
+        grid_pinned.set_column_homogeneous(True)
 
-        self.tiles = []
-        for i, (icon, label, cmd) in enumerate(PINNED_APPS):
+        for idx, (icon, name, cmd) in enumerate(PINNED_APPS):
             btn = Gtk.Button()
             btn.add_css_class("pinned-tile")
             
             box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
-            lbl_icon = Gtk.Label(label=icon)
-            lbl_icon.add_css_class("pinned-icon")
+            lbl_ico = Gtk.Label(label=icon)
+            lbl_ico.add_css_class("pinned-icon")
             
-            lbl_name = Gtk.Label(label=label)
-            lbl_name.add_css_class("pinned-label")
+            lbl_nm = Gtk.Label(label=name)
+            lbl_nm.add_css_class("pinned-label")
             
-            box.append(lbl_icon)
-            box.append(lbl_name)
+            box.append(lbl_ico)
+            box.append(lbl_nm)
             btn.set_child(box)
-            btn.connect("clicked", lambda b, c=cmd: self.launch_app(c))
+            btn.connect("clicked", lambda b, c=cmd: self.launch_cmd(c))
             
-            self.tiles.append((label.lower(), btn))
-            self.grid.attach(btn, i % 6, i // 6, 1, 1)
+            grid_pinned.attach(btn, idx % 6, idx // 6, 1, 1)
 
-        scroll.set_child(self.grid)
-        content_box.append(scroll)
-        main_box.append(content_box)
+        self.view_pinned.append(grid_pinned)
 
-        # ================= BOTTOM USER & POWER BAR =================
+        # Recommended Section
+        rec_hdr = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        rec_hdr.set_margin_top(8)
+        lbl_rec = Gtk.Label(label="Recommended")
+        lbl_rec.add_css_class("section-title")
+        lbl_rec.set_halign(Gtk.Align.START)
+        rec_hdr.append(lbl_rec)
+        self.view_pinned.append(rec_hdr)
+
+        grid_rec = Gtk.Grid()
+        grid_rec.set_column_spacing(10)
+        grid_rec.set_row_spacing(4)
+        grid_rec.set_column_homogeneous(True)
+
+        for idx, (icon, name, time_ago, cmd) in enumerate(RECOMMENDED_ITEMS):
+            btn = Gtk.Button()
+            btn.add_css_class("rec-item")
+            
+            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+            lbl_ico = Gtk.Label(label=icon)
+            lbl_ico.set_margin_start(4)
+            
+            txt_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=1)
+            lbl_title = Gtk.Label(label=name)
+            lbl_title.add_css_class("rec-title")
+            lbl_title.set_halign(Gtk.Align.START)
+            lbl_title.set_ellipsize(3) # PANGO_ELLIPSIZE_END
+            
+            lbl_sub = Gtk.Label(label=time_ago)
+            lbl_sub.add_css_class("rec-sub")
+            lbl_sub.set_halign(Gtk.Align.START)
+            
+            txt_box.append(lbl_title)
+            txt_box.append(lbl_sub)
+            
+            row.append(lbl_ico)
+            row.append(txt_box)
+            btn.set_child(row)
+            btn.connect("clicked", lambda b, c=cmd: self.launch_cmd(c))
+            
+            grid_rec.attach(btn, idx % 2, idx // 2, 1, 1)
+
+        self.view_pinned.append(grid_rec)
+        self.stack.add_named(self.view_pinned, "pinned")
+
+        # --- VIEW 1: ALL APPS DRAWER ---
+        self.view_all_apps = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        
+        all_hdr = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        btn_back = Gtk.Button(label="< Back")
+        btn_back.add_css_class("all-apps-btn")
+        btn_back.connect("clicked", lambda b: self.switch_view("pinned"))
+        all_hdr.append(btn_back)
+
+        lbl_all = Gtk.Label(label="All Apps")
+        lbl_all.add_css_class("section-title")
+        lbl_all.set_margin_start(8)
+        all_hdr.append(lbl_all)
+        self.view_all_apps.append(all_hdr)
+
+        scroll_all = Gtk.ScrolledWindow()
+        scroll_all.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll_all.set_vexpand(True)
+
+        list_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        for icon, name, category, cmd in ALL_APPS_LIST:
+            btn = Gtk.Button()
+            btn.add_css_class("app-drawer-row")
+            
+            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+            lbl_ico = Gtk.Label(label=icon)
+            lbl_ico.set_margin_start(6)
+            
+            lbl_nm = Gtk.Label(label=name)
+            lbl_nm.add_css_class("rec-title")
+            lbl_nm.set_halign(Gtk.Align.START)
+            lbl_nm.set_hexpand(True)
+            
+            row.append(lbl_ico)
+            row.append(lbl_nm)
+            btn.set_child(row)
+            btn.connect("clicked", lambda b, c=cmd: self.launch_cmd(c))
+            list_box.append(btn)
+
+        scroll_all.set_child(list_box)
+        self.view_all_apps.append(scroll_all)
+        self.stack.add_named(self.view_all_apps, "all_apps")
+
+        # --- VIEW 2: SEARCH RESULTS ---
+        self.view_search = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        scroll_search = Gtk.ScrolledWindow()
+        scroll_search.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll_search.set_vexpand(True)
+
+        self.search_results_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        scroll_search.set_child(self.search_results_box)
+        self.view_search.append(scroll_search)
+        self.stack.add_named(self.view_search, "search")
+
+        # 3. Bottom User & Power Bar
         bottom_strip = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         bottom_strip.add_css_class("bottom-strip")
 
@@ -206,46 +537,141 @@ class Win11StartWindow(Gtk.Window):
         u_avatar = Gtk.Label(label="👤")
         u_name = Gtk.Label(label=USERNAME)
         u_name.set_markup(f"<b>{USERNAME}</b>")
+        u_name.add_css_class("rec-title")
         user_box.append(u_avatar)
         user_box.append(u_name)
         btn_user.set_child(user_box)
-        btn_user.connect("clicked", self.open_user_menu)
+        btn_user.connect("clicked", self.open_user_popover)
 
-        # Power Button with Popover
+        # Power Button
         btn_power = Gtk.Button(label="⏻")
         btn_power.add_css_class("power-btn")
-        btn_power.connect("clicked", self.open_power_menu)
+        btn_power.connect("clicked", self.open_power_popover)
 
         bottom_strip.append(btn_user)
-        
         sep = Gtk.Box()
         sep.set_hexpand(True)
         bottom_strip.append(sep)
-        
         bottom_strip.append(btn_power)
+
         main_box.append(bottom_strip)
 
-    def launch_app(self, cmd):
-        self.destroy()
-        if cmd == "WIFI_SCAN":
-            subprocess.Popen(["omarchy-wifi-manager"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        elif cmd == "BT_SCAN":
-            subprocess.Popen(["omarchy-bluetooth-manager"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        else:
-            subprocess.Popen(["bash", "-c", cmd], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    def switch_view(self, name):
+        self.stack.set_visible_child_name(name)
+
+    def clear_search(self):
+        self.search_entry.set_text("")
+        self.btn_clear.set_visible(False)
+        self.switch_view("pinned")
 
     def on_search_changed(self, entry):
-        text = entry.get_text().strip().lower()
-        for label, btn in self.tiles:
-            if not text or text in label:
-                btn.set_visible(True)
-            else:
-                btn.set_visible(False)
+        query = entry.get_text().strip().lower()
+        if not query:
+            self.btn_clear.set_visible(False)
+            self.switch_view("pinned")
+            return
 
-    def open_power_menu(self, btn):
+        self.btn_clear.set_visible(True)
+        self.switch_view("search")
+
+        # Clear previous search results
+        while True:
+            child = self.search_results_box.get_first_child()
+            if child is None:
+                break
+            self.search_results_box.remove(child)
+
+        matched = 0
+        for icon, name, cat, cmd in ALL_APPS_LIST:
+            if query in name.lower() or query in cmd.lower():
+                matched += 1
+                btn = Gtk.Button()
+                btn.add_css_class("app-drawer-row")
+                row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+                lbl_ico = Gtk.Label(label=icon)
+                lbl_ico.set_margin_start(6)
+                lbl_nm = Gtk.Label(label=name)
+                lbl_nm.add_css_class("rec-title")
+                lbl_nm.set_halign(Gtk.Align.START)
+                lbl_nm.set_hexpand(True)
+                row.append(lbl_ico)
+                row.append(lbl_nm)
+                btn.set_child(row)
+                btn.connect("clicked", lambda b, c=cmd: self.launch_cmd(c))
+                self.search_results_box.append(btn)
+
+        # Web search option at the bottom
+        web_btn = Gtk.Button()
+        web_btn.add_css_class("app-drawer-row")
+        web_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        web_ico = Gtk.Label(label="🌐")
+        web_ico.set_margin_start(6)
+        web_lbl = Gtk.Label(label=f"Search web for '{query}'")
+        web_lbl.add_css_class("rec-title")
+        web_lbl.set_halign(Gtk.Align.START)
+        web_lbl.set_hexpand(True)
+        web_row.append(web_ico)
+        web_row.append(web_lbl)
+        web_btn.set_child(web_row)
+        web_cmd = f"omarchy-browser 'https://www.bing.com/search?q={query}'"
+        web_btn.connect("clicked", lambda b, c=web_cmd: self.launch_cmd(c))
+        self.search_results_box.append(web_btn)
+
+    def on_search_activate(self, entry):
+        text = entry.get_text().strip()
+        if not text:
+            return
+        query = text.lower()
+        for icon, name, cat, cmd in ALL_APPS_LIST:
+            if query in name.lower():
+                self.launch_cmd(cmd)
+                return
+        self.launch_cmd(f"omarchy-browser 'https://www.bing.com/search?q={text}'")
+
+    def on_key_pressed(self, controller, keyval, keycode, state):
+        if keyval == Gdk.KEY_Escape:
+            self.destroy()
+            return True
+        return False
+
+    def on_focus_leave(self, controller):
+        # Auto dismiss when clicking outside
+        GLib.timeout_add(120, self.safe_dismiss)
+
+    def safe_dismiss(self):
+        if not self.is_active():
+            self.destroy()
+        return False
+
+    def launch_cmd(self, cmd):
+        self.destroy()
+        subprocess.Popen(["bash", "-c", cmd], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    def open_user_popover(self, btn):
         pop = Gtk.Popover()
         pop.set_parent(btn)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        box.set_margin_top(8)
+        box.set_margin_bottom(8)
+        box.set_margin_start(8)
+        box.set_margin_end(8)
+
+        b_lock = Gtk.Button(label="🔒 Lock Account")
+        b_lock.add_css_class("action-pop-btn")
+        b_lock.connect("clicked", lambda x: (pop.popdown(), self.action_lock()))
         
+        b_signout = Gtk.Button(label="🚪 Sign Out")
+        b_signout.add_css_class("action-pop-btn")
+        b_signout.connect("clicked", lambda x: (pop.popdown(), self.action_logout()))
+
+        box.append(b_lock)
+        box.append(b_signout)
+        pop.set_child(box)
+        pop.popup()
+
+    def open_power_popover(self, btn):
+        pop = Gtk.Popover()
+        pop.set_parent(btn)
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         box.set_margin_top(8)
         box.set_margin_bottom(8)
@@ -263,32 +689,11 @@ class Win11StartWindow(Gtk.Window):
 
         for label, handler in actions:
             b = Gtk.Button(label=label)
-            b.add_css_class("power-menu-item")
+            b.add_css_class("action-pop-btn")
             b.set_halign(Gtk.Align.FILL)
             b.connect("clicked", lambda x, h=handler: (pop.popdown(), h()))
             box.append(b)
 
-        pop.set_child(box)
-        pop.popup()
-
-    def open_user_menu(self, btn):
-        pop = Gtk.Popover()
-        pop.set_parent(btn)
-        
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
-        box.set_margin_top(8)
-        box.set_margin_bottom(8)
-        box.set_margin_start(8)
-        box.set_margin_end(8)
-
-        b_lock = Gtk.Button(label="🔒 Lock Account")
-        b_lock.connect("clicked", lambda x: (pop.popdown(), self.action_lock()))
-        
-        b_signout = Gtk.Button(label="🚪 Sign Out")
-        b_signout.connect("clicked", lambda x: (pop.popdown(), self.action_logout()))
-
-        box.append(b_lock)
-        box.append(b_signout)
         pop.set_child(box)
         pop.popup()
 
@@ -316,14 +721,34 @@ class Win11StartWindow(Gtk.Window):
         self.destroy()
         subprocess.run(["systemctl", "poweroff"], check=False)
 
-class Win11StartApp(Adw.Application):
+class Win11StartMenuApp(Adw.Application):
     def __init__(self):
         super().__init__(application_id=None, flags=Gio.ApplicationFlags.NON_UNIQUE)
 
     def do_activate(self):
-        win = Win11StartWindow(self)
+        # Process singleton check / toggle
+        win = Win11StartMenuWindow(self)
         win.present()
 
-if __name__ == "__main__":
-    app = Win11StartApp()
+def main():
+    # Instant toggle if already running
+    curr_pid = os.getpid()
+    try:
+        out = subprocess.check_output(["pgrep", "-f", "omarchy-win11-startmenu"], text=True)
+        pids = [int(p.strip()) for p in out.strip().splitlines() if p.strip()]
+        other_pids = [p for p in pids if p != curr_pid]
+        if other_pids:
+            for p in other_pids:
+                try:
+                    os.kill(p, signal.SIGTERM)
+                except Exception:
+                    pass
+            sys.exit(0)
+    except Exception:
+        pass
+
+    app = Win11StartMenuApp()
     sys.exit(app.run(sys.argv))
+
+if __name__ == "__main__":
+    main()
