@@ -23,45 +23,19 @@ BarWidget {
     }
   }
 
-  // Helper function to find matching running toplevel window
-  function getAppToplevel(matchers) {
-    if (!matchers || matchers.length === 0) return null
-    try {
-      var list = ToplevelManager.toplevels ? ToplevelManager.toplevels.values : []
-      for (var i = 0; i < list.length; i++) {
-        var tl = list[i]
-        var id = (tl.appId || "").toLowerCase()
-        var title = (tl.title || "").toLowerCase()
-        for (var m = 0; m < matchers.length; m++) {
-          var pat = matchers[m].toLowerCase()
-          if (id.indexOf(pat) !== -1 || title.indexOf(pat) !== -1) {
-            return tl
-          }
-        }
-      }
-    } catch (e) {}
-    return null
+  function matches(tl, matchers) {
+    if (!tl || !matchers || matchers.length === 0) return false
+    var target = ((tl.appId || "") + " " + (tl.title || "")).toLowerCase()
+    return matchers.some(function(p) { return target.indexOf(p.toLowerCase()) !== -1 })
   }
 
   function isRunning(matchers) {
-    if (!matchers || matchers.length === 0) return false
-    return getAppToplevel(matchers) !== null
+    var list = (ToplevelManager.toplevels && ToplevelManager.toplevels.values) ? ToplevelManager.toplevels.values : []
+    return list.some(function(tl) { return root.matches(tl, matchers) })
   }
 
   function isFocused(matchers) {
-    try {
-      var active = ToplevelManager.activeToplevel
-      if (!active || !matchers || matchers.length === 0) return false
-      var id = (active.appId || "").toLowerCase()
-      var title = (active.title || "").toLowerCase()
-      for (var m = 0; m < matchers.length; m++) {
-        var pat = matchers[m].toLowerCase()
-        if (id.indexOf(pat) !== -1 || title.indexOf(pat) !== -1) {
-          return true
-        }
-      }
-    } catch (e) {}
-    return false
+    return root.matches(ToplevelManager.activeToplevel, matchers)
   }
 
   // Theme state poller

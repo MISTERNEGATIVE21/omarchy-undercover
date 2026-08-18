@@ -161,7 +161,7 @@ class AboutMacDialog(Adw.Window):
         # OS Details
         lbl_os = Gtk.Label()
         lbl_os.set_markup('<span size="large" weight="bold">macOS Sequoia</span>')
-        lbl_ver = Gtk.Label(label="Version 15.1 (Omarchy Undercover v2.5.0)")
+        lbl_ver = Gtk.Label(label="Version 15.1 (Omarchy Undercover v3.0.0)")
         lbl_ver.set_opacity(0.7)
         box.append(lbl_os)
         box.append(lbl_ver)
