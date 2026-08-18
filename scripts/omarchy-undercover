@@ -386,16 +386,20 @@ apply_waybar_windows() {
             sed -i 's/rgba(32, 32, 32, [0-9.]*)/#1f1f1f/g' "$HOME/.config/waybar/style.css" 2>/dev/null || true
         fi
 
-        if ! grep -q '"mode"' "$HOME/.config/waybar/config.jsonc"; then
-            sed -i 's/"position": "bottom",/"position": "bottom",\n  "mode": "'"$mode"'",/' "$HOME/.config/waybar/config.jsonc"
-        else
-            sed -i 's/"mode": "[^"]*"/"mode": "'"$mode"'"/' "$HOME/.config/waybar/config.jsonc"
+        local align
+        align=$(read_setting "TASKBAR_ALIGNMENT" "center")
+        if command_exists jq; then
+            if [[ "$align" == "left" ]]; then
+                jq '.[0]["modules-left"] = ["custom/startmenu", "custom/search", "custom/taskview", "wlr/taskbar"] | .[0]["modules-center"] = ["custom/weather"]' "$HOME/.config/waybar/config.jsonc" > "$HOME/.config/waybar/config.jsonc.tmp" 2>/dev/null && mv "$HOME/.config/waybar/config.jsonc.tmp" "$HOME/.config/waybar/config.jsonc"
+            else
+                jq '.[0]["modules-left"] = ["custom/weather"] | .[0]["modules-center"] = ["custom/startmenu", "custom/search", "custom/taskview", "wlr/taskbar"]' "$HOME/.config/waybar/config.jsonc" > "$HOME/.config/waybar/config.jsonc.tmp" 2>/dev/null && mv "$HOME/.config/waybar/config.jsonc.tmp" "$HOME/.config/waybar/config.jsonc"
+            fi
         fi
 
         if command -v omarchy-undercover-taskbar-autohide &>/dev/null; then
             omarchy-undercover-taskbar-autohide --set "$visibility"
         fi
-        msg "Windows 11 waybar taskbar deployed ($visibility)."
+        msg "Windows 11 waybar taskbar deployed ($visibility, $align)."
     fi
 }
 
@@ -414,15 +418,15 @@ apply_shell_windows() {
             local align
             align=$(read_setting "TASKBAR_ALIGNMENT" "center")
             if [[ "$align" == "center" ]]; then
-                cp -f "$src" "$HOME/.config/omarchy/shell.json"
-                # If jq is available, ensure centered layout
                 if command_exists jq; then
-                    jq '.bar.centerAnchor = "" | .bar.layout.center = [{"id": "undercover.win11-taskbar"}] | .bar.layout.left = [{"id": "undercover.win11-weather"}]' "$src" > "$HOME/.config/omarchy/shell.json" 2>/dev/null || cp -f "$src" "$HOME/.config/omarchy/shell.json"
+                    jq '.bar.centerAnchor = "" | .bar.layout.left = [{"id": "undercover.win11-weather"}] | .bar.layout.center = [{"id": "undercover.win11-taskbar"}]' "$src" > "$HOME/.config/omarchy/shell.json" 2>/dev/null || cp -f "$src" "$HOME/.config/omarchy/shell.json"
+                else
+                    cp -f "$src" "$HOME/.config/omarchy/shell.json"
                 fi
             else
-                # Left-aligned classic layout
+                # Left-aligned classic Windows layout
                 if command_exists jq; then
-                    jq '.bar.centerAnchor = "" | .bar.layout.left = [{"id": "undercover.win11-weather"}, {"id": "undercover.win11-start"}, {"id": "undercover.win11-search"}, {"id": "undercover.win11-taskview"}, {"id": "undercover.win11-copilot"}, {"id": "omarchy.workspaces"}] | .bar.layout.center = [{"id": "omarchy.media"}]' "$src" > "$HOME/.config/omarchy/shell.json" 2>/dev/null || cp -f "$src" "$HOME/.config/omarchy/shell.json"
+                    jq '.bar.centerAnchor = "" | .bar.layout.left = [{"id": "undercover.win11-taskbar"}] | .bar.layout.center = [{"id": "undercover.win11-weather"}]' "$src" > "$HOME/.config/omarchy/shell.json" 2>/dev/null || cp -f "$src" "$HOME/.config/omarchy/shell.json"
                 else
                     cp -f "$src" "$HOME/.config/omarchy/shell.json"
                 fi
