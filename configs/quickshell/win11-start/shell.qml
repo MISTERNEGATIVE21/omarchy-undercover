@@ -795,8 +795,8 @@ ShellRoot {
               ColumnLayout {
                 spacing: 0
                 Layout.fillWidth: true
-                Text { text: "Sleep"; color: startWindow.isDark ? "#ffffff" : "#1a1a1a"; font.family: "Segoe UI"; font.pixelSize: 11.5; font.weight: Font.DemiBold }
-                Text { text: "Low-power standby"; color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0, 0, 0, 0.45); font.family: "Segoe UI"; font.pixelSize: 9.5 }
+                Text { text: "Sleep"; color: startWindow.isDark ? "#ffffff" : "#1a1a1a"; font.family: "Segoe UI"; font.pixelSize: 12; font.weight: Font.DemiBold }
+                Text { text: "Low-power standby"; color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0, 0, 0, 0.45); font.family: "Segoe UI"; font.pixelSize: 10 }
               }
             }
             MouseArea {
@@ -826,8 +826,8 @@ ShellRoot {
               ColumnLayout {
                 spacing: 0
                 Layout.fillWidth: true
-                Text { text: "Restart"; color: startWindow.isDark ? "#ffffff" : "#1a1a1a"; font.family: "Segoe UI"; font.pixelSize: 11.5; font.weight: Font.DemiBold }
-                Text { text: "Closes apps and restarts PC"; color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0, 0, 0, 0.45); font.family: "Segoe UI"; font.pixelSize: 9.5 }
+                Text { text: "Restart"; color: startWindow.isDark ? "#ffffff" : "#1a1a1a"; font.family: "Segoe UI"; font.pixelSize: 12; font.weight: Font.DemiBold }
+                Text { text: "Closes apps and restarts PC"; color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0, 0, 0, 0.45); font.family: "Segoe UI"; font.pixelSize: 10 }
               }
             }
             MouseArea {
@@ -857,8 +857,8 @@ ShellRoot {
               ColumnLayout {
                 spacing: 0
                 Layout.fillWidth: true
-                Text { text: "Shut down"; color: startWindow.isDark ? "#ffffff" : "#1a1a1a"; font.family: "Segoe UI"; font.pixelSize: 11.5; font.weight: Font.DemiBold }
-                Text { text: "Powers off your PC"; color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0, 0, 0, 0.45); font.family: "Segoe UI"; font.pixelSize: 9.5 }
+                Text { text: "Shut down"; color: startWindow.isDark ? "#ffffff" : "#1a1a1a"; font.family: "Segoe UI"; font.pixelSize: 12; font.weight: Font.DemiBold }
+                Text { text: "Powers off your PC"; color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0, 0, 0, 0.45); font.family: "Segoe UI"; font.pixelSize: 10 }
               }
             }
             MouseArea {
@@ -888,8 +888,8 @@ ShellRoot {
               ColumnLayout {
                 spacing: 0
                 Layout.fillWidth: true
-                Text { text: "Lock Screen"; color: startWindow.isDark ? "#ffffff" : "#1a1a1a"; font.family: "Segoe UI"; font.pixelSize: 11.5; font.weight: Font.DemiBold }
-                Text { text: "Secures current session"; color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0, 0, 0, 0.45); font.family: "Segoe UI"; font.pixelSize: 9.5 }
+                Text { text: "Lock Screen"; color: startWindow.isDark ? "#ffffff" : "#1a1a1a"; font.family: "Segoe UI"; font.pixelSize: 12; font.weight: Font.DemiBold }
+                Text { text: "Secures current session"; color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0, 0, 0, 0.45); font.family: "Segoe UI"; font.pixelSize: 10 }
               }
             }
             MouseArea {
@@ -919,8 +919,8 @@ ShellRoot {
               ColumnLayout {
                 spacing: 0
                 Layout.fillWidth: true
-                Text { text: "Sign Out"; color: startWindow.isDark ? "#ffffff" : "#1a1a1a"; font.family: "Segoe UI"; font.pixelSize: 11.5; font.weight: Font.DemiBold }
-                Text { text: "Exits user environment"; color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0, 0, 0, 0.45); font.family: "Segoe UI"; font.pixelSize: 9.5 }
+                Text { text: "Sign Out"; color: startWindow.isDark ? "#ffffff" : "#1a1a1a"; font.family: "Segoe UI"; font.pixelSize: 12; font.weight: Font.DemiBold }
+                Text { text: "Exits user environment"; color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0, 0, 0, 0.45); font.family: "Segoe UI"; font.pixelSize: 10 }
               }
             }
             MouseArea {
