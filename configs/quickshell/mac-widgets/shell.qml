@@ -23,6 +23,8 @@ ShellRoot {
 
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "omarchy-menu"
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+    exclusiveZone: 0
     color: "transparent"
 
     implicitWidth: 440
