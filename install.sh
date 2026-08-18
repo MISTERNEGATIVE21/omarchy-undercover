@@ -216,10 +216,10 @@ main() {
     echo ""
     local opt_arg="${1:-}"
     case "$opt_arg" in
-        1|--mac|--mac-dark|mac) CHOSEN="🍏 Apple macOS Sequoia (Dark)" ;;
-        2|--mac-light|mac-light) CHOSEN="☀️ Apple macOS Sequoia (Light)" ;;
-        3|--w11|--win11|--windows|win11-dark) CHOSEN="🪟 Windows 11 Fluent (Dark)" ;;
-        4|--w11-light|--win11-light|win11-light) CHOSEN="🌅 Windows 11 Fluent (Light)" ;;
+        1|-mac|--mac|-apple|--apple|--mac-dark|mac|mac-dark) CHOSEN="🍏 Apple macOS Sequoia (Dark)" ;;
+        2|-mac-light|--mac-light|mac-light) CHOSEN="☀️ Apple macOS Sequoia (Light)" ;;
+        3|-w11|--w11|-win11|--win11|--windows|windows|win11|win11-dark) CHOSEN="🪟 Windows 11 Fluent (Dark)" ;;
+        4|-w11-light|--w11-light|-win11-light|--win11-light|win11-light) CHOSEN="🌅 Windows 11 Fluent (Light)" ;;
         *)
             if [[ $HAS_GUM -eq 1 && -t 0 ]]; then
                 gum style --foreground 39 --bold "✨ Select your initial desktop transformation preset:"
