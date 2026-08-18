@@ -513,9 +513,12 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
             ("mac-light", "-mac-light", "☀️ Apple macOS Sequoia (Light)", "Solar light frosted glass theme with high-vibrancy dock."),
             ("win11-dark", "-w11", "🪟 Windows 11 Fluent (Dark)", "Centered Mica acrylic taskbar, Start menu, Action Center & Segoe UI fonts."),
             ("win11-light", "-w11-light", "🌅 Windows 11 Fluent (Light)", "Fluent Light taskbar, Bloom light background & bright Mica accents."),
+            ("omarchy", "--disable", "🐧 Original Omarchy Desktop", "Restore default Omarchy status bar layout, GTK styling, and original desktop configs."),
         ]
 
         curr_state = read_state()
+        if not curr_state or curr_state == "default":
+            curr_state = "omarchy"
 
         for state_key, flag, title, desc in presets:
             row = Adw.ActionRow(title=title, subtitle=desc)
@@ -530,15 +533,15 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
 
         page.add(group_presets)
 
-        # Mode Cycling & Shortcuts
+        # Quick Actions & Keybindings
         group_cycle = Adw.PreferencesGroup(title="Quick Actions & Keybindings")
         
         row_toggle = Adw.ActionRow(
-            title="Cycle Transformation Preset",
-            subtitle="Shortcut: Super + Alt + U (cycles mac-dark ➔ mac-light ➔ win11-dark ➔ win11-light)"
+            title="Toggle Undercover / Default",
+            subtitle="Shortcut: Super + Alt + U (toggles between active Undercover preset and Default Omarchy)"
         )
-        btn_toggle = Gtk.Button(label="🔄 Cycle to Next Mode")
-        btn_toggle.connect("clicked", lambda b: self.apply_preset("--toggle", "Next Mode"))
+        btn_toggle = Gtk.Button(label="🔄 Toggle Undercover / Default")
+        btn_toggle.connect("clicked", lambda b: self.apply_preset("--toggle", "Toggle Mode"))
         row_toggle.add_suffix(btn_toggle)
         group_cycle.add(row_toggle)
 

@@ -218,7 +218,7 @@ ensure_win11_themes_installed() {
 }
 
 ensure_omarchy_quickshell_assets() {
-    local plugins_src themes_src icons_win11_src icons_mac_src icons_apps_src
+    local plugins_src themes_src icons_win11_src icons_mac_src icons_apps_src qs_src
     plugins_src=$(project_file "plugins")
     if [[ -z "$plugins_src" || ! -d "$plugins_src" ]]; then
         plugins_src="${SCRIPT_DIR}/../configs/plugins"
@@ -239,8 +239,12 @@ ensure_omarchy_quickshell_assets() {
     if [[ -z "$icons_apps_src" || ! -d "$icons_apps_src" ]]; then
         icons_apps_src="${SCRIPT_DIR}/../assets/icons"
     fi
+    qs_src=$(project_file "quickshell")
+    if [[ -z "$qs_src" || ! -d "$qs_src" ]]; then
+        qs_src="${SCRIPT_DIR}/../configs/quickshell"
+    fi
 
-    mkdir -p "$HOME/.config/omarchy/plugins" "$HOME/.config/omarchy/themes"
+    mkdir -p "$HOME/.config/omarchy/plugins" "$HOME/.config/omarchy/themes" "$CONFIG_DIR/quickshell"
     mkdir -p "$HOME/.local/share/icons/win11" "$HOME/.local/share/icons/mac-dock" "$HOME/.local/share/icons/hicolor/scalable/apps"
 
     if [[ -d "$plugins_src" ]]; then
@@ -248,6 +252,9 @@ ensure_omarchy_quickshell_assets() {
     fi
     if [[ -d "$themes_src" ]]; then
         cp -rf "$themes_src/"* "$HOME/.config/omarchy/themes/" 2>/dev/null || true
+    fi
+    if [[ -d "$qs_src" ]]; then
+        cp -rf "$qs_src/"* "$CONFIG_DIR/quickshell/" 2>/dev/null || true
     fi
     if [[ -d "$icons_win11_src" ]]; then
         cp -rf "$icons_win11_src/"* "$HOME/.local/share/icons/win11/" 2>/dev/null || true
@@ -465,12 +472,12 @@ apply_shell_mac() {
 }
 
 restore_shell_from_baseline() {
-    local baseline="$1"
-    if [[ -f "$baseline/omarchy/shell.json" ]]; then
+    local baseline="${1:-}"
+    if [[ -n "$baseline" && -f "$baseline/omarchy/shell.json" ]]; then
         mkdir -p "$HOME/.config/omarchy"
         cp -f "$baseline/omarchy/shell.json" "$HOME/.config/omarchy/shell.json"
         msg "Restored original Omarchy Quickshell layout."
-    elif is_quickshell_supported; then
+    elif is_quickshell_supported || [[ -d "$HOME/.config/omarchy" ]]; then
         local def_src
         def_src=$(project_file "shell/shell-default.json")
         if [[ -z "$def_src" || ! -f "$def_src" ]]; then
@@ -479,6 +486,7 @@ restore_shell_from_baseline() {
         if [[ -f "$def_src" ]]; then
             mkdir -p "$HOME/.config/omarchy"
             cp -f "$def_src" "$HOME/.config/omarchy/shell.json"
+            msg "Restored default Omarchy Quickshell layout."
         fi
     fi
 }
@@ -675,6 +683,8 @@ switch_to_mac() {
     echo "mac-$variant" > "$STATE_FILE"
     write_setting "MODE" "mac"
     write_setting "THEME_VARIANT" "$variant"
+    write_setting "LAST_UNDERCOVER_MODE" "mac-$variant"
+    rm -f "$HOME/.local/state/omarchy/toggles/bar-off" 2>/dev/null || true
 
     ensure_omarchy_quickshell_assets
     if command_exists omarchy-theme-set; then
@@ -803,6 +813,8 @@ switch_to_win11() {
     echo "win11-$variant" > "$STATE_FILE"
     write_setting "MODE" "windows"
     write_setting "THEME_VARIANT" "$variant"
+    write_setting "LAST_UNDERCOVER_MODE" "win11-$variant"
+    rm -f "$HOME/.local/state/omarchy/toggles/bar-off" 2>/dev/null || true
 
     ensure_omarchy_quickshell_assets
     if command_exists omarchy-theme-set; then
@@ -926,10 +938,20 @@ switch_to_omarchy() {
     pkill -9 -f "mac-dock" 2>/dev/null || true
     pkill -9 -f "omarchy-mac-dock" 2>/dev/null || true
     killall swaybg 2>/dev/null || true
+    pkill -x swaybg 2>/dev/null || true
     disable_windows_hyprland 2>/dev/null || true
     rm -f "$HOME/.config/gtk-4.0/gtk.css" "$HOME/.config/gtk-3.0/gtk.css" 2>/dev/null || true
+
+    # Clear bar-off toggle to ensure Quickshell is not hidden globally
+    rm -f "$HOME/.local/state/omarchy/toggles/bar-off" 2>/dev/null || true
+
+    # Stop autohide daemon so it does not hide bar in global/default mode
+    if command_exists omarchy-undercover-autohide; then
+        omarchy-undercover-autohide --stop 2>/dev/null || true
+    fi
+
+    local baseline=""
     if [[ -f "$BASELINE_FILE" ]]; then
-        local baseline
         baseline=$(cat "$BASELINE_FILE")
         if [[ -d "$baseline" ]]; then
             restore_shell_from_baseline "$baseline"
@@ -943,7 +965,12 @@ switch_to_omarchy() {
             restore_config_dir "fontconfig" "$baseline"
             restore_gtk_from_baseline "$baseline"
         fi
+    else
+        restore_shell_from_baseline ""
     fi
+
+    restore_undercover_nautilus "$baseline"
+
     if command_exists gsettings; then
         gsettings set org.gnome.desktop.wm.preferences button-layout "close:minimize,maximize" 2>/dev/null || true
     fi
@@ -961,10 +988,18 @@ restore_baseline() {
     pkill -9 -f "mac-dock" 2>/dev/null || true
     pkill -9 -f "omarchy-mac-dock" 2>/dev/null || true
     killall swaybg 2>/dev/null || true
+    pkill -x swaybg 2>/dev/null || true
     disable_windows_hyprland
 
+    # Clear bar-off toggle
+    rm -f "$HOME/.local/state/omarchy/toggles/bar-off" 2>/dev/null || true
+
+    if command_exists omarchy-undercover-autohide; then
+        omarchy-undercover-autohide --stop 2>/dev/null || true
+    fi
+
+    local baseline=""
     if [[ -f "$BASELINE_FILE" ]]; then
-        local baseline
         baseline=$(cat "$BASELINE_FILE")
         if [[ -d "$baseline" ]]; then
             if [[ -f "$baseline/hypr/hyprland.lua" ]]; then
@@ -986,6 +1021,8 @@ restore_baseline() {
             restore_config_dir "fontconfig" "$baseline"
             restore_gtk_from_baseline "$baseline"
         fi
+    else
+        restore_shell_from_baseline ""
     fi
 
     restore_undercover_nautilus "$baseline"
@@ -1052,7 +1089,7 @@ show_help() {
     echo "  -w11, --w11, --win11, --enable          Switch to Windows 11 (dark by default)"
     echo "  -w11-light, --win11-light               Switch to Windows 11 Light mode"
     echo "  --backend [auto|quickshell|waybar]      Select or show desktop status bar engine"
-    echo "  --toggle                                Advance to next mode in 5-mode cycle"
+    echo "  --toggle                                Toggle between Undercover mode and Default Omarchy"
     echo "  --disable, --omarchy                    Switch to original Omarchy mode & theming"
     echo "  --restore                               Restore from baseline backup"
     echo "  --verify                                Verify integrity of config and state"
@@ -1061,25 +1098,27 @@ show_help() {
 }
 
 toggle_mode() {
-    local -a MODES=("mac-dark" "mac-light" "win11-dark" "win11-light")
     local current=""
-    [[ -f "$STATE_FILE" ]] && current=$(cat "$STATE_FILE")
-    local next="mac-dark"
-    local found=0
-    for i in "${!MODES[@]}"; do
-        if [[ "${MODES[$i]}" == "$current" ]]; then
-            local ni=$(( (i + 1) % ${#MODES[@]} ))
-            next="${MODES[$ni]}"
-            found=1
-            break
-        fi
-    done
-    case "$next" in
-        mac-dark)    switch_to_mac "dark" ;;
-        mac-light)   switch_to_mac "light" ;;
-        win11-dark)  switch_to_win11 "dark" ;;
-        win11-light) switch_to_win11 "light" ;;
-        *)           switch_to_mac "dark" ;;
+    [[ -f "$STATE_FILE" ]] && current=$(cat "$STATE_FILE" 2>/dev/null | tr -d '[:space:]')
+
+    case "$current" in
+        mac*|win11*|windows*|apple*|ios*)
+            # Currently in an Undercover mode -> save state and restore to default Omarchy desktop
+            write_setting "LAST_UNDERCOVER_MODE" "$current"
+            switch_to_omarchy
+            ;;
+        *)
+            # Currently in default Omarchy mode -> restore the chosen undercover preset
+            local target
+            target=$(read_setting "LAST_UNDERCOVER_MODE" "mac-dark")
+            case "$target" in
+                mac-light) switch_to_mac "light" ;;
+                mac*|apple*|ios*) switch_to_mac "dark" ;;
+                win11-light|windows-light) switch_to_win11 "light" ;;
+                win11*|windows*) switch_to_win11 "dark" ;;
+                *) switch_to_mac "dark" ;;
+            esac
+            ;;
     esac
 }
 

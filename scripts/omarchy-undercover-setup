@@ -237,7 +237,7 @@ main() {
             --bold \
             "🎉 OMARCHY UNDERCOVER SUCCESSFULLY INSTALLED & ACTIVATED!" \
             "" \
-            "  ⚡ Super + Alt + U    ➔  Cycle 4-Mode Presets (Mac ➔ Win11)" \
+            "  ⚡ Super + Alt + U    ➔  Toggle Undercover / Default Mode" \
             "  ⚡ Super + B          ➔  Toggle Taskbar / Dock Autohide" \
             "  ⚡ Super + Space / Win➔  Spotlight Search / Start Menu" \
             "  ⚡ Super + Tab        ➔  Mission Control / Task View" \
@@ -247,7 +247,7 @@ main() {
         echo -e "${GREEN}${BOLD}┌────────────────────────────────────────────────────────────────────────┐${NC}"
         echo -e "${GREEN}${BOLD}│  🎉 OMARCHY UNDERCOVER SUCCESSFULLY INSTALLED & ACTIVATED!            │${NC}"
         echo -e "${GREEN}${BOLD}├────────────────────────────────────────────────────────────────────────┤${NC}"
-        echo -e "${WHITE}  • ${YELLOW}Super + Alt + U${WHITE}    ➔  Cycle 4-Mode Presets (Mac ➔ Win11)            │${NC}"
+        echo -e "${WHITE}  • ${YELLOW}Super + Alt + U${WHITE}    ➔  Toggle Undercover / Default Mode              │${NC}"
         echo -e "${WHITE}  • ${YELLOW}Super + B${WHITE}          ➔  Toggle Taskbar / Dock Autohide                │${NC}"
         echo -e "${WHITE}  • ${YELLOW}Super + Space / Win${WHITE}➔  Spotlight Search / Start Menu                 │${NC}"
         echo -e "${WHITE}  • ${YELLOW}Super + Tab${WHITE}        ➔  Mission Control / Task View                   │${NC}"

@@ -18,7 +18,7 @@ ShellRoot {
     }
 
     WlrLayershell.layer: WlrLayer.Top
-    WlrLayershell.namespace: "omarchy-bar"
+    WlrLayershell.namespace: "mac-dock"
     exclusionMode: ExclusionMode.Auto
     color: "transparent"
 

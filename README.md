@@ -41,11 +41,11 @@ cd omarchy-undercover
 
 ---
 
-## 🌟 Transformation Presets (4-Mode Cycle)
+## 🌟 Transformation Presets & Undercover Toggle
 
-Press **`Super + Alt + U`** to instantly cycle through the 4 environments:
+Press **`Super + Alt + U`** to instantly toggle between your active Undercover disguise and the Default Omarchy desktop:
 
-$$\Large \text{🍏 macOS Dark} \longrightarrow \text{☀️ macOS Light} \longrightarrow \text{🪟 Win11 Dark} \longrightarrow \text{🌅 Win11 Light}$$
+$$\Large \text{🎭 Undercover Disguise (macOS / Windows 11)} \iff \text{🐧 Default Omarchy Desktop}$$
 
 ```
 ┌──────────────────────────────────────┬──────────────────────────────────────┐
@@ -70,7 +70,7 @@ $$\Large \text{🍏 macOS Dark} \longrightarrow \text{☀️ macOS Light} \longr
 
 | Shortcut | Action | Description |
 | :--- | :--- | :--- |
-| <kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>U</kbd> | **Toggle Undercover Mode** | Cycles across `mac-dark` ➔ `mac-light` ➔ `win11-dark` ➔ `win11-light` |
+| <kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>U</kbd> | **Toggle Undercover Mode** | Toggles between active Undercover preset and Default Omarchy |
 | <kbd>Super</kbd> + <kbd>B</kbd> / <kbd>Win</kbd> + <kbd>B</kbd> | **Toggle Taskbar / Dock** | Instantly hides or shows the Waybar dock/taskbar |
 | <kbd>Super</kbd> + <kbd>Space</kbd> / <kbd>Win</kbd> | **Spotlight / Start Menu** | Opens macOS Spotlight or Windows 11 Start menu |
 | <kbd>Super</kbd> + <kbd>Tab</kbd> | **Mission Control / Task View** | Opens interactive window switcher |
