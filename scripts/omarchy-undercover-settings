@@ -65,31 +65,134 @@ def find_cli():
             return str(c)
     return "omarchy-undercover"
 
+DEFAULTS_FILE = CONFIG_DIR / "defaults.json"
+
+def read_defaults_json():
+    if DEFAULTS_FILE.exists():
+        try:
+            return json.loads(DEFAULTS_FILE.read_text())
+        except Exception:
+            pass
+    return {
+        "browser": "microsoft-edge",
+        "file_manager": "nautilus",
+        "terminal": "kitty",
+        "editor": "antigravity-ide",
+        "media": "spotify",
+        "photos": "loupe",
+        "win11_pins": {
+            "start": True,
+            "taskview": True,
+            "explorer": True,
+            "browser": True,
+            "antigravity": True,
+            "terminal": True,
+            "notepad": True,
+            "settings": True
+        },
+        "mac_pins": {
+            "finder": True,
+            "launchpad": True,
+            "safari": True,
+            "antigravity": True,
+            "messages": True,
+            "music": True,
+            "photos": True,
+            "terminal": True,
+            "settings": True,
+            "appstore": True
+        }
+    }
+
+def write_defaults_json(data):
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    DEFAULTS_FILE.write_text(json.dumps(data, indent=2))
+
+def detect_installed_apps(category):
+    categories = {
+        "browser": [
+            ("microsoft-edge-stable", "Microsoft Edge", "microsoft-edge.desktop"),
+            ("microsoft-edge", "Microsoft Edge", "microsoft-edge.desktop"),
+            ("google-chrome-stable", "Google Chrome", "google-chrome.desktop"),
+            ("google-chrome", "Google Chrome", "google-chrome.desktop"),
+            ("chromium", "Chromium Web Browser", "chromium.desktop"),
+            ("firefox", "Mozilla Firefox", "firefox.desktop"),
+            ("vivaldi-stable", "Vivaldi Web Browser", "vivaldi-stable.desktop"),
+            ("vivaldi", "Vivaldi Web Browser", "vivaldi-stable.desktop"),
+            ("brave-browser", "Brave Browser", "brave-browser.desktop"),
+            ("brave", "Brave Browser", "brave-browser.desktop"),
+            ("zen-browser", "Zen Browser", "zen.desktop"),
+            ("zen", "Zen Browser", "zen.desktop"),
+            ("opera", "Opera Web Browser", "opera.desktop"),
+            ("librewolf", "LibreWolf", "librewolf.desktop"),
+            ("epiphany", "GNOME Web (Epiphany)", "org.gnome.Epiphany.desktop"),
+        ],
+        "file_manager": [
+            ("nautilus", "GNOME Files (Nautilus)", "org.gnome.Nautilus.desktop"),
+            ("thunar", "Thunar File Manager", "thunar.desktop"),
+            ("dolphin", "KDE Dolphin", "org.kde.dolphin.desktop"),
+            ("nemo", "Nemo File Manager", "nemo.desktop"),
+            ("pcmanfm", "PCManFM", "pcmanfm.desktop"),
+            ("pcmanfm-qt", "PCManFM-Qt", "pcmanfm-qt.desktop"),
+        ],
+        "terminal": [
+            ("kitty", "Kitty GPU Terminal", "kitty.desktop"),
+            ("alacritty", "Alacritty Terminal", "Alacritty.desktop"),
+            ("ghostty", "Ghostty Terminal", "com.mitchellh.ghostty.desktop"),
+            ("foot", "Foot Wayland Terminal", "foot.desktop"),
+            ("wezterm", "WezTerm", "org.wezfurlong.wezterm.desktop"),
+            ("gnome-terminal", "GNOME Terminal", "org.gnome.Terminal.desktop"),
+            ("ptyxis", "Ptyxis Container Terminal", "org.gnome.Ptyxis.desktop"),
+            ("konsole", "KDE Konsole", "org.kde.konsole.desktop"),
+            ("tilix", "Tilix Terminal", "com.gexperts.Tilix.desktop"),
+            ("xfce4-terminal", "XFCE Terminal", "xfce4-terminal.desktop"),
+            ("xterm", "XTerm", "xterm.desktop"),
+        ],
+        "editor": [
+            ("antigravity-ide", "Antigravity IDE", "antigravity.desktop"),
+            ("code", "Visual Studio Code", "code.desktop"),
+            ("vscodium", "VSCodium", "vscodium.desktop"),
+            ("cursor", "Cursor AI IDE", "cursor.desktop"),
+            ("zed", "Zed Editor", "dev.zed.Zed.desktop"),
+            ("zed-editor", "Zed Editor", "dev.zed.Zed.desktop"),
+            ("gedit", "GNOME gedit", "org.gnome.gedit.desktop"),
+            ("gnome-text-editor", "GNOME Text Editor", "org.gnome.TextEditor.desktop"),
+            ("kate", "KDE Kate", "org.kde.kate.desktop"),
+            ("mousepad", "XFCE Mousepad", "org.xfce.mousepad.desktop"),
+            ("subl", "Sublime Text", "sublime_text.desktop"),
+            ("sublime_text", "Sublime Text", "sublime_text.desktop"),
+            ("nvim", "Neovim", "nvim.desktop"),
+        ],
+        "media": [
+            ("spotify", "Spotify Music", "spotify.desktop"),
+            ("vlc", "VLC Media Player", "vlc.desktop"),
+            ("mpv", "MPV Player", "mpv.desktop"),
+            ("amberol", "Amberol Music Player", "io.bassi.Amberol.desktop"),
+            ("celluloid", "Celluloid Video Player", "io.github.celluloid_player.Celluloid.desktop"),
+            ("rhythmbox", "Rhythmbox Music", "org.gnome.Rhythmbox3.desktop"),
+            ("elisa", "KDE Elisa", "org.kde.elisa.desktop"),
+            ("totem", "GNOME Videos (Totem)", "org.gnome.Totem.desktop"),
+        ],
+        "photos": [
+            ("loupe", "GNOME Image Viewer (Loupe)", "org.gnome.Loupe.desktop"),
+            ("eog", "Eye of GNOME (eog)", "org.gnome.eog.desktop"),
+            ("gwenview", "KDE Gwenview", "org.kde.gwenview.desktop"),
+            ("ristretto", "XFCE Ristretto", "ristretto.desktop"),
+            ("viewnior", "Viewnior", "viewnior.desktop"),
+            ("gthumb", "gThumb Image Viewer", "org.gnome.gThumb.desktop"),
+        ]
+    }
+    raw_list = categories.get(category, [])
+    seen = set()
+    result = []
+    for cmd, name, desktop in raw_list:
+        if cmd not in seen and shutil.which(cmd):
+            seen.add(cmd)
+            result.append((cmd, name, desktop))
+    return result
+
 def detect_installed_browsers():
-    """Detects available web browsers installed on the user system."""
-    browsers = []
-    candidates = [
-        ("chromium", "Chromium Web Browser", "chromium.desktop"),
-        ("google-chrome", "Google Chrome", "google-chrome.desktop"),
-        ("google-chrome-stable", "Google Chrome", "google-chrome.desktop"),
-        ("firefox", "Mozilla Firefox", "firefox.desktop"),
-        ("brave-browser", "Brave Browser", "brave-browser.desktop"),
-        ("brave", "Brave Browser", "brave-browser.desktop"),
-        ("microsoft-edge", "Microsoft Edge", "microsoft-edge.desktop"),
-        ("microsoft-edge-stable", "Microsoft Edge", "microsoft-edge.desktop"),
-        ("vivaldi", "Vivaldi Web Browser", "vivaldi-stable.desktop"),
-        ("zen-browser", "Zen Browser", "zen.desktop"),
-        ("zen", "Zen Browser", "zen.desktop"),
-        ("librewolf", "LibreWolf", "librewolf.desktop"),
-        ("opera", "Opera Web Browser", "opera.desktop"),
-        ("epiphany", "GNOME Web (Epiphany)", "org.gnome.Epiphany.desktop"),
-    ]
-    seen_cmds = set()
-    for cmd, name, desktop in candidates:
-        if cmd not in seen_cmds and shutil.which(cmd):
-            seen_cmds.add(cmd)
-            browsers.append((cmd, name, desktop))
-    return browsers
+    return detect_installed_apps("browser")
 
 def read_state():
     if STATE_FILE.exists():
@@ -636,49 +739,177 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
 
         page.add(group_win)
 
-        # 3. Default Applications & Web Browser
-        group_browser = Adw.PreferencesGroup(
-            title="Default Applications & Web Browser",
-            description="Configure your primary web browser and application handlers."
+        # 3. Default Applications Suite
+        group_apps = Adw.PreferencesGroup(
+            title="Default Applications Suite (Linux Integration)",
+            description="Configure your primary web browser, file explorer, terminal, code editor, and media handlers for Windows 11 & macOS modes."
         )
-        installed_browsers = detect_installed_browsers()
-        row_browser = Adw.ComboRow(
-            title="Default Web Browser",
-            subtitle="Choose primary browser launched by taskbars, start menu, and widgets"
-        )
-        model_browser = Gtk.StringList()
-        model_browser.append("Auto-Detect System Default")
-        browser_keys = ["auto"]
-        for cmd, name, desktop in installed_browsers:
-            model_browser.append(f"{name} ({cmd})")
-            browser_keys.append(cmd)
-        row_browser.set_model(model_browser)
 
-        current_browser = read_setting("DEFAULT_BROWSER", "auto").lower()
+        row_browser = self.build_app_picker_row(
+            title="Default Web Browser",
+            subtitle="Choose primary browser launched by taskbar, start menu, and widgets",
+            category="browser",
+            default_key="browser"
+        )
+        group_apps.add(row_browser)
+
+        row_fm = self.build_app_picker_row(
+            title="Default File Manager",
+            subtitle="File explorer launched by My Computer, taskbar, dock, and shortcuts",
+            category="file_manager",
+            default_key="file_manager"
+        )
+        group_apps.add(row_fm)
+
+        row_term = self.build_app_picker_row(
+            title="Default Terminal Console",
+            subtitle="Terminal emulator launched by dock, taskbar, and CLI shortcuts",
+            category="terminal",
+            default_key="terminal"
+        )
+        group_apps.add(row_term)
+
+        row_edit = self.build_app_picker_row(
+            title="Default Code & Text Editor",
+            subtitle="IDE or text editor launched by taskbar, start menu, and document handlers",
+            category="editor",
+            default_key="editor"
+        )
+        group_apps.add(row_edit)
+
+        row_media = self.build_app_picker_row(
+            title="Default Music & Media Player",
+            subtitle="Audio/video player launched by macOS dock and Windows media widgets",
+            category="media",
+            default_key="media"
+        )
+        group_apps.add(row_media)
+
+        row_photos = self.build_app_picker_row(
+            title="Default Photos & Image Viewer",
+            subtitle="Image viewer launched by dock, start menu, and picture folders",
+            category="photos",
+            default_key="photos"
+        )
+        group_apps.add(row_photos)
+
+        page.add(group_apps)
+
+        # 4. Windows 11 Taskbar Pinned Apps Manager
+        group_win_pins = Adw.PreferencesGroup(
+            title="Windows 11 Taskbar Pinned Applications",
+            description="Select which application shortcuts appear on the Windows 11 taskbar."
+        )
+        defaults_data = read_defaults_json()
+        win_pins = defaults_data.get("win11_pins", {})
+
+        win_pin_items = [
+            ("antigravity", "Antigravity IDE", "Show Antigravity IDE / Code editor on taskbar"),
+            ("browser", "Microsoft Edge", "Show Microsoft Edge / Web Browser on taskbar"),
+            ("explorer", "File Explorer", "Show File Explorer / Nautilus on taskbar"),
+            ("terminal", "Terminal Console", "Show Terminal emulator on taskbar"),
+            ("notepad", "Notepad Text Editor", "Show Notepad / Gedit text editor on taskbar"),
+            ("settings", "Windows Settings", "Show Settings control center on taskbar"),
+            ("taskview", "Task View Switcher", "Show virtual desktop and window switcher on taskbar"),
+        ]
+
+        for p_id, p_name, p_sub in win_pin_items:
+            sw_row = Adw.SwitchRow(title=p_name, subtitle=p_sub)
+            sw_row.set_active(win_pins.get(p_id, True))
+            def make_win_pin_callback(pid, name):
+                return lambda r, p: self.update_win_pin(pid, r.get_active(), name)
+            sw_row.connect("notify::active", make_win_pin_callback(p_id, p_name))
+            group_win_pins.add(sw_row)
+
+        page.add(group_win_pins)
+
+        # 5. macOS Sequoia Dock Pinned Apps Manager
+        group_mac_pins = Adw.PreferencesGroup(
+            title="macOS Sequoia Dock Pinned Applications",
+            description="Select which application shortcuts appear on the macOS dock."
+        )
+        mac_pins = defaults_data.get("mac_pins", {})
+
+        mac_pin_items = [
+            ("finder", "Finder", "Show Finder / File Manager on macOS dock"),
+            ("launchpad", "Launchpad", "Show Launchpad application grid on macOS dock"),
+            ("safari", "Safari / Web Browser", "Show Safari / Web Browser on macOS dock"),
+            ("antigravity", "Antigravity IDE", "Show Antigravity IDE on macOS dock"),
+            ("messages", "Messages", "Show Messages widget on macOS dock"),
+            ("music", "Music", "Show Music & Media player on macOS dock"),
+            ("photos", "Photos", "Show Photos & Image viewer on macOS dock"),
+            ("terminal", "Terminal", "Show Terminal console on macOS dock"),
+            ("settings", "System Settings", "Show System Settings on macOS dock"),
+            ("appstore", "App Store", "Show App Store / Package manager on macOS dock"),
+        ]
+
+        for p_id, p_name, p_sub in mac_pin_items:
+            sw_row = Adw.SwitchRow(title=p_name, subtitle=p_sub)
+            sw_row.set_active(mac_pins.get(p_id, True))
+            def make_mac_pin_callback(pid, name):
+                return lambda r, p: self.update_mac_pin(pid, r.get_active(), name)
+            sw_row.connect("notify::active", make_mac_pin_callback(p_id, p_name))
+            group_mac_pins.add(sw_row)
+
+        page.add(group_mac_pins)
+
+        self.stack.add_titled(page, "dock_taskbar", "Dock & Taskbar")
+
+    def build_app_picker_row(self, title, subtitle, category, default_key):
+        defaults = read_defaults_json()
+        curr_val = defaults.get(default_key, "auto")
+        installed = detect_installed_apps(category)
+
+        row = Adw.ComboRow(title=title, subtitle=subtitle)
+        model = Gtk.StringList()
+        model.append("Auto-Detect System Default")
+        keys = ["auto"]
+
+        for cmd, name, desktop in installed:
+            model.append(f"{name} ({cmd})")
+            keys.append(cmd)
+
+        row.set_model(model)
         sel_idx = 0
-        for idx, key in enumerate(browser_keys):
-            if key == current_browser:
+        for idx, k in enumerate(keys):
+            if k == curr_val:
                 sel_idx = idx
                 break
-        row_browser.set_selected(sel_idx)
+        row.set_selected(sel_idx)
 
-        def on_browser_changed(combo, param):
+        def on_changed(combo, param):
             idx = combo.get_selected()
-            if 0 <= idx < len(browser_keys):
-                chosen = browser_keys[idx]
-                write_setting("DEFAULT_BROWSER", chosen)
-                if chosen != "auto":
-                    for cmd, name, desktop in installed_browsers:
+            if 0 <= idx < len(keys):
+                chosen = keys[idx]
+                d = read_defaults_json()
+                d[default_key] = chosen
+                write_defaults_json(d)
+                write_setting(f"DEFAULT_{default_key.upper()}", chosen)
+                if category == "browser" and chosen != "auto":
+                    for cmd, name, desktop in installed:
                         if cmd == chosen:
                             subprocess.run(["xdg-settings", "set", "default-web-browser", desktop], check=False)
                             break
-                self.show_toast(f"Default browser set to: {model_browser.get_string(idx)}")
+                self.show_toast(f"{title} set to: {model.get_string(idx)}")
 
-        row_browser.connect("notify::selected", on_browser_changed)
-        group_browser.add(row_browser)
-        page.add(group_browser)
+        row.connect("notify::selected", on_changed)
+        return row
 
-        self.stack.add_titled(page, "dock_taskbar", "Dock & Taskbar")
+    def update_win_pin(self, pid, active, name):
+        d = read_defaults_json()
+        if "win11_pins" not in d:
+            d["win11_pins"] = {}
+        d["win11_pins"][pid] = active
+        write_defaults_json(d)
+        self.show_toast(f"Taskbar pin '{name}': {'Enabled' if active else 'Disabled'}")
+
+    def update_mac_pin(self, pid, active, name):
+        d = read_defaults_json()
+        if "mac_pins" not in d:
+            d["mac_pins"] = {}
+        d["mac_pins"][pid] = active
+        write_defaults_json(d)
+        self.show_toast(f"Dock pin '{name}': {'Enabled' if active else 'Disabled'}")
 
     # ==================== PAGE 2: WALLPAPERS GALLERY ====================
     def build_wallpapers_page(self):

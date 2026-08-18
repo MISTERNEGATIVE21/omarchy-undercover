@@ -256,58 +256,88 @@ def build_css(dark=True, transparent=True):
         color: {text_muted};
     }}
 
-    .bottom-strip {{
+    .bottom-strip {
         background-color: {sub_bg};
         border-top: 1px solid {border_color};
-        padding: 10px 18px;
+        padding: 8px 16px;
         border-bottom-left-radius: 16px;
         border-bottom-right-radius: 16px;
-    }}
+    }
 
-    .user-pill {{
+    .user-pill {
         background-color: transparent;
         border-radius: 8px;
         padding: 4px 10px;
         border: none;
-    }}
-    .user-pill:hover {{
+    }
+    .user-pill:hover {
         background-color: {hover_bg};
-    }}
+    }
 
-    .power-btn {{
+    .user-avatar-badge {
+        background: linear-gradient(135deg, #0078d4, #60cdff);
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 13px;
+        border-radius: 50%;
+        min-width: 32px;
+        min-height: 32px;
+    }
+
+    .power-btn {
         background-color: transparent;
         border-radius: 8px;
         padding: 6px 12px;
         border: none;
         color: {text_color};
-        font-size: 17px;
-    }}
-    .power-btn:hover {{
+        font-size: 18px;
+    }
+    .power-btn:hover {
         background-color: {hover_bg};
-    }}
+    }
 
-    .action-pop-btn {{
+    .popover-acrylic {
+        background-color: {bg_color};
+        border-radius: 12px;
+        border: 1px solid {border_color};
+        padding: 6px;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    .power-action-row {
         background-color: transparent;
-        border-radius: 6px;
-        padding: 8px 14px;
+        border-radius: 8px;
+        padding: 8px 12px;
+        border: none;
+        min-width: 220px;
+        transition: background-color 0.12s ease;
+    }
+    .power-action-row:hover {
+        background-color: {hover_bg};
+    }
+
+    .action-title {
         font-family: 'Segoe UI', sans-serif;
         font-size: 12.5px;
+        font-weight: 600;
         color: {text_color};
-        border: none;
-    }}
-    .action-pop-btn:hover {{
-        background-color: {hover_bg};
-    }}
+    }
 
-    .app-drawer-row {{
+    .action-sub {
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 10px;
+        color: {text_muted};
+    }
+
+    .app-drawer-row {
         background-color: transparent;
         border-radius: 8px;
         padding: 6px 10px;
         border: none;
-    }}
-    .app-drawer-row:hover {{
+    }
+    .app-drawer-row:hover {
         background-color: {hover_bg};
-    }}
+    }
     """
 
 class Win11StartMenuWindow(Gtk.Window):
@@ -533,19 +563,40 @@ class Win11StartMenuWindow(Gtk.Window):
         # User Pill
         btn_user = Gtk.Button()
         btn_user.add_css_class("user-pill")
-        user_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        u_avatar = Gtk.Label(label="👤")
-        u_name = Gtk.Label(label=USERNAME)
-        u_name.set_markup(f"<b>{USERNAME}</b>")
+        user_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        
+        # Initial letter avatar circle
+        initial = (USERNAME[:1] if USERNAME else "U").upper()
+        u_avatar = Gtk.Label(label=initial)
+        u_avatar.add_css_class("user-avatar-badge")
+        u_avatar.set_size_request(32, 32)
+
+        user_text_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=1)
+        u_name = Gtk.Label(label=USERNAME.capitalize())
         u_name.add_css_class("rec-title")
+        u_name.set_halign(Gtk.Align.START)
+        
+        u_sub = Gtk.Label(label="Personal Account")
+        u_sub.add_css_class("rec-sub")
+        u_sub.set_halign(Gtk.Align.START)
+
+        user_text_col.append(u_name)
+        user_text_col.append(u_sub)
+
         user_box.append(u_avatar)
-        user_box.append(u_name)
+        user_box.append(user_text_col)
         btn_user.set_child(user_box)
         btn_user.connect("clicked", self.open_user_popover)
 
         # Power Button
-        btn_power = Gtk.Button(label="⏻")
+        btn_power = Gtk.Button()
         btn_power.add_css_class("power-btn")
+        p_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        p_ico = Gtk.Label(label="⏻")
+        p_ico.set_margin_start(4)
+        p_ico.set_margin_end(4)
+        p_box.append(p_ico)
+        btn_power.set_child(p_box)
         btn_power.connect("clicked", self.open_power_popover)
 
         bottom_strip.append(btn_user)
@@ -650,47 +701,79 @@ class Win11StartMenuWindow(Gtk.Window):
     def open_user_popover(self, btn):
         pop = Gtk.Popover()
         pop.set_parent(btn)
+        pop.add_css_class("popover-acrylic")
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
-        box.set_margin_top(8)
-        box.set_margin_bottom(8)
-        box.set_margin_start(8)
-        box.set_margin_end(8)
+        box.set_margin_top(6)
+        box.set_margin_bottom(6)
+        box.set_margin_start(6)
+        box.set_margin_end(6)
 
-        b_lock = Gtk.Button(label="🔒 Lock Account")
-        b_lock.add_css_class("action-pop-btn")
-        b_lock.connect("clicked", lambda x: (pop.popdown(), self.action_lock()))
-        
-        b_signout = Gtk.Button(label="🚪 Sign Out")
-        b_signout.add_css_class("action-pop-btn")
-        b_signout.connect("clicked", lambda x: (pop.popdown(), self.action_logout()))
+        user_actions = [
+            ("⚙️", "Change Account Settings", "Open Undercover & system settings", lambda: self.launch_cmd("omarchy-undercover-settings")),
+            ("🔒", "Lock Account", "Lock workstation immediately", self.action_lock),
+            ("🚪", "Sign Out", "Close active session and apps", self.action_logout),
+        ]
 
-        box.append(b_lock)
-        box.append(b_signout)
+        for ico, title, desc, handler in user_actions:
+            b = Gtk.Button()
+            b.add_css_class("power-action-row")
+            r = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+            i = Gtk.Label(label=ico)
+            i.set_margin_start(4)
+            col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=1)
+            t = Gtk.Label(label=title)
+            t.add_css_class("action-title")
+            t.set_halign(Gtk.Align.START)
+            s = Gtk.Label(label=desc)
+            s.add_css_class("action-sub")
+            s.set_halign(Gtk.Align.START)
+            col.append(t)
+            col.append(s)
+            r.append(i)
+            r.append(col)
+            b.set_child(r)
+            b.connect("clicked", lambda x, h=handler: (pop.popdown(), h()))
+            box.append(b)
+
         pop.set_child(box)
         pop.popup()
 
     def open_power_popover(self, btn):
         pop = Gtk.Popover()
         pop.set_parent(btn)
+        pop.add_css_class("popover-acrylic")
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
-        box.set_margin_top(8)
-        box.set_margin_bottom(8)
-        box.set_margin_start(8)
-        box.set_margin_end(8)
+        box.set_margin_top(6)
+        box.set_margin_bottom(6)
+        box.set_margin_start(6)
+        box.set_margin_end(6)
 
         actions = [
-            ("🔒 Lock Session", self.action_lock),
-            ("🚪 Sign Out", self.action_logout),
-            ("💤 Sleep / Suspend", self.action_suspend),
-            ("❄️ Hibernate", self.action_hibernate),
-            ("🔄 Restart", self.action_reboot),
-            ("⏻ Shut Down", self.action_shutdown),
+            ("🌙", "Sleep", "Saves session and puts PC in low-power state", self.action_suspend),
+            ("🔄", "Restart", "Closes apps, turns off PC, then turns it back on", self.action_reboot),
+            ("⏻", "Shut Down", "Closes all open apps and powers off PC", self.action_shutdown),
+            ("🔒", "Lock Screen", "Locks workstation to secure session", self.action_lock),
+            ("🚪", "Sign Out", "Signs out of current user account", self.action_logout),
         ]
 
-        for label, handler in actions:
-            b = Gtk.Button(label=label)
-            b.add_css_class("action-pop-btn")
-            b.set_halign(Gtk.Align.FILL)
+        for ico, title, desc, handler in actions:
+            b = Gtk.Button()
+            b.add_css_class("power-action-row")
+            r = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+            i = Gtk.Label(label=ico)
+            i.set_margin_start(4)
+            col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=1)
+            t = Gtk.Label(label=title)
+            t.add_css_class("action-title")
+            t.set_halign(Gtk.Align.START)
+            s = Gtk.Label(label=desc)
+            s.add_css_class("action-sub")
+            s.set_halign(Gtk.Align.START)
+            col.append(t)
+            col.append(s)
+            r.append(i)
+            r.append(col)
+            b.set_child(r)
             b.connect("clicked", lambda x, h=handler: (pop.popdown(), h()))
             box.append(b)
 

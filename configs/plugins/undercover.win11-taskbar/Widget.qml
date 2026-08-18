@@ -13,6 +13,7 @@ BarWidget {
   implicitHeight: root.bar ? root.bar.barSize : 44
 
   property bool isDark: true
+  property var winPinsConfig: ({})
 
   function runCmd(cmd) {
     if (root.bar) {
@@ -76,27 +77,54 @@ BarWidget {
     }
   }
 
+  // Defaults & pinned apps poller
+  Process {
+    id: defaultsPoller
+    running: true
+    command: ["bash", "-c", "cat $HOME/.config/omarchy-undercover/defaults.json 2>/dev/null || echo '{}'"]
+    stdout: SplitParser {
+      onRead: function(line) {
+        try {
+          var d = JSON.parse(String(line))
+          if (d && d.win11_pins) {
+            root.winPinsConfig = d.win11_pins
+          }
+        } catch(e) {}
+      }
+    }
+  }
+
   Timer {
-    interval: 4000
+    interval: 3000
     running: true
     repeat: true
     triggeredOnStart: true
     onTriggered: {
       if (!statePoller.running) statePoller.running = true
+      if (!defaultsPoller.running) defaultsPoller.running = true
     }
   }
 
-  // Windows 11 Taskbar Apps
+  // Windows 11 Taskbar Apps with authentic Edge icon
   property var winApps: [
     { id: "start", name: "Start", isStart: true, iconFile: "start.svg", exec: "omarchy-win11-start", matchers: [] },
     { id: "taskview", name: "Task View", isTaskView: true, iconFile: "taskview.svg", exec: "rofi -show window -theme ~/.config/rofi/windows11.rasi", matchers: [] },
     { id: "explorer", name: "File Explorer", iconFile: "explorer.svg", exec: "nautilus computer:/// || thunar || dolphin", matchers: ["nautilus", "thunar", "dolphin", "files", "org.gnome.nautilus"] },
-    { id: "browser", name: "Web Browser", iconFile: "browser.svg", exec: "omarchy-browser", matchers: ["chrome", "chromium", "firefox", "vivaldi", "edge", "brave", "zen", "browser", "google-chrome"] },
+    { id: "browser", name: "Microsoft Edge", iconFile: "microsoft-edge.svg", exec: "omarchy-browser", matchers: ["edge", "microsoft-edge", "chrome", "chromium", "firefox", "vivaldi", "brave", "zen", "browser", "google-chrome"] },
     { id: "antigravity", name: "Antigravity IDE", iconFile: "antigravity-ide.svg", exec: "antigravity-ide || code || vscodium", matchers: ["antigravity", "code", "vscodium", "vscode", "codium"] },
-    { id: "terminal", name: "Terminal", iconFile: "terminal.svg", exec: "xdg-terminal-exec || alacritty", matchers: ["kitty", "alacritty", "foot", "terminal", "wezterm", "ghostty", "ptyxis", "xterm", "console"] },
+    { id: "terminal", name: "Terminal", iconFile: "terminal.svg", exec: "xdg-terminal-exec || alacritty || kitty", matchers: ["kitty", "alacritty", "foot", "terminal", "wezterm", "ghostty", "ptyxis", "xterm", "console"] },
     { id: "notepad", name: "Notepad", iconFile: "notepad.svg", exec: "gedit || kate || mousepad || gnome-text-editor", matchers: ["gedit", "kate", "mousepad", "gnome-text-editor", "text-editor", "sublime_text", "nvim", "kwrite"] },
     { id: "settings", name: "Settings", iconFile: "settings.svg", exec: "omarchy-undercover-settings", matchers: ["omarchy-undercover-settings", "org.omarchy.undercover.settings", "settings", "gnome-control-center"] }
   ]
+
+  function getVisibleWinApps() {
+    return root.winApps.filter(function(app) {
+      if (root.winPinsConfig && root.winPinsConfig[app.id] !== undefined) {
+        return root.winPinsConfig[app.id] === true
+      }
+      return true
+    })
+  }
 
   RowLayout {
     id: taskbarRow
@@ -104,7 +132,7 @@ BarWidget {
     spacing: 3
 
     Repeater {
-      model: root.winApps
+      model: root.getVisibleWinApps()
 
       Rectangle {
         id: itemBox
@@ -242,13 +270,11 @@ BarWidget {
               }
             } else {
               if (modelData.matchers && modelData.matchers.length > 0) {
-                var tl = root.getAppToplevel(modelData.matchers)
-                if (tl) {
-                  tl.activate()
-                  return
-                }
+                var matchStr = modelData.matchers.join(",")
+                root.runCmd("omarchy-undercover-activate '" + matchStr + "' '" + modelData.exec.replace(/'/g, "\\'") + "'")
+              } else {
+                root.runCmd(modelData.exec)
               }
-              root.runCmd(modelData.exec)
             }
           }
         }

@@ -5,8 +5,14 @@
 # =============================================================================
 
 SETTINGS_FILE="$HOME/.config/omarchy-undercover/settings.conf"
+DEFAULTS_JSON="$HOME/.config/omarchy-undercover/defaults.json"
 BROWSER_SETTING=""
-if [[ -f "$SETTINGS_FILE" ]]; then
+
+if [[ -f "$DEFAULTS_JSON" ]]; then
+    BROWSER_SETTING=$(jq -r '.browser // empty' "$DEFAULTS_JSON" 2>/dev/null)
+fi
+
+if [[ -z "$BROWSER_SETTING" && -f "$SETTINGS_FILE" ]]; then
     BROWSER_SETTING=$(grep -E '^DEFAULT_BROWSER=' "$SETTINGS_FILE" 2>/dev/null | cut -d= -f2- | tr -d '"'\'' ')
 fi
 
