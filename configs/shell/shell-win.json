@@ -6,6 +6,7 @@
   },
   "bar": {
     "position": "bottom",
+    "barSize": 48,
     "transparent": false,
     "centerAnchor": "",
     "layout": {
@@ -27,10 +28,7 @@
           "id": "undercover.win11-actioncenter"
         },
         {
-          "id": "omarchy.clock",
-          "format": "h:mm A\nM/d/yyyy",
-          "formatAlt": "dddd, MMMM d, yyyy\nHH:mm:ss",
-          "verticalFormat": "HH\n—\nmm"
+          "id": "undercover.win11-clock"
         },
         {
           "id": "undercover.win11-showdesktop"

@@ -21,12 +21,20 @@ Panel {
   exclusionMode: dockWindow.isAutohide ? ExclusionMode.Ignore : ExclusionMode.Auto
   color: "transparent"
 
-  implicitWidth: dockCard.implicitWidth + 48
-  implicitHeight: 90
+  readonly property real screenWidth: dockWindow.screen ? dockWindow.screen.width : 1920
+  readonly property real screenHeight: dockWindow.screen ? dockWindow.screen.height : 1080
+  readonly property real dpiScale: (dockWindow.screen && dockWindow.screen.devicePixelRatio) ? dockWindow.screen.devicePixelRatio : 1.0
 
-  property real baseIconSize: 48
-  property real maxMagnification: 1.45
-  property real effectRadius: 130.0
+  // Responsive scale factor based on screen height and DPI:
+  // Baseline is 1080p @ 1.0. On 1440p -> ~1.2x. On 4K -> ~1.5x-2.0x. On 768p -> ~0.85x.
+  readonly property real responsiveScale: Math.max(0.8, Math.min(2.2, (screenHeight / 1080.0) * (dpiScale > 1.0 ? 1.0 : (screenWidth >= 2560 ? 1.25 : 1.0))))
+
+  implicitWidth: dockCard.implicitWidth + Math.round(48 * responsiveScale)
+  implicitHeight: Math.round(90 * responsiveScale)
+
+  property real baseIconSize: Math.round(48 * responsiveScale)
+  property real maxMagnification: 1.42
+  property real effectRadius: Math.round(135.0 * responsiveScale)
   property bool isMouseOverDock: false
   property real currentMouseX: 0
 
@@ -197,14 +205,14 @@ Panel {
     anchors.bottomMargin: 2
     z: 1
 
-    y: (dockWindow.isAutohide && !dockWindow.isDockRevealed) ? 82 : 0
+    y: (dockWindow.isAutohide && !dockWindow.isDockRevealed) ? Math.round(82 * dockWindow.responsiveScale) : 0
     Behavior on y {
       NumberAnimation { duration: 240; easing.type: Easing.OutQuad }
     }
 
-    implicitWidth: dockLayoutRow.implicitWidth + 24
-    implicitHeight: 66
-    radius: 20
+    implicitWidth: dockLayoutRow.implicitWidth + Math.round(24 * dockWindow.responsiveScale)
+    implicitHeight: dockWindow.baseIconSize + Math.round(18 * dockWindow.responsiveScale)
+    radius: Math.round(20 * dockWindow.responsiveScale)
 
     color: dockWindow.isLight ? Qt.rgba(0.98, 0.98, 1.0, 0.72) : Qt.rgba(0.12, 0.12, 0.16, 0.72)
     border.color: dockWindow.isLight ? Qt.rgba(0, 0, 0, 0.12) : Qt.rgba(1, 1, 1, 0.22)

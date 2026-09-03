@@ -13,12 +13,13 @@ BarWidget {
   property bool isDark: true
   property var winPinsConfig: ({})
 
-  readonly property int tileHeight: Math.max(28, (root.bar ? root.bar.barSize - 6 : 38))
-  readonly property int tileWidth: tileHeight
-  readonly property int iconSize: Math.round(tileHeight * 0.58)
+  readonly property real scaleFactor: (root.screen && root.screen.devicePixelRatio) ? root.screen.devicePixelRatio : 1.0
+  readonly property int tileHeight: Math.max(34, (root.bar ? root.bar.barSize - 8 : 40))
+  readonly property int tileWidth: Math.round(tileHeight * 1.15)
+  readonly property int iconSize: Math.round(tileHeight * 0.60)
 
-  implicitWidth: taskbarRow.implicitWidth + 8
-  implicitHeight: root.bar ? root.bar.barSize : 44
+  implicitWidth: taskbarRow.implicitWidth + Math.round(24 * root.scaleFactor)
+  implicitHeight: root.bar ? root.bar.barSize : 48
 
   function runCmd(cmd) {
     if (root.bar) {
@@ -189,7 +190,7 @@ BarWidget {
   RowLayout {
     id: taskbarRow
     anchors.centerIn: parent
-    spacing: 4
+    spacing: Math.max(4, Math.round(6 * root.scaleFactor))
 
     Repeater {
       model: root.getAllTaskbarItems()
