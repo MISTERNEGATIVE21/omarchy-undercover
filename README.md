@@ -55,7 +55,7 @@ omarchy plugin remove undercover
 ## ⚡ 1-Line Basecamp-Styled TUI Quick Install
 
 ```bash
-bash <(curl -sL https://raw.githubusercontent.com/MISTERNEGATIVE21/omarchy-undercover/master/install.sh)
+bash <(curl -sL https://raw.githubusercontent.com/MISTERNEGATIVE21/omarchy-undercover/main/install.sh)
 ```
 
 Or clone and run the interactive Charm Gum installer:
