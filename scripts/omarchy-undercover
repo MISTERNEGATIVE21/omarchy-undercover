@@ -610,7 +610,7 @@ backup_original_configs() {
 restore_gtk_from_baseline() {
     local baseline="$1"
     local gtk_file="$baseline/gtk_settings.conf"
-    if [[ -f "$gtk_file" ]]; then
+    if [[ -n "$baseline" && -f "$gtk_file" ]]; then
         local GTK_THEME="" ICON_THEME="" CURSOR_THEME="" FONT_NAME="" COLOR_SCHEME="" CURSOR_SIZE=""
         source "$gtk_file"
         omarchy_set_gnome_theme "${GTK_THEME//\'/}" "${ICON_THEME//\'/}" "${CURSOR_THEME//\'/}" "${CURSOR_SIZE//\'/}"
@@ -620,7 +620,15 @@ restore_gtk_from_baseline() {
         if [[ -n "${COLOR_SCHEME:-}" ]]; then
             gsettings set org.gnome.desktop.interface color-scheme "${COLOR_SCHEME//\'/}" 2>/dev/null || true
         fi
+    else
+        # Fallback: Restore pristine default Omarchy theme
+        omarchy_set_gnome_theme "Adwaita" "Papirus-Dark" "Bibata-Modern-Classic" "24"
+        gsettings set org.gnome.desktop.interface color-scheme "prefer-dark" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface font-name "Sans 10" 2>/dev/null || true
     fi
+    # Remove custom Undercover GTK styling and reset button layout
+    rm -f "$HOME/.config/gtk-3.0/gtk.css" "$HOME/.config/gtk-4.0/gtk.css" 2>/dev/null || true
+    gsettings set org.gnome.desktop.wm.preferences button-layout ":close" 2>/dev/null || true
     nautilus -q 2>/dev/null || true
 }
 

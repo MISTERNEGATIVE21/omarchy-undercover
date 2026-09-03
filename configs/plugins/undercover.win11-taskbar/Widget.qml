@@ -28,6 +28,49 @@ BarWidget {
     }
   }
 
+  // Workspaces seeking state
+  property var workspaceList: [1, 2, 3, 4]
+  property int activeWorkspaceId: 1
+
+  Process {
+    id: wsProc
+    command: ["bash", "-c", "hyprctl activeworkspace -j 2>/dev/null; echo '---'; hyprctl workspaces -j 2>/dev/null"]
+    stdout: StdioCollector {
+      onCollected: {
+        try {
+          var parts = text.split("---")
+          if (parts.length >= 1 && parts[0].trim()) {
+            var act = JSON.parse(parts[0].trim())
+            if (act && act.id) root.activeWorkspaceId = act.id
+          }
+          if (parts.length >= 2 && parts[1].trim()) {
+            var all = JSON.parse(parts[1].trim())
+            if (Array.isArray(all)) {
+              var ids = all.map(function(w) { return w.id }).filter(function(id) { return id > 0 && id <= 10 })
+              ids.sort(function(a, b) { return a - b })
+              if (ids.indexOf(root.activeWorkspaceId) === -1 && root.activeWorkspaceId > 0) {
+                ids.push(root.activeWorkspaceId)
+                ids.sort(function(a, b) { return a - b })
+              }
+              if (ids.length === 0) ids = [1]
+              root.workspaceList = ids
+            }
+          }
+        } catch(e) {}
+      }
+    }
+  }
+
+  Timer {
+    interval: 1500
+    running: true
+    repeat: true
+    triggeredOnStart: true
+    onTriggered: {
+      if (!wsProc.running) wsProc.start()
+    }
+  }
+
   function matches(tl, matchers) {
     if (!tl || !matchers || matchers.length === 0) return false
     var target = ((tl.appId || "") + " " + (tl.title || "")).toLowerCase()
@@ -325,9 +368,118 @@ BarWidget {
           }
         }
 
-        // Standard Tooltip for Start / TaskView
+        // Windows 11 Virtual Desktops Preview & Workspace Seeking Card
         Rectangle {
-          visible: itemMouse.containsMouse && (modelData.isStart || modelData.isTaskView)
+          id: taskViewCard
+          visible: itemMouse.containsMouse && modelData.isTaskView
+          anchors.bottom: parent.top
+          anchors.bottomMargin: 8
+          anchors.horizontalCenter: parent.horizontalCenter
+          implicitWidth: Math.max(220, deskRow.implicitWidth + 24)
+          implicitHeight: 74
+          radius: 8
+          color: root.isDark ? Qt.rgba(0.12, 0.13, 0.17, 0.98) : Qt.rgba(0.96, 0.96, 0.98, 0.98)
+          border.color: root.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.12)
+          border.width: 1
+          z: 110
+
+          ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 8
+            spacing: 6
+
+            RowLayout {
+              Layout.fillWidth: true
+              Text {
+                text: "Desktops (Seek & Switch)"
+                font.family: "Segoe UI"
+                font.pixelSize: 11
+                font.bold: true
+                color: root.isDark ? "#ffffff" : "#1a1a1a"
+              }
+              Item { Layout.fillWidth: true }
+              Text {
+                text: "Scroll taskbar to seek"
+                font.family: "Segoe UI"
+                font.pixelSize: 9
+                color: root.isDark ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.5)
+              }
+            }
+
+            RowLayout {
+              id: deskRow
+              spacing: 6
+
+              Repeater {
+                model: root.workspaceList
+                Rectangle {
+                  implicitWidth: 64
+                  implicitHeight: 36
+                  radius: 4
+                  color: (modelData === root.activeWorkspaceId) ? (root.isDark ? Qt.rgba(1, 1, 1, 0.18) : Qt.rgba(0, 0, 0, 0.12)) : (deskM.containsMouse ? (root.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.06)) : "transparent")
+                  border.color: (modelData === root.activeWorkspaceId) ? (root.isDark ? "#60cdff" : "#0067c0") : (root.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.10))
+                  border.width: (modelData === root.activeWorkspaceId) ? 2 : 1
+
+                  ColumnLayout {
+                    anchors.centerIn: parent
+                    spacing: 1
+                    Text {
+                      anchors.horizontalCenter: parent.horizontalCenter
+                      text: "Desktop " + modelData
+                      font.family: "Segoe UI"
+                      font.pixelSize: 10
+                      font.bold: (modelData === root.activeWorkspaceId)
+                      color: root.isDark ? "#ffffff" : "#1a1a1a"
+                    }
+                  }
+
+                  MouseArea {
+                    id: deskM
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                      Quickshell.execDetached(["hyprctl", "dispatch", "workspace", modelData.toString()])
+                      root.activeWorkspaceId = modelData
+                    }
+                  }
+                }
+              }
+
+              // + New Desktop Button
+              Rectangle {
+                implicitWidth: 36
+                implicitHeight: 36
+                radius: 4
+                color: newDeskM.containsMouse ? (root.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
+                border.color: root.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.10)
+                border.width: 1
+
+                Text {
+                  anchors.centerIn: parent
+                  text: "+"
+                  font.pixelSize: 16
+                  font.family: "Segoe UI"
+                  color: root.isDark ? "#ffffff" : "#1a1a1a"
+                }
+
+                MouseArea {
+                  id: newDeskM
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: {
+                    Quickshell.execDetached(["hyprctl", "dispatch", "workspace", "empty"])
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // Standard Tooltip for Start
+        Rectangle {
+          visible: itemMouse.containsMouse && modelData.isStart
           anchors.bottom: parent.top
           anchors.bottomMargin: 6
           anchors.horizontalCenter: parent.horizontalCenter
@@ -355,6 +507,15 @@ BarWidget {
           hoverEnabled: true
           cursorShape: Qt.PointingHandCursor
           acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+
+          onWheel: function(wheel) {
+            // Taskbar workspace seeking
+            if (wheel.angleDelta.y > 0) {
+              Quickshell.execDetached(["hyprctl", "dispatch", "workspace", "e-1"])
+            } else if (wheel.angleDelta.y < 0) {
+              Quickshell.execDetached(["hyprctl", "dispatch", "workspace", "e+1"])
+            }
+          }
 
           onClicked: function(mouse) {
             if (mouse.button === Qt.MiddleButton) {
