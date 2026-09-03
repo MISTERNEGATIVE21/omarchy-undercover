@@ -1,10 +1,10 @@
 Name:           omarchy-undercover
-Version:        1.0.0
+Version:        3.2.0
 Release:        1%{?dist}
-Summary:        Windows 11 desktop transformation tool for Omarchy Hyprland
+Summary:        Camouflage & desktop transformation suite (macOS Sequoia & Windows 11 Fluent) for Omarchy Hyprland
 
 License:        GPL-3.0-or-later
-URL:            https://github.com/omarchy/omarchy-undercover
+URL:            https://github.com/MISTERNEGATIVE21/omarchy-undercover
 Source0:        %{name}-%{version}.tar.gz
 
 BuildArch:      noarch
