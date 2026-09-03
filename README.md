@@ -27,6 +27,7 @@
 
 ## 🧩 Native Omarchy Shell Plugin Installation (Omarchy 4.0+)
 
+### Installation
 Install and enable **Omarchy Undercover** directly into your running `omarchy-shell`:
 
 ```bash
@@ -36,6 +37,13 @@ omarchy plugin add https://github.com/MISTERNEGATIVE21/omarchy-undercover.git --
 Or enable the Undercover Camouflage Switcher widget on your status bar:
 ```bash
 omarchy plugin enable undercover --section right
+```
+
+### Removal & Safe Uninstall
+To cleanly disable and remove the plugin from Omarchy shell:
+```bash
+omarchy plugin disable undercover
+omarchy plugin remove undercover
 ```
 
 ---
@@ -174,6 +182,16 @@ Stored in `~/.config/omarchy-undercover/wallpapers/`:
 * `win11_bloom_dark.jpg` & `win11_bloom_light.jpg` (Official 4K Windows 11 Bloom)
 * `win11_flow_dark.jpg` (Official 4K Flow Dark)
 * `ios18_dark.jpg` & `ios18_light.jpg` (Official 4K iOS 18 Beams)
+
+## 📦 External Dependencies
+Omarchy Undercover integrates with standard Linux and Omarchy system components:
+* **Hyprland**: Dynamic Wayland compositor (window tiling, physics & spring animations)
+* **Omarchy Shell / Quickshell**: Layer shell status bar and widgets engine (v4.0+)
+* **Rofi (Wayland)**: Keyboard application launcher and Mission Control / Task View window switcher
+* **WirePlumber (`wpctl`)**: Native PipeWire audio sink volume control
+* **brightnessctl**: Hardware display backlight controller
+* **NetworkManager (`nmcli`)**: Wi-Fi status and connection manager
+* **BlueZ (`bluetoothctl`)**: Bluetooth controller and peripheral manager
 
 ---
 

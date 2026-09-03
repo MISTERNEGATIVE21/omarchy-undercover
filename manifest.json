@@ -2,8 +2,9 @@
   "schemaVersion": 1,
   "id": "undercover",
   "name": "Omarchy Undercover",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "author": "misternegative21",
+  "license": "GPL-3.0-or-later",
   "description": "Desktop camouflage & transformation suite replicating Apple macOS Sequoia and Windows 11 Fluent for Omarchy Hyprland",
   "kinds": [
     "bar-widget",
