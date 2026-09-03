@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "undercover",
+  "name": "Omarchy Undercover",
+  "version": "3.1.0",
+  "author": "misternegative21",
+  "description": "Desktop camouflage & transformation suite replicating Apple macOS Sequoia and Windows 11 Fluent for Omarchy Hyprland",
+  "kinds": [
+    "bar-widget",
+    "panel",
+    "service"
+  ],
+  "entryPoints": {
+    "barWidget": "Widget.qml",
+    "panel": "Panel.qml",
+    "service": "Service.qml"
+  },
+  "barWidget": {
+    "displayName": "Undercover Camouflage Switcher",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}

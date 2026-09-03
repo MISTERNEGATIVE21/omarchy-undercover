@@ -79,11 +79,10 @@ ShellRoot {
           var l = String(line).trim()
           if (!l) return
           var isDefault = (l.indexOf("*") !== -1)
-          var clean = l.replace("*", "").trim()
-          var parts = clean.split(".")
-          if (parts.length >= 2) {
-            var id = parseInt(parts[0].trim())
-            var name = parts.slice(1).join(".").trim()
+          var match = l.match(/(\d+)\.\s*(.+)/)
+          if (match && match.length >= 3) {
+            var id = parseInt(match[1])
+            var name = match[2].replace(/\[.*?\]/g, "").trim()
             var currentList = soundWindow.audioSinks
             var exists = false
             for (var i = 0; i < currentList.length; i++) {
@@ -94,7 +93,7 @@ ShellRoot {
                 break
               }
             }
-            if (!exists) {
+            if (!exists && !isNaN(id)) {
               currentList.push({
                 id: id,
                 name: name,

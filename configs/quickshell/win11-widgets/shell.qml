@@ -245,7 +245,7 @@ ShellRoot {
                   }
                 }
               }
-              Text { text: widgetsWindow.volumeVal + "%"; font.family: "Segoe UI"; font.pixelSize: 10; color: "#ffffff"; implicitWidth: 30 }
+              Text { text: widgetsWindow.volumeVal + "%"; font.family: "Segoe UI"; font.pixelSize: 10; color: "#ffffff"; Layout.preferredWidth: 30 }
             }
 
             // Brightness Slider Row
@@ -276,7 +276,7 @@ ShellRoot {
                   }
                 }
               }
-              Text { text: widgetsWindow.brightnessVal + "%"; font.family: "Segoe UI"; font.pixelSize: 10; color: "#ffffff"; implicitWidth: 30 }
+              Text { text: widgetsWindow.brightnessVal + "%"; font.family: "Segoe UI"; font.pixelSize: 10; color: "#ffffff"; Layout.preferredWidth: 30 }
             }
           }
         }

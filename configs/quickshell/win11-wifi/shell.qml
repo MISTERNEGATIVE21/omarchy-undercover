@@ -34,6 +34,26 @@ ShellRoot {
     property string connectingSsid: ""
     property string passwordInput: ""
     property bool isScanning: false
+    property string searchText: ""
+
+    readonly property var filteredNetworks: {
+      var q = wifiWindow.searchText.toLowerCase().trim()
+      if (!q) return wifiWindow.networks
+      var result = []
+      for (var i = 0; i < wifiWindow.networks.length; i++) {
+        var n = wifiWindow.networks[i]
+        if (n.ssid && n.ssid.toLowerCase().indexOf(q) !== -1) {
+          result.push(n)
+        }
+      }
+      return result
+    }
+
+    function triggerScan() {
+      wifiWindow.isScanning = true
+      wifiWindow.networks = []
+      if (!scanPoller.running) scanPoller.running = true
+    }
 
     function runCmd(cmd) {
       Quickshell.execDetached(["bash", "-c", cmd])
@@ -67,7 +87,7 @@ ShellRoot {
     // Wi-Fi Scan Process
     Process {
       id: scanPoller
-      command: ["bash", "-c", "nmcli -t -f in-use,ssid,signal,security dev wifi list 2>/dev/null"]
+      command: ["bash", "-c", "nmcli dev wifi list --rescan yes 2>/dev/null; nmcli -t -f in-use,ssid,signal,security dev wifi list 2>/dev/null"]
       stdout: SplitParser {
         onRead: function(line) {
           var l = String(line).trim()
@@ -107,12 +127,6 @@ ShellRoot {
       onExited: function() {
         wifiWindow.isScanning = false
       }
-    }
-
-    function triggerScan() {
-      wifiWindow.isScanning = true
-      wifiWindow.networks = []
-      scanPoller.running = true
     }
 
     Timer {
@@ -260,6 +274,59 @@ ShellRoot {
           }
         }
 
+        // Search Bar
+        Rectangle {
+          visible: wifiWindow.wifiEnabled
+          Layout.fillWidth: true
+          implicitHeight: 32
+          radius: 4
+          color: wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04)
+          border.color: wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08)
+
+          RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 8
+            anchors.rightMargin: 8
+            spacing: 6
+
+            Text { text: "🔍"; font.pixelSize: 11; opacity: 0.6 }
+
+            TextInput {
+              id: win11WifiSearch
+              Layout.fillWidth: true
+              color: wifiWindow.isDark ? "#ffffff" : "#1a1a1a"
+              font.family: "Segoe UI"
+              font.pixelSize: 12
+              clip: true
+              onTextChanged: wifiWindow.searchText = text
+
+              Text {
+                text: "Search Wi-Fi networks..."
+                color: wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(0, 0, 0, 0.4)
+                font: win11WifiSearch.font
+                visible: !win11WifiSearch.text && !win11WifiSearch.activeFocus
+              }
+            }
+
+            Rectangle {
+              visible: win11WifiSearch.text.length > 0
+              implicitWidth: 16
+              implicitHeight: 16
+              radius: 8
+              color: Qt.rgba(1, 1, 1, 0.2)
+              Text { anchors.centerIn: parent; text: "✕"; font.pixelSize: 9; color: "#ffffff" }
+              MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                  win11WifiSearch.text = ""
+                  wifiWindow.searchText = ""
+                }
+              }
+            }
+          }
+        }
+
         // Active Connected Banner
         Rectangle {
           visible: wifiWindow.activeSsid.length > 0 && wifiWindow.wifiEnabled
@@ -325,13 +392,24 @@ ShellRoot {
         }
 
         // Available Networks Section Title
-        Text {
+        RowLayout {
           visible: wifiWindow.wifiEnabled
-          text: "Available Networks"
-          font.family: "Segoe UI"
-          font.pixelSize: 11
-          font.weight: Font.DemiBold
-          color: wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.6) : Qt.rgba(0, 0, 0, 0.5)
+          Layout.fillWidth: true
+          Text {
+            text: wifiWindow.searchText.length > 0 ? "Search Results (" + wifiWindow.filteredNetworks.length + ")" : "Available Networks"
+            font.family: "Segoe UI"
+            font.pixelSize: 11
+            font.weight: Font.DemiBold
+            color: wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.6) : Qt.rgba(0, 0, 0, 0.5)
+            Layout.fillWidth: true
+          }
+          Text {
+            visible: wifiWindow.isScanning
+            text: "Scanning..."
+            font.family: "Segoe UI"
+            font.pixelSize: 10
+            color: wifiWindow.isDark ? "#60cdff" : "#0067c0"
+          }
         }
 
         // Networks ScrollView
@@ -344,7 +422,7 @@ ShellRoot {
           ListView {
             id: netListView
             width: parent.width
-            model: wifiWindow.networks
+            model: wifiWindow.filteredNetworks
             spacing: 4
 
             delegate: ColumnLayout {

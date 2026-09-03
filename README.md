@@ -25,6 +25,21 @@
 
 ---
 
+## 🧩 Native Omarchy Shell Plugin Installation (Omarchy 4.0+)
+
+Install and enable **Omarchy Undercover** directly into your running `omarchy-shell`:
+
+```bash
+omarchy plugin add https://github.com/MISTERNEGATIVE21/omarchy-undercover.git --enable --yes
+```
+
+Or enable the Undercover Camouflage Switcher widget on your status bar:
+```bash
+omarchy plugin enable undercover --section right
+```
+
+---
+
 ## ⚡ 1-Line Basecamp-Styled TUI Quick Install
 
 ```bash

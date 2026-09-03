@@ -4,6 +4,7 @@ import Quickshell.Hyprland
 import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 
 ShellRoot {
   PanelWindow {
@@ -15,7 +16,7 @@ ShellRoot {
       right: true
     }
     margins {
-      bottom: 54
+      bottom: 52
       right: 12
     }
 
@@ -26,24 +27,49 @@ ShellRoot {
     color: "transparent"
 
     implicitWidth: 380
-    implicitHeight: 500
+    implicitHeight: 460
 
+    property string homeDir: Quickshell.env("HOME")
+    property bool isDark: true
+    property bool isTransparent: true
     property bool wifiEnabled: true
     property bool btEnabled: true
+    property bool airplaneMode: false
     property bool nightLightEnabled: false
     property bool batterySaverEnabled: false
     property int volumeVal: 70
     property int brightnessVal: 80
     property int batteryPct: 90
+    property bool isCharging: false
     property string wifiSsid: "Connected"
-    property string btDevice: "Active"
+    property string btDevice: "Connected"
 
-    // Helper runner
+    Shortcut {
+      sequence: "Escape"
+      onActivated: Qt.quit()
+    }
+
     function runCmd(cmd) {
       Quickshell.execDetached(["bash", "-c", cmd])
     }
 
-    // 1. Live State Polling Process
+    // Reactive Theme Poller
+    FileView {
+      id: stateWatcher
+      path: actionCenterWindow.homeDir + "/.config/omarchy-undercover/state"
+      watchChanges: true
+      onLoaded: {
+        var s = text().trim()
+        actionCenterWindow.isDark = (s.indexOf("light") === -1)
+      }
+      onFileChanged: {
+        reload()
+        var s = text().trim()
+        actionCenterWindow.isDark = (s.indexOf("light") === -1)
+      }
+    }
+
+    // Live Hardware State Poller
     Process {
       id: statePoller
       command: [
@@ -53,240 +79,264 @@ ShellRoot {
         "vol=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null | awk '{print int($2*100)}' || echo '70'); " +
         "bri=$(brightnessctl -m 2>/dev/null | cut -d, -f4 | tr -d '%' || echo '80'); " +
         "bat=$(cat /sys/class/power_supply/BAT*/capacity 2>/dev/null | head -1 || echo '90'); " +
+        "chg=$(cat /sys/class/power_supply/BAT*/status 2>/dev/null | head -1 || echo 'Discharging'); " +
         "ssid=$(nmcli -t -f active,ssid dev wifi 2>/dev/null | grep '^yes:' | cut -d: -f2 || echo 'Connected'); " +
-        "echo \"$wifi|$bt|$vol|$bri|$bat|$ssid\""
+        "echo \"$wifi|$bt|$vol|$bri|$bat|$chg|$ssid\""
       ]
       stdout: SplitParser {
         onRead: function(line) {
           if (!line) return
-          var parts = line.trim().split("|")
-          if (parts.length >= 6) {
-            actionCenterWindow.wifiEnabled = (parts[0].indexOf("enabled") !== -1)
-            actionCenterWindow.btEnabled = (parts[1] === "1")
-            var v = parseInt(parts[2])
-            if (!isNaN(v)) actionCenterWindow.volumeVal = Math.max(0, Math.min(100, v))
-            var b = parseInt(parts[3])
-            if (!isNaN(b)) actionCenterWindow.brightnessVal = Math.max(5, Math.min(100, b))
-            var bt = parseInt(parts[4])
-            if (!isNaN(bt)) actionCenterWindow.batteryPct = Math.max(1, Math.min(100, bt))
-            if (parts[5]) actionCenterWindow.wifiSsid = parts[5]
+          var p = line.trim().split("|")
+          if (p.length >= 7) {
+            actionCenterWindow.wifiEnabled = (p[0].indexOf("enabled") !== -1)
+            actionCenterWindow.btEnabled = (p[1] === "1")
+            var v = parseInt(p[2]); if (!isNaN(v)) actionCenterWindow.volumeVal = Math.max(0, Math.min(100, v))
+            var b = parseInt(p[3]); if (!isNaN(b)) actionCenterWindow.brightnessVal = Math.max(5, Math.min(100, b))
+            var bt = parseInt(p[4]); if (!isNaN(bt)) actionCenterWindow.batteryPct = Math.max(1, Math.min(100, bt))
+            actionCenterWindow.isCharging = (p[5].toLowerCase().indexOf("charg") !== -1)
+            if (p[6]) actionCenterWindow.wifiSsid = p[6]
           }
         }
       }
     }
 
     Timer {
-      interval: 2000
+      interval: 2500
       running: true
       repeat: true
       triggeredOnStart: true
       onTriggered: {
-        if (!statePoller.running) {
-          statePoller.running = true
-        }
+        if (!statePoller.running) statePoller.running = true
       }
     }
 
+    // Windows 11 Fluent Acrylic Container
     Rectangle {
       id: bg
       anchors.fill: parent
-      radius: 16
-      color: Qt.rgba(0.11, 0.12, 0.16, 0.96)
-      border.color: Qt.rgba(1, 1, 1, 0.14)
+      radius: 12
+      color: actionCenterWindow.isDark ? Qt.rgba(0.12, 0.13, 0.17, 0.94) : Qt.rgba(0.97, 0.97, 0.98, 0.94)
+      border.color: actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.10)
       border.width: 1
 
       ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 18
-        spacing: 12
+        anchors.margins: 16
+        spacing: 14
 
-        // Header with Title and Close Button
-        RowLayout {
-          Layout.fillWidth: true
-          spacing: 10
-
-          Text {
-            text: "Quick Settings"
-            color: "#ffffff"
-            font.family: "Segoe UI"
-            font.pixelSize: 15
-            font.weight: Font.DemiBold
-            Layout.fillWidth: true
-          }
-
-          Rectangle {
-            implicitWidth: 28
-            implicitHeight: 28
-            radius: 6
-            color: closeMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
-            Text {
-              anchors.centerIn: parent
-              text: "✕"
-              color: "#ffffff"
-              font.pixelSize: 12
-            }
-            MouseArea {
-              id: closeMouse
-              anchors.fill: parent
-              hoverEnabled: true
-              cursorShape: Qt.PointingHandCursor
-              onClicked: Qt.quit()
-            }
-          }
-        }
-
-        // 1. Quick Toggles Grid (3 cols x 2 rows)
+        // 1. Fluent 6-Toggle Grid (2 Columns x 3 Rows)
         GridLayout {
           Layout.fillWidth: true
-          columns: 3
+          columns: 2
           rowSpacing: 10
           columnSpacing: 10
 
-          // Wi-Fi Tile
+          // Wi-Fi Toggle
           Rectangle {
             Layout.fillWidth: true
-            implicitHeight: 64
-            radius: 8
-            color: actionCenterWindow.wifiEnabled ? "#0078d4" : Qt.rgba(1, 1, 1, 0.08)
-            border.color: Qt.rgba(1, 1, 1, 0.12)
-            border.width: 1
+            implicitHeight: 48
+            radius: 6
+            color: actionCenterWindow.wifiEnabled ? (actionCenterWindow.isDark ? "#0078d4" : "#0067c0") : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05))
 
-            ColumnLayout {
-              anchors.centerIn: parent
-              spacing: 3
-              Text { anchors.horizontalCenter: parent.horizontalCenter; text: "󰤨"; font.pixelSize: 18; color: "#ffffff" }
-              Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Wi-Fi"; font.pixelSize: 11; font.weight: Font.DemiBold; color: "#ffffff" }
+            RowLayout {
+              anchors.fill: parent
+              anchors.leftMargin: 10
+              anchors.rightMargin: 8
+              spacing: 8
+
+              Text {
+                text: "󰤨"
+                font.pixelSize: 16
+                color: "#ffffff"
+              }
+
+              ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 0
+                Text { text: "Wi-Fi"; font.family: "Segoe UI"; font.pixelSize: 11; font.bold: true; color: "#ffffff" }
+                Text { text: actionCenterWindow.wifiEnabled ? actionCenterWindow.wifiSsid : "Disconnected"; font.family: "Segoe UI"; font.pixelSize: 9; color: Qt.rgba(1,1,1,0.7); elide: Text.ElideRight; Layout.fillWidth: true }
+              }
+
+              Text {
+                text: "›"
+                font.pixelSize: 14
+                color: Qt.rgba(1,1,1,0.6)
+              }
             }
+
             MouseArea {
               anchors.fill: parent
               cursorShape: Qt.PointingHandCursor
-              onClicked: {
-                actionCenterWindow.wifiEnabled = !actionCenterWindow.wifiEnabled
-                actionCenterWindow.runCmd("nmcli radio wifi " + (actionCenterWindow.wifiEnabled ? "on" : "off"))
+              acceptedButtons: Qt.LeftButton | Qt.RightButton
+              onClicked: function(mouse) {
+                if (mouse.button === Qt.RightButton) {
+                  actionCenterWindow.runCmd("omarchy-wifi-manager")
+                } else {
+                  actionCenterWindow.wifiEnabled = !actionCenterWindow.wifiEnabled
+                  actionCenterWindow.runCmd("nmcli radio wifi " + (actionCenterWindow.wifiEnabled ? "on" : "off"))
+                }
               }
             }
           }
 
-          // Bluetooth Tile
+          // Bluetooth Toggle
           Rectangle {
             Layout.fillWidth: true
-            implicitHeight: 64
-            radius: 8
-            color: actionCenterWindow.btEnabled ? "#0078d4" : Qt.rgba(1, 1, 1, 0.08)
-            border.color: Qt.rgba(1, 1, 1, 0.12)
-            border.width: 1
+            implicitHeight: 48
+            radius: 6
+            color: actionCenterWindow.btEnabled ? (actionCenterWindow.isDark ? "#0078d4" : "#0067c0") : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05))
 
-            ColumnLayout {
-              anchors.centerIn: parent
-              spacing: 3
-              Text { anchors.horizontalCenter: parent.horizontalCenter; text: "󰂯"; font.pixelSize: 18; color: "#ffffff" }
-              Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Bluetooth"; font.pixelSize: 11; font.weight: Font.DemiBold; color: "#ffffff" }
+            RowLayout {
+              anchors.fill: parent
+              anchors.leftMargin: 10
+              anchors.rightMargin: 8
+              spacing: 8
+
+              Text { text: "󰂯"; font.pixelSize: 16; color: "#ffffff" }
+
+              ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 0
+                Text { text: "Bluetooth"; font.family: "Segoe UI"; font.pixelSize: 11; font.bold: true; color: "#ffffff" }
+                Text { text: actionCenterWindow.btEnabled ? actionCenterWindow.btDevice : "Off"; font.family: "Segoe UI"; font.pixelSize: 9; color: Qt.rgba(1,1,1,0.7) }
+              }
+
+              Text { text: "›"; font.pixelSize: 14; color: Qt.rgba(1,1,1,0.6) }
             }
+
             MouseArea {
               anchors.fill: parent
               cursorShape: Qt.PointingHandCursor
-              onClicked: {
-                actionCenterWindow.btEnabled = !actionCenterWindow.btEnabled
-                actionCenterWindow.runCmd("bluetoothctl power " + (actionCenterWindow.btEnabled ? "on" : "off"))
+              acceptedButtons: Qt.LeftButton | Qt.RightButton
+              onClicked: function(mouse) {
+                if (mouse.button === Qt.RightButton) {
+                  actionCenterWindow.runCmd("omarchy-bluetooth-manager")
+                } else {
+                  actionCenterWindow.btEnabled = !actionCenterWindow.btEnabled
+                  actionCenterWindow.runCmd("bluetoothctl power " + (actionCenterWindow.btEnabled ? "on" : "off"))
+                }
               }
             }
           }
 
-          // Airplane Mode Tile
+          // Airplane Mode Toggle
           Rectangle {
             Layout.fillWidth: true
-            implicitHeight: 64
-            radius: 8
-            color: Qt.rgba(1, 1, 1, 0.08)
-            border.color: Qt.rgba(1, 1, 1, 0.12)
-            border.width: 1
+            implicitHeight: 48
+            radius: 6
+            color: actionCenterWindow.airplaneMode ? (actionCenterWindow.isDark ? "#0078d4" : "#0067c0") : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05))
 
-            ColumnLayout {
-              anchors.centerIn: parent
-              spacing: 3
-              Text { anchors.horizontalCenter: parent.horizontalCenter; text: "✈️"; font.pixelSize: 18 }
-              Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Airplane"; font.pixelSize: 11; font.weight: Font.DemiBold; color: "#ffffff" }
+            RowLayout {
+              anchors.fill: parent
+              anchors.leftMargin: 10
+              anchors.rightMargin: 8
+              spacing: 8
+              Text { text: "󰀝"; font.pixelSize: 16; color: "#ffffff" }
+              ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 0
+                Text { text: "Airplane mode"; font.family: "Segoe UI"; font.pixelSize: 11; font.bold: true; color: "#ffffff" }
+                Text { text: actionCenterWindow.airplaneMode ? "On" : "Off"; font.family: "Segoe UI"; font.pixelSize: 9; color: Qt.rgba(1,1,1,0.7) }
+              }
             }
+
             MouseArea {
               anchors.fill: parent
               cursorShape: Qt.PointingHandCursor
               onClicked: {
-                actionCenterWindow.runCmd("rfkill toggle all")
+                actionCenterWindow.airplaneMode = !actionCenterWindow.airplaneMode
+                actionCenterWindow.runCmd("rfkill " + (actionCenterWindow.airplaneMode ? "block all" : "unblock all"))
               }
             }
           }
 
-          // Battery Saver Tile
+          // Battery Saver Toggle
           Rectangle {
             Layout.fillWidth: true
-            implicitHeight: 64
-            radius: 8
-            color: actionCenterWindow.batterySaverEnabled ? "#0078d4" : Qt.rgba(1, 1, 1, 0.08)
-            border.color: Qt.rgba(1, 1, 1, 0.12)
-            border.width: 1
+            implicitHeight: 48
+            radius: 6
+            color: actionCenterWindow.batterySaverEnabled ? (actionCenterWindow.isDark ? "#0078d4" : "#0067c0") : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05))
 
-            ColumnLayout {
-              anchors.centerIn: parent
-              spacing: 3
-              Text { anchors.horizontalCenter: parent.horizontalCenter; text: "🔋"; font.pixelSize: 18 }
-              Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Saver"; font.pixelSize: 11; font.weight: Font.DemiBold; color: "#ffffff" }
+            RowLayout {
+              anchors.fill: parent
+              anchors.leftMargin: 10
+              anchors.rightMargin: 8
+              spacing: 8
+              Text { text: "󰂎"; font.pixelSize: 16; color: "#ffffff" }
+              ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 0
+                Text { text: "Battery saver"; font.family: "Segoe UI"; font.pixelSize: 11; font.bold: true; color: "#ffffff" }
+                Text { text: actionCenterWindow.batterySaverEnabled ? "Active" : "Off"; font.family: "Segoe UI"; font.pixelSize: 9; color: Qt.rgba(1,1,1,0.7) }
+              }
             }
+
             MouseArea {
               anchors.fill: parent
               cursorShape: Qt.PointingHandCursor
               onClicked: {
                 actionCenterWindow.batterySaverEnabled = !actionCenterWindow.batterySaverEnabled
+                actionCenterWindow.runCmd("powerprofilesctl set " + (actionCenterWindow.batterySaverEnabled ? "power-saver" : "balanced") + " 2>/dev/null || true")
               }
             }
           }
 
-          // Night Light Tile
+          // Night Light Toggle
           Rectangle {
             Layout.fillWidth: true
-            implicitHeight: 64
-            radius: 8
-            color: actionCenterWindow.nightLightEnabled ? "#0078d4" : Qt.rgba(1, 1, 1, 0.08)
-            border.color: Qt.rgba(1, 1, 1, 0.12)
-            border.width: 1
+            implicitHeight: 48
+            radius: 6
+            color: actionCenterWindow.nightLightEnabled ? (actionCenterWindow.isDark ? "#0078d4" : "#0067c0") : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05))
 
-            ColumnLayout {
-              anchors.centerIn: parent
-              spacing: 3
-              Text { anchors.horizontalCenter: parent.horizontalCenter; text: "🌙"; font.pixelSize: 18 }
-              Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Night Light"; font.pixelSize: 11; font.weight: Font.DemiBold; color: "#ffffff" }
+            RowLayout {
+              anchors.fill: parent
+              anchors.leftMargin: 10
+              anchors.rightMargin: 8
+              spacing: 8
+              Text { text: "󰖔"; font.pixelSize: 16; color: "#ffffff" }
+              ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 0
+                Text { text: "Night light"; font.family: "Segoe UI"; font.pixelSize: 11; font.bold: true; color: "#ffffff" }
+                Text { text: actionCenterWindow.nightLightEnabled ? "On" : "Off"; font.family: "Segoe UI"; font.pixelSize: 9; color: Qt.rgba(1,1,1,0.7) }
+              }
             }
+
             MouseArea {
               anchors.fill: parent
               cursorShape: Qt.PointingHandCursor
               onClicked: {
                 actionCenterWindow.nightLightEnabled = !actionCenterWindow.nightLightEnabled
-                actionCenterWindow.runCmd("hyprsunset -t 4500 || pkill hyprsunset || true")
+                actionCenterWindow.runCmd("omarchy toggle nightlight 2>/dev/null || hyprshade toggle blue-light-filter 2>/dev/null || true")
               }
             }
           }
 
-          // Settings Shortcut Tile
+          // Accessibility Toggle
           Rectangle {
             Layout.fillWidth: true
-            implicitHeight: 64
-            radius: 8
-            color: Qt.rgba(1, 1, 1, 0.08)
-            border.color: Qt.rgba(1, 1, 1, 0.12)
-            border.width: 1
+            implicitHeight: 48
+            radius: 6
+            color: actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05)
 
-            ColumnLayout {
-              anchors.centerIn: parent
-              spacing: 3
-              Text { anchors.horizontalCenter: parent.horizontalCenter; text: "⚙️"; font.pixelSize: 18 }
-              Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Settings"; font.pixelSize: 11; font.weight: Font.DemiBold; color: "#ffffff" }
+            RowLayout {
+              anchors.fill: parent
+              anchors.leftMargin: 10
+              anchors.rightMargin: 8
+              spacing: 8
+              Text { text: "󰌵"; font.pixelSize: 16; color: "#ffffff" }
+              ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 0
+                Text { text: "Accessibility"; font.family: "Segoe UI"; font.pixelSize: 11; font.bold: true; color: "#ffffff" }
+                Text { text: "Standard"; font.family: "Segoe UI"; font.pixelSize: 9; color: Qt.rgba(1,1,1,0.7) }
+              }
             }
+
             MouseArea {
               anchors.fill: parent
               cursorShape: Qt.PointingHandCursor
-              onClicked: {
-                Qt.quit()
-                actionCenterWindow.runCmd("omarchy-undercover-settings")
-              }
+              onClicked: actionCenterWindow.runCmd("omarchy-undercover-settings")
             }
           }
         }
@@ -294,125 +344,119 @@ ShellRoot {
         // 2. Brightness Slider
         RowLayout {
           Layout.fillWidth: true
-          spacing: 12
+          spacing: 10
 
-          Text { text: "☀️"; font.pixelSize: 16 }
+          Text { text: "󰃠"; font.pixelSize: 16; color: actionCenterWindow.isDark ? "#ffffff" : "#1a1a1a" }
 
           Rectangle {
-            id: briTrack
             Layout.fillWidth: true
-            implicitHeight: 8
-            radius: 4
-            color: Qt.rgba(1, 1, 1, 0.15)
+            height: 18
+            radius: 9
+            color: actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)
+            clip: true
 
             Rectangle {
-              anchors.left: parent.left
-              anchors.top: parent.top
-              anchors.bottom: parent.bottom
               width: parent.width * (actionCenterWindow.brightnessVal / 100.0)
-              radius: 4
-              color: "#0078d4"
+              height: parent.height
+              radius: 9
+              color: actionCenterWindow.isDark ? "#60cdff" : "#0067c0"
             }
 
             MouseArea {
               anchors.fill: parent
               cursorShape: Qt.PointingHandCursor
+              onPositionChanged: function(mouse) {
+                var p = Math.max(5, Math.min(100, Math.round((mouse.x / width) * 100)))
+                actionCenterWindow.brightnessVal = p
+                actionCenterWindow.runCmd("brightnessctl set " + p + "% >/dev/null 2>&1")
+              }
               onClicked: function(mouse) {
-                var pct = Math.max(5, Math.min(100, Math.round((mouse.x / width) * 100)))
-                actionCenterWindow.brightnessVal = pct
-                actionCenterWindow.runCmd("brightnessctl set " + pct + "% || true")
+                var p = Math.max(5, Math.min(100, Math.round((mouse.x / width) * 100)))
+                actionCenterWindow.brightnessVal = p
+                actionCenterWindow.runCmd("brightnessctl set " + p + "% >/dev/null 2>&1")
               }
             }
           }
 
-          Text {
-            text: actionCenterWindow.brightnessVal + "%"
-            color: "#ffffff"
-            font.pixelSize: 11
-            implicitWidth: 32
-          }
+          Text { text: actionCenterWindow.brightnessVal + "%"; font.family: "Segoe UI"; font.pixelSize: 10; color: Qt.rgba(1,1,1,0.7) }
         }
 
         // 3. Volume Slider
         RowLayout {
           Layout.fillWidth: true
-          spacing: 12
+          spacing: 10
 
-          Text { text: "🔊"; font.pixelSize: 16 }
+          Text { text: "󰕾"; font.pixelSize: 16; color: actionCenterWindow.isDark ? "#ffffff" : "#1a1a1a" }
 
           Rectangle {
-            id: volTrack
             Layout.fillWidth: true
-            implicitHeight: 8
-            radius: 4
-            color: Qt.rgba(1, 1, 1, 0.15)
+            height: 18
+            radius: 9
+            color: actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)
+            clip: true
 
             Rectangle {
-              anchors.left: parent.left
-              anchors.top: parent.top
-              anchors.bottom: parent.bottom
               width: parent.width * (actionCenterWindow.volumeVal / 100.0)
-              radius: 4
-              color: "#0078d4"
+              height: parent.height
+              radius: 9
+              color: actionCenterWindow.isDark ? "#60cdff" : "#0067c0"
             }
 
             MouseArea {
               anchors.fill: parent
               cursorShape: Qt.PointingHandCursor
+              onPositionChanged: function(mouse) {
+                var p = Math.max(0, Math.min(100, Math.round((mouse.x / width) * 100)))
+                actionCenterWindow.volumeVal = p
+                actionCenterWindow.runCmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ " + (p / 100.0) + " >/dev/null 2>&1")
+              }
               onClicked: function(mouse) {
-                var pct = Math.max(0, Math.min(100, Math.round((mouse.x / width) * 100)))
-                actionCenterWindow.volumeVal = pct
-                actionCenterWindow.runCmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ " + (pct / 100.0) + " || pactl set-sink-volume @DEFAULT_SINK@ " + pct + "% || true")
+                var p = Math.max(0, Math.min(100, Math.round((mouse.x / width) * 100)))
+                actionCenterWindow.volumeVal = p
+                actionCenterWindow.runCmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ " + (p / 100.0) + " >/dev/null 2>&1")
               }
             }
           }
 
-          Text {
-            text: actionCenterWindow.volumeVal + "%"
-            color: "#ffffff"
-            font.pixelSize: 11
-            implicitWidth: 32
-          }
+          Text { text: actionCenterWindow.volumeVal + "%"; font.family: "Segoe UI"; font.pixelSize: 10; color: Qt.rgba(1,1,1,0.7) }
         }
 
-        Item { Layout.fillHeight: true }
-
-        // 4. Footer: Live Battery & Settings Shortcut
+        // 4. Footer Bar with Battery & Settings Gear
         Rectangle {
           Layout.fillWidth: true
-          implicitHeight: 48
-          radius: 10
-          color: Qt.rgba(0.08, 0.08, 0.11, 0.85)
-          border.color: Qt.rgba(1, 1, 1, 0.08)
+          implicitHeight: 40
+          radius: 6
+          color: actionCenterWindow.isDark ? Qt.rgba(0, 0, 0, 0.25) : Qt.rgba(0, 0, 0, 0.04)
 
           RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 12
-            anchors.rightMargin: 12
+            anchors.leftMargin: 10
+            anchors.rightMargin: 10
 
             RowLayout {
               spacing: 6
-              Text { text: "🔋"; font.pixelSize: 14 }
               Text {
-                text: actionCenterWindow.batteryPct + "% • " + actionCenterWindow.wifiSsid
-                color: "#ffffff"
-                font.pixelSize: 12
-                font.weight: Font.DemiBold
+                text: actionCenterWindow.isCharging ? "󰂄" : "󰁹"
+                font.pixelSize: 15
+                color: actionCenterWindow.isDark ? "#ffffff" : "#1a1a1a"
+              }
+              Text {
+                text: actionCenterWindow.batteryPct + "%"
+                font.family: "Segoe UI"
+                font.pixelSize: 11
+                font.bold: true
+                color: actionCenterWindow.isDark ? "#ffffff" : "#1a1a1a"
               }
             }
 
             Item { Layout.fillWidth: true }
 
-            Rectangle {
-              implicitWidth: 32
-              implicitHeight: 32
-              radius: 6
-              color: setM.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
-              Text { anchors.centerIn: parent; text: "⚙️"; font.pixelSize: 13 }
+            Text {
+              text: "⚙"
+              font.pixelSize: 16
+              color: actionCenterWindow.isDark ? "#ffffff" : "#1a1a1a"
               MouseArea {
-                id: setM
                 anchors.fill: parent
-                hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
                   Qt.quit()

@@ -158,6 +158,12 @@ main() {
             cp -rf "$SCRIPT_DIR/configs/plugins/"* "$CONFIG_DIR/plugins/" 2>/dev/null || true
             cp -rf "$SCRIPT_DIR/configs/plugins/"* "$HOME/.config/omarchy/plugins/" 2>/dev/null || true
         fi
+        if [[ -f "$SCRIPT_DIR/manifest.json" ]]; then
+            mkdir -p "$HOME/.config/omarchy/plugins/undercover" "$CONFIG_DIR/plugins/undercover"
+            cp -f "$SCRIPT_DIR/manifest.json" "$SCRIPT_DIR/Widget.qml" "$SCRIPT_DIR/Panel.qml" "$SCRIPT_DIR/Service.qml" "$HOME/.config/omarchy/plugins/undercover/" 2>/dev/null || true
+            cp -f "$SCRIPT_DIR/manifest.json" "$SCRIPT_DIR/Widget.qml" "$SCRIPT_DIR/Panel.qml" "$SCRIPT_DIR/Service.qml" "$CONFIG_DIR/plugins/undercover/" 2>/dev/null || true
+            omarchy-shell shell rescanPlugins >/dev/null 2>&1 || true
+        fi
         if [[ -d "$SCRIPT_DIR/configs/omarchy-theme" ]]; then
             cp -rf "$SCRIPT_DIR/configs/omarchy-theme/"* "$CONFIG_DIR/themes/" 2>/dev/null || true
             cp -rf "$SCRIPT_DIR/configs/omarchy-theme/"* "$HOME/.config/omarchy/themes/" 2>/dev/null || true

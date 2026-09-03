@@ -18,18 +18,42 @@ PanelWindow {
     bottom: 8
   }
 
-  WlLayer.layer: WlLayer.Top
-  WlLayer.namespace: "mac-dock"
-  exclusiveZone: 0
+  WlrLayershell.layer: WlrLayer.Top
+  WlrLayershell.namespace: "mac-dock"
+  exclusionMode: ExclusionMode.Auto
   color: "transparent"
 
-  implicitWidth: dockCard.implicitWidth + 24
-  implicitHeight: 80
+  implicitWidth: dockCard.implicitWidth + 48
+  implicitHeight: 90
 
   property real baseIconSize: 48
-  property real maxMagnification: 1.32
+  property real maxMagnification: 1.45
+  property real effectRadius: 130.0
+  property bool isMouseOverDock: false
+  property real currentMouseX: 0
+
   property string homeDir: Quickshell.env("HOME")
   property string iconBasePath: homeDir + "/.local/share/icons/mac-dock/"
+  property bool isLight: false
+
+  FileView {
+    id: stateWatcher
+    path: dockWindow.homeDir + "/.config/omarchy-undercover/state"
+    watchChanges: true
+    onLoaded: {
+      var s = text().trim()
+      dockWindow.isLight = (s.indexOf("light") !== -1)
+      if (s && s.indexOf("mac") !== 0) dockWindow.visible = false
+      else dockWindow.visible = true
+    }
+    onFileChanged: {
+      reload()
+      var s = text().trim()
+      dockWindow.isLight = (s.indexOf("light") !== -1)
+      if (s && s.indexOf("mac") !== 0) dockWindow.visible = false
+      else dockWindow.visible = true
+    }
+  }
 
   function matches(tl, matchers) {
     if (!tl || !matchers || matchers.length === 0) return false
@@ -46,37 +70,27 @@ PanelWindow {
     return dockWindow.matches(ToplevelManager.activeToplevel, matchers)
   }
 
-  // Defaults & pinned apps poller
   property var macPinsConfig: ({})
-
-  Process {
-    id: defaultsPoller
-    running: true
-    command: ["bash", "-c", "cat $HOME/.config/omarchy-undercover/defaults.json 2>/dev/null || echo '{}'"]
-    stdout: SplitParser {
-      onRead: function(line) {
-        try {
-          var d = JSON.parse(String(line))
-          if (d && d.mac_pins) {
-            dockWindow.macPinsConfig = d.mac_pins
-          }
-        } catch(e) {}
-      }
+  FileView {
+    id: defaultsFile
+    path: dockWindow.homeDir + "/.config/omarchy-undercover/defaults.json"
+    watchChanges: true
+    onLoaded: {
+      try {
+        var d = JSON.parse(text())
+        if (d && d.mac_pins) dockWindow.macPinsConfig = d.mac_pins
+      } catch(e) {}
+    }
+    onFileChanged: {
+      reload()
+      try {
+        var d = JSON.parse(text())
+        if (d && d.mac_pins) dockWindow.macPinsConfig = d.mac_pins
+      } catch(e) {}
     }
   }
 
-  Timer {
-    interval: 3000
-    running: true
-    repeat: true
-    triggeredOnStart: true
-    onTriggered: {
-      if (!defaultsPoller.running) defaultsPoller.running = true
-    }
-  }
-
-  // Active dock apps model
-  property var dockApps: [
+  property var primaryDockApps: [
     { id: "finder", name: "Finder", icon: "finder.svg", exec: "nautilus computer:/// || thunar || dolphin", matchers: ["nautilus", "thunar", "dolphin", "files", "org.gnome.nautilus"] },
     { id: "launchpad", name: "Launchpad", icon: "launchpad.svg", exec: "rofi -show drun -theme ~/.config/rofi/mac.rasi", matchers: [] },
     { id: "safari", name: "Safari", icon: "safari.svg", exec: "omarchy-browser || xdg-open https://apple.com", matchers: ["chrome", "chromium", "firefox", "vivaldi", "edge", "brave", "zen", "safari"] },
@@ -90,7 +104,7 @@ PanelWindow {
   ]
 
   function getVisibleDockApps() {
-    return dockWindow.dockApps.filter(function(app) {
+    return dockWindow.primaryDockApps.filter(function(app) {
       if (dockWindow.macPinsConfig && dockWindow.macPinsConfig[app.id] !== undefined) {
         return dockWindow.macPinsConfig[app.id] === true
       }
@@ -99,169 +113,255 @@ PanelWindow {
   }
 
   Rectangle {
+    anchors.horizontalCenter: dockCard.horizontalCenter
+    anchors.bottom: dockCard.bottom
+    anchors.bottomMargin: -3
+    width: dockCard.width + 8
+    height: dockCard.height + 4
+    radius: 24
+    color: Qt.rgba(0, 0, 0, 0.35)
+    z: 0
+  }
+
+  Rectangle {
     id: dockCard
     anchors.horizontalCenter: parent.horizontalCenter
     anchors.bottom: parent.bottom
-    anchors.bottomMargin: 4
+    anchors.bottomMargin: 2
+    z: 1
 
-    implicitWidth: mainRow.implicitWidth + 20
-    implicitHeight: 64
-
+    implicitWidth: dockLayoutRow.implicitWidth + 24
+    implicitHeight: 66
     radius: 20
-    color: "rgba(35, 35, 45, 0.78)"
-    border.color: "rgba(255, 255, 255, 0.22)"
+
+    color: dockWindow.isLight ? Qt.rgba(0.98, 0.98, 1.0, 0.72) : Qt.rgba(0.12, 0.12, 0.16, 0.72)
+    border.color: dockWindow.isLight ? Qt.rgba(0, 0, 0, 0.12) : Qt.rgba(1, 1, 1, 0.22)
     border.width: 1
 
+    Rectangle {
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: parent.top
+      anchors.leftMargin: 12
+      anchors.rightMargin: 12
+      height: 1
+      color: Qt.rgba(1, 1, 1, 0.38)
+    }
+
     RowLayout {
-      id: mainRow
+      id: dockLayoutRow
       anchors.centerIn: parent
-      spacing: 10
+      spacing: 6
 
       Repeater {
+        id: appsRepeater
         model: dockWindow.getVisibleDockApps()
 
         Item {
           id: appItem
           implicitWidth: dockWindow.baseIconSize
-          implicitHeight: dockWindow.baseIconSize + 8
+          implicitHeight: 62
 
-          property bool isHovered: mouseArea.containsMouse
+          property var appData: modelData
           property bool appRunning: dockWindow.isRunning(modelData.matchers)
           property bool appFocused: dockWindow.isFocused(modelData.matchers)
-          property real currentScale: isHovered ? dockWindow.maxMagnification : 1.0
+          property real bounceOffset: 0
 
-          Behavior on currentScale {
-            NumberAnimation { duration: 160; easing.type: Easing.OutBack }
+          readonly property real itemCenterX: appItem.mapToItem(dockCard, appItem.width / 2, 0).x
+          readonly property real distToMouse: Math.abs(dockWindow.currentMouseX - itemCenterX)
+
+          readonly property real targetScale: {
+            if (!dockWindow.isMouseOverDock) return 1.0
+            if (distToMouse >= dockWindow.effectRadius) return 1.0
+            var ratio = distToMouse / dockWindow.effectRadius
+            var factor = Math.cos(ratio * (Math.PI / 2))
+            return 1.0 + (dockWindow.maxMagnification - 1.0) * factor * factor
           }
 
-          // Tooltip above icon
+          property real currentScale: 1.0
+          Behavior on currentScale {
+            NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
+          }
+          Binding {
+            target: appItem
+            property: "currentScale"
+            value: appItem.targetScale
+          }
+
+          SequentialAnimation {
+            id: bounceAnim
+            running: false
+            loops: 2
+            NumberAnimation { target: appItem; property: "bounceOffset"; to: -16; duration: 160; easing.type: Easing.OutQuad }
+            NumberAnimation { target: appItem; property: "bounceOffset"; to: 0; duration: 160; easing.type: Easing.InQuad }
+          }
+
           Rectangle {
-            visible: appItem.isHovered
-            anchors.bottom: iconImage.top
-            anchors.bottomMargin: 8
+            id: tooltip
+            visible: dockWindow.isMouseOverDock && distToMouse < 28
+            anchors.bottom: iconContainer.top
+            anchors.bottomMargin: 10
             anchors.horizontalCenter: parent.horizontalCenter
+            implicitWidth: tooltipText.implicitWidth + 16
+            implicitHeight: 24
             radius: 6
-            color: "rgba(20, 20, 26, 0.90)"
-            border.color: "rgba(255, 255, 255, 0.20)"
+            color: Qt.rgba(0.12, 0.12, 0.16, 0.94)
+            border.color: Qt.rgba(1, 1, 1, 0.18)
             border.width: 1
-            implicitWidth: tipText.implicitWidth + 12
-            implicitHeight: tipText.implicitHeight + 6
+            z: 99
 
             Text {
-              id: tipText
+              id: tooltipText
               anchors.centerIn: parent
               text: modelData.name
-              color: "#ffffff"
+              font.family: "SF Pro Text, -apple-system, sans-serif"
               font.pixelSize: 11
-              font.weight: Font.DemiBold
+              font.bold: true
+              color: "#ffffff"
             }
           }
 
-          // App Icon Image
-          Image {
-            id: iconImage
-            anchors.centerIn: parent
-            width: dockWindow.baseIconSize * appItem.currentScale
-            height: dockWindow.baseIconSize * appItem.currentScale
-            source: "file://" + dockWindow.iconBasePath + modelData.icon
-            sourceSize.width: 64
-            sourceSize.height: 64
-            fillMode: Image.PreserveAspectFit
-            smooth: true
-            mipmap: true
-            z: appItem.isHovered ? 10 : 1
-          }
-
-          // Running dot indicator
-          Rectangle {
-            visible: appItem.appRunning
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: 1
+          Item {
+            id: iconContainer
             anchors.horizontalCenter: parent.horizontalCenter
-            width: appItem.appFocused ? 6 : 4
-            height: appItem.appFocused ? 6 : 4
-            radius: appItem.appFocused ? 3 : 2
-            color: appItem.appFocused ? "#60cdff" : "#ffffff"
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 10
+            width: dockWindow.baseIconSize
+            height: dockWindow.baseIconSize
+            scale: appItem.currentScale
+            transformOrigin: Item.Bottom
+            y: appItem.bounceOffset
+
+            Image {
+              anchors.fill: parent
+              source: {
+                var p = dockWindow.iconBasePath + modelData.icon
+                if (modelData.icon.indexOf("/") !== -1 || modelData.icon.indexOf("file://") === 0) return modelData.icon
+                return "file://" + p
+              }
+              fillMode: Image.PreserveAspectFit
+              smooth: true
+              mipmap: true
+            }
           }
 
-          MouseArea {
-            id: mouseArea
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: {
-              if (modelData.matchers && modelData.matchers.length > 0) {
-                var matchStr = modelData.matchers.join(",")
-                Quickshell.execDetached(["omarchy-undercover-activate", matchStr, modelData.exec])
-              } else {
-                Quickshell.execDetached(["bash", "-c", modelData.exec])
-              }
-            }
+          Rectangle {
+            id: runningDot
+            visible: appItem.appRunning
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 3
+            width: appItem.appFocused ? 6 : 4.5
+            height: appItem.appFocused ? 6 : 4.5
+            radius: 3
+            color: appItem.appFocused ? "#007aff" : (dockWindow.isLight ? Qt.rgba(0, 0, 0, 0.65) : Qt.rgba(1, 1, 1, 0.75))
           }
         }
       }
 
-      // Dock Separator
       Rectangle {
         implicitWidth: 1
-        implicitHeight: 38
-        color: "rgba(255, 255, 255, 0.20)"
+        implicitHeight: 34
         Layout.alignment: Qt.AlignVCenter
-        Layout.leftMargin: 2
-        Layout.rightMargin: 2
+        color: dockWindow.isLight ? Qt.rgba(0, 0, 0, 0.16) : Qt.rgba(1, 1, 1, 0.18)
       }
 
-      // Trash Bin Item
       Item {
+        id: trashItem
         implicitWidth: dockWindow.baseIconSize
-        implicitHeight: dockWindow.baseIconSize + 8
+        implicitHeight: 62
 
-        property bool isTrashHovered: trashMouse.containsMouse
-        property real trashScale: isTrashHovered ? dockWindow.maxMagnification : 1.0
-
-        Behavior on trashScale {
-          NumberAnimation { duration: 160; easing.type: Easing.OutBack }
+        readonly property real itemCenterX: trashItem.mapToItem(dockCard, trashItem.width / 2, 0).x
+        readonly property real distToMouse: Math.abs(dockWindow.currentMouseX - itemCenterX)
+        readonly property real targetScale: {
+          if (!dockWindow.isMouseOverDock) return 1.0
+          if (distToMouse >= dockWindow.effectRadius) return 1.0
+          var ratio = distToMouse / dockWindow.effectRadius
+          var factor = Math.cos(ratio * (Math.PI / 2))
+          return 1.0 + (dockWindow.maxMagnification - 1.0) * factor * factor
         }
 
-        // Trash Tooltip
+        property real currentScale: 1.0
+        Behavior on currentScale {
+          NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
+        }
+        Binding {
+          target: trashItem
+          property: "currentScale"
+          value: trashItem.targetScale
+        }
+
         Rectangle {
-          visible: isTrashHovered
-          anchors.bottom: trashIcon.top
-          anchors.bottomMargin: 8
+          visible: dockWindow.isMouseOverDock && distToMouse < 28
+          anchors.bottom: trashContainer.top
+          anchors.bottomMargin: 10
           anchors.horizontalCenter: parent.horizontalCenter
+          implicitWidth: trashText.implicitWidth + 16
+          implicitHeight: 24
           radius: 6
-          color: "rgba(20, 20, 26, 0.90)"
-          border.color: "rgba(255, 255, 255, 0.20)"
+          color: Qt.rgba(0.12, 0.12, 0.16, 0.94)
+          border.color: Qt.rgba(1, 1, 1, 0.18)
           border.width: 1
-          implicitWidth: trashTipText.implicitWidth + 12
-          implicitHeight: trashTipText.implicitHeight + 6
+          z: 99
 
           Text {
-            id: trashTipText
+            id: trashText
             anchors.centerIn: parent
             text: "Trash"
-            color: "#ffffff"
+            font.family: "SF Pro Text, -apple-system, sans-serif"
             font.pixelSize: 11
-            font.weight: Font.DemiBold
+            font.bold: true
+            color: "#ffffff"
           }
         }
 
-        Text {
-          id: trashIcon
-          anchors.centerIn: parent
-          text: "🗑️"
-          font.pixelSize: Math.round(26 * trashScale)
-          z: isTrashHovered ? 10 : 1
+        Item {
+          id: trashContainer
+          anchors.horizontalCenter: parent.horizontalCenter
+          anchors.bottom: parent.bottom
+          anchors.bottomMargin: 10
+          width: dockWindow.baseIconSize
+          height: dockWindow.baseIconSize
+          scale: trashItem.currentScale
+          transformOrigin: Item.Bottom
+
+          Image {
+            anchors.fill: parent
+            source: "file://" + dockWindow.iconBasePath + "trash.svg"
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+          }
+        }
+      }
+    }
+
+    MouseArea {
+      id: dockMouseArea
+      anchors.fill: parent
+      hoverEnabled: true
+      acceptedButtons: Qt.LeftButton | Qt.RightButton
+      cursorShape: Qt.PointingHandCursor
+
+      onEntered: dockWindow.isMouseOverDock = true
+      onExited: dockWindow.isMouseOverDock = false
+      onPositionChanged: function(mouse) { dockWindow.currentMouseX = mouse.x }
+
+      onClicked: function(mouse) {
+        for (var i = 0; i < appsRepeater.count; i++) {
+          var item = appsRepeater.itemAt(i)
+          if (item) {
+            var pos = item.mapToItem(dockCard, 0, 0)
+            if (mouse.x >= pos.x && mouse.x <= pos.x + item.width) {
+              item.children[2].running = true
+              Quickshell.execDetached(["bash", "-c", item.appData.exec])
+              return
+            }
+          }
         }
 
-        MouseArea {
-          id: trashMouse
-          anchors.fill: parent
-          hoverEnabled: true
-          cursorShape: Qt.PointingHandCursor
-          onClicked: {
-            Quickshell.execDetached("nautilus trash:/// || thunar trash:/// || dolphin trash:/")
-          }
+        var trashPos = trashItem.mapToItem(dockCard, 0, 0)
+        if (mouse.x >= trashPos.x && mouse.x <= trashPos.x + trashItem.width) {
+          Quickshell.execDetached(["nautilus", "trash:///"])
         }
       }
     }

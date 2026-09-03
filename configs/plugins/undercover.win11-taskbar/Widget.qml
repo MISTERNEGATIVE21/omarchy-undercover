@@ -12,6 +12,7 @@ BarWidget {
   implicitWidth: taskbarRow.implicitWidth + 8
   implicitHeight: root.bar ? root.bar.barSize : 44
 
+  property string homeDir: Quickshell.env("HOME")
   property bool isDark: true
   property var winPinsConfig: ({})
 
@@ -38,44 +39,39 @@ BarWidget {
     return root.matches(ToplevelManager.activeToplevel, matchers)
   }
 
-  // Theme state poller
-  Process {
-    id: statePoller
-    running: true
-    command: ["bash", "-c", "cat $HOME/.config/omarchy-undercover/state 2>/dev/null || echo 'win11-dark'"]
-    stdout: SplitParser {
-      onRead: function(line) {
-        var s = String(line).trim()
-        root.isDark = (s.indexOf("light") === -1)
-      }
+  // Reactive Theme state watcher via FileView
+  FileView {
+    id: stateWatcher
+    path: root.homeDir + "/.config/omarchy-undercover/state"
+    watchChanges: true
+    onLoaded: {
+      var s = text().trim()
+      root.isDark = (s.indexOf("light") === -1)
+    }
+    onFileChanged: {
+      reload()
+      var s = text().trim()
+      root.isDark = (s.indexOf("light") === -1)
     }
   }
 
-  // Defaults & pinned apps poller
-  Process {
-    id: defaultsPoller
-    running: true
-    command: ["bash", "-c", "cat $HOME/.config/omarchy-undercover/defaults.json 2>/dev/null || echo '{}'"]
-    stdout: SplitParser {
-      onRead: function(line) {
-        try {
-          var d = JSON.parse(String(line))
-          if (d && d.win11_pins) {
-            root.winPinsConfig = d.win11_pins
-          }
-        } catch(e) {}
-      }
+  // Defaults & pinned apps poller via FileView
+  FileView {
+    id: defaultsFile
+    path: root.homeDir + "/.config/omarchy-undercover/defaults.json"
+    watchChanges: true
+    onLoaded: {
+      try {
+        var d = JSON.parse(text())
+        if (d && d.win11_pins) root.winPinsConfig = d.win11_pins
+      } catch(e) {}
     }
-  }
-
-  Timer {
-    interval: 3000
-    running: true
-    repeat: true
-    triggeredOnStart: true
-    onTriggered: {
-      if (!statePoller.running) statePoller.running = true
-      if (!defaultsPoller.running) defaultsPoller.running = true
+    onFileChanged: {
+      reload()
+      try {
+        var d = JSON.parse(text())
+        if (d && d.win11_pins) root.winPinsConfig = d.win11_pins
+      } catch(e) {}
     }
   }
 
@@ -110,7 +106,6 @@ BarWidget {
 
       Rectangle {
         id: itemBox
-        visible: true
         implicitWidth: 42
         implicitHeight: root.bar ? root.bar.barSize - 6 : 38
         radius: 5
@@ -178,29 +173,27 @@ BarWidget {
             anchors.centerIn: parent
             width: modelData.isTaskView ? 20 : 24
             height: modelData.isTaskView ? 20 : 24
-            source: (Quickshell.env("HOME") || "/home/" + (Quickshell.env("USER") || "mister")) + "/.local/share/icons/win11/" + modelData.iconFile
-            sourceSize.width: 48
-            sourceSize.height: 48
+            source: "file://" + root.homeDir + "/.local/share/icons/win11/" + modelData.iconFile
             fillMode: Image.PreserveAspectFit
             smooth: true
             mipmap: true
           }
+        }
 
-          // Active Running Indicator Bar
-          Rectangle {
-            visible: itemBox.appRunning
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: 1
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: itemBox.appFocused ? (itemMouse.containsMouse ? 24 : 20) : (itemMouse.containsMouse ? 16 : 8)
-            height: 3
-            radius: 1.5
-            color: itemBox.appFocused
-                   ? (root.isDark ? "#60cdff" : "#0067c0")
-                   : (root.isDark ? "rgba(255, 255, 255, 0.45)" : "rgba(0, 0, 0, 0.35)")
-            Behavior on width {
-              NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
-            }
+        // 3. Authentic Windows 11 Running/Focus Pill Indicator Under Icon
+        Rectangle {
+          id: bottomIndicator
+          visible: !modelData.isStart && !modelData.isTaskView && itemBox.appRunning
+          anchors.bottom: parent.bottom
+          anchors.bottomMargin: 1
+          anchors.horizontalCenter: parent.horizontalCenter
+          width: itemBox.appFocused ? 16 : 6
+          height: 3
+          radius: 1.5
+          color: itemBox.appFocused ? (root.isDark ? "#60cdff" : "#0067c0") : (root.isDark ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0, 0, 0, 0.40))
+
+          Behavior on width {
+            NumberAnimation { duration: 150; easing.type: Easing.OutQuad }
           }
         }
 
@@ -214,7 +207,7 @@ BarWidget {
           implicitWidth: tooltipText.implicitWidth + 14
           implicitHeight: 24
           radius: 5
-          color: root.isDark ? Qt.rgba(0.13, 0.14, 0.18, 0.96) : Qt.rgba(0.98, 0.98, 0.99, 0.98)
+          color: root.isDark ? Qt.rgba(0.13, 0.14, 0.18, 0.96) : Qt.rgba(0.96, 0.96, 0.98, 0.96)
           border.color: root.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.12)
           border.width: 1
           z: 100
@@ -235,20 +228,28 @@ BarWidget {
           hoverEnabled: true
           cursorShape: Qt.PointingHandCursor
           acceptedButtons: Qt.LeftButton | Qt.RightButton
+
           onClicked: function(mouse) {
-            if (modelData.isStart) {
-              if (mouse.button === Qt.RightButton) {
+            if (mouse.button === Qt.RightButton) {
+              if (modelData.isStart) {
                 root.runCmd("omarchy-undercover-settings")
               } else {
-                root.runCmd("omarchy-win11-start")
+                root.runCmd("rofi -show window -theme ~/.config/rofi/windows11.rasi")
               }
             } else {
-              if (modelData.matchers && modelData.matchers.length > 0) {
-                var matchStr = modelData.matchers.join(",")
-                root.runCmd("omarchy-undercover-activate '" + matchStr + "' '" + modelData.exec.replace(/'/g, "\\'") + "'")
-              } else {
-                root.runCmd(modelData.exec)
+              if (itemBox.appRunning) {
+                var list = (ToplevelManager.toplevels && ToplevelManager.toplevels.values) ? ToplevelManager.toplevels.values : []
+                var tl = list.find(function(t) { return root.matches(t, modelData.matchers) })
+                if (tl) {
+                  if (itemBox.appFocused) {
+                    root.runCmd("omarchy-undercover-minimize")
+                  } else {
+                    tl.activate()
+                  }
+                  return
+                }
               }
+              root.runCmd(modelData.exec)
             }
           }
         }

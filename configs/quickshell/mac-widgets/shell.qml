@@ -229,7 +229,7 @@ ShellRoot {
                   }
                 }
               }
-              Text { text: macWidgetsWindow.masterVolume + "%"; font.pixelSize: 10; color: "#ffffff"; implicitWidth: 30 }
+              Text { text: macWidgetsWindow.masterVolume + "%"; font.pixelSize: 10; color: "#ffffff"; Layout.preferredWidth: 30 }
             }
 
             // Display Brightness Slider
@@ -260,7 +260,7 @@ ShellRoot {
                   }
                 }
               }
-              Text { text: macWidgetsWindow.displayBrightness + "%"; font.pixelSize: 10; color: "#ffffff"; implicitWidth: 30 }
+              Text { text: macWidgetsWindow.displayBrightness + "%"; font.pixelSize: 10; color: "#ffffff"; Layout.preferredWidth: 30 }
             }
           }
         }

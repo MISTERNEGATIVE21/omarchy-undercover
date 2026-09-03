@@ -30,6 +30,27 @@ ShellRoot {
     property bool isDark: true
     property bool btEnabled: true
     property var pairedDevices: []
+    property bool isScanning: false
+    property string searchText: ""
+
+    readonly property var filteredDevices: {
+      var q = macBtWindow.searchText.toLowerCase().trim()
+      if (!q) return macBtWindow.pairedDevices
+      var result = []
+      for (var i = 0; i < macBtWindow.pairedDevices.length; i++) {
+        var d = macBtWindow.pairedDevices[i]
+        if ((d.name && d.name.toLowerCase().indexOf(q) !== -1) || (d.mac && d.mac.toLowerCase().indexOf(q) !== -1)) {
+          result.push(d)
+        }
+      }
+      return result
+    }
+
+    function triggerScan() {
+      macBtWindow.isScanning = true
+      macBtWindow.pairedDevices = []
+      if (!devicesPoller.running) devicesPoller.running = true
+    }
 
     function runCmd(cmd) {
       Quickshell.execDetached(["bash", "-c", cmd])
@@ -60,10 +81,13 @@ ShellRoot {
       }
     }
 
-    // Paired Devices query
+    // Devices query & discovery scan
     Process {
       id: devicesPoller
-      command: ["bash", "-c", "bluetoothctl devices Paired 2>/dev/null"]
+      command: ["bash", "-c", "bluetoothctl --timeout 5 scan on >/dev/null 2>&1 & bluetoothctl devices Paired 2>/dev/null; bluetoothctl devices 2>/dev/null"]
+      onExited: function() {
+        macBtWindow.isScanning = false
+      }
       stdout: SplitParser {
         onRead: function(line) {
           var l = String(line).trim()
@@ -85,7 +109,7 @@ ShellRoot {
               currentList.push({
                 mac: mac,
                 name: name,
-                type: (name.toLowerCase().indexOf("airpods") !== -1 || name.toLowerCase().indexOf("head") !== -1) ? "🎧" : ((name.toLowerCase().indexOf("mouse") !== -1 || name.toLowerCase().indexOf("trackpad") !== -1) ? "🖱️" : ((name.toLowerCase().indexOf("key") !== -1) ? "⌨️" : "📱"))
+                type: (name.toLowerCase().indexOf("airpods") !== -1 || name.toLowerCase().indexOf("head") !== -1 || name.toLowerCase().indexOf("audio") !== -1 || name.toLowerCase().indexOf("buds") !== -1) ? "🎧" : ((name.toLowerCase().indexOf("mouse") !== -1 || name.toLowerCase().indexOf("trackpad") !== -1) ? "🖱️" : ((name.toLowerCase().indexOf("key") !== -1) ? "⌨️" : "📱"))
               })
             }
             macBtWindow.pairedDevices = currentList
@@ -127,6 +151,27 @@ ShellRoot {
             font.weight: Font.Bold
             color: macBtWindow.isDark ? "#ffffff" : "#1a1a1a"
             Layout.fillWidth: true
+          }
+
+          // Scan / Refresh Button
+          Rectangle {
+            implicitWidth: 24
+            implicitHeight: 24
+            radius: 12
+            color: scanM.containsMouse ? (macBtWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
+            Text {
+              anchors.centerIn: parent
+              text: "🔄"
+              font.pixelSize: 11
+              opacity: macBtWindow.isScanning ? 0.4 : 1.0
+            }
+            MouseArea {
+              id: scanM
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: macBtWindow.triggerScan()
+            }
           }
 
           Rectangle {
@@ -173,14 +218,78 @@ ShellRoot {
           }
         }
 
-        // Devices Title
-        Text {
+        // Search Bar
+        Rectangle {
           visible: macBtWindow.btEnabled
-          text: "Devices"
-          font.family: "SF Pro Text"
-          font.pixelSize: 11
-          font.weight: Font.DemiBold
-          color: macBtWindow.isDark ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.45)
+          Layout.fillWidth: true
+          implicitHeight: 32
+          radius: 8
+          color: macBtWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05)
+          border.color: macBtWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)
+
+          RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 8
+            anchors.rightMargin: 8
+            spacing: 6
+
+            Text { text: "🔍"; font.pixelSize: 11; opacity: 0.6 }
+
+            TextInput {
+              id: macBtSearchBox
+              Layout.fillWidth: true
+              color: macBtWindow.isDark ? "#ffffff" : "#1a1a1a"
+              font.family: "SF Pro Text"
+              font.pixelSize: 12
+              clip: true
+              onTextChanged: macBtWindow.searchText = text
+
+              Text {
+                text: "Search Bluetooth devices..."
+                color: macBtWindow.isDark ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(0, 0, 0, 0.4)
+                font: macBtSearchBox.font
+                visible: !macBtSearchBox.text && !macBtSearchBox.activeFocus
+              }
+            }
+
+            Rectangle {
+              visible: macBtSearchBox.text.length > 0
+              implicitWidth: 16
+              implicitHeight: 16
+              radius: 8
+              color: Qt.rgba(1, 1, 1, 0.2)
+              Text { anchors.centerIn: parent; text: "✕"; font.pixelSize: 9; color: "#ffffff" }
+              MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                  macBtSearchBox.text = ""
+                  macBtWindow.searchText = ""
+                }
+              }
+            }
+          }
+        }
+
+        // Devices Title
+        RowLayout {
+          visible: macBtWindow.btEnabled
+          Layout.fillWidth: true
+          Text {
+            text: macBtWindow.searchText.length > 0 ? "Search Results (" + macBtWindow.filteredDevices.length + ")" : "Devices"
+            font.family: "SF Pro Text"
+            font.pixelSize: 11
+            font.weight: Font.DemiBold
+            color: macBtWindow.isDark ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.45)
+            Layout.fillWidth: true
+          }
+          Text {
+            visible: macBtWindow.isScanning
+            text: "Scanning..."
+            font.family: "SF Pro Text"
+            font.pixelSize: 10
+            color: "#007aff"
+          }
         }
 
         ScrollView {
@@ -192,7 +301,7 @@ ShellRoot {
           ListView {
             id: macBtList
             width: parent.width
-            model: macBtWindow.pairedDevices
+            model: macBtWindow.filteredDevices
             spacing: 3
 
             delegate: Rectangle {

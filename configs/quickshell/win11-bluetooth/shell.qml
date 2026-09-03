@@ -31,6 +31,20 @@ ShellRoot {
     property bool btEnabled: true
     property var pairedDevices: []
     property bool isScanning: false
+    property string searchText: ""
+
+    readonly property var filteredDevices: {
+      var q = btWindow.searchText.toLowerCase().trim()
+      if (!q) return btWindow.pairedDevices
+      var result = []
+      for (var i = 0; i < btWindow.pairedDevices.length; i++) {
+        var d = btWindow.pairedDevices[i]
+        if ((d.name && d.name.toLowerCase().indexOf(q) !== -1) || (d.mac && d.mac.toLowerCase().indexOf(q) !== -1)) {
+          result.push(d)
+        }
+      }
+      return result
+    }
 
     function runCmd(cmd) {
       Quickshell.execDetached(["bash", "-c", cmd])
@@ -61,10 +75,10 @@ ShellRoot {
       }
     }
 
-    // Paired Devices query
+    // Devices query & scan
     Process {
       id: devicesPoller
-      command: ["bash", "-c", "bluetoothctl devices Paired 2>/dev/null"]
+      command: ["bash", "-c", "bluetoothctl --timeout 5 scan on >/dev/null 2>&1 & bluetoothctl devices Paired 2>/dev/null; bluetoothctl devices 2>/dev/null"]
       stdout: SplitParser {
         onRead: function(line) {
           var l = String(line).trim()
@@ -88,7 +102,7 @@ ShellRoot {
                 mac: mac,
                 name: name,
                 connected: false,
-                type: (name.toLowerCase().indexOf("headset") !== -1 || name.toLowerCase().indexOf("audio") !== -1 || name.toLowerCase().indexOf("airpods") !== -1 || name.toLowerCase().indexOf("wh-") !== -1) ? "🎧" : ((name.toLowerCase().indexOf("mouse") !== -1) ? "🖱️" : ((name.toLowerCase().indexOf("key") !== -1) ? "⌨️" : "📱"))
+                type: (name.toLowerCase().indexOf("headset") !== -1 || name.toLowerCase().indexOf("audio") !== -1 || name.toLowerCase().indexOf("airpods") !== -1 || name.toLowerCase().indexOf("wh-") !== -1 || name.toLowerCase().indexOf("buds") !== -1) ? "🎧" : ((name.toLowerCase().indexOf("mouse") !== -1 || name.toLowerCase().indexOf("trackpad") !== -1) ? "🖱️" : ((name.toLowerCase().indexOf("key") !== -1) ? "⌨️" : "📱"))
               })
             }
             btWindow.pairedDevices = currentList
@@ -101,8 +115,9 @@ ShellRoot {
     }
 
     function triggerQuery() {
+      btWindow.isScanning = true
       btWindow.pairedDevices = []
-      devicesPoller.running = true
+      if (!devicesPoller.running) devicesPoller.running = true
     }
 
     Timer {
@@ -243,17 +258,81 @@ ShellRoot {
           }
         }
 
-        // Paired Devices Title
-        Text {
+        // Search Bar
+        Rectangle {
           visible: btWindow.btEnabled
-          text: "Paired Devices"
-          font.family: "Segoe UI"
-          font.pixelSize: 11
-          font.weight: Font.DemiBold
-          color: btWindow.isDark ? Qt.rgba(1, 1, 1, 0.6) : Qt.rgba(0, 0, 0, 0.5)
+          Layout.fillWidth: true
+          implicitHeight: 32
+          radius: 4
+          color: btWindow.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04)
+          border.color: btWindow.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08)
+
+          RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 8
+            anchors.rightMargin: 8
+            spacing: 6
+
+            Text { text: "🔍"; font.pixelSize: 11; opacity: 0.6 }
+
+            TextInput {
+              id: win11BtSearch
+              Layout.fillWidth: true
+              color: btWindow.isDark ? "#ffffff" : "#1a1a1a"
+              font.family: "Segoe UI"
+              font.pixelSize: 12
+              clip: true
+              onTextChanged: btWindow.searchText = text
+
+              Text {
+                text: "Search Bluetooth devices..."
+                color: btWindow.isDark ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(0, 0, 0, 0.4)
+                font: win11BtSearch.font
+                visible: !win11BtSearch.text && !win11BtSearch.activeFocus
+              }
+            }
+
+            Rectangle {
+              visible: win11BtSearch.text.length > 0
+              implicitWidth: 16
+              implicitHeight: 16
+              radius: 8
+              color: Qt.rgba(1, 1, 1, 0.2)
+              Text { anchors.centerIn: parent; text: "✕"; font.pixelSize: 9; color: "#ffffff" }
+              MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                  win11BtSearch.text = ""
+                  btWindow.searchText = ""
+                }
+              }
+            }
+          }
         }
 
-        // Paired Devices ScrollView
+        // Devices Title & Scanning Indicator
+        RowLayout {
+          visible: btWindow.btEnabled
+          Layout.fillWidth: true
+          Text {
+            text: btWindow.searchText.length > 0 ? "Search Results (" + btWindow.filteredDevices.length + ")" : "Bluetooth Devices"
+            font.family: "Segoe UI"
+            font.pixelSize: 11
+            font.weight: Font.DemiBold
+            color: btWindow.isDark ? Qt.rgba(1, 1, 1, 0.6) : Qt.rgba(0, 0, 0, 0.5)
+            Layout.fillWidth: true
+          }
+          Text {
+            visible: btWindow.isScanning
+            text: "Scanning for devices..."
+            font.family: "Segoe UI"
+            font.pixelSize: 10
+            color: btWindow.isDark ? "#60cdff" : "#0067c0"
+          }
+        }
+
+        // Devices ScrollView
         ScrollView {
           visible: btWindow.btEnabled
           Layout.fillWidth: true
@@ -263,7 +342,7 @@ ShellRoot {
           ListView {
             id: btListView
             width: parent.width
-            model: btWindow.pairedDevices
+            model: btWindow.filteredDevices
             spacing: 4
 
             delegate: Rectangle {

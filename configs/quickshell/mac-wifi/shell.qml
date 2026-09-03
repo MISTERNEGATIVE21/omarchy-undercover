@@ -32,6 +32,27 @@ ShellRoot {
     property string activeSsid: ""
     property var networks: []
     property string connectingSsid: ""
+    property string searchText: ""
+    property bool isScanning: false
+
+    readonly property var filteredNetworks: {
+      var q = macWifiWindow.searchText.toLowerCase().trim()
+      if (!q) return macWifiWindow.networks
+      var result = []
+      for (var i = 0; i < macWifiWindow.networks.length; i++) {
+        var n = macWifiWindow.networks[i]
+        if (n.ssid && n.ssid.toLowerCase().indexOf(q) !== -1) {
+          result.push(n)
+        }
+      }
+      return result
+    }
+
+    function triggerScan() {
+      macWifiWindow.isScanning = true
+      macWifiWindow.networks = []
+      if (!scanPoller.running) scanPoller.running = true
+    }
 
     function runCmd(cmd) {
       Quickshell.execDetached(["bash", "-c", cmd])
@@ -65,7 +86,10 @@ ShellRoot {
     // Wi-Fi Scan Process
     Process {
       id: scanPoller
-      command: ["bash", "-c", "nmcli -t -f in-use,ssid,signal,security dev wifi list 2>/dev/null"]
+      command: ["bash", "-c", "nmcli dev wifi list --rescan yes 2>/dev/null; nmcli -t -f in-use,ssid,signal,security dev wifi list 2>/dev/null"]
+      onExited: function() {
+        macWifiWindow.isScanning = false
+      }
       stdout: SplitParser {
         onRead: function(line) {
           var l = String(line).trim()
@@ -139,6 +163,27 @@ ShellRoot {
             Layout.fillWidth: true
           }
 
+          // Scan / Refresh Button
+          Rectangle {
+            implicitWidth: 24
+            implicitHeight: 24
+            radius: 12
+            color: scanM.containsMouse ? (macWifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
+            Text {
+              anchors.centerIn: parent
+              text: "🔄"
+              font.pixelSize: 11
+              opacity: macWifiWindow.isScanning ? 0.4 : 1.0
+            }
+            MouseArea {
+              id: scanM
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: macWifiWindow.triggerScan()
+            }
+          }
+
           Rectangle {
             implicitWidth: 38
             implicitHeight: 22
@@ -183,6 +228,59 @@ ShellRoot {
           }
         }
 
+        // Search Bar
+        Rectangle {
+          visible: macWifiWindow.wifiEnabled
+          Layout.fillWidth: true
+          implicitHeight: 32
+          radius: 8
+          color: macWifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05)
+          border.color: macWifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)
+
+          RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 8
+            anchors.rightMargin: 8
+            spacing: 6
+
+            Text { text: "🔍"; font.pixelSize: 11; opacity: 0.6 }
+
+            TextInput {
+              id: wifiSearchBox
+              Layout.fillWidth: true
+              color: macWifiWindow.isDark ? "#ffffff" : "#1a1a1a"
+              font.family: "SF Pro Text"
+              font.pixelSize: 12
+              clip: true
+              onTextChanged: macWifiWindow.searchText = text
+
+              Text {
+                text: "Search Wi-Fi networks..."
+                color: macWifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(0, 0, 0, 0.4)
+                font: wifiSearchBox.font
+                visible: !wifiSearchBox.text && !wifiSearchBox.activeFocus
+              }
+            }
+
+            Rectangle {
+              visible: wifiSearchBox.text.length > 0
+              implicitWidth: 16
+              implicitHeight: 16
+              radius: 8
+              color: Qt.rgba(1, 1, 1, 0.2)
+              Text { anchors.centerIn: parent; text: "✕"; font.pixelSize: 9; color: "#ffffff" }
+              MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                  wifiSearchBox.text = ""
+                  macWifiWindow.searchText = ""
+                }
+              }
+            }
+          }
+        }
+
         // Active Connection Capsule
         Rectangle {
           visible: macWifiWindow.activeSsid.length > 0 && macWifiWindow.wifiEnabled
@@ -212,13 +310,24 @@ ShellRoot {
         }
 
         // Known / Available Networks Title
-        Text {
+        RowLayout {
           visible: macWifiWindow.wifiEnabled
-          text: "Known Networks"
-          font.family: "SF Pro Text"
-          font.pixelSize: 11
-          font.weight: Font.DemiBold
-          color: macWifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.45)
+          Layout.fillWidth: true
+          Text {
+            text: macWifiWindow.searchText.length > 0 ? "Search Results (" + macWifiWindow.filteredNetworks.length + ")" : "Available Networks"
+            font.family: "SF Pro Text"
+            font.pixelSize: 11
+            font.weight: Font.DemiBold
+            color: macWifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.45)
+            Layout.fillWidth: true
+          }
+          Text {
+            visible: macWifiWindow.isScanning
+            text: "Scanning..."
+            font.family: "SF Pro Text"
+            font.pixelSize: 10
+            color: "#007aff"
+          }
         }
 
         ScrollView {
@@ -230,7 +339,7 @@ ShellRoot {
           ListView {
             id: macNetList
             width: parent.width
-            model: macWifiWindow.networks
+            model: macWifiWindow.filteredNetworks
             spacing: 3
 
             delegate: Rectangle {
@@ -245,12 +354,13 @@ ShellRoot {
                 anchors.rightMargin: 8
                 spacing: 8
 
-                Text { text: "󰤨"; font.pixelSize: 13; color: macWifiWindow.isDark ? "#ffffff" : "#1a1a1a" }
+                Text { text: modelData.inUse ? "󰤨" : (modelData.signal > 60 ? "󰤨" : (modelData.signal > 30 ? "󰤥" : "󰤟")); font.pixelSize: 13; color: modelData.inUse ? "#007aff" : (macWifiWindow.isDark ? "#ffffff" : "#1a1a1a") }
                 Text {
                   text: modelData.ssid
                   font.family: "SF Pro Text"
                   font.pixelSize: 12
-                  color: macWifiWindow.isDark ? "#ffffff" : "#1a1a1a"
+                  font.weight: modelData.inUse ? Font.DemiBold : Font.Normal
+                  color: modelData.inUse ? "#007aff" : (macWifiWindow.isDark ? "#ffffff" : "#1a1a1a")
                   Layout.fillWidth: true
                   elide: Text.ElideRight
                 }

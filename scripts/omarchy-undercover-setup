@@ -138,8 +138,24 @@ main() {
         fi
     '
 
-    # Step 5: Waybar Layouts & Mica Acrylic Stylesheets
+    # Step 5: Waybar, Quickshell & Mica Acrylic Stylesheets
     run_animated_step "5" "8" "points" "Compiling dynamic auto-sizing dock, top bar & mica taskbars" '
+        mkdir -p "$CONFIG_DIR/quickshell" "$CONFIG_DIR/shell" "$HOME/.config/omarchy/plugins" "$HOME/.config/omarchy/themes"
+        if [[ -d "$SCRIPT_DIR/configs/quickshell" ]]; then
+            cp -rf "$SCRIPT_DIR/configs/quickshell/"* "$CONFIG_DIR/quickshell/" 2>/dev/null || true
+        fi
+        if [[ -d "$SCRIPT_DIR/configs/plugins" ]]; then
+            cp -rf "$SCRIPT_DIR/configs/plugins/"* "$HOME/.config/omarchy/plugins/" 2>/dev/null || true
+        fi
+        if [[ -f "$SCRIPT_DIR/../manifest.json" ]]; then
+            mkdir -p "$HOME/.config/omarchy/plugins/undercover" "$CONFIG_DIR/plugins/undercover"
+            cp -f "$SCRIPT_DIR/../manifest.json" "$SCRIPT_DIR/../Widget.qml" "$SCRIPT_DIR/../Panel.qml" "$SCRIPT_DIR/../Service.qml" "$HOME/.config/omarchy/plugins/undercover/" 2>/dev/null || true
+            cp -f "$SCRIPT_DIR/../manifest.json" "$SCRIPT_DIR/../Widget.qml" "$SCRIPT_DIR/../Panel.qml" "$SCRIPT_DIR/../Service.qml" "$CONFIG_DIR/plugins/undercover/" 2>/dev/null || true
+            omarchy-shell shell rescanPlugins >/dev/null 2>&1 || true
+        fi
+        if [[ -d "$SCRIPT_DIR/configs/shell" ]]; then
+            cp -rf "$SCRIPT_DIR/configs/shell/"* "$CONFIG_DIR/shell/" 2>/dev/null || true
+        fi
         if [[ -d "$SCRIPT_DIR/configs/waybar" ]]; then
             cp -rf "$SCRIPT_DIR/configs/waybar/"* "$CONFIG_DIR/waybar/" 2>/dev/null || true
         fi
