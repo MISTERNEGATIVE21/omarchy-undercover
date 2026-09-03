@@ -190,6 +190,9 @@ main() {
                 fi
             done
         fi
+        if command -v omarchy-undercover-scan-apps >/dev/null 2>&1; then
+            omarchy-undercover-scan-apps >/dev/null 2>&1 || true
+        fi
     '
 
     # Step 7: Desktop Integration & Splash Screen Launchers

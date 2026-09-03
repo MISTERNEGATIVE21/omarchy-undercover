@@ -107,45 +107,39 @@ ShellRoot {
       { name: "Weather", icon: "🌤️", iconUrl: "", exec: "omarchy-win11-widgets" }
     ]
 
-    // Complete All-Apps Catalog (Alphabetical A-Z Drawer)
-    property var allAppsList: [
-      { name: "Alacritty Terminal", icon: "💻", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/terminal.svg", category: "A", exec: "alacritty || xdg-terminal-exec" },
-      { name: "Antigravity IDE", icon: "🚀", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/antigravity-ide.svg", category: "A", exec: "antigravity-ide || code || vscodium" },
-      { name: "App Store / Software", icon: "🛍️", iconUrl: "", category: "A", exec: "pamac-manager || gnome-software || discover" },
-      { name: "Bluetooth Manager", icon: "🔷", iconUrl: "", category: "B", exec: "omarchy-win11-bluetooth || blueman-manager" },
-      { name: "Browser (Edge)", icon: "🌐", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/microsoft-edge.svg", category: "B", exec: "omarchy-browser" },
-      { name: "Calculator", icon: "🔢", iconUrl: "", category: "C", exec: "gnome-calculator || kcalc" },
-      { name: "Calendar", icon: "📅", iconUrl: "", category: "C", exec: "gnome-calendar || korganizer" },
-      { name: "Camera", icon: "📷", iconUrl: "", category: "C", exec: "cheese || kamoso" },
-      { name: "Clock & Alarms", icon: "⏰", iconUrl: "", category: "C", exec: "gnome-clocks || kclock" },
-      { name: "Discord", icon: "💬", iconUrl: "", category: "D", exec: "discord || vesktop" },
-      { name: "Document Viewer", icon: "📑", iconUrl: "", category: "D", exec: "evince || okular" },
-      { name: "File Explorer", icon: "📁", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/explorer.svg", category: "F", exec: "nautilus computer:/// || thunar" },
-      { name: "Firefox Browser", icon: "🦊", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/firefox.svg", category: "F", exec: "firefox" },
-      { name: "GIMP Image Editor", icon: "🎨", iconUrl: "", category: "G", exec: "gimp" },
-      { name: "Google Chrome", icon: "🌐", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/google-chrome.svg", category: "G", exec: "google-chrome-stable || chromium" },
-      { name: "LibreOffice Calc", icon: "📊", iconUrl: "", category: "L", exec: "libreoffice --calc" },
-      { name: "LibreOffice Writer", icon: "📝", iconUrl: "", category: "L", exec: "libreoffice --writer" },
-      { name: "LibreOffice Impress", icon: "📽️", iconUrl: "", category: "L", exec: "libreoffice --impress" },
-      { name: "Mail / Thunderbird", icon: "✉️", iconUrl: "", category: "M", exec: "thunderbird || evolution" },
-      { name: "Microsoft Edge", icon: "🌐", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/microsoft-edge.svg", category: "M", exec: "omarchy-browser" },
-      { name: "Music / Media Player", icon: "🎵", iconUrl: "", category: "M", exec: "spotify || vlc || celluloid" },
-      { name: "Notepad Text Editor", icon: "🗒️", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/notepad.svg", category: "N", exec: "gedit || kate || mousepad" },
-      { name: "Omarchy Settings", icon: "🕵️", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/settings.svg", category: "O", exec: "omarchy-undercover-settings" },
-      { name: "Paint / Drawing", icon: "🎨", iconUrl: "", category: "P", exec: "drawing || pinta" },
-      { name: "Photos / Image Viewer", icon: "🖼️", iconUrl: "", category: "P", exec: "eog || gwenview || loupe" },
-      { name: "Screen Recorder", icon: "🎥", iconUrl: "", category: "S", exec: "obs || wf-recorder" },
-      { name: "Settings", icon: "⚙️", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/settings.svg", category: "S", exec: "omarchy-undercover-settings" },
-      { name: "Sound Mixer", icon: "🔊", iconUrl: "", category: "S", exec: "omarchy-win11-sound || pavucontrol" },
-      { name: "Spotify", icon: "🎵", iconUrl: "", category: "S", exec: "spotify" },
-      { name: "System Monitor", icon: "📈", iconUrl: "", category: "S", exec: "gnome-system-monitor || btop" },
-      { name: "Task View / Switcher", icon: "⧉", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/taskview.svg", category: "T", exec: "rofi -show window" },
-      { name: "Terminal Console", icon: "💻", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/terminal.svg", category: "T", exec: "xdg-terminal-exec" },
-      { name: "VS Code", icon: "🧑‍💻", iconUrl: "", category: "V", exec: "code || vscodium" },
-      { name: "VLC Media Player", icon: "🎬", iconUrl: "", category: "V", exec: "vlc" },
-      { name: "Weather & Widgets", icon: "🌤️", iconUrl: "", category: "W", exec: "omarchy-win11-widgets" },
-      { name: "Wi-Fi Manager", icon: "📶", iconUrl: "", category: "W", exec: "omarchy-win11-wifi || nm-connection-editor" }
-    ]
+    // Dynamic System Applications Catalog (Discovered from XDG .desktop files)
+    property var allAppsList: []
+
+    // Background App Indexer
+    Process {
+      id: appIndexer
+      command: ["omarchy-undercover-scan-apps"]
+      running: true
+    }
+
+    // Reactive Watcher on apps.json
+    FileView {
+      id: appsWatcher
+      path: startWindow.homeDir + "/.config/omarchy-undercover/apps.json"
+      watchChanges: true
+      onLoaded: {
+        try {
+          var parsed = JSON.parse(text())
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            startWindow.allAppsList = parsed
+          }
+        } catch(e) {}
+      }
+      onFileChanged: {
+        reload()
+        try {
+          var parsed = JSON.parse(text())
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            startWindow.allAppsList = parsed
+          }
+        } catch(e) {}
+      }
+    }
 
     property var recommendedItems: [
       { name: "omarchy-undercover", time: "Just now", icon: "📄", exec: "xdg-open ~/.config/omarchy-undercover" },
@@ -159,7 +153,12 @@ ShellRoot {
       if (!startWindow.searchFilter || startWindow.searchFilter.trim() === "") return []
       var q = startWindow.searchFilter.toLowerCase().trim()
       return startWindow.allAppsList.filter(function(app) {
-        return app.name.toLowerCase().indexOf(q) !== -1 || app.exec.toLowerCase().indexOf(q) !== -1
+        var n = (app.name || "").toLowerCase()
+        var e = (app.exec || "").toLowerCase()
+        var g = (app.genericName || "").toLowerCase()
+        var k = (app.keywords || "").toLowerCase()
+        var c = (app.comment || "").toLowerCase()
+        return n.indexOf(q) !== -1 || e.indexOf(q) !== -1 || g.indexOf(q) !== -1 || k.indexOf(q) !== -1 || c.indexOf(q) !== -1
       })
     }
 

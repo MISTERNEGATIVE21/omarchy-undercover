@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+# ==============================================================================
+# Copyright (C) 2026 misternegative21
+# Omarchy Undercover - Fast XDG Desktop Applications Scanner & Indexer
+# License: GPL-3.0-or-later
+# ==============================================================================
+
+import os
+import glob
+import json
+import sys
+
+def scan_apps():
+    home = os.path.expanduser("~")
+    config_dir = os.path.join(home, ".config", "omarchy-undercover")
+    os.makedirs(config_dir, exist_ok=True)
+    out_file = os.path.join(config_dir, "apps.json")
+
+    app_dirs = [
+        "/usr/share/applications",
+        "/usr/local/share/applications",
+        os.path.join(home, ".local", "share", "applications"),
+        "/var/lib/flatpak/exports/share/applications",
+        os.path.join(home, ".local", "share", "flatpak", "exports", "share", "applications")
+    ]
+
+    icon_dirs = [
+        os.path.join(home, ".local", "share", "icons", "win11"),
+        os.path.join(home, ".local", "share", "icons", "hicolor"),
+        os.path.join(home, ".local", "share", "icons"),
+        "/usr/share/pixmaps",
+        "/usr/share/icons/hicolor",
+        "/usr/share/icons"
+    ]
+
+    # Pre-index icons for fast O(1) matching
+    icon_map = {}
+    for idir in icon_dirs:
+        if not os.path.isdir(idir):
+            continue
+        for root, _, files in os.walk(idir):
+            for f in files:
+                if f.endswith((".svg", ".png")):
+                    base = os.path.splitext(f)[0]
+                    if base not in icon_map:
+                        icon_map[base] = os.path.join(root, f)
+                    base_l = base.lower()
+                    if base_l not in icon_map:
+                        icon_map[base_l] = os.path.join(root, f)
+
+    apps = []
+    seen = set()
+
+    for adir in app_dirs:
+        if not os.path.isdir(adir):
+            continue
+        for filepath in glob.glob(os.path.join(adir, "**/*.desktop"), recursive=True):
+            try:
+                name, exec_cmd, icon, nodisplay = "", "", "", False
+                generic_name, keywords, comment = "", "", ""
+                with open(filepath, "r", encoding="utf-8", errors="ignore") as fp:
+                    for line in fp:
+                        line = line.strip()
+                        if line.startswith("[") and line != "[Desktop Entry]":
+                            break
+                        elif line.startswith("Name=") and not name:
+                            name = line[5:].strip()
+                        elif line.startswith("GenericName=") and not generic_name:
+                            generic_name = line[12:].strip()
+                        elif line.startswith("Comment=") and not comment:
+                            comment = line[8:].strip()
+                        elif line.startswith("Keywords=") and not keywords:
+                            keywords = line[9:].strip()
+                        elif line.startswith("Exec=") and not exec_cmd:
+                            exec_cmd = line[5:].strip()
+                        elif line.startswith("Icon=") and not icon:
+                            icon = line[5:].strip()
+                        elif line.lower() == "nodisplay=true":
+                            nodisplay = True
+
+                if name and exec_cmd and not nodisplay and name.lower() not in seen:
+                    clean_exec = " ".join([arg for arg in exec_cmd.split() if not arg.startswith("%")])
+                    seen.add(name.lower())
+                    
+                    cat = name[0].upper()
+                    if not cat.isalpha():
+                        cat = "#"
+
+                    icon_path = ""
+                    if os.path.isabs(icon) and os.path.exists(icon):
+                        icon_path = icon
+                    elif icon in icon_map:
+                        icon_path = icon_map[icon]
+                    elif icon.lower() in icon_map:
+                        icon_path = icon_map[icon.lower()]
+
+                    apps.append({
+                        "name": name,
+                        "genericName": generic_name,
+                        "comment": comment,
+                        "keywords": keywords,
+                        "exec": clean_exec,
+                        "icon": "📦",
+                        "iconUrl": ("file://" + icon_path) if icon_path else "",
+                        "category": cat
+                    })
+            except Exception:
+                continue
+
+    apps.sort(key=lambda x: x["name"].lower())
+
+    with open(out_file, "w", encoding="utf-8") as fp:
+        json.dump(apps, fp, indent=2)
+
+    return len(apps)
+
+if __name__ == "__main__":
+    count = scan_apps()
+    print(f"Indexed {count} system applications into ~/.config/omarchy-undercover/apps.json")

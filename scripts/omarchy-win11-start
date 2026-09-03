@@ -22,6 +22,15 @@ if [[ ! -d "$QS_SRC" && -d "${SCRIPT_DIR}/../configs/quickshell/win11-start" ]];
     QS_SRC="${SCRIPT_DIR}/../configs/quickshell/win11-start"
 fi
 
+# Ensure system applications catalog is indexed
+if [[ ! -f "$CONFIG_DIR/apps.json" ]]; then
+    if command -v omarchy-undercover-scan-apps >/dev/null 2>&1; then
+        omarchy-undercover-scan-apps >/dev/null 2>&1 || true
+    elif [[ -x "${SCRIPT_DIR}/omarchy-undercover-scan-apps" ]]; then
+        "${SCRIPT_DIR}/omarchy-undercover-scan-apps" >/dev/null 2>&1 || true
+    fi
+fi
+
 # Detect backend preference
 BACKEND="auto"
 if [[ -f "$CONFIG_DIR/settings.conf" ]]; then
