@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Copyright (C) 2026 misternegative21
+# Omarchy Undercover - Windows 11 Settings & PowerToys QuickShell Application
+# License: GPL-3.0-or-later
+# ==============================================================================
+
+DIR="$HOME/.config/quickshell/win11-settings"
+if [[ ! -d "$DIR" ]]; then
+    REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+    if [[ -d "$REPO_DIR/configs/quickshell/win11-settings" ]]; then
+        DIR="$REPO_DIR/configs/quickshell/win11-settings"
+    fi
+fi
+
+if command -v quickshell >/dev/null 2>&1 && [[ -d "$DIR" ]]; then
+    exec quickshell -p "$DIR"
+fi
+
+exec omarchy-undercover-settings "$@"

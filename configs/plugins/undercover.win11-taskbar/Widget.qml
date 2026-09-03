@@ -9,12 +9,16 @@ BarWidget {
   id: root
   moduleName: "undercover.win11-taskbar"
 
-  implicitWidth: taskbarRow.implicitWidth + 8
-  implicitHeight: root.bar ? root.bar.barSize : 44
-
   property string homeDir: Quickshell.env("HOME")
   property bool isDark: true
   property var winPinsConfig: ({})
+
+  readonly property int tileHeight: Math.max(28, (root.bar ? root.bar.barSize - 6 : 38))
+  readonly property int tileWidth: tileHeight
+  readonly property int iconSize: Math.round(tileHeight * 0.58)
+
+  implicitWidth: taskbarRow.implicitWidth + 8
+  implicitHeight: root.bar ? root.bar.barSize : 44
 
   function runCmd(cmd) {
     if (root.bar) {
@@ -30,9 +34,13 @@ BarWidget {
     return matchers.some(function(p) { return target.indexOf(p.toLowerCase()) !== -1 })
   }
 
-  function isRunning(matchers) {
+  function findRunningToplevel(matchers) {
     var list = (ToplevelManager.toplevels && ToplevelManager.toplevels.values) ? ToplevelManager.toplevels.values : []
-    return list.some(function(tl) { return root.matches(tl, matchers) })
+    return list.find(function(tl) { return root.matches(tl, matchers) })
+  }
+
+  function isRunning(matchers) {
+    return findRunningToplevel(matchers) !== undefined
   }
 
   function isFocused(matchers) {
@@ -75,7 +83,7 @@ BarWidget {
     }
   }
 
-  // Windows 11 Taskbar Apps with authentic Edge icon
+  // Windows 11 Taskbar Pinned Apps
   property var winApps: [
     { id: "start", name: "Start", isStart: true, iconFile: "start.svg", exec: "omarchy-win11-start", matchers: [] },
     { id: "taskview", name: "Task View", isTaskView: true, iconFile: "taskview.svg", exec: "rofi -show window -theme ~/.config/rofi/windows11.rasi", matchers: [] },
@@ -87,7 +95,7 @@ BarWidget {
     { id: "settings", name: "Settings", iconFile: "settings.svg", exec: "omarchy-undercover-settings", matchers: ["omarchy-undercover-settings", "org.omarchy.undercover.settings", "settings", "gnome-control-center"] }
   ]
 
-  function getVisibleWinApps() {
+  function getVisiblePinnedApps() {
     return root.winApps.filter(function(app) {
       if (root.winPinsConfig && root.winPinsConfig[app.id] !== undefined) {
         return root.winPinsConfig[app.id] === true
@@ -96,37 +104,80 @@ BarWidget {
     })
   }
 
+  // Dynamically discover all running unpinned applications
+  function getUnpinnedRunningApps() {
+    var list = (ToplevelManager.toplevels && ToplevelManager.toplevels.values) ? ToplevelManager.toplevels.values : []
+    var pinned = root.getVisiblePinnedApps()
+    var unpinned = []
+    var seenAppIds = {}
+
+    for (var i = 0; i < list.length; i++) {
+      var tl = list[i]
+      if (!tl) continue
+      var isPinned = pinned.some(function(p) { return root.matches(tl, p.matchers) })
+      if (!isPinned) {
+        var aid = (tl.appId || "app").toLowerCase()
+        if (!seenAppIds[aid]) {
+          seenAppIds[aid] = true
+          unpinned.push({
+            id: "running_" + aid,
+            name: tl.title || tl.appId || "Application",
+            toplevel: tl,
+            isStart: false,
+            isTaskView: false,
+            isDynamic: true,
+            appId: tl.appId || "",
+            iconFile: "",
+            exec: "",
+            matchers: [tl.appId || ""]
+          })
+        }
+      }
+    }
+    return unpinned
+  }
+
+  function getAllTaskbarItems() {
+    var pinned = root.getVisiblePinnedApps()
+    var running = root.getUnpinnedRunningApps()
+    return pinned.concat(running)
+  }
+
   RowLayout {
     id: taskbarRow
     anchors.centerIn: parent
-    spacing: 3
+    spacing: 4
 
     Repeater {
-      model: root.getVisibleWinApps()
+      model: root.getAllTaskbarItems()
 
       Rectangle {
         id: itemBox
-        implicitWidth: 42
-        implicitHeight: root.bar ? root.bar.barSize - 6 : 38
-        radius: 5
+        implicitWidth: root.tileWidth
+        implicitHeight: root.tileHeight
+        radius: 4
 
-        property bool appRunning: root.isRunning(modelData.matchers)
-        property bool appFocused: root.isFocused(modelData.matchers)
+        property bool appRunning: modelData.isDynamic ? true : root.isRunning(modelData.matchers)
+        property bool appFocused: modelData.isDynamic ? (ToplevelManager.activeToplevel === modelData.toplevel) : root.isFocused(modelData.matchers)
+        property var activeTl: modelData.isDynamic ? modelData.toplevel : root.findRunningToplevel(modelData.matchers)
 
         color: itemMouse.pressed
-               ? (root.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.10))
+               ? (root.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.12))
                : (appFocused
-                  ? (root.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08))
+                  ? (root.isDark ? Qt.rgba(1, 1, 1, 0.11) : Qt.rgba(0, 0, 0, 0.08))
                   : (itemMouse.containsMouse ? (root.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05)) : "transparent"))
-        border.color: itemMouse.containsMouse ? (root.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.07)) : "transparent"
+
+        border.color: itemMouse.containsMouse
+                      ? (root.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08))
+                      : "transparent"
         border.width: 1
 
-        scale: itemMouse.pressed ? 0.95 : (itemMouse.containsMouse ? 1.05 : 1.0)
+        scale: itemMouse.pressed ? 0.94 : (itemMouse.containsMouse ? 1.04 : 1.0)
         Behavior on scale {
-          NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
+          NumberAnimation { duration: 100; easing.type: Easing.OutCubic }
         }
 
-        // 1. Windows 11 Start Icon (Authentic Vector 4-Square Grid)
+        // 1. Windows 11 Start Icon (Vector 4-Square Grid)
         Item {
           visible: modelData.isStart === true
           anchors.fill: parent
@@ -134,45 +185,30 @@ BarWidget {
           GridLayout {
             anchors.centerIn: parent
             columns: 2
-            rowSpacing: 2.2
-            columnSpacing: 2.2
+            rowSpacing: 2
+            columnSpacing: 2
 
-            Rectangle {
-              width: 7.5
-              height: 7.5
-              radius: 1.2
-              color: root.isDark ? (itemMouse.containsMouse ? "#60cdff" : "#0078d4") : (itemMouse.containsMouse ? "#0078d4" : "#005fb8")
-            }
-            Rectangle {
-              width: 7.5
-              height: 7.5
-              radius: 1.2
-              color: root.isDark ? (itemMouse.containsMouse ? "#60cdff" : "#0078d4") : (itemMouse.containsMouse ? "#0078d4" : "#005fb8")
-            }
-            Rectangle {
-              width: 7.5
-              height: 7.5
-              radius: 1.2
-              color: root.isDark ? (itemMouse.containsMouse ? "#60cdff" : "#0078d4") : (itemMouse.containsMouse ? "#0078d4" : "#005fb8")
-            }
-            Rectangle {
-              width: 7.5
-              height: 7.5
-              radius: 1.2
-              color: root.isDark ? (itemMouse.containsMouse ? "#60cdff" : "#0078d4") : (itemMouse.containsMouse ? "#0078d4" : "#005fb8")
+            Repeater {
+              model: 4
+              Rectangle {
+                width: Math.round(root.iconSize * 0.40)
+                height: Math.round(root.iconSize * 0.40)
+                radius: 1
+                color: root.isDark ? (itemMouse.containsMouse ? "#60cdff" : "#0078d4") : (itemMouse.containsMouse ? "#0078d4" : "#005fb8")
+              }
             }
           }
         }
 
         // 2. Icon-Only Display with Authentic Windows 11 SVGs
         Item {
-          visible: !modelData.isStart
+          visible: !modelData.isStart && !modelData.isDynamic
           anchors.fill: parent
 
           Image {
             anchors.centerIn: parent
-            width: modelData.isTaskView ? 20 : 24
-            height: modelData.isTaskView ? 20 : 24
+            width: modelData.isTaskView ? Math.round(root.iconSize * 0.85) : root.iconSize
+            height: modelData.isTaskView ? Math.round(root.iconSize * 0.85) : root.iconSize
             source: "file://" + root.homeDir + "/.local/share/icons/win11/" + modelData.iconFile
             fillMode: Image.PreserveAspectFit
             smooth: true
@@ -180,14 +216,27 @@ BarWidget {
           }
         }
 
-        // 3. Authentic Windows 11 Running/Focus Pill Indicator Under Icon
+        // 3. Dynamic Application Icon (For unpinned running windows)
+        Item {
+          visible: modelData.isDynamic === true
+          anchors.fill: parent
+
+          Text {
+            anchors.centerIn: parent
+            text: "🗖"
+            font.pixelSize: Math.round(root.iconSize * 0.8)
+            color: root.isDark ? "#ffffff" : "#1a1a1a"
+          }
+        }
+
+        // 4. Windows 11 Running/Focus Pill Indicator Under Icon
         Rectangle {
           id: bottomIndicator
           visible: !modelData.isStart && !modelData.isTaskView && itemBox.appRunning
           anchors.bottom: parent.bottom
           anchors.bottomMargin: 1
           anchors.horizontalCenter: parent.horizontalCenter
-          width: itemBox.appFocused ? 16 : 6
+          width: itemBox.appFocused ? Math.round(root.tileWidth * 0.45) : 6
           height: 3
           radius: 1.5
           color: itemBox.appFocused ? (root.isDark ? "#60cdff" : "#0067c0") : (root.isDark ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0, 0, 0, 0.40))
@@ -197,16 +246,94 @@ BarWidget {
           }
         }
 
-        // Tooltip
+        // 5. Windows 11 Preview Card with Close (✕) and Minimize (—) Controls
         Rectangle {
-          id: tooltip
-          visible: itemMouse.containsMouse
+          id: previewCard
+          visible: itemMouse.containsMouse && !modelData.isStart && !modelData.isTaskView
+          anchors.bottom: parent.top
+          anchors.bottomMargin: 8
+          anchors.horizontalCenter: parent.horizontalCenter
+          implicitWidth: Math.max(140, cardRow.implicitWidth + 16)
+          implicitHeight: 32
+          radius: 6
+          color: root.isDark ? Qt.rgba(0.13, 0.14, 0.18, 0.98) : Qt.rgba(0.96, 0.96, 0.98, 0.98)
+          border.color: root.isDark ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(0, 0, 0, 0.12)
+          border.width: 1
+          z: 100
+
+          RowLayout {
+            id: cardRow
+            anchors.fill: parent
+            anchors.leftMargin: 8
+            anchors.rightMargin: 6
+            spacing: 8
+
+            Text {
+              text: itemBox.activeTl ? (itemBox.activeTl.title || modelData.name) : modelData.name
+              font.family: "Segoe UI"
+              font.pixelSize: 11
+              color: root.isDark ? "#ffffff" : "#1a1a1a"
+              Layout.fillWidth: true
+              elide: Text.ElideRight
+            }
+
+            // Quick Minimize Button inside Preview
+            Rectangle {
+              visible: itemBox.appRunning
+              implicitWidth: 20
+              implicitHeight: 20
+              radius: 3
+              color: minM.containsMouse ? (root.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.10)) : "transparent"
+
+              Text { anchors.centerIn: parent; text: "—"; font.pixelSize: 10; color: root.isDark ? "#ffffff" : "#1a1a1a" }
+
+              MouseArea {
+                id: minM
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                  Quickshell.execDetached(["omarchy-undercover-minimize"])
+                }
+              }
+            }
+
+            // Quick Close Button inside Preview
+            Rectangle {
+              visible: itemBox.appRunning
+              implicitWidth: 20
+              implicitHeight: 20
+              radius: 3
+              color: closeM.containsMouse ? "#c42b1c" : "transparent"
+
+              Text { anchors.centerIn: parent; text: "✕"; font.pixelSize: 10; color: closeM.containsMouse ? "#ffffff" : (root.isDark ? "#ffffff" : "#1a1a1a") }
+
+              MouseArea {
+                id: closeM
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                  if (itemBox.activeTl) {
+                    itemBox.activeTl.close()
+                  } else {
+                    Quickshell.execDetached(["hyprctl", "dispatch", "killactive"])
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // Standard Tooltip for Start / TaskView
+        Rectangle {
+          visible: itemMouse.containsMouse && (modelData.isStart || modelData.isTaskView)
           anchors.bottom: parent.top
           anchors.bottomMargin: 6
           anchors.horizontalCenter: parent.horizontalCenter
           implicitWidth: tooltipText.implicitWidth + 14
           implicitHeight: 24
-          radius: 5
+          radius: 4
           color: root.isDark ? Qt.rgba(0.13, 0.14, 0.18, 0.96) : Qt.rgba(0.96, 0.96, 0.98, 0.96)
           border.color: root.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.12)
           border.width: 1
@@ -227,29 +354,36 @@ BarWidget {
           anchors.fill: parent
           hoverEnabled: true
           cursorShape: Qt.PointingHandCursor
-          acceptedButtons: Qt.LeftButton | Qt.RightButton
+          acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
 
           onClicked: function(mouse) {
-            if (mouse.button === Qt.RightButton) {
+            if (mouse.button === Qt.MiddleButton) {
+              // Windows behavior: Middle click closes the running window
+              if (itemBox.activeTl) {
+                itemBox.activeTl.close()
+              }
+            } else if (mouse.button === Qt.RightButton) {
               if (modelData.isStart) {
                 root.runCmd("omarchy-undercover-settings")
+              } else if (itemBox.activeTl) {
+                // Toggle close on right click or open window switcher
+                itemBox.activeTl.close()
               } else {
                 root.runCmd("rofi -show window -theme ~/.config/rofi/windows11.rasi")
               }
             } else {
-              if (itemBox.appRunning) {
-                var list = (ToplevelManager.toplevels && ToplevelManager.toplevels.values) ? ToplevelManager.toplevels.values : []
-                var tl = list.find(function(t) { return root.matches(t, modelData.matchers) })
-                if (tl) {
-                  if (itemBox.appFocused) {
-                    root.runCmd("omarchy-undercover-minimize")
-                  } else {
-                    tl.activate()
-                  }
-                  return
+              // Left click: Toggle Focus / Minimize
+              if (itemBox.appRunning && itemBox.activeTl) {
+                if (itemBox.appFocused) {
+                  root.runCmd("omarchy-undercover-minimize")
+                } else {
+                  itemBox.activeTl.activate()
                 }
+                return
               }
-              root.runCmd(modelData.exec)
+              if (modelData.exec) {
+                root.runCmd(modelData.exec)
+              }
             }
           }
         }

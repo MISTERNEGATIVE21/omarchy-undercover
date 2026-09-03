@@ -1265,5 +1265,14 @@ class UndercoverSettingsApp(Adw.Application):
             splash.present()
 
 if __name__ == "__main__":
+    if "--legacy" not in sys.argv and shutil.which("quickshell"):
+        qs_paths = [
+            Path.home() / ".config/quickshell/win11-settings",
+            Path(__file__).resolve().parent.parent / "configs/quickshell/win11-settings",
+        ]
+        for p in qs_paths:
+            if p.exists() and (p / "shell.qml").exists():
+                sys.exit(subprocess.call(["quickshell", "-p", str(p)]))
+
     app = UndercoverSettingsApp()
     sys.exit(app.run(sys.argv))

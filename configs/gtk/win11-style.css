@@ -38,3 +38,11 @@ button.titlebutton.close:hover {
     background-color: #c42b1c;
     color: #ffffff;
 }
+
+/* Inactive window dimming */
+windowcontrols > button:backdrop,
+headerbar button.titlebutton:backdrop,
+.titlebar button.titlebutton:backdrop,
+button.titlebutton:backdrop {
+    opacity: 0.50;
+}

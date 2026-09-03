@@ -1,0 +1,129 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Omarchy Undercover - Intelligent Window Snapping & Tiling Controller
+# High-performance Wayland window tiling and snapping helper for Hyprland
+# Supports macOS Sequoia Tiling & Windows 11 Snap Assist
+# =============================================================================
+
+set -euo pipefail
+
+# Ensure hyprctl is available
+if ! command -v hyprctl &>/dev/null; then
+    echo "Error: hyprctl not found" >&2
+    exit 1
+fi
+
+get_active_window() {
+    hyprctl activewindow -j 2>/dev/null || echo "{}"
+}
+
+get_active_monitor() {
+    hyprctl monitors -j 2>/dev/null | jq -r '.[] | select(.focused == true)' 2>/dev/null || echo "{}"
+}
+
+ACTION="${1:-menu}"
+
+case "$ACTION" in
+    left)
+        # Snap window to left half
+        # First ensure window is floating or tiled as needed
+        hyprctl --batch "dispatch setfloating active; dispatch resizeactive exact 49% 97%; dispatch moveactive exact 1% 2%" >/dev/null 2>&1 || true
+        ;;
+    right)
+        # Snap window to right half
+        hyprctl --batch "dispatch setfloating active; dispatch resizeactive exact 49% 97%; dispatch moveactive exact 50% 2%" >/dev/null 2>&1 || true
+        ;;
+    up|maximize)
+        # Maximize / Zoom window (macOS green button or Win+Up)
+        # Check if already fullscreen/maximized
+        local_window=$(get_active_window)
+        is_fs=$(echo "$local_window" | jq -r '.fullscreen // 0' 2>/dev/null || echo "0")
+        if [[ "$is_fs" == "2" || "$is_fs" == "1" ]]; then
+            # If already maximized, toggle back to normal floating
+            hyprctl dispatch fullscreen 1 >/dev/null 2>&1 || true
+        else
+            hyprctl dispatch fullscreen 1 >/dev/null 2>&1 || true
+        fi
+        ;;
+    down|restore)
+        # Restore window down or minimize
+        local_window=$(get_active_window)
+        is_fs=$(echo "$local_window" | jq -r '.fullscreen // 0' 2>/dev/null || echo "0")
+        is_float=$(echo "$local_window" | jq -r '.floating // false' 2>/dev/null || echo "false")
+        if [[ "$is_fs" != "0" ]]; then
+            hyprctl dispatch fullscreen 0 >/dev/null 2>&1 || true
+        elif [[ "$is_float" == "true" ]]; then
+            # Minimize active window
+            hyprctl dispatch movetoworkspacesilent special:minimized >/dev/null 2>&1 || true
+        else
+            hyprctl --batch "dispatch setfloating active; dispatch resizeactive exact 70% 75%; dispatch centerwindow" >/dev/null 2>&1 || true
+        fi
+        ;;
+    top-left)
+        hyprctl --batch "dispatch setfloating active; dispatch resizeactive exact 49% 48%; dispatch moveactive exact 1% 2%" >/dev/null 2>&1 || true
+        ;;
+    top-right)
+        hyprctl --batch "dispatch setfloating active; dispatch resizeactive exact 49% 48%; dispatch moveactive exact 50% 2%" >/dev/null 2>&1 || true
+        ;;
+    bottom-left)
+        hyprctl --batch "dispatch setfloating active; dispatch resizeactive exact 49% 48%; dispatch moveactive exact 1% 50%" >/dev/null 2>&1 || true
+        ;;
+    bottom-right)
+        hyprctl --batch "dispatch setfloating active; dispatch resizeactive exact 49% 48%; dispatch moveactive exact 50% 50%" >/dev/null 2>&1 || true
+        ;;
+    center)
+        hyprctl --batch "dispatch setfloating active; dispatch resizeactive exact 72% 78%; dispatch centerwindow" >/dev/null 2>&1 || true
+        ;;
+    fullscreen)
+        hyprctl dispatch fullscreen 0 >/dev/null 2>&1 || true
+        ;;
+    toggle-split)
+        hyprctl dispatch togglesplit >/dev/null 2>&1 || true
+        ;;
+    menu)
+        # Show interactive Snap Layouts HUD using Rofi or Walker
+        # Read current desktop state (macOS vs Windows 11)
+        STATE_FILE="$HOME/.config/omarchy-undercover/state"
+        current_state="windows"
+        if [[ -f "$STATE_FILE" ]]; then
+            s=$(cat "$STATE_FILE" 2>/dev/null || echo "windows")
+            if [[ "$s" == *"mac"* || "$s" == *"apple"* ]]; then
+                current_state="mac"
+            fi
+        fi
+
+        title="🪟 Windows 11 Snap Layouts"
+        theme_flag=""
+        if [[ "$current_state" == "mac" ]]; then
+            title="🍏 macOS Sequoia Window Tiling"
+            if [[ -f "$HOME/.config/rofi/mac.rasi" ]]; then
+                theme_flag="-theme $HOME/.config/rofi/mac.rasi"
+            fi
+        else
+            if [[ -f "$HOME/.config/rofi/windows11.rasi" ]]; then
+                theme_flag="-theme $HOME/.config/rofi/windows11.rasi"
+            fi
+        fi
+
+        choices="1. ◧ Left Half (50%)\n2. ◨ Right Half (50%)\n3. 🗖 Maximize / Zoom\n4. ⬚ Center Window (72%)\n5. ◸ Top-Left (25%)\n6. ◹ Top-Right (25%)\n7. ◺ Bottom-Left (25%)\n8. ◿ Bottom-Right (25%)\n9. 🗗 Restore Window\n10. 🗕 Minimize Window"
+
+        selected=$(echo -e "$choices" | rofi -dmenu -p "$title" $theme_flag 2>/dev/null || true)
+
+        case "$selected" in
+            *"Left Half"*) $0 left ;;
+            *"Right Half"*) $0 right ;;
+            *"Maximize"*) $0 up ;;
+            *"Center Window"*) $0 center ;;
+            *"Top-Left"*) $0 top-left ;;
+            *"Top-Right"*) $0 top-right ;;
+            *"Bottom-Left"*) $0 bottom-left ;;
+            *"Bottom-Right"*) $0 bottom-right ;;
+            *"Restore"*) $0 down ;;
+            *"Minimize"*) hyprctl dispatch movetoworkspacesilent special:minimized 2>/dev/null || true ;;
+        esac
+        ;;
+    *)
+        echo "Usage: $0 {left|right|up|down|top-left|top-right|bottom-left|bottom-right|center|fullscreen|toggle-split|menu}"
+        exit 1
+        ;;
+esac

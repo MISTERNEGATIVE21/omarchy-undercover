@@ -28,21 +28,26 @@ if mode ~= "mac" and mode ~= "ios" then return end
 
 hl.config({
   general = {
-    gaps_in = 8,
-    gaps_out = 16,
+    gaps_in = 6,
+    gaps_out = 12,
     border_size = 1,
     col = {
-      active_border = "rgba(007aff88)",
-      inactive_border = "rgba(ffffff18)",
+      active_border = "rgba(007aff66)",
+      inactive_border = "rgba(00000000)",
     },
     layout = "dwindle",
   },
   decoration = {
-    rounding = 14,
-    active_opacity = 0.96,
-    inactive_opacity = 0.90,
+    rounding = 16,
+    active_opacity = 0.98,
+    inactive_opacity = 0.92,
     fullscreen_opacity = 1.0,
-    shadow = { enabled = true, range = 36, render_power = 4, color = "rgba(00000088)" },
+    shadow = {
+      enabled = true,
+      range = 42,
+      render_power = 4,
+      color = "rgba(00000066)",
+    },
     blur = {
       enabled = true,
       size = 16,
@@ -56,7 +61,17 @@ hl.config({
       popups = true,
     },
   },
-  input = { repeat_rate = 25, repeat_delay = 600 },
+  misc = {
+    animate_manual_resizes = true,
+    animate_mouse_windowdragging = true,
+    disable_hyprland_logo = true,
+    focus_on_activate = true,
+  },
+  input = {
+    repeat_rate = 25,
+    repeat_delay = 600,
+    follow_mouse = 1,
+  },
 })
 
 -- macOS Sequoia Spring & Smooth Acceleration Animation Physics
@@ -69,14 +84,18 @@ hl.curve("macGenie", { type = "bezier", points = { { 0.2, 0.9 }, { 0.1, 1.05 } }
 hl.animation({ leaf = "global", enabled = true, speed = 6, bezier = "macFluid" })
 hl.animation({ leaf = "windows", enabled = true, speed = 6, bezier = "macFluid" })
 hl.animation({ leaf = "windowsIn", enabled = true, speed = 6, bezier = "macFluid", style = "popin 85%" })
-hl.animation({ leaf = "windowsOut", enabled = true, speed = 5, bezier = "macEase", style = "popin 90%" })
+hl.animation({ leaf = "windowsOut", enabled = true, speed = 4, bezier = "macEase", style = "popin 80%" })
+hl.animation({ leaf = "windowsMove", enabled = true, speed = 6, bezier = "macSpring" })
 hl.animation({ leaf = "fadeIn", enabled = true, speed = 4, bezier = "macFade" })
 hl.animation({ leaf = "fadeOut", enabled = true, speed = 4, bezier = "macFade" })
 hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "macEase", style = "slide" })
-hl.animation({ leaf = "specialWorkspace", enabled = true, speed = 6, bezier = "macFluid", style = "slidevert" })
+hl.animation({ leaf = "specialWorkspace", enabled = true, speed = 5, bezier = "macFluid", style = "slidevert" })
+hl.animation({ leaf = "specialWorkspaceIn", enabled = true, speed = 5, bezier = "macSpring", style = "slide bottom" })
+hl.animation({ leaf = "specialWorkspaceOut", enabled = true, speed = 4, bezier = "macEase", style = "slide bottom" })
 hl.animation({ leaf = "layersIn", enabled = true, speed = 4, bezier = "macSpring", style = "fade" })
 hl.animation({ leaf = "layersOut", enabled = true, speed = 3, bezier = "macEase", style = "fade" })
 
+-- System & Spotlight Keybindings
 hl.unbind("SUPER + SPACE")
 hl.bind("SUPER + SPACE", hl.dsp.exec_cmd("rofi -show drun -theme ~/.config/rofi/mac.rasi"), { description = "macOS Spotlight Search" })
 hl.unbind("SUPER + TAB")
@@ -87,6 +106,23 @@ hl.bind("SUPER + D", hl.dsp.exec_cmd("omarchy-undercover-show-desktop"), { descr
 hl.bind("SUPER + B", hl.dsp.exec_cmd("omarchy-undercover-toggle-bar"), { description = "Toggle Dock/Taskbar Visibility" })
 hl.bind("SUPER + ALT + B", hl.dsp.exec_cmd("omarchy-undercover-autohide --toggle"), { description = "Toggle Edge Auto-Hide Daemon" })
 hl.bind("SUPER + ALT + U", hl.dsp.exec_cmd("omarchy-undercover --toggle"), { description = "Toggle Undercover Mode" })
+
+-- macOS Sequoia Native Window Tiling Shortcuts (Fn / Ctrl + Super + Arrows)
+hl.bind("SUPER + CTRL + LEFT", hl.dsp.exec_cmd("omarchy-undercover-snap left"), { description = "macOS Tile Left Half" })
+hl.bind("SUPER + CTRL + RIGHT", hl.dsp.exec_cmd("omarchy-undercover-snap right"), { description = "macOS Tile Right Half" })
+hl.bind("SUPER + CTRL + UP", hl.dsp.exec_cmd("omarchy-undercover-snap up"), { description = "macOS Maximize / Zoom Window" })
+hl.bind("SUPER + CTRL + DOWN", hl.dsp.exec_cmd("omarchy-undercover-snap down"), { description = "macOS Restore Window" })
+hl.bind("SUPER + CTRL + RETURN", hl.dsp.exec_cmd("omarchy-undercover-snap fullscreen"), { description = "macOS Full Screen Toggle" })
+hl.bind("SUPER + CTRL + C", hl.dsp.exec_cmd("omarchy-undercover-snap center"), { description = "macOS Center Window" })
+hl.bind("SUPER + CTRL + 1", hl.dsp.exec_cmd("omarchy-undercover-snap top-left"), { description = "macOS Tile Top-Left" })
+hl.bind("SUPER + CTRL + 2", hl.dsp.exec_cmd("omarchy-undercover-snap top-right"), { description = "macOS Tile Top-Right" })
+hl.bind("SUPER + CTRL + 3", hl.dsp.exec_cmd("omarchy-undercover-snap bottom-left"), { description = "macOS Tile Bottom-Left" })
+hl.bind("SUPER + CTRL + 4", hl.dsp.exec_cmd("omarchy-undercover-snap bottom-right"), { description = "macOS Tile Bottom-Right" })
+hl.bind("SUPER + CTRL + SPACE", hl.dsp.exec_cmd("omarchy-undercover-snap menu"), { description = "macOS Window Tiling Menu" })
+
+-- Smooth Mouse Window Interactions
+hl.bind("SUPER + mouse:272", "Move window", hl.dsp.window.drag(), { mouse = true })
+hl.bind("SUPER + mouse:273", "Resize window", hl.dsp.window.resize(), { mouse = true })
 
 -- Compositor frosted glass blur layer rules for Quickshell & legacy surfaces
 hl.layer_rule({ match = { namespace = "omarchy-bar" }, blur = true, ignore_alpha = true })

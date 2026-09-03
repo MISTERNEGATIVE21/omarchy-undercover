@@ -48,15 +48,18 @@ def get_screen_metrics():
         pass
     return 900
 
-def get_cursor_y():
+def get_cursor_pos():
     try:
         out = subprocess.check_output(["hyprctl", "cursorpos"], text=True)
         parts = out.strip().split(",")
         if len(parts) >= 2:
-            return int(parts[1].strip())
+            return int(parts[0].strip()), int(parts[1].strip())
     except Exception:
         pass
-    return 0
+    return 0, 0
+
+def get_cursor_y():
+    return get_cursor_pos()[1]
 
 def is_flyout_open():
     """Returns True if Start Menu, Notifications, Quick Settings, or Widgets are active"""
@@ -124,16 +127,18 @@ def is_bar_running():
             return False
 
 def run_daemon():
-    os.makedirs(CONFIG_DIR, exist_ok=True)
+    # Save PID
     with open(PID_FILE, "w") as f:
         f.write(str(os.getpid()))
 
     screen_h = get_screen_metrics()
-    trigger_y = screen_h - 6         # Bottom 6px edge triggers immediate reveal
-    taskbar_region_y = screen_h - 56 # Taskbar / dock region boundary
+    trigger_y = screen_h - 10         # Bottom 10px edge triggers immediate reveal when cursor is down
+    taskbar_region_y = screen_h - 60 # Taskbar / dock region boundary
 
     bar_visible = True
-    away_since = None
+    last_activity = time.time()
+    last_pos = get_cursor_pos()
+    INACTIVITY_TIMEOUT = 30.0        # 30 seconds delay to hide again if no activity
 
     # Initial hide after launch
     time.sleep(0.6)
@@ -146,43 +151,59 @@ def run_daemon():
         if not is_bar_running():
             continue
 
-        # If any start menu or flyout is open, lock the taskbar visible
+        now = time.time()
+        pos = get_cursor_pos()
+        y = pos[1]
+
+        # If any start menu or flyout is open, lock the taskbar visible & reset activity
         if is_flyout_open():
-            away_since = None
+            last_activity = now
             if not bar_visible:
                 set_bar_visible(True)
                 bar_visible = True
             continue
 
-        y = get_cursor_y()
+        # Detect cursor movement
+        if pos != last_pos:
+            last_pos = pos
+            if y >= taskbar_region_y:
+                last_activity = now
 
-        # 1. When mouse touches bottom screen edge: Reveal immediately
+        # 1. When cursor is down at bottom edge: Reappear immediately
         if y >= trigger_y:
-            away_since = None
+            last_activity = now
             if not bar_visible:
                 set_bar_visible(True)
                 bar_visible = True
 
-        # 2. When mouse is hovering inside the taskbar / dock region: REMAIN VISIBLE
-        elif y >= taskbar_region_y:
-            away_since = None
-            if not bar_visible:
-                set_bar_visible(True)
-                bar_visible = True
+        # 2. When bar is visible: Hide after 30 seconds of inactivity
+        if bar_visible:
+            if y >= taskbar_region_y and pos != last_pos:
+                last_activity = now
 
-        # 3. When mouse is away: Hide after debounce
+            if (now - last_activity) >= INACTIVITY_TIMEOUT:
+                set_bar_visible(False)
+                bar_visible = False
+
+def update_settings_autohide(enabled):
+    if not os.path.exists(SETTINGS_FILE):
+        return
+    try:
+        with open(SETTINGS_FILE, "r") as f:
+            content = f.read()
+        val = "true" if enabled else "false"
+        import re
+        if "AUTOHIDE=" in content:
+            content = re.sub(r"AUTOHIDE=\w+", f"AUTOHIDE={val}", content)
         else:
-            if bar_visible:
-                if away_since is None:
-                    away_since = time.time()
-                elif (time.time() - away_since) > 0.25:  # 250ms smooth dwell buffer
-                    set_bar_visible(False)
-                    bar_visible = False
-                    away_since = None
-            else:
-                away_since = None
+            content += f"\nAUTOHIDE={val}\n"
+        with open(SETTINGS_FILE, "w") as f:
+            f.write(content)
+    except Exception:
+        pass
 
 def start_daemon():
+    update_settings_autohide(True)
     if is_running():
         print("Autohide daemon is already running.")
         return
@@ -197,6 +218,7 @@ def start_daemon():
     run_daemon()
 
 def stop_daemon():
+    update_settings_autohide(False)
     if os.path.exists(PID_FILE):
         try:
             with open(PID_FILE, "r") as f:

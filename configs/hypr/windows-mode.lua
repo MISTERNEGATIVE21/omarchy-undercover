@@ -129,7 +129,8 @@ if animations_on then
   hl.animation({ leaf = "border", enabled = true, speed = 5, bezier = "fluent" })
   hl.animation({ leaf = "windows", enabled = true, speed = 5, bezier = "fluent" })
   hl.animation({ leaf = "windowsIn", enabled = true, speed = 5, bezier = "fluent", style = "popin 90%" })
-  hl.animation({ leaf = "windowsOut", enabled = true, speed = 3, bezier = "fluent", style = "popin 90%" })
+  hl.animation({ leaf = "windowsOut", enabled = true, speed = 4, bezier = "fluentExit", style = "popin 85%" })
+  hl.animation({ leaf = "windowsMove", enabled = true, speed = 5, bezier = "fluentSnap" })
   hl.animation({ leaf = "fade", enabled = true, speed = 6, bezier = "fluent" })
   hl.animation({ leaf = "fadeIn", enabled = true, speed = 4, bezier = "fluent" })
   hl.animation({ leaf = "fadeOut", enabled = true, speed = 4, bezier = "fluent" })
@@ -137,9 +138,11 @@ if animations_on then
   hl.animation({ leaf = "layersIn", enabled = true, speed = 5, bezier = "fluent", style = "fade" })
   hl.animation({ leaf = "layersOut", enabled = true, speed = 3, bezier = "fluent", style = "fade" })
   hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "fluent" })
+  hl.animation({ leaf = "specialWorkspace", enabled = true, speed = 5, bezier = "fluent", style = "slidevert" })
+  hl.animation({ leaf = "specialWorkspaceIn", enabled = true, speed = 5, bezier = "fluent", style = "slide bottom" })
+  hl.animation({ leaf = "specialWorkspaceOut", enabled = true, speed = 4, bezier = "fluentExit", style = "slide bottom" })
   hl.animation({ leaf = "workspacesIn", enabled = true, speed = 5, bezier = "fluent", style = "fade" })
   hl.animation({ leaf = "workspacesOut", enabled = true, speed = 3, bezier = "fluent", style = "fade" })
-  hl.animation({ leaf = "specialWorkspace", enabled = true, speed = 5, bezier = "fluent", style = "slidevert" })
 else
   hl.animation({ leaf = "global", enabled = false })
 end
@@ -235,6 +238,23 @@ hl.bind("SUPER + ALT + B", hl.dsp.exec_cmd("omarchy-undercover-autohide --toggle
 
 -- Super + Alt + U: Toggle Undercover Mode
 hl.bind("SUPER + ALT + U", hl.dsp.exec_cmd("omarchy-undercover --toggle"), { description = "Toggle undercover mode" })
+
+-- Windows 11 Snap Assist & Snap Layouts Keybindings
+hl.bind("SUPER + LEFT", hl.dsp.exec_cmd("omarchy-undercover-snap left"), { description = "Snap Window Left (50%)" })
+hl.bind("SUPER + RIGHT", hl.dsp.exec_cmd("omarchy-undercover-snap right"), { description = "Snap Window Right (50%)" })
+hl.bind("SUPER + UP", hl.dsp.exec_cmd("omarchy-undercover-snap up"), { description = "Maximize / Zoom Active Window" })
+hl.bind("SUPER + DOWN", hl.dsp.exec_cmd("omarchy-undercover-snap down"), { description = "Restore / Minimize Active Window" })
+hl.bind("SUPER + Z", hl.dsp.exec_cmd("omarchy-undercover-snap menu"), { description = "Windows 11 Snap Layouts Menu" })
+hl.bind("SUPER + ALT + LEFT", hl.dsp.exec_cmd("omarchy-undercover-snap top-left"), { description = "Snap Top-Left Quadrant" })
+hl.bind("SUPER + ALT + RIGHT", hl.dsp.exec_cmd("omarchy-undercover-snap top-right"), { description = "Snap Top-Right Quadrant" })
+hl.bind("SUPER + ALT + DOWN", hl.dsp.exec_cmd("omarchy-undercover-snap bottom-left"), { description = "Snap Bottom-Left Quadrant" })
+hl.bind("SUPER + ALT + UP", hl.dsp.exec_cmd("omarchy-undercover-snap bottom-right"), { description = "Snap Bottom-Right Quadrant" })
+hl.bind("SUPER + SHIFT + LEFT", hl.dsp.workspace.move({ monitor = "l" }), { description = "Move Window to Left Monitor" })
+hl.bind("SUPER + SHIFT + RIGHT", hl.dsp.workspace.move({ monitor = "r" }), { description = "Move Window to Right Monitor" })
+
+-- Smooth Mouse Window Interactions
+hl.bind("SUPER + mouse:272", "Move window", hl.dsp.window.drag(), { mouse = true })
+hl.bind("SUPER + mouse:273", "Resize window", hl.dsp.window.resize(), { mouse = true })
 
 -- Compositor blur & mica styling for Quickshell surfaces and legacy components
 hl.layer_rule({ match = { namespace = "omarchy-bar" }, blur = true, ignore_alpha = true })

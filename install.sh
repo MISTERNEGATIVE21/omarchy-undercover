@@ -181,9 +181,10 @@ main() {
 
     # Step 6: CLI State Machine, Start Menu & Network Managers
     run_animated_step "6" "8" "globe" "Installing executables, start menu & wireless managers into ~/.local/bin" '
+        rm -f "$LOCAL_BIN/omarchy-undercover-taskbar-autohide" "$LOCAL_BIN/omarchy-autohide-dock" 2>/dev/null || true
         if [[ -d "$SCRIPT_DIR/scripts" ]]; then
             for s in "$SCRIPT_DIR/scripts/"*; do
-                if [[ -f "$s" ]]; then
+                if [[ -f "$s" && "$s" != *__pycache__* && "$s" != *.pyc ]]; then
                     cp -f "$s" "$LOCAL_BIN/"
                     chmod +x "$LOCAL_BIN/$(basename "$s")"
                 fi

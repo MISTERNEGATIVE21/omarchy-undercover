@@ -4,23 +4,21 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import Quickshell.Io
-import qs.Commons
 import qs.Ui
 
-PanelWindow {
+Panel {
   id: dockWindow
-  screen: Quickshell.screens[0]
 
   anchors {
     bottom: true
   }
   margins {
-    bottom: 8
+    bottom: 6
   }
 
   WlrLayershell.layer: WlrLayer.Top
   WlrLayershell.namespace: "mac-dock"
-  exclusionMode: ExclusionMode.Auto
+  exclusionMode: dockWindow.isAutohide ? ExclusionMode.Ignore : ExclusionMode.Auto
   color: "transparent"
 
   implicitWidth: dockCard.implicitWidth + 48
@@ -35,6 +33,34 @@ PanelWindow {
   property string homeDir: Quickshell.env("HOME")
   property string iconBasePath: homeDir + "/.local/share/icons/mac-dock/"
   property bool isLight: false
+  property bool isAutohide: false
+  property bool isDockRevealed: true
+
+  // 30-Second Inactivity / Exit timer before sliding down
+  Timer {
+    id: hideTimer
+    interval: 30000 // 30 seconds
+    running: false
+    repeat: false
+    onTriggered: {
+      if (dockWindow.isAutohide && !dockWindow.isMouseOverDock && !edgeTrigger.containsMouse) {
+        dockWindow.isDockRevealed = false
+      }
+    }
+  }
+
+  // Inactivity timer while dock is visible
+  Timer {
+    id: inactivityTimer
+    interval: 30000 // 30 seconds
+    running: dockWindow.isAutohide && dockWindow.isDockRevealed
+    repeat: false
+    onTriggered: {
+      if (dockWindow.isAutohide && !edgeTrigger.containsMouse) {
+        dockWindow.isDockRevealed = false
+      }
+    }
+  }
 
   FileView {
     id: stateWatcher
@@ -52,6 +78,23 @@ PanelWindow {
       dockWindow.isLight = (s.indexOf("light") !== -1)
       if (s && s.indexOf("mac") !== 0) dockWindow.visible = false
       else dockWindow.visible = true
+    }
+  }
+
+  FileView {
+    id: settingsWatcher
+    path: dockWindow.homeDir + "/.config/omarchy-undercover/settings.conf"
+    watchChanges: true
+    onLoaded: {
+      var s = text()
+      dockWindow.isAutohide = (s.indexOf("AUTOHIDE=true") !== -1)
+      if (!dockWindow.isAutohide) dockWindow.isDockRevealed = true
+    }
+    onFileChanged: {
+      reload()
+      var s = text()
+      dockWindow.isAutohide = (s.indexOf("AUTOHIDE=true") !== -1)
+      if (!dockWindow.isAutohide) dockWindow.isDockRevealed = true
     }
   }
 
@@ -91,13 +134,20 @@ PanelWindow {
   }
 
   property var primaryDockApps: [
-    { id: "finder", name: "Finder", icon: "finder.svg", exec: "nautilus computer:/// || thunar || dolphin", matchers: ["nautilus", "thunar", "dolphin", "files", "org.gnome.nautilus"] },
+    { id: "finder", name: "Finder", icon: "finder.svg", exec: "nautilus computer:/// || thunar", matchers: ["nautilus", "thunar", "dolphin", "files", "org.gnome.nautilus"] },
     { id: "launchpad", name: "Launchpad", icon: "launchpad.svg", exec: "rofi -show drun -theme ~/.config/rofi/mac.rasi", matchers: [] },
-    { id: "safari", name: "Safari", icon: "safari.svg", exec: "omarchy-browser || xdg-open https://apple.com", matchers: ["chrome", "chromium", "firefox", "vivaldi", "edge", "brave", "zen", "safari"] },
-    { id: "antigravity", name: "Antigravity IDE", icon: "antigravity.svg", exec: "antigravity-ide || code || vscodium", matchers: ["antigravity", "code", "vscodium", "vscode", "codium"] },
-    { id: "messages", name: "Messages", icon: "messages.svg", exec: "omarchy-mac-widgets", matchers: ["messages"] },
-    { id: "music", name: "Music", icon: "music.svg", exec: "spotify || omarchy-mac-widgets", matchers: ["spotify", "music"] },
-    { id: "photos", name: "Photos", icon: "photos.svg", exec: "loupe || eog || gwenview", matchers: ["eog", "gwenview", "loupe", "photos"] },
+    { id: "safari", name: "Safari", icon: "safari.svg", exec: "omarchy-browser", matchers: ["safari", "chrome", "chromium", "firefox", "vivaldi", "brave", "zen", "browser", "epiphany"] },
+    { id: "messages", name: "Messages", icon: "messages.svg", exec: "telegram-desktop || discord || signal-desktop", matchers: ["telegram", "discord", "signal", "vesktop"] },
+    { id: "mail", name: "Mail", icon: "mail.svg", exec: "thunderbird || geary || evolution", matchers: ["thunderbird", "geary", "evolution"] },
+    { id: "maps", name: "Maps", icon: "maps.svg", exec: "gnome-maps || omarchy-browser https://maps.google.com", matchers: ["maps"] },
+    { id: "photos", name: "Photos", icon: "photos.svg", exec: "eog || gwenview || loupe", matchers: ["eog", "gwenview", "loupe", "shotwell"] },
+    { id: "facetime", name: "FaceTime", icon: "facetime.svg", exec: "cheese || kamoso", matchers: ["cheese", "kamoso"] },
+    { id: "calendar", name: "Calendar", icon: "calendar.svg", exec: "gnome-calendar || korganizer", matchers: ["calendar", "korganizer"] },
+    { id: "contacts", name: "Contacts", icon: "contacts.svg", exec: "gnome-contacts || kaddressbook", matchers: ["contacts"] },
+    { id: "reminders", name: "Reminders", icon: "reminders.svg", exec: "gnome-todo || korganizer", matchers: ["todo", "reminders"] },
+    { id: "notes", name: "Notes", icon: "notes.svg", exec: "gnome-notes || bijiben || obsidian", matchers: ["notes", "bijiben", "obsidian"] },
+    { id: "music", name: "Music", icon: "music.svg", exec: "spotify || rhythmbox || amberol", matchers: ["spotify", "rhythmbox", "amberol", "music"] },
+    { id: "antigravity", name: "Antigravity IDE", icon: "antigravity-ide.svg", exec: "antigravity-ide || code || vscodium", matchers: ["antigravity", "code", "vscodium", "vscode", "codium"] },
     { id: "terminal", name: "Terminal", icon: "terminal.svg", exec: "xdg-terminal-exec || alacritty || kitty", matchers: ["kitty", "alacritty", "foot", "terminal", "wezterm", "ghostty", "ptyxis", "xterm"] },
     { id: "settings", name: "System Settings", icon: "settings.svg", exec: "omarchy-undercover-settings", matchers: ["omarchy-undercover-settings", "org.omarchy.undercover.settings", "settings", "gnome-control-center"] },
     { id: "appstore", name: "App Store", icon: "appstore.svg", exec: "pamac-manager || gnome-software || discover", matchers: ["pamac", "software", "discover"] }
@@ -112,6 +162,22 @@ PanelWindow {
     })
   }
 
+  // Native Wayland Bottom Edge Trigger Strip
+  MouseArea {
+    id: edgeTrigger
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    height: 6
+    hoverEnabled: true
+    z: 20
+    onEntered: {
+      dockWindow.isDockRevealed = true
+      inactivityTimer.restart()
+      hideTimer.stop()
+    }
+  }
+
   Rectangle {
     anchors.horizontalCenter: dockCard.horizontalCenter
     anchors.bottom: dockCard.bottom
@@ -121,6 +187,7 @@ PanelWindow {
     radius: 24
     color: Qt.rgba(0, 0, 0, 0.35)
     z: 0
+    y: dockCard.y
   }
 
   Rectangle {
@@ -129,6 +196,11 @@ PanelWindow {
     anchors.bottom: parent.bottom
     anchors.bottomMargin: 2
     z: 1
+
+    y: (dockWindow.isAutohide && !dockWindow.isDockRevealed) ? 82 : 0
+    Behavior on y {
+      NumberAnimation { duration: 240; easing.type: Easing.OutQuad }
+    }
 
     implicitWidth: dockLayoutRow.implicitWidth + 24
     implicitHeight: 66
@@ -169,7 +241,7 @@ PanelWindow {
 
           readonly property real itemCenterX: appItem.mapToItem(dockCard, appItem.width / 2, 0).x
           readonly property real distToMouse: Math.abs(dockWindow.currentMouseX - itemCenterX)
-
+          
           readonly property real targetScale: {
             if (!dockWindow.isMouseOverDock) return 1.0
             if (distToMouse >= dockWindow.effectRadius) return 1.0
@@ -191,9 +263,12 @@ PanelWindow {
           SequentialAnimation {
             id: bounceAnim
             running: false
-            loops: 2
-            NumberAnimation { target: appItem; property: "bounceOffset"; to: -16; duration: 160; easing.type: Easing.OutQuad }
-            NumberAnimation { target: appItem; property: "bounceOffset"; to: 0; duration: 160; easing.type: Easing.InQuad }
+            NumberAnimation { target: appItem; property: "bounceOffset"; to: -28; duration: 200; easing.type: Easing.OutQuad }
+            NumberAnimation { target: appItem; property: "bounceOffset"; to: 0; duration: 180; easing.type: Easing.InQuad }
+            NumberAnimation { target: appItem; property: "bounceOffset"; to: -16; duration: 150; easing.type: Easing.OutQuad }
+            NumberAnimation { target: appItem; property: "bounceOffset"; to: 0; duration: 130; easing.type: Easing.InQuad }
+            NumberAnimation { target: appItem; property: "bounceOffset"; to: -6; duration: 90; easing.type: Easing.OutQuad }
+            NumberAnimation { target: appItem; property: "bounceOffset"; to: 0; duration: 70; easing.type: Easing.InQuad }
           }
 
           Rectangle {
@@ -233,6 +308,7 @@ PanelWindow {
             y: appItem.bounceOffset
 
             Image {
+              id: appIcon
               anchors.fill: parent
               source: {
                 var p = dockWindow.iconBasePath + modelData.icon
@@ -246,24 +322,27 @@ PanelWindow {
           }
 
           Rectangle {
-            id: runningDot
             visible: appItem.appRunning
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: 3
-            width: appItem.appFocused ? 6 : 4.5
-            height: appItem.appFocused ? 6 : 4.5
-            radius: 3
-            color: appItem.appFocused ? "#007aff" : (dockWindow.isLight ? Qt.rgba(0, 0, 0, 0.65) : Qt.rgba(1, 1, 1, 0.75))
+            anchors.bottomMargin: 2
+            width: appItem.appFocused ? 8 : 4.5
+            height: 4.5
+            radius: 2.25
+            color: appItem.appFocused ? "#007aff" : (dockWindow.isLight ? Qt.rgba(0, 0, 0, 0.5) : Qt.rgba(1, 1, 1, 0.65))
+
+            Behavior on width {
+              NumberAnimation { duration: 150; easing.type: Easing.OutQuad }
+            }
           }
         }
       }
 
       Rectangle {
-        implicitWidth: 1
-        implicitHeight: 34
+        Layout.preferredWidth: 1
+        Layout.preferredHeight: 40
         Layout.alignment: Qt.AlignVCenter
-        color: dockWindow.isLight ? Qt.rgba(0, 0, 0, 0.16) : Qt.rgba(1, 1, 1, 0.18)
+        color: dockWindow.isLight ? Qt.rgba(0, 0, 0, 0.16) : Qt.rgba(1, 1, 1, 0.20)
       }
 
       Item {
@@ -342,11 +421,25 @@ PanelWindow {
       acceptedButtons: Qt.LeftButton | Qt.RightButton
       cursorShape: Qt.PointingHandCursor
 
-      onEntered: dockWindow.isMouseOverDock = true
-      onExited: dockWindow.isMouseOverDock = false
-      onPositionChanged: function(mouse) { dockWindow.currentMouseX = mouse.x }
+      onEntered: {
+        dockWindow.isMouseOverDock = true
+        dockWindow.isDockRevealed = true
+        inactivityTimer.restart()
+        hideTimer.stop()
+      }
+
+      onExited: {
+        dockWindow.isMouseOverDock = false
+        if (dockWindow.isAutohide) hideTimer.restart()
+      }
+
+      onPositionChanged: function(mouse) {
+        dockWindow.currentMouseX = mouse.x
+        inactivityTimer.restart()
+      }
 
       onClicked: function(mouse) {
+        var visibleApps = dockWindow.getVisibleDockApps()
         for (var i = 0; i < appsRepeater.count; i++) {
           var item = appsRepeater.itemAt(i)
           if (item) {

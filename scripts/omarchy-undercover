@@ -403,8 +403,12 @@ apply_waybar_windows() {
             fi
         fi
 
-        if command -v omarchy-undercover-taskbar-autohide &>/dev/null; then
-            omarchy-undercover-taskbar-autohide --set "$visibility"
+        if command -v omarchy-undercover-autohide &>/dev/null; then
+            if [[ "$visibility" == "autohide" ]]; then
+                omarchy-undercover-autohide --start >/dev/null 2>&1 || true
+            else
+                omarchy-undercover-autohide --stop >/dev/null 2>&1 || true
+            fi
         fi
         msg "Windows 11 waybar taskbar deployed ($visibility, $align)."
     fi
