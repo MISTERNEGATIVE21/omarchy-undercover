@@ -217,23 +217,6 @@ Omarchy Undercover integrates with standard Linux and Omarchy system components:
 
 ---
 
-## 📋 Marketplace Compliance & Verification Statement
-
-This repository conforms strictly to the [Omarchy Plugin Marketplace Guidelines](https://plugins.omarchy.org/publish.html):
-
-- [x] **The repository is public and contains installation and removal instructions.**  
-  Detailed instructions for installing, enabling, disabling, and cleanly removing the plugin are documented under [Installation](#installation) and [Removal & Safe Uninstall](#removal--safe-uninstall).
-- [x] **I have documented the plugin license and any external dependencies.**  
-  Full dependency list documented under [External Dependencies](#-external-dependencies) and licensed under [GPL-3.0-or-later](LICENSE).
-- [x] **I confirm that I own or have permission to submit this plugin and its preview assets.**  
-  Authored and maintained by [misternegative21](https://github.com/MISTERNEGATIVE21); all branding and preview assets comply with marketplace standards.
-- [x] **The plugin does not overwrite user configuration without explicit consent.**  
-  Includes an automated baseline backup mechanism (`omarchy-undercover --restore`); changes to shell surfaces, Hyprland rules, and themes are applied exclusively via explicit user toggle or command.
-- [x] **I understand that approval is for listing and is not a security review.**  
-  Acknowledged in accordance with the official Omarchy marketplace policy.
-
----
-
 ## 📜 License
 
 GPL-3.0-or-later © **[misternegative21](https://github.com/MISTERNEGATIVE21)**

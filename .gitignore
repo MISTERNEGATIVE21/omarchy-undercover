@@ -6,3 +6,9 @@ dist/
 *.tar.gz
 *.pkg.tar.zst
 .DS_Store
+
+# Superpowers artifacts & scratch
+.superpowers/
+docs/superpowers/
+superpowers/
+*superpower*
