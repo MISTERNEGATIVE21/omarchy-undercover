@@ -344,7 +344,43 @@ Panel {
             color: Color.separator
           }
 
-          // 4. Quick Wallpapers Carousel
+          // 4. Quick Productivity Utilities
+          Text {
+            text: "QUICK PRODUCTIVITY UTILITIES"
+            font.family: Style.font.family
+            font.pixelSize: Style.font.caption - 1
+            font.bold: true
+            color: Color.mutedForeground
+          }
+
+          RowLayout {
+            Layout.fillWidth: true
+            spacing: Style.space(8)
+
+            Button {
+              Layout.fillWidth: true
+              text: "📐 Snap Assist"
+              onClicked: { root.runCmd("omarchy-undercover-snap --assist"); root.close() }
+            }
+            Button {
+              Layout.fillWidth: true
+              text: "🖥️ Show Desktop"
+              onClicked: { root.runCmd("omarchy-undercover-show-desktop"); root.close() }
+            }
+            Button {
+              Layout.fillWidth: true
+              text: "⚙️ Win11 Settings"
+              onClicked: { root.runCmd("omarchy-win11-settings"); root.close() }
+            }
+          }
+
+          Rectangle {
+            Layout.fillWidth: true
+            height: 1
+            color: Color.separator
+          }
+
+          // 5. Quick Wallpapers Carousel
           Text {
             text: "AUTHENTIC 6K WALLPAPERS"
             font.family: Style.font.family

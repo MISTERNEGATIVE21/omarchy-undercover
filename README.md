@@ -1,4 +1,4 @@
-# 🕵️ Omarchy Undercover (v3.0.0)
+2# 🕵️ Omarchy Undercover (v3.0.0)
 
 ```
   ██████╗ ███╗   ███╗ █████╗ ██████╗  ██████╗██╗  ██╗██╗   ██╗
@@ -28,6 +28,7 @@
 ## 🧩 Native Omarchy Shell Plugin Installation (Omarchy 4.0+)
 
 ### Installation
+
 Install and enable **Omarchy Undercover** directly into your running `omarchy-shell`:
 
 ```bash
@@ -35,12 +36,15 @@ omarchy plugin add https://github.com/MISTERNEGATIVE21/omarchy-undercover.git --
 ```
 
 Or enable the Undercover Camouflage Switcher widget on your status bar:
+
 ```bash
 omarchy plugin enable undercover --section right
 ```
 
 ### Removal & Safe Uninstall
+
 To cleanly disable and remove the plugin from Omarchy shell:
+
 ```bash
 omarchy plugin disable undercover
 omarchy plugin remove undercover
@@ -76,14 +80,15 @@ $$\Large \text{🎭 Undercover Disguise (macOS / Windows 11)} \iff \text{🐧 De
 ├──────────────────────────────────────┼──────────────────────────────────────┤
 │  • Frosted Top Menu Bar              │  • Centered Mica Acrylic Taskbar     │
 │  • Apple Menu ( About This Mac)     │  • Windows 11 Start Menu & Power Hub │
-│  • Dynamic Auto-Sizing Dock          │  • Live Geolocation Weather Widget   │
-│  • Full Vector Apple Icon Suite      │  • Windows 11 Action Center          │
-│  • Window Traffic Lights (Left)      │  • Flat Fluent Window Buttons (Right)│
+│  • Dynamic Auto-Sizing Dock          │  • Pure QuickShell Settings App      │
+│  • Full Vector Apple Icon Suite      │  • PowerToys Tools & Snap Assist     │
+│  • 12px Traffic Lights with Glyphs   │  • Flat Fluent Window Controls       │
 │  • SF Pro Text & SF Pro Display      │  • Segoe UI & Cascadia Code          │
-│  • Liga SFMono Nerd Font             │  • Live Wi-Fi & Bluetooth Scanners   │
-│  • Spotlight (Super + Space)         │  • Live Volume & Brightness Sliders  │
+│  • Edge-Sensing 30s Auto-Hide Dock   │  • Proportional 1:1 Taskbar Tiles    │
+│  • Spotlight (Super + Space)         │  • Action Center with Live Sliders   │
 │  • Mission Control (Super + Tab)     │  • Task View Window Switcher         │
 │  • macOS Spring / Ease Physics       │  • Fluent Cubic Bezier Animations    │
+│  • Bottom-Slide Minimize Physics     │  • Taskbar Minimize & Window Focus   │
 └──────────────────────────────────────┴──────────────────────────────────────┘
 ```
 
@@ -106,6 +111,7 @@ $$\Large \text{🎭 Undercover Disguise (macOS / Windows 11)} \iff \text{🐧 De
 ## 🛠️ CLI Command Reference
 
 ### Mode Switching
+
 ```bash
 # 🍏 Switch to Apple macOS Sequoia (Dark mode)
 omarchy-undercover -mac
@@ -121,6 +127,7 @@ omarchy-undercover -w11-light
 ```
 
 ### Engine & Desktop Customization
+
 ```bash
 # 🔍 Detect Omarchy version and active status bar backend
 omarchy-detect-backend --json
@@ -163,6 +170,7 @@ Omarchy Undercover features **intelligent zero-configuration dual-engine archite
 ---
 
 ## 🛠️ GUI Control Center
+
 ```bash
 # Launch GTK4 / Libadwaita Undercover Settings App (with 5-second evaporating splash)
 omarchy-undercover-settings
@@ -174,26 +182,29 @@ omarchy-undercover-settings -s
 ---
 
 ## 🖼️ Included 6K & 4K Wallpapers Library
+
 Stored in `~/.config/omarchy-undercover/wallpapers/`:
-* `macOS-Sequoia-Dark.jpg` & `macOS-Sequoia-Light.jpg` (Official 6K Solar Noon/Midnight)
-* `Sonoma-dark.jpg` & `Sonoma-light.jpg` (Official 4K Sonoma Ribbons)
-* `Ventura-dark.jpg` & `Ventura-light.jpg` (Official 4K Ventura Flower)
-* `Monterey-dark.jpg` & `Monterey-light.jpg` (Official 5K Monterey Waves)
-* `win11_bloom_dark.jpg` & `win11_bloom_light.jpg` (Official 4K Windows 11 Bloom)
-* `win11_flow_dark.jpg` (Official 4K Flow Dark)
-* `ios18_dark.jpg` & `ios18_light.jpg` (Official 4K iOS 18 Beams)
+- `macOS-Sequoia-Dark.jpg` & `macOS-Sequoia-Light.jpg` (Official 6K Solar Noon/Midnight)
+- `Sonoma-dark.jpg` & `Sonoma-light.jpg` (Official 4K Sonoma Ribbons)
+- `Ventura-dark.jpg` & `Ventura-light.jpg` (Official 4K Ventura Flower)
+- `Monterey-dark.jpg` & `Monterey-light.jpg` (Official 5K Monterey Waves)
+- `win11_bloom_dark.jpg` & `win11_bloom_light.jpg` (Official 4K Windows 11 Bloom)
+- `win11_flow_dark.jpg` (Official 4K Flow Dark)
+- `ios18_dark.jpg` & `ios18_light.jpg` (Official 4K iOS 18 Beams)
 
 ## 📦 External Dependencies
+
 Omarchy Undercover integrates with standard Linux and Omarchy system components:
-* **Hyprland**: Dynamic Wayland compositor (window tiling, physics & spring animations)
-* **Omarchy Shell / Quickshell**: Layer shell status bar and widgets engine (v4.0+)
-* **Rofi (Wayland)**: Keyboard application launcher and Mission Control / Task View window switcher
-* **WirePlumber (`wpctl`)**: Native PipeWire audio sink volume control
-* **brightnessctl**: Hardware display backlight controller
-* **NetworkManager (`nmcli`)**: Wi-Fi status and connection manager
-* **BlueZ (`bluetoothctl`)**: Bluetooth controller and peripheral manager
+- **Hyprland**: Dynamic Wayland compositor (window tiling, physics & spring animations)
+- **Omarchy Shell / Quickshell**: Layer shell status bar and widgets engine (v4.0+)
+- **Rofi (Wayland)**: Keyboard application launcher and Mission Control / Task View window switcher
+- **WirePlumber (`wpctl`)**: Native PipeWire audio sink volume control
+- **brightnessctl**: Hardware display backlight controller
+- **NetworkManager (`nmcli`)**: Wi-Fi status and connection manager
+- **BlueZ (`bluetoothctl`)**: Bluetooth controller and peripheral manager
 
 ---
 
 ## 📜 License
+
 GPL-3.0-or-later © **[misternegative21](https://github.com/MISTERNEGATIVE21)**
