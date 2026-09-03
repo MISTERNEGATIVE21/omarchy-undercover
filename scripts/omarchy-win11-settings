@@ -10,6 +10,8 @@ if [[ ! -d "$DIR" ]]; then
     REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
     if [[ -d "$REPO_DIR/configs/quickshell/win11-settings" ]]; then
         DIR="$REPO_DIR/configs/quickshell/win11-settings"
+    elif [[ -d "$HOME/.config/omarchy-undercover/quickshell/win11-settings" ]]; then
+        DIR="$HOME/.config/omarchy-undercover/quickshell/win11-settings"
     fi
 fi
 
