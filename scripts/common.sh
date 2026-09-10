@@ -150,6 +150,11 @@ omarchy_reload_quickshell() {
     # Kill any leftover waybar processes so they do not overlap with quickshell
     pkill -9 -x waybar 2>/dev/null || true
 
+    if command_exists omarchy-shell; then
+        omarchy-shell shell reloadConfig >/dev/null 2>&1 || true
+        omarchy-shell -q shell rescanPlugins >/dev/null 2>&1 || true
+    fi
+
     if command_exists omarchy; then
         omarchy restart shell 2>/dev/null || true
     elif command_exists omarchy-restart-shell; then

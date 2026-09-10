@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48px" height="48px">
+  <defs>
+    <linearGradient id="xlBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#107c41"/>
+      <stop offset="100%" stop-color="#0a4b27"/>
+    </linearGradient>
+    <linearGradient id="xlGrid" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1f9a55"/>
+      <stop offset="100%" stop-color="#126838"/>
+    </linearGradient>
+  </defs>
+  <!-- Background spreadsheet sheet -->
+  <rect x="12" y="6" width="30" height="36" rx="4" fill="url(#xlGrid)"/>
+  <rect x="18" y="13" width="10" height="6" rx="1" fill="#ffffff" opacity="0.6"/>
+  <rect x="30" y="13" width="8" height="6" rx="1" fill="#ffffff" opacity="0.6"/>
+  <rect x="18" y="21" width="10" height="6" rx="1" fill="#ffffff" opacity="0.6"/>
+  <rect x="30" y="21" width="8" height="6" rx="1" fill="#ffffff" opacity="0.6"/>
+  <rect x="18" y="29" width="10" height="6" rx="1" fill="#ffffff" opacity="0.6"/>
+  <rect x="30" y="29" width="8" height="6" rx="1" fill="#ffffff" opacity="0.6"/>
+  <!-- Foreground X Tile -->
+  <rect x="6" y="10" width="22" height="28" rx="3.5" fill="url(#xlBg)" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.3))"/>
+  <text x="17" y="29" font-family="'Segoe UI', sans-serif" font-weight="900" font-size="17" fill="#ffffff" text-anchor="middle">X</text>
+</svg>

@@ -14,8 +14,8 @@ BarWidget {
   // Responsive scaling based on DPI and bar size
   readonly property real scaleFactor: (root.screen && root.screen.devicePixelRatio) ? root.screen.devicePixelRatio : 1.0
 
-  implicitWidth: clockBox.implicitWidth + 8
-  implicitHeight: root.bar ? root.bar.barSize : 48
+  implicitWidth: clockBox.implicitWidth + Math.round(20 * root.scaleFactor)
+  implicitHeight: root.bar ? root.bar.barSize : 24
 
   Timer {
     interval: 1000
@@ -41,6 +41,18 @@ BarWidget {
     }
   }
 
+  // Dynamic Bar-Aware Contrast Detection
+  readonly property bool isBarLight: {
+    if (root.bar && root.bar.foreground !== undefined) {
+      var f = root.bar.foreground
+      var lumF = 0.299 * f.r + 0.587 * f.g + 0.114 * f.b
+      return lumF < 0.5
+    }
+    return !root.isDark
+  }
+  readonly property color textColor: root.bar && root.bar.foreground !== undefined ? root.bar.foreground : (isBarLight ? "#111111" : "#ffffff")
+  readonly property color textSecondaryColor: isBarLight ? "#4f4f4f" : Qt.rgba(1, 1, 1, 0.78)
+
   function runCmd(cmd) {
     if (root.bar) {
       root.bar.run(cmd)
@@ -52,37 +64,39 @@ BarWidget {
   Rectangle {
     id: clockBox
     anchors.centerIn: parent
-    implicitWidth: Math.max(Math.round(76 * root.scaleFactor), clockCol.implicitWidth + Math.round(18 * root.scaleFactor))
-    implicitHeight: root.bar ? root.bar.barSize - 8 : 40
+    implicitWidth: Math.max(Math.round(82 * root.scaleFactor), clockCol.implicitWidth + Math.round(22 * root.scaleFactor))
+    implicitHeight: Math.max(20, root.bar ? root.bar.barSize - 4 : 20)
     radius: 4
     color: clockMouse.containsMouse
-           ? (root.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.07))
+           ? (root.isBarLight ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.12))
            : "transparent"
     border.color: clockMouse.containsMouse
-                  ? (root.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08))
+                  ? (root.isBarLight ? Qt.rgba(0, 0, 0, 0.10) : Qt.rgba(1, 1, 1, 0.14))
                   : "transparent"
     border.width: 1
 
     ColumnLayout {
       id: clockCol
       anchors.centerIn: parent
-      spacing: 1
+      spacing: (root.bar && root.bar.barSize > 34) ? 2 : -1
 
       Text {
-        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+        Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+        horizontalAlignment: Text.AlignHCenter
         text: Qt.formatDateTime(root.date, "h:mm A")
         font.family: "Segoe UI, sans-serif"
-        font.pixelSize: Math.round(12 * Math.min(1.3, root.scaleFactor))
+        font.pixelSize: (root.bar && root.bar.barSize > 34) ? 12 : 9.5
         font.weight: Font.DemiBold
-        color: root.isDark ? "#ffffff" : "#1a1a1a"
+        color: root.textColor
       }
 
       Text {
-        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+        Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+        horizontalAlignment: Text.AlignHCenter
         text: Qt.formatDateTime(root.date, "M/d/yyyy")
         font.family: "Segoe UI, sans-serif"
-        font.pixelSize: Math.round(11 * Math.min(1.3, root.scaleFactor))
-        color: root.isDark ? Qt.rgba(1, 1, 1, 0.78) : Qt.rgba(0, 0, 0, 0.70)
+        font.pixelSize: (root.bar && root.bar.barSize > 34) ? 10.5 : 8.5
+        color: root.textSecondaryColor
       }
     }
 

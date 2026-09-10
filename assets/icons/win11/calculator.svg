@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48px" height="48px">
+  <defs>
+    <linearGradient id="calcGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00b4d8"/>
+      <stop offset="100%" stop-color="#0077b6"/>
+    </linearGradient>
+  </defs>
+  <rect x="7" y="6" width="34" height="36" rx="6" fill="url(#calcGrad)"/>
+  <!-- Display Screen -->
+  <rect x="11" y="10" width="26" height="8" rx="2" fill="#03045e" opacity="0.35"/>
+  <text x="34" y="17" font-family="'Segoe UI', monospace" font-weight="bold" font-size="7" fill="#ffffff" text-anchor="end">0</text>
+  <!-- Buttons Grid -->
+  <!-- Row 1 -->
+  <rect x="11" y="21" width="5.5" height="4.5" rx="1.5" fill="#ffffff" opacity="0.4"/>
+  <rect x="18" y="21" width="5.5" height="4.5" rx="1.5" fill="#ffffff" opacity="0.4"/>
+  <rect x="25" y="21" width="5.5" height="4.5" rx="1.5" fill="#ffffff" opacity="0.4"/>
+  <rect x="32" y="21" width="5" height="4.5" rx="1.5" fill="#ffd166" opacity="0.8"/>
+  <!-- Row 2 -->
+  <rect x="11" y="27.5" width="5.5" height="4.5" rx="1.5" fill="#ffffff" opacity="0.4"/>
+  <rect x="18" y="27.5" width="5.5" height="4.5" rx="1.5" fill="#ffffff" opacity="0.4"/>
+  <rect x="25" y="27.5" width="5.5" height="4.5" rx="1.5" fill="#ffffff" opacity="0.4"/>
+  <rect x="32" y="27.5" width="5" height="4.5" rx="1.5" fill="#ffd166" opacity="0.8"/>
+  <!-- Row 3 -->
+  <rect x="11" y="34" width="5.5" height="4.5" rx="1.5" fill="#ffffff" opacity="0.4"/>
+  <rect x="18" y="34" width="5.5" height="4.5" rx="1.5" fill="#ffffff" opacity="0.4"/>
+  <rect x="25" y="34" width="5.5" height="4.5" rx="1.5" fill="#ffffff" opacity="0.4"/>
+  <rect x="32" y="34" width="5" height="4.5" rx="1.5" fill="#06d6a0" opacity="0.9"/>
+</svg>

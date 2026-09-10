@@ -20,13 +20,17 @@ fi
 
 move_window_to_ws() {
     local addr="$1" ws="$2"
-    hyprctl dispatch movetoworkspacesilent "$ws,address:$addr" >/dev/null 2>&1 || true
+    if hyprctl dispatch "hl.dsp.window.move({ window = \"address:$addr\", workspace = \"$ws\", follow = false })" >/dev/null 2>&1; then
+        :
+    else
+        hyprctl dispatch movetoworkspacesilent "$ws,address:$addr" >/dev/null 2>&1 || true
+    fi
     if [[ "$ws" == "special:minimized" ]]; then
         # Switch focus to the next window on the current workspace
-        hyprctl dispatch cyclenext >/dev/null 2>&1 || true
+        hyprctl dispatch "hl.dsp.window.cycle_next()" >/dev/null 2>&1 || hyprctl dispatch cyclenext >/dev/null 2>&1 || true
     else
         # Restore focus to the window being restored
-        hyprctl dispatch focuswindow "address:$addr" >/dev/null 2>&1 || true
+        hyprctl dispatch "hl.dsp.focus({ window = \"address:$addr\" })" >/dev/null 2>&1 || hyprctl dispatch focuswindow "address:$addr" >/dev/null 2>&1 || true
     fi
 }
 

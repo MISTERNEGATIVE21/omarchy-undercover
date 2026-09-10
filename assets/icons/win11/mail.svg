@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48px" height="48px">
+  <defs>
+    <linearGradient id="mailBack" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0078d4"/>
+      <stop offset="100%" stop-color="#005a9e"/>
+    </linearGradient>
+    <linearGradient id="mailFlap" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2896f3"/>
+      <stop offset="100%" stop-color="#0078d4"/>
+    </linearGradient>
+  </defs>
+  <!-- Base envelope -->
+  <rect x="6" y="10" width="36" height="28" rx="5" fill="url(#mailBack)"/>
+  <!-- Inner letter sheet -->
+  <rect x="10" y="8" width="28" height="16" rx="2" fill="#ffffff" opacity="0.9"/>
+  <!-- Top Flap -->
+  <path d="M 6 13 L 24 25 L 42 13 Z" fill="url(#mailFlap)"/>
+  <!-- Bottom Left/Right folds -->
+  <polygon points="6,38 22,23 6,14" fill="#005a9e" opacity="0.4"/>
+  <polygon points="42,38 26,23 42,14" fill="#005a9e" opacity="0.4"/>
+</svg>

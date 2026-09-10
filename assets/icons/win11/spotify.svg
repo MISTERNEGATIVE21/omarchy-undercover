@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48px" height="48px">
+  <circle cx="24" cy="24" r="20" fill="#1ed760"/>
+  <!-- 3 Curved Sound Waves -->
+  <path d="M 12 18 C 19 14 30 15 36 19" fill="none" stroke="#121212" stroke-width="3.6" stroke-linecap="round"/>
+  <path d="M 14 24 C 20 20 28 21 34 25" fill="none" stroke="#121212" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M 16 30 C 21 26 27 27 32 30" fill="none" stroke="#121212" stroke-width="2.6" stroke-linecap="round"/>
+</svg>

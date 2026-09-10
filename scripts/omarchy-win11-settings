@@ -15,6 +15,13 @@ if [[ ! -d "$DIR" ]]; then
     fi
 fi
 
+if command -v hyprctl >/dev/null 2>&1; then
+    hyprctl eval 'if o and o.window then o.window({ class = "^org.quickshell$", title = "^Settings$" }, { float = true, center = true, size = { 980, 640 } }) end' >/dev/null 2>&1 || true
+    hyprctl keyword windowrulev2 "float,class:^(org.quickshell)$,title:^(Settings)$" >/dev/null 2>&1 || true
+    hyprctl keyword windowrulev2 "center,class:^(org.quickshell)$,title:^(Settings)$" >/dev/null 2>&1 || true
+    hyprctl keyword windowrulev2 "size 980 640,class:^(org.quickshell)$,title:^(Settings)$" >/dev/null 2>&1 || true
+fi
+
 if command -v quickshell >/dev/null 2>&1 && [[ -d "$DIR" ]]; then
     exec quickshell -p "$DIR"
 fi

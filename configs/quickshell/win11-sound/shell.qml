@@ -121,8 +121,8 @@ ShellRoot {
     Rectangle {
       anchors.fill: parent
       radius: 14
-      color: soundWindow.isDark ? Qt.rgba(0.12, 0.12, 0.16, 0.96) : Qt.rgba(0.97, 0.97, 0.98, 0.98)
-      border.color: soundWindow.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.10)
+      color: soundWindow.isDark ? Qt.rgba(0.12, 0.12, 0.16, 0.96) : Qt.rgba(0.96, 0.96, 0.98, 0.96)
+      border.color: soundWindow.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.12)
       border.width: 1
 
       ColumnLayout {
@@ -176,8 +176,9 @@ ShellRoot {
           Layout.fillWidth: true
           implicitHeight: 74
           radius: 8
-          color: soundWindow.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04)
-          border.color: soundWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.06)
+          color: soundWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : "#ffffff"
+          border.color: soundWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.10)
+          border.width: 1
 
           ColumnLayout {
             anchors.fill: parent
@@ -251,7 +252,7 @@ ShellRoot {
           font.family: "Segoe UI"
           font.pixelSize: 11
           font.weight: Font.DemiBold
-          color: soundWindow.isDark ? Qt.rgba(1, 1, 1, 0.6) : Qt.rgba(0, 0, 0, 0.5)
+          color: soundWindow.isDark ? Qt.rgba(1, 1, 1, 0.75) : "#555555"
         }
 
         // Output Sinks ScrollView

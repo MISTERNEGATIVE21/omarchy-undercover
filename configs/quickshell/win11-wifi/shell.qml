@@ -16,7 +16,7 @@ ShellRoot {
       right: true
     }
     margins {
-      bottom: 54
+      bottom: 34
       right: 12
     }
 
@@ -24,8 +24,8 @@ ShellRoot {
     WlrLayershell.namespace: "omarchy-menu"
     color: "transparent"
 
-    implicitWidth: 360
-    implicitHeight: 480
+    implicitWidth: 380
+    implicitHeight: 460
 
     property bool isDark: true
     property bool wifiEnabled: true
@@ -35,6 +35,17 @@ ShellRoot {
     property string passwordInput: ""
     property bool isScanning: false
     property string searchText: ""
+
+    // Fluent Design Theme Tokens
+    readonly property color cardBg: isDark ? Qt.rgba(0.13, 0.14, 0.17, 0.98) : Qt.rgba(0.97, 0.98, 0.99, 0.98)
+    readonly property color cardBorder: isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.12)
+    readonly property color innerCardBg: isDark ? Qt.rgba(1, 1, 1, 0.08) : "#ffffff"
+    readonly property color innerCardBorder: isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.10)
+    readonly property color textPrimary: isDark ? "#ffffff" : "#111111"
+    readonly property color textSecondary: isDark ? Qt.rgba(1, 1, 1, 0.74) : "#555555"
+    readonly property color textMuted: isDark ? Qt.rgba(1, 1, 1, 0.52) : "#777777"
+    readonly property color accentColor: isDark ? "#60cdff" : "#0067c0"
+    readonly property color hoverBg: isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05)
 
     readonly property var filteredNetworks: {
       var q = wifiWindow.searchText.toLowerCase().trim()
@@ -150,10 +161,11 @@ ShellRoot {
     Rectangle {
       id: card
       anchors.fill: parent
-      radius: 14
-      color: wifiWindow.isDark ? Qt.rgba(0.12, 0.12, 0.16, 0.96) : Qt.rgba(0.97, 0.97, 0.98, 0.98)
-      border.color: wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.10)
+      radius: 12
+      color: wifiWindow.cardBg
+      border.color: wifiWindow.cardBorder
       border.width: 1
+      clip: true
 
       ColumnLayout {
         anchors.fill: parent
@@ -163,20 +175,21 @@ ShellRoot {
         // Header Row
         RowLayout {
           Layout.fillWidth: true
+          implicitHeight: 30
           spacing: 10
 
           Text {
             text: "󰤨"
             font.pixelSize: 18
-            color: wifiWindow.isDark ? "#60cdff" : "#0067c0"
+            color: wifiWindow.accentColor
           }
 
           Text {
             text: "Wi-Fi Networks"
-            font.family: "Segoe UI"
+            font.family: "Segoe UI, sans-serif"
             font.pixelSize: 14
             font.weight: Font.DemiBold
-            color: wifiWindow.isDark ? "#ffffff" : "#1a1a1a"
+            color: wifiWindow.textPrimary
             Layout.fillWidth: true
           }
 
@@ -190,6 +203,7 @@ ShellRoot {
               anchors.centerIn: parent
               text: "🔄"
               font.pixelSize: 12
+              color: wifiWindow.textPrimary
             }
             MouseArea {
               id: scanMouse
@@ -205,12 +219,12 @@ ShellRoot {
             implicitWidth: 28
             implicitHeight: 28
             radius: 6
-            color: closeMouse.containsMouse ? (wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
+            color: closeMouse.containsMouse ? Qt.rgba(196, 43, 28, 0.16) : "transparent"
             Text {
               anchors.centerIn: parent
               text: "✕"
               font.pixelSize: 12
-              color: wifiWindow.isDark ? "#ffffff" : "#1a1a1a"
+              color: closeMouse.containsMouse ? "#c42b1c" : wifiWindow.textPrimary
             }
             MouseArea {
               id: closeMouse
@@ -227,28 +241,38 @@ ShellRoot {
           Layout.fillWidth: true
           implicitHeight: 46
           radius: 8
-          color: wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04)
-          border.color: wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.06)
+          color: wifiWindow.innerCardBg
+          border.color: wifiWindow.innerCardBorder
+          border.width: 1
 
           RowLayout {
             anchors.fill: parent
             anchors.leftMargin: 12
             anchors.rightMargin: 12
 
-            Text {
-              text: "Wi-Fi"
-              font.family: "Segoe UI"
-              font.pixelSize: 12
-              font.weight: Font.DemiBold
-              color: wifiWindow.isDark ? "#ffffff" : "#1a1a1a"
+            ColumnLayout {
+              spacing: 1
               Layout.fillWidth: true
+              Text {
+                text: "Wi-Fi"
+                font.family: "Segoe UI, sans-serif"
+                font.pixelSize: 13
+                font.weight: Font.DemiBold
+                color: wifiWindow.textPrimary
+              }
+              Text {
+                text: wifiWindow.wifiEnabled ? "Enabled" : "Disabled"
+                font.family: "Segoe UI, sans-serif"
+                font.pixelSize: 11
+                color: wifiWindow.textSecondary
+              }
             }
 
             Rectangle {
               implicitWidth: 44
               implicitHeight: 22
               radius: 11
-              color: wifiWindow.wifiEnabled ? (wifiWindow.isDark ? "#60cdff" : "#0067c0") : Qt.rgba(0.5, 0.5, 0.5, 0.4)
+              color: wifiWindow.wifiEnabled ? wifiWindow.accentColor : Qt.rgba(0.5, 0.5, 0.5, 0.4)
 
               Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
@@ -278,31 +302,36 @@ ShellRoot {
         Rectangle {
           visible: wifiWindow.wifiEnabled
           Layout.fillWidth: true
-          implicitHeight: 32
-          radius: 4
-          color: wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04)
-          border.color: wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08)
+          implicitHeight: 34
+          radius: 6
+          color: wifiWindow.innerCardBg
+          border.color: wifiWindow.innerCardBorder
+          border.width: 1
 
           RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 8
-            anchors.rightMargin: 8
-            spacing: 6
+            anchors.leftMargin: 10
+            anchors.rightMargin: 10
+            spacing: 8
 
-            Text { text: "🔍"; font.pixelSize: 11; opacity: 0.6 }
+            Text {
+              text: "🔍"
+              font.pixelSize: 11
+              color: wifiWindow.textMuted
+            }
 
             TextInput {
               id: win11WifiSearch
               Layout.fillWidth: true
-              color: wifiWindow.isDark ? "#ffffff" : "#1a1a1a"
-              font.family: "Segoe UI"
+              color: wifiWindow.textPrimary
+              font.family: "Segoe UI, sans-serif"
               font.pixelSize: 12
               clip: true
               onTextChanged: wifiWindow.searchText = text
 
               Text {
                 text: "Search Wi-Fi networks..."
-                color: wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(0, 0, 0, 0.4)
+                color: wifiWindow.textMuted
                 font: win11WifiSearch.font
                 visible: !win11WifiSearch.text && !win11WifiSearch.activeFocus
               }
@@ -310,11 +339,16 @@ ShellRoot {
 
             Rectangle {
               visible: win11WifiSearch.text.length > 0
-              implicitWidth: 16
-              implicitHeight: 16
-              radius: 8
-              color: Qt.rgba(1, 1, 1, 0.2)
-              Text { anchors.centerIn: parent; text: "✕"; font.pixelSize: 9; color: "#ffffff" }
+              implicitWidth: 18
+              implicitHeight: 18
+              radius: 9
+              color: wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(0, 0, 0, 0.08)
+              Text {
+                anchors.centerIn: parent
+                text: "✕"
+                font.pixelSize: 9
+                color: wifiWindow.textPrimary
+              }
               MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
@@ -333,8 +367,8 @@ ShellRoot {
           Layout.fillWidth: true
           implicitHeight: 52
           radius: 8
-          color: wifiWindow.isDark ? Qt.rgba(0, 120, 212, 0.25) : Qt.rgba(0, 120, 212, 0.12)
-          border.color: wifiWindow.isDark ? "#60cdff" : "#0067c0"
+          color: wifiWindow.isDark ? Qt.rgba(0, 120, 212, 0.20) : Qt.rgba(0, 103, 192, 0.08)
+          border.color: wifiWindow.isDark ? "#60cdff" : Qt.rgba(0, 103, 192, 0.35)
           border.width: 1
 
           RowLayout {
@@ -343,38 +377,52 @@ ShellRoot {
             anchors.rightMargin: 12
             spacing: 10
 
-            Text { text: "󰤨"; font.pixelSize: 18; color: wifiWindow.isDark ? "#60cdff" : "#0067c0" }
+            Text {
+              text: "󰤨"
+              font.pixelSize: 20
+              color: wifiWindow.accentColor
+            }
 
             ColumnLayout {
               spacing: 1
               Layout.fillWidth: true
               Text {
                 text: wifiWindow.activeSsid
-                font.family: "Segoe UI"
+                font.family: "Segoe UI, sans-serif"
                 font.pixelSize: 12
                 font.weight: Font.DemiBold
-                color: wifiWindow.isDark ? "#ffffff" : "#1a1a1a"
+                color: wifiWindow.textPrimary
                 elide: Text.ElideRight
               }
               Text {
                 text: "Connected, secured"
-                font.family: "Segoe UI"
+                font.family: "Segoe UI, sans-serif"
                 font.pixelSize: 10
-                color: wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.6) : Qt.rgba(0, 0, 0, 0.55)
+                color: wifiWindow.textSecondary
               }
             }
 
             Rectangle {
-              implicitWidth: 80
-              implicitHeight: 26
+              implicitWidth: 84
+              implicitHeight: 28
               radius: 6
-              color: disMouse.containsMouse ? Qt.rgba(1, 0.2, 0.2, 0.3) : Qt.rgba(1, 0.2, 0.2, 0.15)
+              color: disMouse.containsMouse
+                ? (wifiWindow.isDark ? "#d83b01" : "#c42b1c")
+                : (wifiWindow.isDark ? Qt.rgba(255, 95, 86, 0.16) : Qt.rgba(196, 43, 28, 0.08))
+              border.color: disMouse.containsMouse
+                ? "transparent"
+                : (wifiWindow.isDark ? Qt.rgba(255, 95, 86, 0.35) : Qt.rgba(196, 43, 28, 0.35))
+              border.width: 1
+
               Text {
                 anchors.centerIn: parent
                 text: "Disconnect"
-                font.family: "Segoe UI"
-                font.pixelSize: 10
-                color: "#ff5f56"
+                font.family: "Segoe UI, sans-serif"
+                font.pixelSize: 11
+                font.weight: Font.DemiBold
+                color: disMouse.containsMouse
+                  ? "#ffffff"
+                  : (wifiWindow.isDark ? "#ff7b72" : "#c42b1c")
               }
               MouseArea {
                 id: disMouse
@@ -396,25 +444,88 @@ ShellRoot {
           visible: wifiWindow.wifiEnabled
           Layout.fillWidth: true
           Text {
-            text: wifiWindow.searchText.length > 0 ? "Search Results (" + wifiWindow.filteredNetworks.length + ")" : "Available Networks"
-            font.family: "Segoe UI"
-            font.pixelSize: 11
+            text: wifiWindow.searchText.length > 0
+              ? "Search Results (" + wifiWindow.filteredNetworks.length + ")"
+              : "Available Networks"
+            font.family: "Segoe UI, sans-serif"
+            font.pixelSize: 12
             font.weight: Font.DemiBold
-            color: wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.6) : Qt.rgba(0, 0, 0, 0.5)
+            color: wifiWindow.textPrimary
             Layout.fillWidth: true
           }
           Text {
             visible: wifiWindow.isScanning
             text: "Scanning..."
-            font.family: "Segoe UI"
-            font.pixelSize: 10
-            color: wifiWindow.isDark ? "#60cdff" : "#0067c0"
+            font.family: "Segoe UI, sans-serif"
+            font.pixelSize: 11
+            color: wifiWindow.accentColor
+          }
+        }
+
+        // Empty State / Searching State
+        Rectangle {
+          visible: wifiWindow.wifiEnabled && wifiWindow.filteredNetworks.length === 0
+          Layout.fillWidth: true
+          Layout.fillHeight: true
+          radius: 8
+          color: wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.04) : Qt.rgba(0, 0, 0, 0.02)
+          border.color: wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.06)
+          border.width: 1
+
+          ColumnLayout {
+            anchors.centerIn: parent
+            spacing: 8
+
+            Text {
+              Layout.alignment: Qt.AlignHCenter
+              text: wifiWindow.isScanning ? "󰤩" : "󰤮"
+              font.pixelSize: 28
+              color: wifiWindow.accentColor
+            }
+
+            Text {
+              Layout.alignment: Qt.AlignHCenter
+              text: wifiWindow.isScanning
+                ? "Searching for Wi-Fi networks..."
+                : (wifiWindow.searchText.length > 0 ? "No networks matching \"" + wifiWindow.searchText + "\"" : "No networks found")
+              font.family: "Segoe UI, sans-serif"
+              font.pixelSize: 12
+              color: wifiWindow.textSecondary
+            }
+
+            Rectangle {
+              visible: !wifiWindow.isScanning
+              Layout.alignment: Qt.AlignHCenter
+              implicitWidth: 100
+              implicitHeight: 28
+              radius: 6
+              color: emptyScanM.containsMouse ? wifiWindow.accentColor : wifiWindow.innerCardBg
+              border.color: emptyScanM.containsMouse ? "transparent" : wifiWindow.innerCardBorder
+              border.width: 1
+
+              Text {
+                anchors.centerIn: parent
+                text: "Scan again"
+                font.family: "Segoe UI, sans-serif"
+                font.pixelSize: 11
+                font.weight: Font.DemiBold
+                color: emptyScanM.containsMouse ? "#ffffff" : wifiWindow.accentColor
+              }
+
+              MouseArea {
+                id: emptyScanM
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: wifiWindow.triggerScan()
+              }
+            }
           }
         }
 
         // Networks ScrollView
         ScrollView {
-          visible: wifiWindow.wifiEnabled
+          visible: wifiWindow.wifiEnabled && wifiWindow.filteredNetworks.length > 0
           Layout.fillWidth: true
           Layout.fillHeight: true
           clip: true
@@ -431,36 +542,59 @@ ShellRoot {
 
               Rectangle {
                 Layout.fillWidth: true
-                implicitHeight: 40
+                implicitHeight: 42
                 radius: 6
-                color: netRowMouse.containsMouse ? (wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.06)) : "transparent"
+                color: modelData.inUse
+                  ? (wifiWindow.isDark ? Qt.rgba(0, 120, 212, 0.16) : Qt.rgba(0, 103, 192, 0.08))
+                  : (netRowMouse.containsMouse ? wifiWindow.hoverBg : "transparent")
+                border.color: modelData.inUse
+                  ? (wifiWindow.isDark ? Qt.rgba(96, 205, 255, 0.30) : Qt.rgba(0, 103, 192, 0.20))
+                  : "transparent"
+                border.width: modelData.inUse ? 1 : 0
 
                 RowLayout {
                   anchors.fill: parent
-                  anchors.leftMargin: 8
-                  anchors.rightMargin: 8
+                  anchors.leftMargin: 10
+                  anchors.rightMargin: 10
                   spacing: 10
 
                   Text {
                     text: wifiWindow.getSignalIcon(modelData.signal)
-                    font.pixelSize: 15
-                    color: wifiWindow.isDark ? "#ffffff" : "#1a1a1a"
+                    font.pixelSize: 16
+                    color: modelData.inUse ? wifiWindow.accentColor : wifiWindow.textPrimary
                   }
 
                   Text {
                     text: modelData.ssid
-                    font.family: "Segoe UI"
+                    font.family: "Segoe UI, sans-serif"
                     font.pixelSize: 12
                     font.weight: modelData.inUse ? Font.DemiBold : Font.Normal
-                    color: wifiWindow.isDark ? "#ffffff" : "#1a1a1a"
+                    color: wifiWindow.textPrimary
                     elide: Text.ElideRight
                     Layout.fillWidth: true
                   }
 
+                  Rectangle {
+                    visible: modelData.inUse
+                    implicitWidth: 64
+                    implicitHeight: 20
+                    radius: 10
+                    color: wifiWindow.isDark ? Qt.rgba(0, 120, 212, 0.25) : Qt.rgba(0, 103, 192, 0.12)
+                    Text {
+                      anchors.centerIn: parent
+                      text: "Connected"
+                      font.family: "Segoe UI, sans-serif"
+                      font.pixelSize: 10
+                      font.weight: Font.DemiBold
+                      color: wifiWindow.accentColor
+                    }
+                  }
+
                   Text {
-                    visible: modelData.isSecured
+                    visible: modelData.isSecured && !modelData.inUse
                     text: "🔒"
                     font.pixelSize: 11
+                    color: wifiWindow.textSecondary
                   }
                 }
 
@@ -488,8 +622,9 @@ ShellRoot {
                 Layout.fillWidth: true
                 implicitHeight: 68
                 radius: 6
-                color: wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05)
-                border.color: wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.10)
+                color: wifiWindow.innerCardBg
+                border.color: wifiWindow.innerCardBorder
+                border.width: 1
 
                 ColumnLayout {
                   anchors.fill: parent
@@ -498,14 +633,15 @@ ShellRoot {
 
                   RowLayout {
                     Layout.fillWidth: true
-                    spacing: 6
+                    spacing: 8
 
                     Rectangle {
                       Layout.fillWidth: true
-                      implicitHeight: 28
+                      implicitHeight: 30
                       radius: 4
-                      color: wifiWindow.isDark ? Qt.rgba(0, 0, 0, 0.3) : "#ffffff"
-                      border.color: wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.18) : Qt.rgba(0, 0, 0, 0.14)
+                      color: wifiWindow.isDark ? Qt.rgba(0, 0, 0, 0.40) : "#ffffff"
+                      border.color: wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.20) : Qt.rgba(0, 0, 0, 0.18)
+                      border.width: 1
 
                       TextInput {
                         id: pwInput
@@ -513,8 +649,8 @@ ShellRoot {
                         anchors.leftMargin: 8
                         anchors.rightMargin: 8
                         echoMode: TextInput.Password
-                        font.pixelSize: 11
-                        color: wifiWindow.isDark ? "#ffffff" : "#1a1a1a"
+                        font.pixelSize: 12
+                        color: wifiWindow.textPrimary
                         selectByMouse: true
                         onTextChanged: wifiWindow.passwordInput = text
                         onAccepted: {
@@ -526,11 +662,18 @@ ShellRoot {
                     }
 
                     Rectangle {
-                      implicitWidth: 60
-                      implicitHeight: 28
+                      implicitWidth: 70
+                      implicitHeight: 30
                       radius: 4
-                      color: wifiWindow.isDark ? "#0078d4" : "#0067c0"
-                      Text { anchors.centerIn: parent; text: "Connect"; color: "#ffffff"; font.pixelSize: 10; font.weight: Font.DemiBold }
+                      color: wifiWindow.accentColor
+                      Text {
+                        anchors.centerIn: parent
+                        text: "Connect"
+                        color: "#ffffff"
+                        font.family: "Segoe UI, sans-serif"
+                        font.pixelSize: 11
+                        font.weight: Font.DemiBold
+                      }
                       MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
@@ -553,17 +696,20 @@ ShellRoot {
           Layout.fillWidth: true
           implicitHeight: 34
           radius: 6
-          color: setLinkM.containsMouse ? (wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.06)) : "transparent"
+          color: setLinkM.containsMouse ? wifiWindow.hoverBg : "transparent"
           RowLayout {
             anchors.centerIn: parent
-            spacing: 6
-            Text { text: "⚙️"; font.pixelSize: 12 }
+            spacing: 8
+            Text {
+              text: "⚙️"
+              font.pixelSize: 13
+            }
             Text {
               text: "More Wi-Fi settings"
-              font.family: "Segoe UI"
+              font.family: "Segoe UI, sans-serif"
               font.pixelSize: 11
               font.weight: Font.DemiBold
-              color: wifiWindow.isDark ? "#60cdff" : "#0067c0"
+              color: wifiWindow.accentColor
             }
           }
           MouseArea {

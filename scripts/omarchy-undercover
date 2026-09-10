@@ -477,13 +477,21 @@ apply_shell_mac() {
 
 restore_shell_from_baseline() {
     local baseline="${1:-}"
+    local restored=false
     if [[ -n "$baseline" && -f "$baseline/omarchy/shell.json" ]]; then
-        mkdir -p "$HOME/.config/omarchy"
-        cp -f "$baseline/omarchy/shell.json" "$HOME/.config/omarchy/shell.json"
-        msg "Restored original Omarchy Quickshell layout."
-    elif is_quickshell_supported || [[ -d "$HOME/.config/omarchy" ]]; then
-        local def_src
-        def_src=$(project_file "shell/shell-default.json")
+        if ! grep -q "undercover\." "$baseline/omarchy/shell.json"; then
+            mkdir -p "$HOME/.config/omarchy"
+            cp -f "$baseline/omarchy/shell.json" "$HOME/.config/omarchy/shell.json"
+            msg "Restored original Omarchy Quickshell layout."
+            restored=true
+        fi
+    fi
+
+    if [[ "$restored" == "false" ]]; then
+        local def_src="/usr/share/omarchy/config/omarchy/shell.json"
+        if [[ ! -f "$def_src" ]]; then
+            def_src=$(project_file "shell/shell-default.json")
+        fi
         if [[ -z "$def_src" || ! -f "$def_src" ]]; then
             def_src="${SCRIPT_DIR}/../configs/shell/shell-default.json"
         fi
@@ -491,7 +499,13 @@ restore_shell_from_baseline() {
             mkdir -p "$HOME/.config/omarchy"
             cp -f "$def_src" "$HOME/.config/omarchy/shell.json"
             msg "Restored default Omarchy Quickshell layout."
+            restored=true
         fi
+    fi
+
+    if command_exists omarchy-shell; then
+        omarchy-shell shell reloadConfig >/dev/null 2>&1 || true
+        omarchy-shell -q shell rescanPlugins >/dev/null 2>&1 || true
     fi
 }
 
@@ -560,8 +574,19 @@ backup_original_configs() {
     backup_config_dir "waybar" "$cur_backup"
     backup_config_dir "omarchy" "$cur_backup"
     if [[ -f "$HOME/.config/omarchy/shell.json" ]]; then
-        mkdir -p "$cur_backup/omarchy"
-        cp -f "$HOME/.config/omarchy/shell.json" "$cur_backup/omarchy/"
+        if ! grep -q "undercover\." "$HOME/.config/omarchy/shell.json"; then
+            mkdir -p "$cur_backup/omarchy"
+            cp -f "$HOME/.config/omarchy/shell.json" "$cur_backup/omarchy/"
+        fi
+    fi
+
+    # Capture original Omarchy theme
+    if command_exists omarchy; then
+        local cur_theme
+        cur_theme=$(omarchy theme current 2>/dev/null || true)
+        if [[ -n "$cur_theme" && "$cur_theme" != *"Undercover"* && "$cur_theme" != *"Windows"* && "$cur_theme" != *"windows"* && "$cur_theme" != *"Mac"* && "$cur_theme" != *"mac"* ]]; then
+            echo "$cur_theme" > "$cur_backup/theme.name"
+        fi
     fi
     backup_config_dir "rofi" "$cur_backup"
     backup_config_dir "wofi" "$cur_backup"
@@ -797,16 +822,16 @@ EOF
         omarchy-play-sound mac-switch 2>/dev/null || true
     fi
 
+    omarchy_reload_bar
+    omarchy_reload_hyprland
+
     local enable_dock
     enable_dock=$(read_setting "ENABLE_MAC_DOCK" "true")
     if [[ "$enable_dock" == "true" ]]; then
         pkill -f "quickshell.*mac-dock" 2>/dev/null || true
-        nohup quickshell -p "$CONFIG_DIR/quickshell/mac-dock" >/dev/null 2>&1 &
-        disown 2>/dev/null || true
+        setsid -f quickshell -p "$CONFIG_DIR/quickshell/mac-dock" >/dev/null 2>&1 || (nohup quickshell -p "$CONFIG_DIR/quickshell/mac-dock" >/dev/null 2>&1 &)
     fi
 
-    omarchy_reload_bar
-    omarchy_reload_hyprland
     msg "Switched to Apple macOS Sequoia ($variant) — done!"
 }
 
@@ -949,6 +974,9 @@ switch_to_omarchy() {
     write_setting "MODE" "omarchy"
     pkill -9 -f "mac-dock" 2>/dev/null || true
     pkill -9 -f "omarchy-mac-dock" 2>/dev/null || true
+    pkill -f "quickshell.*mac-settings" 2>/dev/null || true
+    pkill -f "quickshell.*win11-settings" 2>/dev/null || true
+    pkill -f "quickshell.*win11-start" 2>/dev/null || true
     killall swaybg 2>/dev/null || true
     pkill -x swaybg 2>/dev/null || true
     disable_windows_hyprland 2>/dev/null || true
@@ -963,10 +991,10 @@ switch_to_omarchy() {
     fi
 
     local baseline=""
+    local theme_restored=false
     if [[ -f "$BASELINE_FILE" ]]; then
         baseline=$(cat "$BASELINE_FILE")
         if [[ -d "$baseline" ]]; then
-            restore_shell_from_baseline "$baseline"
             restore_config_dir "waybar" "$baseline"
             restore_config_dir "rofi" "$baseline"
             restore_config_dir "wofi" "$baseline"
@@ -976,11 +1004,28 @@ switch_to_omarchy() {
             restore_config_dir "alacritty" "$baseline"
             restore_config_dir "fontconfig" "$baseline"
             restore_gtk_from_baseline "$baseline"
+
+            if [[ -f "$baseline/theme.name" ]]; then
+                local saved_theme
+                saved_theme=$(cat "$baseline/theme.name" 2>/dev/null | tr -d '\r\n')
+                if [[ -n "$saved_theme" ]] && command_exists omarchy; then
+                    omarchy theme set "$saved_theme" 2>/dev/null || true
+                    theme_restored=true
+                fi
+            fi
         fi
-    else
-        restore_shell_from_baseline ""
     fi
 
+    if [[ "$theme_restored" == "false" ]] && command_exists omarchy; then
+        local cur_theme
+        cur_theme=$(omarchy theme current 2>/dev/null || true)
+        if [[ "$cur_theme" == *"Windows"* || "$cur_theme" == *"windows"* || "$cur_theme" == *"Mac"* || "$cur_theme" == *"mac"* || "$cur_theme" == *"Undercover"* ]]; then
+            omarchy theme set "Krishna" 2>/dev/null || omarchy theme set "Aether" 2>/dev/null || true
+        fi
+    fi
+
+    # Crucial: restore shell.json AFTER theme set so omarchy-theme-set IPC doesn't overwrite it
+    restore_shell_from_baseline "$baseline"
     restore_undercover_nautilus "$baseline"
 
     if command_exists gsettings; then
@@ -999,6 +1044,9 @@ restore_baseline() {
     msg "Restoring system from baseline backup..."
     pkill -9 -f "mac-dock" 2>/dev/null || true
     pkill -9 -f "omarchy-mac-dock" 2>/dev/null || true
+    pkill -f "quickshell.*mac-settings" 2>/dev/null || true
+    pkill -f "quickshell.*win11-settings" 2>/dev/null || true
+    pkill -f "quickshell.*win11-start" 2>/dev/null || true
     killall swaybg 2>/dev/null || true
     pkill -x swaybg 2>/dev/null || true
     disable_windows_hyprland
@@ -1011,6 +1059,7 @@ restore_baseline() {
     fi
 
     local baseline=""
+    local theme_restored=false
     if [[ -f "$BASELINE_FILE" ]]; then
         baseline=$(cat "$BASELINE_FILE")
         if [[ -d "$baseline" ]]; then
@@ -1022,7 +1071,6 @@ restore_baseline() {
                 mkdir -p "$HOME/.config/hypr"
                 cp "$baseline/hypr/hyprland.conf" "$HOME/.config/hypr/"
             fi
-            restore_shell_from_baseline "$baseline"
             restore_config_dir "waybar" "$baseline"
             restore_config_dir "rofi" "$baseline"
             restore_config_dir "wofi" "$baseline"
@@ -1032,11 +1080,28 @@ restore_baseline() {
             restore_config_dir "alacritty" "$baseline"
             restore_config_dir "fontconfig" "$baseline"
             restore_gtk_from_baseline "$baseline"
+
+            if [[ -f "$baseline/theme.name" ]]; then
+                local saved_theme
+                saved_theme=$(cat "$baseline/theme.name" 2>/dev/null | tr -d '\r\n')
+                if [[ -n "$saved_theme" ]] && command_exists omarchy; then
+                    omarchy theme set "$saved_theme" 2>/dev/null || true
+                    theme_restored=true
+                fi
+            fi
         fi
-    else
-        restore_shell_from_baseline ""
     fi
 
+    if [[ "$theme_restored" == "false" ]] && command_exists omarchy; then
+        local cur_theme
+        cur_theme=$(omarchy theme current 2>/dev/null || true)
+        if [[ "$cur_theme" == *"Windows"* || "$cur_theme" == *"windows"* || "$cur_theme" == *"Mac"* || "$cur_theme" == *"mac"* || "$cur_theme" == *"Undercover"* ]]; then
+            omarchy theme set "Krishna" 2>/dev/null || omarchy theme set "Aether" 2>/dev/null || true
+        fi
+    fi
+
+    # Crucial: restore shell.json AFTER theme set so omarchy-theme-set IPC doesn't overwrite it
+    restore_shell_from_baseline "$baseline"
     restore_undercover_nautilus "$baseline"
 
     omarchy_reload_bar
@@ -1109,6 +1174,8 @@ show_help() {
     echo "  -w11, --w11, --win11, --enable          Switch to Windows 11 (dark by default)"
     echo "  -w11-light, --win11-light               Switch to Windows 11 Light mode"
     echo "  --backend [auto|quickshell|waybar]      Select or show desktop status bar engine"
+    echo "  --transparency [on|off]                 Configure desktop frosted glass transparency"
+    echo "  --taskbar-transparent [true|false|toggle] Toggle or set taskbar transparency"
     echo "  --toggle                                Toggle between Undercover mode and Default Omarchy"
     echo "  --disable, --omarchy                    Switch to original Omarchy mode & theming"
     echo "  --restore                               Restore from baseline backup"
@@ -1202,8 +1269,8 @@ case "$1" in
         ;;
     --opacity)
         if [[ -n "${2:-}" ]]; then
-            local active_op="$2"
-            local inact_op="${3:-0.85}"
+            active_op="$2"
+            inact_op="${3:-0.85}"
             write_setting "ACTIVE_OPACITY" "$active_op"
             write_setting "INACTIVE_OPACITY" "$inact_op"
             hyprctl keyword decoration:active_opacity "$active_op" >/dev/null 2>&1 || true
@@ -1216,14 +1283,49 @@ case "$1" in
     --transparency)
         if [[ "${2:-}" == "off" || "${2:-}" == "false" || "${2:-}" == "0" ]]; then
             write_setting "BAR_TRANSPARENT" "false"
+            write_setting "WIN11_TRANSPARENCY" "false"
             write_setting "DOCK_OPACITY" "1.0"
             write_setting "TASKBAR_OPACITY" "1.0"
+            if command_exists omarchy; then
+                omarchy bar transparent false 2>/dev/null || true
+            fi
             msg "Transparency disabled (Solid surfaces)."
         else
             write_setting "BAR_TRANSPARENT" "true"
+            write_setting "WIN11_TRANSPARENCY" "true"
             write_setting "DOCK_OPACITY" "${2:-0.85}"
             write_setting "TASKBAR_OPACITY" "${2:-0.90}"
+            if command_exists omarchy; then
+                omarchy bar transparent true 2>/dev/null || true
+            fi
             msg "Transparency enabled (Frosted glass surfaces)."
+        fi
+        omarchy_reload_bar
+        ;;
+    --taskbar-transparent|--taskbar-transparency)
+        t_val="${2:-}"
+        if [[ "$t_val" == "off" || "$t_val" == "false" || "$t_val" == "0" ]]; then
+            write_setting "BAR_TRANSPARENT" "false"
+            write_setting "WIN11_TRANSPARENCY" "false"
+            if command_exists omarchy; then
+                omarchy bar transparent false 2>/dev/null || true
+            fi
+            msg "Taskbar transparency disabled (Solid acrylic plate)."
+        elif [[ "$t_val" == "toggle" ]]; then
+            if command_exists omarchy; then
+                omarchy bar transparent toggle 2>/dev/null || true
+                curr_trans=$(cat "$HOME/.config/omarchy/shell.json" 2>/dev/null | jq -r .bar.transparent 2>/dev/null || echo "true")
+                write_setting "BAR_TRANSPARENT" "$curr_trans"
+                write_setting "WIN11_TRANSPARENCY" "$curr_trans"
+                msg "Taskbar transparency toggled: $curr_trans"
+            fi
+        else
+            write_setting "BAR_TRANSPARENT" "true"
+            write_setting "WIN11_TRANSPARENCY" "true"
+            if command_exists omarchy; then
+                omarchy bar transparent true 2>/dev/null || true
+            fi
+            msg "Taskbar transparency enabled (Clear / Acrylic)."
         fi
         omarchy_reload_bar
         ;;

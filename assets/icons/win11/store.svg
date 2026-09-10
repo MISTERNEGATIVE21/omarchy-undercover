@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48px" height="48px">
+  <defs>
+    <linearGradient id="bagGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0078d4"/>
+      <stop offset="100%" stop-color="#005a9e"/>
+    </linearGradient>
+  </defs>
+  <!-- Shopping Bag handle -->
+  <path d="M 18 16 C 18 10 30 10 30 16" fill="none" stroke="#60cdff" stroke-width="3" stroke-linecap="round"/>
+  <!-- Shopping Bag body -->
+  <rect x="8" y="14" width="32" height="28" rx="5" fill="url(#bagGrad)"/>
+  <!-- 4-Colored Microsoft Tiles in center of bag -->
+  <rect x="19" y="23" width="4.5" height="4.5" rx="0.8" fill="#f25022"/>
+  <rect x="24.5" y="23" width="4.5" height="4.5" rx="0.8" fill="#7fba00"/>
+  <rect x="19" y="28.5" width="4.5" height="4.5" rx="0.8" fill="#00a4ef"/>
+  <rect x="24.5" y="28.5" width="4.5" height="4.5" rx="0.8" fill="#ffb900"/>
+</svg>

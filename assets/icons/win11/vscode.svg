@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48px" height="48px">
+  <defs>
+    <linearGradient id="vs1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0065a9"/>
+      <stop offset="100%" stop-color="#007acc"/>
+    </linearGradient>
+    <linearGradient id="vs2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1f9cf0"/>
+      <stop offset="100%" stop-color="#0078d4"/>
+    </linearGradient>
+  </defs>
+  <!-- VS Code Folded Ribbon Path -->
+  <path d="M 35 4 L 44 8 L 44 40 L 35 44 L 18 28 L 11 34 L 5 31 L 13 24 L 5 17 L 11 14 L 18 20 Z" fill="url(#vs1)"/>
+  <!-- Front Folding Wings -->
+  <path d="M 35 4 L 35 44 L 44 40 L 44 8 Z" fill="#0065a9" opacity="0.4"/>
+  <path d="M 35 4 L 13 24 L 5 17 L 11 14 L 35 4 Z" fill="url(#vs2)"/>
+  <path d="M 35 44 L 13 24 L 5 31 L 11 34 L 35 44 Z" fill="#007acc"/>
+</svg>

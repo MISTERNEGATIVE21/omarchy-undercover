@@ -1266,9 +1266,37 @@ class UndercoverSettingsApp(Adw.Application):
 
 if __name__ == "__main__":
     if "--legacy" not in sys.argv and shutil.which("quickshell"):
+        # Check active mode from state or arguments
+        state = read_state()
+        is_mac = "--mac" in sys.argv or "mac" in state or "apple" in state or "ios" in state
+        is_win = "--win" in sys.argv or "--win11" in sys.argv or "win" in state
+
+        # If currently in omarchy mode and no explicit flag, check last undercover mode
+        if not is_mac and not is_win:
+            last_mode = read_setting("LAST_UNDERCOVER_MODE", "mac-dark")
+            if "mac" in last_mode or "apple" in last_mode:
+                is_mac = True
+            else:
+                is_win = True
+
+        if is_mac:
+            if shutil.which("hyprctl"):
+                subprocess.run(["hyprctl", "eval", 'if o and o.window then o.window({ class = "^org.quickshell$", title = "^System Settings$" }, { float = true, center = true, size = { 980, 640 } }) end'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            mac_paths = [
+                Path.home() / ".config/quickshell/mac-settings",
+                Path(__file__).resolve().parent.parent / "configs/quickshell/mac-settings",
+                Path.home() / ".config/omarchy-undercover/quickshell/mac-settings",
+            ]
+            for p in mac_paths:
+                if p.exists() and (p / "shell.qml").exists():
+                    sys.exit(subprocess.call(["quickshell", "-p", str(p)]))
+
+        if shutil.which("hyprctl"):
+            subprocess.run(["hyprctl", "eval", 'if o and o.window then o.window({ class = "^org.quickshell$", title = "^Settings$" }, { float = true, center = true, size = { 980, 640 } }) end'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         qs_paths = [
             Path.home() / ".config/quickshell/win11-settings",
             Path(__file__).resolve().parent.parent / "configs/quickshell/win11-settings",
+            Path.home() / ".config/omarchy-undercover/quickshell/win11-settings",
         ]
         for p in qs_paths:
             if p.exists() and (p / "shell.qml").exists():

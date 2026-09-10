@@ -138,3 +138,14 @@ hl.layer_rule({ match = { namespace = "mac-dock" }, blur = true, ignore_alpha = 
 hl.layer_rule({ match = { namespace = "waybar" }, blur = true, ignore_alpha = true })
 hl.layer_rule({ match = { namespace = "rofi" }, blur = true, ignore_alpha = true })
 hl.layer_rule({ match = { namespace = "gtk-layer-shell" }, blur = true, ignore_alpha = true })
+
+-- macOS System Settings Window Rules
+if o and o.window then
+  o.window({ class = "^org.quickshell$", title = "^System Settings$" }, {
+    float = true,
+    center = true,
+    size = { 980, 640 },
+    tag = "-default-opacity",
+    opacity = "1 1",
+  })
+end

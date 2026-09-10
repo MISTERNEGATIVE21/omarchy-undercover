@@ -7,25 +7,19 @@
   "bar": {
     "position": "top",
     "transparent": true,
-    "centerAnchor": "undercover.mac-clock",
+    "centerAnchor": "",
     "layout": {
       "left": [
         {
           "id": "undercover.mac-apple"
         },
         {
-          "id": "omarchy.active-window"
-        },
-        {
-          "id": "omarchy.workspaces"
+          "id": "undercover.mac-appmenu"
         }
       ],
       "center": [
         {
           "id": "omarchy.media"
-        },
-        {
-          "id": "undercover.mac-clock"
         }
       ],
       "right": [
@@ -45,13 +39,16 @@
           "id": "undercover.mac-wifi"
         },
         {
-          "id": "undercover.mac-controlcenter"
-        },
-        {
           "id": "undercover.mac-spotlight"
         },
         {
           "id": "undercover.mac-siri"
+        },
+        {
+          "id": "undercover.mac-controlcenter"
+        },
+        {
+          "id": "undercover.mac-clock"
         }
       ]
     }

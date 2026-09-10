@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Copyright (C) 2026 misternegative21
+# Omarchy Undercover - macOS Sequoia System Settings QuickShell Application
+# License: GPL-3.0-or-later
+# ==============================================================================
+
+DIR="$HOME/.config/quickshell/mac-settings"
+if [[ ! -d "$DIR" ]]; then
+    REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+    if [[ -d "$REPO_DIR/configs/quickshell/mac-settings" ]]; then
+        DIR="$REPO_DIR/configs/quickshell/mac-settings"
+    elif [[ -d "$HOME/.config/omarchy-undercover/quickshell/mac-settings" ]]; then
+        DIR="$HOME/.config/omarchy-undercover/quickshell/mac-settings"
+    fi
+fi
+
+if command -v hyprctl >/dev/null 2>&1; then
+    hyprctl eval 'if o and o.window then o.window({ class = "^org.quickshell$", title = "^System Settings$" }, { float = true, center = true, size = { 980, 640 } }) end' >/dev/null 2>&1 || true
+    hyprctl keyword windowrulev2 "float,class:^(org.quickshell)$,title:^(System Settings)$" >/dev/null 2>&1 || true
+    hyprctl keyword windowrulev2 "center,class:^(org.quickshell)$,title:^(System Settings)$" >/dev/null 2>&1 || true
+    hyprctl keyword windowrulev2 "size 980 640,class:^(org.quickshell)$,title:^(System Settings)$" >/dev/null 2>&1 || true
+fi
+
+if command -v quickshell >/dev/null 2>&1 && [[ -d "$DIR" ]]; then
+    exec quickshell -p "$DIR"
+fi
+
+exec omarchy-undercover-settings --mac "$@"

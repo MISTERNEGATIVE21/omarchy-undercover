@@ -115,8 +115,8 @@ ShellRoot {
       id: bg
       anchors.fill: parent
       radius: 12
-      color: actionCenterWindow.isDark ? Qt.rgba(0.12, 0.13, 0.17, 0.94) : Qt.rgba(0.97, 0.97, 0.98, 0.94)
-      border.color: actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.10)
+      color: actionCenterWindow.isDark ? Qt.rgba(0.12, 0.13, 0.17, 0.94) : Qt.rgba(0.96, 0.96, 0.98, 0.96)
+      border.color: actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.12)
       border.width: 1
 
       ColumnLayout {
@@ -136,7 +136,13 @@ ShellRoot {
             Layout.fillWidth: true
             implicitHeight: 48
             radius: 6
-            color: actionCenterWindow.wifiEnabled ? (actionCenterWindow.isDark ? "#0078d4" : "#0067c0") : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05))
+            color: actionCenterWindow.wifiEnabled
+                   ? (actionCenterWindow.isDark ? "#0078d4" : "#0067c0")
+                   : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : "#ffffff")
+            border.color: actionCenterWindow.wifiEnabled
+                          ? (actionCenterWindow.isDark ? "#60cdff" : "#005a9e")
+                          : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.12))
+            border.width: 1
 
             RowLayout {
               anchors.fill: parent
@@ -147,20 +153,33 @@ ShellRoot {
               Text {
                 text: "󰤨"
                 font.pixelSize: 16
-                color: "#ffffff"
+                color: actionCenterWindow.wifiEnabled ? "#ffffff" : (actionCenterWindow.isDark ? "#ffffff" : "#111111")
               }
 
               ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 0
-                Text { text: "Wi-Fi"; font.family: "Segoe UI"; font.pixelSize: 11; font.bold: true; color: "#ffffff" }
-                Text { text: actionCenterWindow.wifiEnabled ? actionCenterWindow.wifiSsid : "Disconnected"; font.family: "Segoe UI"; font.pixelSize: 9; color: Qt.rgba(1,1,1,0.7); elide: Text.ElideRight; Layout.fillWidth: true }
+                Text {
+                  text: "Wi-Fi"
+                  font.family: "Segoe UI"
+                  font.pixelSize: 11
+                  font.bold: true
+                  color: actionCenterWindow.wifiEnabled ? "#ffffff" : (actionCenterWindow.isDark ? "#ffffff" : "#111111")
+                }
+                Text {
+                  text: actionCenterWindow.wifiEnabled ? actionCenterWindow.wifiSsid : "Disconnected"
+                  font.family: "Segoe UI"
+                  font.pixelSize: 9
+                  color: actionCenterWindow.wifiEnabled ? Qt.rgba(1, 1, 1, 0.85) : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.72) : "#555555")
+                  elide: Text.ElideRight
+                  Layout.fillWidth: true
+                }
               }
 
               Text {
                 text: "›"
                 font.pixelSize: 14
-                color: Qt.rgba(1,1,1,0.6)
+                color: actionCenterWindow.wifiEnabled ? Qt.rgba(1, 1, 1, 0.85) : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.6) : Qt.rgba(0, 0, 0, 0.45))
               }
             }
 
@@ -184,7 +203,13 @@ ShellRoot {
             Layout.fillWidth: true
             implicitHeight: 48
             radius: 6
-            color: actionCenterWindow.btEnabled ? (actionCenterWindow.isDark ? "#0078d4" : "#0067c0") : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05))
+            color: actionCenterWindow.btEnabled
+                   ? (actionCenterWindow.isDark ? "#0078d4" : "#0067c0")
+                   : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : "#ffffff")
+            border.color: actionCenterWindow.btEnabled
+                          ? (actionCenterWindow.isDark ? "#60cdff" : "#005a9e")
+                          : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.12))
+            border.width: 1
 
             RowLayout {
               anchors.fill: parent
@@ -192,16 +217,35 @@ ShellRoot {
               anchors.rightMargin: 8
               spacing: 8
 
-              Text { text: "󰂯"; font.pixelSize: 16; color: "#ffffff" }
+              Text {
+                text: "󰂯"
+                font.pixelSize: 16
+                color: actionCenterWindow.btEnabled ? "#ffffff" : (actionCenterWindow.isDark ? "#ffffff" : "#111111")
+              }
 
               ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 0
-                Text { text: "Bluetooth"; font.family: "Segoe UI"; font.pixelSize: 11; font.bold: true; color: "#ffffff" }
-                Text { text: actionCenterWindow.btEnabled ? actionCenterWindow.btDevice : "Off"; font.family: "Segoe UI"; font.pixelSize: 9; color: Qt.rgba(1,1,1,0.7) }
+                Text {
+                  text: "Bluetooth"
+                  font.family: "Segoe UI"
+                  font.pixelSize: 11
+                  font.bold: true
+                  color: actionCenterWindow.btEnabled ? "#ffffff" : (actionCenterWindow.isDark ? "#ffffff" : "#111111")
+                }
+                Text {
+                  text: actionCenterWindow.btEnabled ? actionCenterWindow.btDevice : "Off"
+                  font.family: "Segoe UI"
+                  font.pixelSize: 9
+                  color: actionCenterWindow.btEnabled ? Qt.rgba(1, 1, 1, 0.85) : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.72) : "#555555")
+                }
               }
 
-              Text { text: "›"; font.pixelSize: 14; color: Qt.rgba(1,1,1,0.6) }
+              Text {
+                text: "›"
+                font.pixelSize: 14
+                color: actionCenterWindow.btEnabled ? Qt.rgba(1, 1, 1, 0.85) : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.6) : Qt.rgba(0, 0, 0, 0.45))
+              }
             }
 
             MouseArea {
@@ -224,19 +268,40 @@ ShellRoot {
             Layout.fillWidth: true
             implicitHeight: 48
             radius: 6
-            color: actionCenterWindow.airplaneMode ? (actionCenterWindow.isDark ? "#0078d4" : "#0067c0") : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05))
+            color: actionCenterWindow.airplaneMode
+                   ? (actionCenterWindow.isDark ? "#0078d4" : "#0067c0")
+                   : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : "#ffffff")
+            border.color: actionCenterWindow.airplaneMode
+                          ? (actionCenterWindow.isDark ? "#60cdff" : "#005a9e")
+                          : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.12))
+            border.width: 1
 
             RowLayout {
               anchors.fill: parent
               anchors.leftMargin: 10
               anchors.rightMargin: 8
               spacing: 8
-              Text { text: "󰀝"; font.pixelSize: 16; color: "#ffffff" }
+              Text {
+                text: "󰀝"
+                font.pixelSize: 16
+                color: actionCenterWindow.airplaneMode ? "#ffffff" : (actionCenterWindow.isDark ? "#ffffff" : "#111111")
+              }
               ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 0
-                Text { text: "Airplane mode"; font.family: "Segoe UI"; font.pixelSize: 11; font.bold: true; color: "#ffffff" }
-                Text { text: actionCenterWindow.airplaneMode ? "On" : "Off"; font.family: "Segoe UI"; font.pixelSize: 9; color: Qt.rgba(1,1,1,0.7) }
+                Text {
+                  text: "Airplane mode"
+                  font.family: "Segoe UI"
+                  font.pixelSize: 11
+                  font.bold: true
+                  color: actionCenterWindow.airplaneMode ? "#ffffff" : (actionCenterWindow.isDark ? "#ffffff" : "#111111")
+                }
+                Text {
+                  text: actionCenterWindow.airplaneMode ? "On" : "Off"
+                  font.family: "Segoe UI"
+                  font.pixelSize: 9
+                  color: actionCenterWindow.airplaneMode ? Qt.rgba(1, 1, 1, 0.85) : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.72) : "#555555")
+                }
               }
             }
 
@@ -255,19 +320,40 @@ ShellRoot {
             Layout.fillWidth: true
             implicitHeight: 48
             radius: 6
-            color: actionCenterWindow.batterySaverEnabled ? (actionCenterWindow.isDark ? "#0078d4" : "#0067c0") : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05))
+            color: actionCenterWindow.batterySaverEnabled
+                   ? (actionCenterWindow.isDark ? "#0078d4" : "#0067c0")
+                   : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : "#ffffff")
+            border.color: actionCenterWindow.batterySaverEnabled
+                          ? (actionCenterWindow.isDark ? "#60cdff" : "#005a9e")
+                          : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.12))
+            border.width: 1
 
             RowLayout {
               anchors.fill: parent
               anchors.leftMargin: 10
               anchors.rightMargin: 8
               spacing: 8
-              Text { text: "󰂎"; font.pixelSize: 16; color: "#ffffff" }
+              Text {
+                text: "󰂎"
+                font.pixelSize: 16
+                color: actionCenterWindow.batterySaverEnabled ? "#ffffff" : (actionCenterWindow.isDark ? "#ffffff" : "#111111")
+              }
               ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 0
-                Text { text: "Battery saver"; font.family: "Segoe UI"; font.pixelSize: 11; font.bold: true; color: "#ffffff" }
-                Text { text: actionCenterWindow.batterySaverEnabled ? "Active" : "Off"; font.family: "Segoe UI"; font.pixelSize: 9; color: Qt.rgba(1,1,1,0.7) }
+                Text {
+                  text: "Battery saver"
+                  font.family: "Segoe UI"
+                  font.pixelSize: 11
+                  font.bold: true
+                  color: actionCenterWindow.batterySaverEnabled ? "#ffffff" : (actionCenterWindow.isDark ? "#ffffff" : "#111111")
+                }
+                Text {
+                  text: actionCenterWindow.batterySaverEnabled ? "Active" : "Off"
+                  font.family: "Segoe UI"
+                  font.pixelSize: 9
+                  color: actionCenterWindow.batterySaverEnabled ? Qt.rgba(1, 1, 1, 0.85) : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.72) : "#555555")
+                }
               }
             }
 
@@ -286,19 +372,40 @@ ShellRoot {
             Layout.fillWidth: true
             implicitHeight: 48
             radius: 6
-            color: actionCenterWindow.nightLightEnabled ? (actionCenterWindow.isDark ? "#0078d4" : "#0067c0") : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05))
+            color: actionCenterWindow.nightLightEnabled
+                   ? (actionCenterWindow.isDark ? "#0078d4" : "#0067c0")
+                   : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : "#ffffff")
+            border.color: actionCenterWindow.nightLightEnabled
+                          ? (actionCenterWindow.isDark ? "#60cdff" : "#005a9e")
+                          : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.12))
+            border.width: 1
 
             RowLayout {
               anchors.fill: parent
               anchors.leftMargin: 10
               anchors.rightMargin: 8
               spacing: 8
-              Text { text: "󰖔"; font.pixelSize: 16; color: "#ffffff" }
+              Text {
+                text: "󰖔"
+                font.pixelSize: 16
+                color: actionCenterWindow.nightLightEnabled ? "#ffffff" : (actionCenterWindow.isDark ? "#ffffff" : "#111111")
+              }
               ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 0
-                Text { text: "Night light"; font.family: "Segoe UI"; font.pixelSize: 11; font.bold: true; color: "#ffffff" }
-                Text { text: actionCenterWindow.nightLightEnabled ? "On" : "Off"; font.family: "Segoe UI"; font.pixelSize: 9; color: Qt.rgba(1,1,1,0.7) }
+                Text {
+                  text: "Night light"
+                  font.family: "Segoe UI"
+                  font.pixelSize: 11
+                  font.bold: true
+                  color: actionCenterWindow.nightLightEnabled ? "#ffffff" : (actionCenterWindow.isDark ? "#ffffff" : "#111111")
+                }
+                Text {
+                  text: actionCenterWindow.nightLightEnabled ? "On" : "Off"
+                  font.family: "Segoe UI"
+                  font.pixelSize: 9
+                  color: actionCenterWindow.nightLightEnabled ? Qt.rgba(1, 1, 1, 0.85) : (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.72) : "#555555")
+                }
               }
             }
 
@@ -317,19 +424,36 @@ ShellRoot {
             Layout.fillWidth: true
             implicitHeight: 48
             radius: 6
-            color: actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05)
+            color: actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : "#ffffff"
+            border.color: actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.12)
+            border.width: 1
 
             RowLayout {
               anchors.fill: parent
               anchors.leftMargin: 10
               anchors.rightMargin: 8
               spacing: 8
-              Text { text: "󰌵"; font.pixelSize: 16; color: "#ffffff" }
+              Text {
+                text: "󰌵"
+                font.pixelSize: 16
+                color: actionCenterWindow.isDark ? "#ffffff" : "#111111"
+              }
               ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 0
-                Text { text: "Accessibility"; font.family: "Segoe UI"; font.pixelSize: 11; font.bold: true; color: "#ffffff" }
-                Text { text: "Standard"; font.family: "Segoe UI"; font.pixelSize: 9; color: Qt.rgba(1,1,1,0.7) }
+                Text {
+                  text: "Accessibility"
+                  font.family: "Segoe UI"
+                  font.pixelSize: 11
+                  font.bold: true
+                  color: actionCenterWindow.isDark ? "#ffffff" : "#111111"
+                }
+                Text {
+                  text: "Standard"
+                  font.family: "Segoe UI"
+                  font.pixelSize: 9
+                  color: actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.72) : "#555555"
+                }
               }
             }
 
@@ -378,7 +502,12 @@ ShellRoot {
             }
           }
 
-          Text { text: actionCenterWindow.brightnessVal + "%"; font.family: "Segoe UI"; font.pixelSize: 10; color: Qt.rgba(1,1,1,0.7) }
+          Text {
+            text: actionCenterWindow.brightnessVal + "%"
+            font.family: "Segoe UI"
+            font.pixelSize: 10
+            color: actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.75) : Qt.rgba(0, 0, 0, 0.75)
+          }
         }
 
         // 3. Volume Slider
@@ -418,7 +547,12 @@ ShellRoot {
             }
           }
 
-          Text { text: actionCenterWindow.volumeVal + "%"; font.family: "Segoe UI"; font.pixelSize: 10; color: Qt.rgba(1,1,1,0.7) }
+          Text {
+            text: actionCenterWindow.volumeVal + "%"
+            font.family: "Segoe UI"
+            font.pixelSize: 10
+            color: actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.75) : Qt.rgba(0, 0, 0, 0.75)
+          }
         }
 
         // 4. Footer Bar with Battery & Settings Gear
@@ -426,7 +560,7 @@ ShellRoot {
           Layout.fillWidth: true
           implicitHeight: 40
           radius: 6
-          color: actionCenterWindow.isDark ? Qt.rgba(0, 0, 0, 0.25) : Qt.rgba(0, 0, 0, 0.04)
+          color: actionCenterWindow.isDark ? Qt.rgba(0, 0, 0, 0.28) : Qt.rgba(0, 0, 0, 0.04)
 
           RowLayout {
             anchors.fill: parent

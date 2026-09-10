@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import qs.Commons
 import qs.Ui
 
 BarWidget {
@@ -24,15 +25,27 @@ BarWidget {
     id: button
     anchors.fill: parent
     bar: root.bar
-    text: root.formattedTime
-    tooltipText: Qt.formatDateTime(root.date, "dddd, MMMM d, yyyy")
+    text: " "
+    labelVisible: false
+    tooltipText: Qt.formatDateTime(root.date, "dddd, MMMM d, yyyy") + "\n• Left-Click: Notification Center & Widgets\n• Right-Click: Toggle Clock Panel"
     horizontalMargin: 8
+
+    Text {
+      anchors.centerIn: parent
+      text: root.formattedTime
+      font.family: "SF Pro Text, -apple-system, sans-serif"
+      font.pixelSize: 13
+      font.weight: Font.Medium
+      color: root.bar ? root.bar.foreground : "#ffffff"
+    }
+
     onPressed: function(btn) {
-      if (!root.bar) return
       if (btn === Qt.RightButton) {
-        root.bar.run("omarchy-shell shell toggle omarchy.clock")
+        if (root.bar) root.bar.run("omarchy-shell shell toggle omarchy.clock")
+        else Quickshell.execDetached(["omarchy-shell", "shell", "toggle", "omarchy.clock"])
       } else {
-        root.bar.run("omarchy-mac-widgets")
+        if (root.bar) root.bar.run("omarchy-mac-widgets")
+        else Quickshell.execDetached(["omarchy-mac-widgets"])
       }
     }
   }

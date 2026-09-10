@@ -8,7 +8,7 @@ BarWidget {
   id: root
   moduleName: "undercover.win11-actioncenter"
 
-  implicitWidth: pillContainer.implicitWidth
+  implicitWidth: pillContainer.implicitWidth + 14
   implicitHeight: root.bar ? root.bar.barSize : 40
 
   property bool wifiOn: true

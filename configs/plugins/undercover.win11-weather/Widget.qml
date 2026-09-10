@@ -20,6 +20,18 @@ BarWidget {
   property string conditionText: "Partly cloudy"
   property string weatherIcon: "🌤️"
 
+  // Dynamic Bar-Aware Contrast Detection
+  readonly property bool isBarLight: {
+    if (root.bar && root.bar.foreground !== undefined) {
+      var f = root.bar.foreground
+      var lumF = 0.299 * f.r + 0.587 * f.g + 0.114 * f.b
+      return lumF < 0.5
+    }
+    return !root.isDark
+  }
+  readonly property color textColor: root.bar && root.bar.foreground !== undefined ? root.bar.foreground : (isBarLight ? "#111111" : "#ffffff")
+  readonly property color textSecondaryColor: isBarLight ? "#4f4f4f" : Qt.rgba(1, 1, 1, 0.78)
+
   function runCmd(cmd) {
     if (root.bar) {
       root.bar.run(cmd)
@@ -91,10 +103,10 @@ BarWidget {
     implicitHeight: root.bar ? root.bar.barSize - 8 : 40
     radius: 4
     color: weatherMouse.containsMouse
-           ? (root.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.07))
+           ? (root.isBarLight ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.12))
            : "transparent"
     border.color: weatherMouse.containsMouse
-                  ? (root.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08))
+                  ? (root.isBarLight ? Qt.rgba(0, 0, 0, 0.10) : Qt.rgba(1, 1, 1, 0.14))
                   : "transparent"
     border.width: 1
 
@@ -115,13 +127,13 @@ BarWidget {
           font.family: "Segoe UI, sans-serif"
           font.pixelSize: Math.round(12 * Math.min(1.3, root.scaleFactor))
           font.weight: Font.DemiBold
-          color: root.isDark ? "#ffffff" : "#1a1a1a"
+          color: root.textColor
         }
         Text {
           text: root.conditionText
           font.family: "Segoe UI, sans-serif"
           font.pixelSize: Math.round(10 * Math.min(1.3, root.scaleFactor))
-          color: root.isDark ? Qt.rgba(1, 1, 1, 0.78) : Qt.rgba(0, 0, 0, 0.68)
+          color: root.textSecondaryColor
           elide: Text.ElideRight
           Layout.maximumWidth: Math.round(95 * root.scaleFactor)
         }

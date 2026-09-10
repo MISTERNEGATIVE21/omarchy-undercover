@@ -145,8 +145,8 @@ ShellRoot {
             Layout.fillWidth: true
             implicitHeight: 130
             radius: 14
-            color: controlCenterWindow.isLight ? Qt.rgba(1, 1, 1, 0.70) : Qt.rgba(1, 1, 1, 0.08)
-            border.color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.06) : Qt.rgba(1, 1, 1, 0.10)
+            color: controlCenterWindow.isLight ? Qt.rgba(1, 1, 1, 0.90) : Qt.rgba(1, 1, 1, 0.08)
+            border.color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.10) : Qt.rgba(1, 1, 1, 0.12)
             border.width: 1
 
             ColumnLayout {
@@ -163,13 +163,13 @@ ShellRoot {
                   width: 34
                   height: 34
                   radius: 17
-                  color: controlCenterWindow.wifiOn ? "#007aff" : Qt.rgba(1, 1, 1, 0.14)
+                  color: controlCenterWindow.wifiOn ? "#007aff" : (controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.14))
 
                   Text {
                     anchors.centerIn: parent
                     text: "󰤨"
                     font.pixelSize: 16
-                    color: "#ffffff"
+                    color: controlCenterWindow.wifiOn ? "#ffffff" : (controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff")
                   }
 
                   MouseArea {
@@ -191,13 +191,13 @@ ShellRoot {
                     font.family: "SF Pro Text, -apple-system, sans-serif"
                     font.pixelSize: 12
                     font.bold: true
-                    color: controlCenterWindow.isLight ? "#1a1a1a" : "#ffffff"
+                    color: controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff"
                   }
                   Text {
                     text: controlCenterWindow.wifiOn ? controlCenterWindow.wifiSsid : "Off"
                     font.family: "SF Pro Text, -apple-system, sans-serif"
                     font.pixelSize: 10
-                    color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.55) : Qt.rgba(1, 1, 1, 0.55)
+                    color: controlCenterWindow.isLight ? "#515154" : Qt.rgba(1, 1, 1, 0.72)
                     elide: Text.ElideRight
                     Layout.fillWidth: true
                   }
@@ -215,7 +215,12 @@ ShellRoot {
                 }
               }
 
-              Rectangle { Layout.fillWidth: true; height: 1; color: Qt.rgba(1, 1, 1, 0.08) }
+              // Divider
+              Rectangle {
+                Layout.fillWidth: true
+                height: 1
+                color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.08)
+              }
 
               // Bluetooth Row
               RowLayout {
@@ -226,13 +231,13 @@ ShellRoot {
                   width: 34
                   height: 34
                   radius: 17
-                  color: controlCenterWindow.btOn ? "#007aff" : Qt.rgba(1, 1, 1, 0.14)
+                  color: controlCenterWindow.btOn ? "#007aff" : (controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.14))
 
                   Text {
                     anchors.centerIn: parent
                     text: "󰂯"
                     font.pixelSize: 16
-                    color: "#ffffff"
+                    color: controlCenterWindow.btOn ? "#ffffff" : (controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff")
                   }
 
                   MouseArea {
@@ -254,13 +259,13 @@ ShellRoot {
                     font.family: "SF Pro Text, -apple-system, sans-serif"
                     font.pixelSize: 12
                     font.bold: true
-                    color: controlCenterWindow.isLight ? "#1a1a1a" : "#ffffff"
+                    color: controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff"
                   }
                   Text {
                     text: controlCenterWindow.btOn ? "On" : "Off"
                     font.family: "SF Pro Text, -apple-system, sans-serif"
                     font.pixelSize: 10
-                    color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.55) : Qt.rgba(1, 1, 1, 0.55)
+                    color: controlCenterWindow.isLight ? "#515154" : Qt.rgba(1, 1, 1, 0.72)
                   }
                 }
 
@@ -278,7 +283,7 @@ ShellRoot {
             }
           }
 
-          // Right Bento Box: AirDrop & Focus pills
+          // Right Bento Stack: AirDrop & Focus
           ColumnLayout {
             Layout.fillWidth: true
             spacing: 10
@@ -288,8 +293,8 @@ ShellRoot {
               Layout.fillWidth: true
               implicitHeight: 60
               radius: 14
-              color: controlCenterWindow.isLight ? Qt.rgba(1, 1, 1, 0.70) : Qt.rgba(1, 1, 1, 0.08)
-              border.color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.06) : Qt.rgba(1, 1, 1, 0.10)
+              color: controlCenterWindow.isLight ? Qt.rgba(1, 1, 1, 0.90) : Qt.rgba(1, 1, 1, 0.08)
+              border.color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.10) : Qt.rgba(1, 1, 1, 0.12)
               border.width: 1
 
               RowLayout {
@@ -308,8 +313,8 @@ ShellRoot {
                 ColumnLayout {
                   Layout.fillWidth: true
                   spacing: 1
-                  Text { text: "AirDrop"; font.pixelSize: 12; font.bold: true; color: controlCenterWindow.isLight ? "#1a1a1a" : "#ffffff" }
-                  Text { text: "Contacts Only"; font.pixelSize: 10; color: controlCenterWindow.isLight ? Qt.rgba(0,0,0,0.55) : Qt.rgba(1,1,1,0.55) }
+                  Text { text: "AirDrop"; font.pixelSize: 12; font.bold: true; color: controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff" }
+                  Text { text: "Contacts Only"; font.pixelSize: 10; color: controlCenterWindow.isLight ? "#515154" : Qt.rgba(1, 1, 1, 0.72) }
                 }
               }
 
@@ -325,8 +330,8 @@ ShellRoot {
               Layout.fillWidth: true
               implicitHeight: 60
               radius: 14
-              color: controlCenterWindow.isLight ? Qt.rgba(1, 1, 1, 0.70) : Qt.rgba(1, 1, 1, 0.08)
-              border.color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.06) : Qt.rgba(1, 1, 1, 0.10)
+              color: controlCenterWindow.isLight ? Qt.rgba(1, 1, 1, 0.90) : Qt.rgba(1, 1, 1, 0.08)
+              border.color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.10) : Qt.rgba(1, 1, 1, 0.12)
               border.width: 1
 
               RowLayout {
@@ -338,15 +343,15 @@ ShellRoot {
                   width: 30
                   height: 30
                   radius: 15
-                  color: controlCenterWindow.dndOn ? "#5856d6" : Qt.rgba(1, 1, 1, 0.14)
-                  Text { anchors.centerIn: parent; text: "󰂛"; font.pixelSize: 14; color: "#ffffff" }
+                  color: controlCenterWindow.dndOn ? "#5856d6" : (controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.14))
+                  Text { anchors.centerIn: parent; text: "󰂛"; font.pixelSize: 14; color: controlCenterWindow.dndOn ? "#ffffff" : (controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff") }
                 }
 
                 ColumnLayout {
                   Layout.fillWidth: true
                   spacing: 1
-                  Text { text: "Focus"; font.pixelSize: 12; font.bold: true; color: controlCenterWindow.isLight ? "#1a1a1a" : "#ffffff" }
-                  Text { text: controlCenterWindow.dndOn ? "Do Not Disturb" : "Off"; font.pixelSize: 10; color: controlCenterWindow.isLight ? Qt.rgba(0,0,0,0.55) : Qt.rgba(1,1,1,0.55) }
+                  Text { text: "Focus"; font.pixelSize: 12; font.bold: true; color: controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff" }
+                  Text { text: controlCenterWindow.dndOn ? "Do Not Disturb" : "Off"; font.pixelSize: 10; color: controlCenterWindow.isLight ? "#515154" : Qt.rgba(1, 1, 1, 0.72) }
                 }
               }
 
@@ -355,7 +360,7 @@ ShellRoot {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
                   controlCenterWindow.dndOn = !controlCenterWindow.dndOn
-                  controlCenterWindow.runCmd("makoctl mode -t dnd 2>/dev/null || true")
+                  controlCenterWindow.runCmd("dunstctl set-paused " + (controlCenterWindow.dndOn ? "true" : "false") + " 2>/dev/null || true")
                 }
               }
             }
@@ -367,8 +372,8 @@ ShellRoot {
           Layout.fillWidth: true
           implicitHeight: 64
           radius: 14
-          color: controlCenterWindow.isLight ? Qt.rgba(1, 1, 1, 0.70) : Qt.rgba(1, 1, 1, 0.08)
-          border.color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.06) : Qt.rgba(1, 1, 1, 0.10)
+          color: controlCenterWindow.isLight ? Qt.rgba(1, 1, 1, 0.90) : Qt.rgba(1, 1, 1, 0.08)
+          border.color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.10) : Qt.rgba(1, 1, 1, 0.12)
           border.width: 1
 
           ColumnLayout {
@@ -378,9 +383,9 @@ ShellRoot {
 
             RowLayout {
               Layout.fillWidth: true
-              Text { text: "Display"; font.pixelSize: 11; font.bold: true; color: controlCenterWindow.isLight ? "#1a1a1a" : "#ffffff" }
+              Text { text: "Display"; font.pixelSize: 11; font.bold: true; color: controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff" }
               Item { Layout.fillWidth: true }
-              Text { text: controlCenterWindow.displayBrightness + "%"; font.pixelSize: 11; color: controlCenterWindow.isLight ? Qt.rgba(0,0,0,0.55) : Qt.rgba(1,1,1,0.55) }
+              Text { text: controlCenterWindow.displayBrightness + "%"; font.pixelSize: 11; color: controlCenterWindow.isLight ? "#515154" : Qt.rgba(1, 1, 1, 0.72) }
             }
 
             Rectangle {
@@ -394,7 +399,7 @@ ShellRoot {
                 width: parent.width * (controlCenterWindow.displayBrightness / 100.0)
                 height: parent.height
                 radius: 12
-                color: "#ffffff"
+                color: controlCenterWindow.isLight ? "#007aff" : "#ffffff"
               }
 
               Text {
@@ -403,7 +408,7 @@ ShellRoot {
                 anchors.verticalCenter: parent.verticalCenter
                 text: "󰃠"
                 font.pixelSize: 13
-                color: controlCenterWindow.displayBrightness > 15 ? "#1a1a1a" : "#ffffff"
+                color: controlCenterWindow.isLight ? "#ffffff" : (controlCenterWindow.displayBrightness > 15 ? "#1a1a1a" : "#ffffff")
               }
 
               MouseArea {
@@ -429,8 +434,8 @@ ShellRoot {
           Layout.fillWidth: true
           implicitHeight: 64
           radius: 14
-          color: controlCenterWindow.isLight ? Qt.rgba(1, 1, 1, 0.70) : Qt.rgba(1, 1, 1, 0.08)
-          border.color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.06) : Qt.rgba(1, 1, 1, 0.10)
+          color: controlCenterWindow.isLight ? Qt.rgba(1, 1, 1, 0.90) : Qt.rgba(1, 1, 1, 0.08)
+          border.color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.10) : Qt.rgba(1, 1, 1, 0.12)
           border.width: 1
 
           ColumnLayout {
@@ -440,9 +445,9 @@ ShellRoot {
 
             RowLayout {
               Layout.fillWidth: true
-              Text { text: "Sound"; font.pixelSize: 11; font.bold: true; color: controlCenterWindow.isLight ? "#1a1a1a" : "#ffffff" }
+              Text { text: "Sound"; font.pixelSize: 11; font.bold: true; color: controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff" }
               Item { Layout.fillWidth: true }
-              Text { text: controlCenterWindow.masterVolume + "%"; font.pixelSize: 11; color: controlCenterWindow.isLight ? Qt.rgba(0,0,0,0.55) : Qt.rgba(1,1,1,0.55) }
+              Text { text: controlCenterWindow.masterVolume + "%"; font.pixelSize: 11; color: controlCenterWindow.isLight ? "#515154" : Qt.rgba(1, 1, 1, 0.72) }
             }
 
             Rectangle {
@@ -456,7 +461,7 @@ ShellRoot {
                 width: parent.width * (controlCenterWindow.masterVolume / 100.0)
                 height: parent.height
                 radius: 12
-                color: "#ffffff"
+                color: controlCenterWindow.isLight ? "#007aff" : "#ffffff"
               }
 
               Text {
@@ -465,7 +470,7 @@ ShellRoot {
                 anchors.verticalCenter: parent.verticalCenter
                 text: "󰕾"
                 font.pixelSize: 13
-                color: controlCenterWindow.masterVolume > 15 ? "#1a1a1a" : "#ffffff"
+                color: controlCenterWindow.isLight ? "#ffffff" : (controlCenterWindow.masterVolume > 15 ? "#1a1a1a" : "#ffffff")
               }
 
               MouseArea {

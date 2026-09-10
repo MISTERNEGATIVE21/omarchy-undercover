@@ -1,6 +1,6 @@
 # Maintainer: John Varghese <john@omarchy.org>
 pkgname=omarchy-undercover
-pkgver=3.0.0
+pkgver=4.0.0
 pkgrel=1
 pkgdesc="Windows 11 desktop transformation tool for Omarchy Hyprland"
 arch=('any')

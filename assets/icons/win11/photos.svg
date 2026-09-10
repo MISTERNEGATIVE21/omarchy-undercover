@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48px" height="48px">
+  <defs>
+    <linearGradient id="photoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00a4ef"/>
+      <stop offset="50%" stop-color="#0078d4"/>
+      <stop offset="100%" stop-color="#004e8c"/>
+    </linearGradient>
+    <linearGradient id="mountain1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#80d8ff"/>
+      <stop offset="100%" stop-color="#0091ea"/>
+    </linearGradient>
+    <linearGradient id="mountain2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#b3e5fc"/>
+      <stop offset="100%" stop-color="#0288d1"/>
+    </linearGradient>
+  </defs>
+  <!-- Frame -->
+  <rect x="6" y="6" width="36" height="36" rx="8" fill="url(#photoGrad)"/>
+  <!-- Sun -->
+  <circle cx="16" cy="17" r="5" fill="#ffd54f"/>
+  <!-- Mountain 1 -->
+  <polygon points="6,42 18,25 31,42" fill="url(#mountain1)" opacity="0.9"/>
+  <!-- Mountain 2 -->
+  <polygon points="19,42 30,22 42,42" fill="url(#mountain2)"/>
+</svg>

@@ -1,4 +1,4 @@
-# 🕵️ Omarchy Undercover (v3.2.0)
+# 🕵️ Omarchy Undercover (v4.0.0)
 
 ```
   ██████╗ ███╗   ███╗ █████╗ ██████╗  ██████╗██╗  ██╗██╗   ██╗
@@ -15,7 +15,7 @@
   ╚═════╝ ╚═╝  ╚═══╝╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝   ╚═══╝  ╚══════╝╚═╝  ╚═╝
 ```
 
-[![Release](https://img.shields.io/badge/Release-v3.2.0-blue.svg?style=for-the-badge)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases/tag/v3.2.0)
+[![Release](https://img.shields.io/badge/Release-v4.0.0-blue.svg?style=for-the-badge)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases/tag/v4.0.0)
 [![Compositor](https://img.shields.io/badge/Compositor-Hyprland-00f2fe.svg?style=for-the-badge)](https://hyprland.org)
 [![Theme Engine](https://img.shields.io/badge/Theme-Omarchy-ff2d55.svg?style=for-the-badge)](https://github.com/MISTERNEGATIVE21/omarchy-undercover)
 [![License](https://img.shields.io/badge/License-GPL--3.0-green.svg?style=for-the-badge)](LICENSE)
@@ -25,15 +25,29 @@
 
 ---
 
-## 🚀 What's New in v3.2.0
+## 🚀 What's New in v4.0.0
 
+* **Native macOS System Settings App**: Brand-new pure QuickShell System Settings window with 9 categories (Disguise, Appearance, Wallpaper, Dock, Sound, Wi-Fi, Bluetooth, Search & General) and 1:1 Sequoia styling — launched straight from the Apple Menu.
 * **Pure QuickShell Windows 11 Settings App**: Integrated native $980\times660$ Fluent window with 7 categories and built-in **PowerToys Tools** (FancyZones, Awake, ColorPicker, Always on Top).
+* **Remastered Wi-Fi & Bluetooth Panels**: Overhauled Fluent QuickShell dashboards with live signal/device states, password-protected network connect, paired-device controls and per-panel theming.
 * **macOS Sequoia Window Traffic Lights**: Pixel-perfect 12px circular controls with centered vector SVG hover glyphs (✕, –, ⤢), authentic Sequoia colors, and unfocused backdrop dimming.
 * **Proportional Windows 11 Taskbar**: Dynamic 1:1 square tiles, dynamic running open window detection via `ToplevelManager`, and hover preview cards.
 * **Edge-Sensing 30s Auto-Hide Dock**: Zero-latency cursor-down bottom wake strip and intelligent 30-second inactivity auto-hide daemon.
 * **Realistic Window Minimize Physics**: Smooth downward slide transitions towards the dock/taskbar in Hyprland and instant focus transfer to open windows without stutter.
 * **Wayland Snap Assist**: Hotkey and CLI window tiling controller (`omarchy-undercover-snap`) supporting Halves, Thirds, and Quarters.
 * **Marketplace Publishing Compliance**: 100% compliant with Omarchy Quattro plugin contract schema v1 for official marketplace publishing.
+
+---
+
+## 📸 Screenshots
+
+Try the disguise on your own desktop — macOS Sequoia mode and the Windows 11 Fluent Settings app in action:
+
+| Apple macOS Sequoia Desktop | Windows 11 Fluent Settings |
+| :---: | :---: |
+| <img src="assets/screenshots/macos-desktop.png" alt="Omarchy Undercover macOS Sequoia desktop" width="500"/> | <img src="assets/screenshots/windows11-settings.png" alt="Omarchy Undercover Windows 11 Fluent Settings" width="500"/> |
+
+Toggle between both disguises anytime with <kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>U</kbd>.
 
 ---
 

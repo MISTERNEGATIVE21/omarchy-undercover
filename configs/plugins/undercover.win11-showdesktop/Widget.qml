@@ -6,14 +6,23 @@ BarWidget {
   id: root
   moduleName: "undercover.win11-showdesktop"
 
-  implicitWidth: 8
-  implicitHeight: root.bar ? root.bar.barSize : 40
+  implicitWidth: 12
+  implicitHeight: root.bar ? root.bar.barSize : 24
+
+  readonly property bool isBarLight: {
+    if (root.bar && root.bar.foreground !== undefined) {
+      var f = root.bar.foreground
+      var lumF = 0.299 * f.r + 0.587 * f.g + 0.114 * f.b
+      return lumF < 0.5
+    }
+    return false
+  }
 
   Rectangle {
     anchors.fill: parent
-    anchors.topMargin: 6
-    anchors.bottomMargin: 6
-    color: sliverMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.18) : "transparent"
+    anchors.topMargin: 4
+    anchors.bottomMargin: 4
+    color: sliverMouse.containsMouse ? (root.isBarLight ? Qt.rgba(0, 0, 0, 0.12) : Qt.rgba(1, 1, 1, 0.18)) : "transparent"
     radius: 2
 
     // 1px left separator line
@@ -22,7 +31,7 @@ BarWidget {
       anchors.top: parent.top
       anchors.bottom: parent.bottom
       width: 1
-      color: Qt.rgba(1, 1, 1, 0.12)
+      color: root.isBarLight ? Qt.rgba(0, 0, 0, 0.18) : Qt.rgba(1, 1, 1, 0.18)
     }
 
     MouseArea {

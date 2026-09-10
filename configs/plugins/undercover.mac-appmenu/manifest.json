@@ -1,0 +1,8 @@
+{
+  "id": "undercover.mac-appmenu",
+  "name": "macOS Application Menu",
+  "version": "1.0.0",
+  "description": "Authentic macOS Sequoia App Menu with Active Application Title and File, Edit, View, Go, Window, Help menus",
+  "author": "Omarchy Undercover",
+  "entrypoint": "Widget.qml"
+}

@@ -85,26 +85,26 @@ ShellRoot {
       }
     }
 
-    // Pinned Applications (6x3 grid)
+    // Pinned Applications (6x3 grid with authentic Fluent SVGs)
     property var pinnedApps: [
-      { name: "Edge", icon: "🌐", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/microsoft-edge.svg", exec: "omarchy-browser" },
-      { name: "Word", icon: "📝", iconUrl: "", exec: "libreoffice --writer || abiword || omarchy-browser https://office.com" },
-      { name: "Excel", icon: "📊", iconUrl: "", exec: "libreoffice --calc || gnumeric || xdg-open https://office.com" },
-      { name: "PowerPoint", icon: "📽️", iconUrl: "", exec: "libreoffice --impress || xdg-open https://office.com" },
-      { name: "Store", icon: "🛍️", iconUrl: "", exec: "pamac-manager || gnome-software || discover" },
-      { name: "Photos", icon: "🖼️", iconUrl: "", exec: "eog || gwenview || loupe" },
-      { name: "Settings", icon: "⚙️", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/settings.svg", exec: "omarchy-undercover-settings" },
-      { name: "Terminal", icon: "💻", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/terminal.svg", exec: "xdg-terminal-exec" },
-      { name: "Explorer", icon: "📁", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/explorer.svg", exec: "nautilus computer:/// || thunar || dolphin" },
-      { name: "Calculator", icon: "🔢", iconUrl: "", exec: "gnome-calculator || kcalc || galculator" },
-      { name: "Spotify", icon: "🎵", iconUrl: "", exec: "spotify || omarchy-win11-widgets" },
-      { name: "Antigravity", icon: "🚀", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/antigravity-ide.svg", exec: "antigravity-ide || code || vscodium" },
-      { name: "VS Code", icon: "🧑‍💻", iconUrl: "", exec: "code || vscodium || cursor" },
-      { name: "Discord", icon: "💬", iconUrl: "", exec: "discord || vesktop || telegram-desktop" },
-      { name: "Notepad", icon: "🗒️", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/notepad.svg", exec: "gedit || kate || mousepad || gnome-text-editor" },
-      { name: "Mail", icon: "✉️", iconUrl: "", exec: "thunderbird || evolution || geary" },
-      { name: "Paint", icon: "🎨", iconUrl: "", exec: "drawing || gimp || inkscape || pinta" },
-      { name: "Weather", icon: "🌤️", iconUrl: "", exec: "omarchy-win11-widgets" }
+      { name: "Edge", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/microsoft-edge.svg", exec: "omarchy-browser" },
+      { name: "Word", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/word.svg", exec: "libreoffice --writer || abiword || omarchy-browser https://office.com" },
+      { name: "Excel", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/excel.svg", exec: "libreoffice --calc || gnumeric || xdg-open https://office.com" },
+      { name: "PowerPoint", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/powerpoint.svg", exec: "libreoffice --impress || xdg-open https://office.com" },
+      { name: "Store", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/store.svg", exec: "pamac-manager || gnome-software || discover" },
+      { name: "Photos", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/photos.svg", exec: "eog || gwenview || loupe" },
+      { name: "Settings", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/settings.svg", exec: "omarchy-undercover-settings" },
+      { name: "Terminal", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/terminal.svg", exec: "xdg-terminal-exec" },
+      { name: "Explorer", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/explorer.svg", exec: "nautilus computer:/// || thunar || dolphin" },
+      { name: "Calculator", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/calculator.svg", exec: "gnome-calculator || kcalc || galculator" },
+      { name: "Spotify", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/spotify.svg", exec: "spotify || omarchy-win11-widgets" },
+      { name: "Antigravity", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/antigravity-ide.svg", exec: "antigravity-ide || code || vscodium" },
+      { name: "VS Code", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/vscode.svg", exec: "code || vscodium || cursor" },
+      { name: "Discord", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/discord.svg", exec: "discord || vesktop || telegram-desktop" },
+      { name: "Notepad", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/notepad.svg", exec: "gedit || kate || mousepad || gnome-text-editor" },
+      { name: "Mail", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/mail.svg", exec: "thunderbird || evolution || geary" },
+      { name: "Paint", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/paint.svg", exec: "drawing || gimp || inkscape || pinta" },
+      { name: "Weather", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/weather.svg", exec: "omarchy-win11-widgets" }
     ]
 
     // Dynamic System Applications Catalog (Discovered from XDG .desktop files)
@@ -168,9 +168,9 @@ ShellRoot {
       anchors.fill: parent
       radius: 12
       color: startWindow.isDark 
-             ? (startWindow.isTransparent ? Qt.rgba(0.12, 0.13, 0.17, 0.88) : "#202024")
-             : (startWindow.isTransparent ? Qt.rgba(0.97, 0.97, 0.98, 0.90) : "#f5f5f8")
-      border.color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.10)
+             ? (startWindow.isTransparent ? Qt.rgba(0.12, 0.13, 0.17, 0.94) : "#1c1d22")
+             : (startWindow.isTransparent ? Qt.rgba(0.96, 0.96, 0.98, 0.96) : "#f0f2f5")
+      border.color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.12)
       border.width: 1
 
       ColumnLayout {
@@ -184,9 +184,9 @@ ShellRoot {
           implicitHeight: 38
           radius: 19
           color: searchInput.activeFocus
-                 ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08))
-                 : (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05))
-          border.color: searchInput.activeFocus ? (startWindow.isDark ? "#60cdff" : "#0067c0") : (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.10))
+                 ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : "#ffffff")
+                 : (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : "#ffffff")
+          border.color: searchInput.activeFocus ? (startWindow.isDark ? "#60cdff" : "#0067c0") : (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.12))
           border.width: searchInput.activeFocus ? 2 : 1
 
           RowLayout {
@@ -214,7 +214,7 @@ ShellRoot {
               Text {
                 visible: !searchInput.text && !searchInput.inputMethodComposing
                 text: "Type here to search apps, settings, and documents..."
-                color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0, 0, 0, 0.45)
+                color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.70) : Qt.rgba(0, 0, 0, 0.60)
                 font.family: "Segoe UI"
                 font.pixelSize: 12
                 anchors.verticalCenter: parent.verticalCenter
@@ -237,7 +237,7 @@ ShellRoot {
               visible: searchInput.text.length > 0
               text: "✕"
               font.pixelSize: 11
-              color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.5)
+              color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.70) : Qt.rgba(0, 0, 0, 0.60)
               MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
@@ -344,9 +344,9 @@ ShellRoot {
                       }
 
                       Text {
-                        visible: modelData.iconUrl === ""
+                        visible: !modelData.iconUrl
                         anchors.centerIn: parent
-                        text: modelData.icon
+                        text: modelData.icon || ""
                         font.pixelSize: 24
                       }
                     }
@@ -600,7 +600,7 @@ ShellRoot {
                       text: modelData.exec
                       font.family: "Segoe UI"
                       font.pixelSize: 9
-                      color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(0, 0, 0, 0.4)
+                      color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.70) : Qt.rgba(0, 0, 0, 0.60)
                     }
                   }
                 }
@@ -711,32 +711,52 @@ ShellRoot {
             Layout.fillWidth: true
             height: 28
             radius: 4
-            color: p1.containsMouse ? (startWindow.isDark ? "#0078d4" : "#60cdff") : "transparent"
-            Text { anchors.left: parent.left; anchors.leftMargin: 8; anchors.verticalCenter: parent.verticalCenter; text: "󰤄  Sleep"; font.family: "Segoe UI"; font.pixelSize: 11; color: "#ffffff" }
+            color: p1.containsMouse ? (startWindow.isDark ? "#0078d4" : "#0067c0") : "transparent"
+            Text {
+              anchors.left: parent.left; anchors.leftMargin: 8; anchors.verticalCenter: parent.verticalCenter
+              text: "󰤄  Sleep"
+              font.family: "Segoe UI"; font.pixelSize: 11
+              color: p1.containsMouse ? "#ffffff" : (startWindow.isDark ? "#ffffff" : "#111111")
+            }
             MouseArea { id: p1; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: startWindow.runCmd("systemctl suspend") }
           }
           Rectangle {
             Layout.fillWidth: true
             height: 28
             radius: 4
-            color: p2.containsMouse ? (startWindow.isDark ? "#0078d4" : "#60cdff") : "transparent"
-            Text { anchors.left: parent.left; anchors.leftMargin: 8; anchors.verticalCenter: parent.verticalCenter; text: "󰑐  Restart"; font.family: "Segoe UI"; font.pixelSize: 11; color: "#ffffff" }
+            color: p2.containsMouse ? (startWindow.isDark ? "#0078d4" : "#0067c0") : "transparent"
+            Text {
+              anchors.left: parent.left; anchors.leftMargin: 8; anchors.verticalCenter: parent.verticalCenter
+              text: "󰑐  Restart"
+              font.family: "Segoe UI"; font.pixelSize: 11
+              color: p2.containsMouse ? "#ffffff" : (startWindow.isDark ? "#ffffff" : "#111111")
+            }
             MouseArea { id: p2; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: startWindow.runCmd("systemctl reboot") }
           }
           Rectangle {
             Layout.fillWidth: true
             height: 28
             radius: 4
-            color: p3.containsMouse ? (startWindow.isDark ? "#0078d4" : "#60cdff") : "transparent"
-            Text { anchors.left: parent.left; anchors.leftMargin: 8; anchors.verticalCenter: parent.verticalCenter; text: "󰐥  Shut down"; font.family: "Segoe UI"; font.pixelSize: 11; color: "#ffffff" }
+            color: p3.containsMouse ? (startWindow.isDark ? "#0078d4" : "#0067c0") : "transparent"
+            Text {
+              anchors.left: parent.left; anchors.leftMargin: 8; anchors.verticalCenter: parent.verticalCenter
+              text: "󰐥  Shut down"
+              font.family: "Segoe UI"; font.pixelSize: 11
+              color: p3.containsMouse ? "#ffffff" : (startWindow.isDark ? "#ffffff" : "#111111")
+            }
             MouseArea { id: p3; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: startWindow.runCmd("systemctl poweroff") }
           }
           Rectangle {
             Layout.fillWidth: true
             height: 28
             radius: 4
-            color: p4.containsMouse ? (startWindow.isDark ? "#0078d4" : "#60cdff") : "transparent"
-            Text { anchors.left: parent.left; anchors.leftMargin: 8; anchors.verticalCenter: parent.verticalCenter; text: "󰍃  Sign out"; font.family: "Segoe UI"; font.pixelSize: 11; color: "#ffffff" }
+            color: p4.containsMouse ? (startWindow.isDark ? "#0078d4" : "#0067c0") : "transparent"
+            Text {
+              anchors.left: parent.left; anchors.leftMargin: 8; anchors.verticalCenter: parent.verticalCenter
+              text: "󰍃  Sign out"
+              font.family: "Segoe UI"; font.pixelSize: 11
+              color: p4.containsMouse ? "#ffffff" : (startWindow.isDark ? "#ffffff" : "#111111")
+            }
             MouseArea { id: p4; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: startWindow.runCmd("hyprctl dispatch exit") }
           }
         }

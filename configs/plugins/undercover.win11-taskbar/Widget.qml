@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Wayland
 import Quickshell.Io
 import qs.Ui
 
@@ -12,14 +11,32 @@ BarWidget {
   property string homeDir: Quickshell.env("HOME")
   property bool isDark: true
   property var winPinsConfig: ({})
+  onWinPinsConfigChanged: root.refreshTaskbar()
+
+  // Dynamic Bar-Aware Contrast Detection
+  readonly property bool isBarLight: !root.isDark
 
   readonly property real scaleFactor: (root.screen && root.screen.devicePixelRatio) ? root.screen.devicePixelRatio : 1.0
-  readonly property int tileHeight: Math.max(34, (root.bar ? root.bar.barSize - 8 : 40))
-  readonly property int tileWidth: Math.round(tileHeight * 1.15)
-  readonly property int iconSize: Math.round(tileHeight * 0.60)
+  readonly property int barH: root.bar ? root.bar.barSize : 24
+  readonly property int tileHeight: barH <= 28 ? (barH - 2) : Math.max(34, barH - 8)
+  readonly property int tileWidth: Math.round(tileHeight * 1.25)
+  readonly property int iconSize: barH <= 28 ? 16 : Math.round(tileHeight * 0.60)
+  readonly property int itemSpacing: Math.max(2, Math.round(4 * root.scaleFactor))
 
-  implicitWidth: taskbarRow.implicitWidth + Math.round(24 * root.scaleFactor)
-  implicitHeight: root.bar ? root.bar.barSize : 48
+  property var taskbarItems: []
+
+  function refreshTaskbar() {
+    root.taskbarItems = root.getAllTaskbarItems()
+  }
+
+  readonly property int dynamicContentWidth: (root.taskbarItems.length * root.tileWidth) + (Math.max(0, root.taskbarItems.length - 1) * root.itemSpacing) + Math.round(16 * root.scaleFactor)
+
+  implicitWidth: Math.max(dynamicContentWidth, taskbarRow.implicitWidth + Math.round(16 * root.scaleFactor))
+  implicitHeight: root.bar ? root.bar.barSize : 24
+
+  Behavior on implicitWidth {
+    NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
+  }
 
   function runCmd(cmd) {
     if (root.bar) {
@@ -29,25 +46,73 @@ BarWidget {
     }
   }
 
-  // Workspaces seeking state
+  function shiftToClient(client) {
+    if (!client || !client.address) return
+    var addr = client.address
+    if (client.workspace && client.workspace.id < 0) {
+      Quickshell.execDetached(["omarchy-undercover-minimize", addr])
+      refreshTimer.restart()
+      return
+    }
+    var wsId = (client.workspace && client.workspace.id) ? client.workspace.id : ""
+    var cmd = "if hyprctl dispatch \"hl.dsp.focus({ window = 'address:" + addr + "' })\" 2>/dev/null; then :; else " +
+              (wsId ? "hyprctl dispatch workspace " + wsId + " 2>/dev/null; " : "") +
+              "hyprctl dispatch focuswindow \"address:" + addr + "\" 2>/dev/null; fi"
+    Quickshell.execDetached(["bash", "-c", cmd])
+    refreshTimer.restart()
+  }
+
+  function closeClient(client) {
+    if (!client || !client.address) {
+      var cmd = "if hyprctl dispatch \"hl.dsp.window.close()\" 2>/dev/null; then :; else hyprctl dispatch killactive 2>/dev/null; fi"
+      Quickshell.execDetached(["bash", "-c", cmd])
+      refreshTimer.restart()
+      return
+    }
+    var addr = client.address
+    var cmd = "if hyprctl dispatch \"hl.dsp.window.close({ window = 'address:" + addr + "' })\" 2>/dev/null; then :; else hyprctl dispatch closewindow \"address:" + addr + "\" 2>/dev/null; fi"
+    Quickshell.execDetached(["bash", "-c", cmd])
+    refreshTimer.restart()
+  }
+
+  function switchToWorkspace(ws) {
+    var cmd = "if hyprctl dispatch \"hl.dsp.focus({ workspace = '" + ws + "' })\" 2>/dev/null; then :; else hyprctl dispatch workspace \"" + ws + "\" 2>/dev/null; fi"
+    Quickshell.execDetached(["bash", "-c", cmd])
+    refreshTimer.restart()
+  }
+
+  function seekWorkspace(delta) {
+    var wsArg = delta > 0 ? "e-1" : "e+1"
+    var cmd = "if hyprctl dispatch \"hl.dsp.focus({ workspace = '" + wsArg + "' })\" 2>/dev/null; then :; else hyprctl dispatch workspace \"" + wsArg + "\" 2>/dev/null; fi"
+    Quickshell.execDetached(["bash", "-c", cmd])
+    refreshTimer.restart()
+  }
+
+  // Workspaces & Running Windows Tracking via Native Hyprland State
   property var workspaceList: [1, 2, 3, 4]
   property int activeWorkspaceId: 1
+  property var hyprClients: []
+  property var hyprActiveWindow: ({})
 
   Process {
-    id: wsProc
-    command: ["bash", "-c", "hyprctl activeworkspace -j 2>/dev/null; echo '---'; hyprctl workspaces -j 2>/dev/null"]
-    stdout: StdioCollector {
-      onCollected: {
+    id: hyprStateProc
+    command: [
+      "bash", "-c",
+      "echo \"$(hyprctl activeworkspace -j 2>/dev/null | tr -d '\\n')|||$(hyprctl workspaces -j 2>/dev/null | tr -d '\\n')|||$(hyprctl clients -j 2>/dev/null | tr -d '\\n')|||$(hyprctl activewindow -j 2>/dev/null | tr -d '\\n')\""
+    ]
+    stdout: SplitParser {
+      onRead: function(line) {
+        if (!line) return
         try {
-          var parts = text.split("---")
+          var parts = line.split("|||")
           if (parts.length >= 1 && parts[0].trim()) {
-            var act = JSON.parse(parts[0].trim())
-            if (act && act.id) root.activeWorkspaceId = act.id
+            var actWs = JSON.parse(parts[0].trim())
+            if (actWs && actWs.id) root.activeWorkspaceId = actWs.id
           }
           if (parts.length >= 2 && parts[1].trim()) {
-            var all = JSON.parse(parts[1].trim())
-            if (Array.isArray(all)) {
-              var ids = all.map(function(w) { return w.id }).filter(function(id) { return id > 0 && id <= 10 })
+            var allWs = JSON.parse(parts[1].trim())
+            if (Array.isArray(allWs)) {
+              var ids = allWs.map(function(w) { return w.id }).filter(function(id) { return id > 0 && id <= 10 })
               ids.sort(function(a, b) { return a - b })
               if (ids.indexOf(root.activeWorkspaceId) === -1 && root.activeWorkspaceId > 0) {
                 ids.push(root.activeWorkspaceId)
@@ -57,38 +122,111 @@ BarWidget {
               root.workspaceList = ids
             }
           }
+          if (parts.length >= 3 && parts[2].trim()) {
+            var cls = JSON.parse(parts[2].trim())
+            if (Array.isArray(cls)) {
+              root.hyprClients = cls.filter(function(c) { return c && c.mapped && !c.hidden })
+            }
+          }
+          if (parts.length >= 4 && parts[3].trim()) {
+            var actWin = JSON.parse(parts[3].trim())
+            if (actWin && actWin.address) {
+              root.hyprActiveWindow = actWin
+            } else {
+              root.hyprActiveWindow = ({})
+            }
+          }
         } catch(e) {}
+        root.refreshTaskbar()
       }
     }
   }
 
   Timer {
-    interval: 1500
+    id: fastPoller
+    interval: 300
     running: true
     repeat: true
     triggeredOnStart: true
     onTriggered: {
-      if (!wsProc.running) wsProc.start()
+      if (!hyprStateProc.running) hyprStateProc.running = true
     }
   }
 
-  function matches(tl, matchers) {
-    if (!tl || !matchers || matchers.length === 0) return false
-    var target = ((tl.appId || "") + " " + (tl.title || "")).toLowerCase()
-    return matchers.some(function(p) { return target.indexOf(p.toLowerCase()) !== -1 })
+  Timer {
+    id: refreshTimer
+    interval: 60
+    running: false
+    repeat: false
+    onTriggered: {
+      if (!hyprStateProc.running) hyprStateProc.running = true
+    }
   }
 
-  function findRunningToplevel(matchers) {
-    var list = (ToplevelManager.toplevels && ToplevelManager.toplevels.values) ? ToplevelManager.toplevels.values : []
-    return list.find(function(tl) { return root.matches(tl, matchers) })
+  Process {
+    id: socketListener
+    command: [
+      "bash", "-c",
+      "sock=\"$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock\"; if [ -S \"$sock\" ]; then exec socat -u UNIX-CONNECT:\"$sock\" -; fi"
+    ]
+    running: true
+    stdout: SplitParser {
+      onRead: function(line) {
+        var l = String(line)
+        if (l.indexOf("activewindow>>") === 0 ||
+            l.indexOf("activewindowv2>>") === 0 ||
+            l.indexOf("openwindow>>") === 0 ||
+            l.indexOf("closewindow>>") === 0 ||
+            l.indexOf("workspace>>") === 0 ||
+            l.indexOf("focusedmon>>") === 0) {
+          refreshTimer.restart()
+        }
+      }
+    }
   }
 
-  function isRunning(matchers) {
-    return findRunningToplevel(matchers) !== undefined
+  function findRunningClient(matchers) {
+    if (!matchers || matchers.length === 0) return null
+    var firstMatch = null
+    for (var i = 0; i < root.hyprClients.length; i++) {
+      var c = root.hyprClients[i]
+      if (!c) continue
+      var target = ((c.class || "") + " " + (c.initialClass || "") + " " + (c.title || "")).toLowerCase()
+      for (var j = 0; j < matchers.length; j++) {
+        if (target.indexOf(matchers[j].toLowerCase()) !== -1) {
+          if (root.hyprActiveWindow && root.hyprActiveWindow.address && c.address === root.hyprActiveWindow.address) {
+            return c
+          }
+          if (!firstMatch) firstMatch = c
+          break
+        }
+      }
+    }
+    return firstMatch
   }
 
-  function isFocused(matchers) {
-    return root.matches(ToplevelManager.activeToplevel, matchers)
+  function isClientFocused(client) {
+    if (!client || !client.address || !root.hyprActiveWindow || !root.hyprActiveWindow.address) return false
+    return client.address === root.hyprActiveWindow.address
+  }
+
+  function resolveAppIcon(c) {
+    if (!c) return ""
+    var cls = (c.initialClass || c.class || "").toLowerCase()
+    if (cls.indexOf("telegram") !== -1) {
+      return Quickshell.iconPath("telegram") || Quickshell.iconPath("org.telegram.desktop") || ("file://" + root.homeDir + "/.local/share/icons/win11/discord.svg")
+    }
+    if (cls.indexOf("antigravity") !== -1) {
+      return "file://" + root.homeDir + "/.local/share/icons/win11/antigravity-ide.svg"
+    }
+    var ip = Quickshell.iconPath(c.class) || Quickshell.iconPath(c.initialClass)
+    if (ip) return ip
+    var parts = cls.split(".")
+    for (var i = parts.length - 1; i >= 0; i--) {
+      var p = Quickshell.iconPath(parts[i])
+      if (p) return p
+    }
+    return "image://icon/" + (c.initialClass || c.class)
   }
 
   // Reactive Theme state watcher via FileView
@@ -150,30 +288,43 @@ BarWidget {
 
   // Dynamically discover all running unpinned applications
   function getUnpinnedRunningApps() {
-    var list = (ToplevelManager.toplevels && ToplevelManager.toplevels.values) ? ToplevelManager.toplevels.values : []
     var pinned = root.getVisiblePinnedApps()
     var unpinned = []
-    var seenAppIds = {}
+    var seenKeys = {}
 
-    for (var i = 0; i < list.length; i++) {
-      var tl = list[i]
-      if (!tl) continue
-      var isPinned = pinned.some(function(p) { return root.matches(tl, p.matchers) })
+    for (var i = 0; i < root.hyprClients.length; i++) {
+      var c = root.hyprClients[i]
+      if (!c || !c.address) continue
+      var cls = (c.class || "").toLowerCase()
+      var initCls = (c.initialClass || "").toLowerCase()
+      var title = (c.title || "").toLowerCase()
+
+      // Skip internal quickshell desktop overlays
+      if (cls === "org.quickshell" && (title === "" || title === "quickshell")) continue
+
+      var isPinned = pinned.some(function(p) {
+        if (!p.matchers || p.matchers.length === 0) return false
+        var target = (cls + " " + initCls + " " + title)
+        return p.matchers.some(function(m) { return target.indexOf(m.toLowerCase()) !== -1 })
+      })
+
       if (!isPinned) {
-        var aid = (tl.appId || "app").toLowerCase()
-        if (!seenAppIds[aid]) {
-          seenAppIds[aid] = true
+        var baseKey = (initCls || cls || "app")
+        if (baseKey.indexOf("telegram") !== -1) baseKey = "telegram"
+        if (!seenKeys[baseKey]) {
+          seenKeys[baseKey] = true
           unpinned.push({
-            id: "running_" + aid,
-            name: tl.title || tl.appId || "Application",
-            toplevel: tl,
+            id: "running_" + c.address,
+            name: c.title || c.initialTitle || c.class || "Application",
+            hyprClient: c,
             isStart: false,
             isTaskView: false,
             isDynamic: true,
-            appId: tl.appId || "",
+            iconUrl: root.resolveAppIcon(c),
+            appId: c.class || c.initialClass || "",
             iconFile: "",
             exec: "",
-            matchers: [tl.appId || ""]
+            matchers: [c.class || "", c.initialClass || ""]
           })
         }
       }
@@ -183,37 +334,54 @@ BarWidget {
 
   function getAllTaskbarItems() {
     var pinned = root.getVisiblePinnedApps()
-    var running = root.getUnpinnedRunningApps()
+    var showRunning = (root.winPinsConfig && root.winPinsConfig["running_apps"] !== undefined) ? (root.winPinsConfig["running_apps"] === true) : true
+    var running = showRunning ? root.getUnpinnedRunningApps() : []
     return pinned.concat(running)
   }
 
   RowLayout {
     id: taskbarRow
     anchors.centerIn: parent
-    spacing: Math.max(4, Math.round(6 * root.scaleFactor))
+    spacing: root.itemSpacing
 
     Repeater {
-      model: root.getAllTaskbarItems()
+      model: root.taskbarItems
 
       Rectangle {
         id: itemBox
         implicitWidth: root.tileWidth
         implicitHeight: root.tileHeight
+        Layout.preferredWidth: root.tileWidth
+        Layout.preferredHeight: root.tileHeight
+        Layout.alignment: Qt.AlignVCenter
         radius: 4
 
-        property bool appRunning: modelData.isDynamic ? true : root.isRunning(modelData.matchers)
-        property bool appFocused: modelData.isDynamic ? (ToplevelManager.activeToplevel === modelData.toplevel) : root.isFocused(modelData.matchers)
-        property var activeTl: modelData.isDynamic ? modelData.toplevel : root.findRunningToplevel(modelData.matchers)
+        property var activeClient: {
+          if (modelData.isDynamic) {
+            if (root.hyprActiveWindow && root.hyprActiveWindow.address) {
+              var act = root.hyprActiveWindow
+              var actKey = ((act.initialClass || "") + " " + (act.class || "")).toLowerCase()
+              var myKey = (modelData.appId || "").toLowerCase()
+              if (myKey && actKey.indexOf(myKey) !== -1) {
+                return act
+              }
+            }
+            return modelData.hyprClient
+          }
+          return root.findRunningClient(modelData.matchers)
+        }
+        property bool appRunning: activeClient !== null && activeClient !== undefined
+        property bool appFocused: root.isClientFocused(activeClient)
 
         color: itemMouse.pressed
-               ? (root.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.12))
+               ? (root.isBarLight ? Qt.rgba(0, 0, 0, 0.16) : Qt.rgba(1, 1, 1, 0.18))
                : (appFocused
-                  ? (root.isDark ? Qt.rgba(1, 1, 1, 0.11) : Qt.rgba(0, 0, 0, 0.08))
-                  : (itemMouse.containsMouse ? (root.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05)) : "transparent"))
+                  ? (root.isBarLight ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.12))
+                  : (itemMouse.containsMouse ? (root.isBarLight ? Qt.rgba(0, 0, 0, 0.05) : Qt.rgba(1, 1, 1, 0.08)) : "transparent"))
 
         border.color: itemMouse.containsMouse
-                      ? (root.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08))
-                      : "transparent"
+                      ? (root.isBarLight ? Qt.rgba(0, 0, 0, 0.10) : Qt.rgba(1, 1, 1, 0.14))
+                      : (appFocused ? (root.isBarLight ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.10)) : "transparent")
         border.width: 1
 
         scale: itemMouse.pressed ? 0.94 : (itemMouse.containsMouse ? 1.04 : 1.0)
@@ -221,76 +389,124 @@ BarWidget {
           NumberAnimation { duration: 100; easing.type: Easing.OutCubic }
         }
 
-        // 1. Windows 11 Start Icon (Vector 4-Square Grid)
+        // 1. Windows 11 Start Icon (Authentic Fluent SVG)
         Item {
           visible: modelData.isStart === true
           anchors.fill: parent
 
-          GridLayout {
-            anchors.centerIn: parent
-            columns: 2
-            rowSpacing: 2
-            columnSpacing: 2
-
-            Repeater {
-              model: 4
-              Rectangle {
-                width: Math.round(root.iconSize * 0.40)
-                height: Math.round(root.iconSize * 0.40)
-                radius: 1
-                color: root.isDark ? (itemMouse.containsMouse ? "#60cdff" : "#0078d4") : (itemMouse.containsMouse ? "#0078d4" : "#005fb8")
-              }
-            }
-          }
-        }
-
-        // 2. Icon-Only Display with Authentic Windows 11 SVGs
-        Item {
-          visible: !modelData.isStart && !modelData.isDynamic
-          anchors.fill: parent
-
           Image {
             anchors.centerIn: parent
-            width: modelData.isTaskView ? Math.round(root.iconSize * 0.85) : root.iconSize
-            height: modelData.isTaskView ? Math.round(root.iconSize * 0.85) : root.iconSize
-            source: "file://" + root.homeDir + "/.local/share/icons/win11/" + modelData.iconFile
+            width: Math.round(root.iconSize * 0.92)
+            height: Math.round(root.iconSize * 0.92)
+            sourceSize: Qt.size(Math.round(root.iconSize * 0.92), Math.round(root.iconSize * 0.92))
+            source: "file://" + root.homeDir + "/.local/share/icons/win11/start.svg"
             fillMode: Image.PreserveAspectFit
             smooth: true
             mipmap: true
           }
         }
 
-        // 3. Dynamic Application Icon (For unpinned running windows)
+        // 2. Windows 11 Task View Dynamic High-Contrast Icon
+        Item {
+          visible: modelData.isTaskView === true
+          anchors.fill: parent
+
+          Item {
+            anchors.centerIn: parent
+            width: Math.round(root.iconSize * 0.88)
+            height: Math.round(root.iconSize * 0.88)
+
+            // Back rectangle (high contrast outline)
+            Rectangle {
+              x: 0; y: 0
+              width: Math.round(parent.width * 0.72)
+              height: Math.round(parent.height * 0.72)
+              radius: 2
+              color: "transparent"
+              border.width: 1.6
+              border.color: root.isBarLight ? Qt.rgba(0, 0, 0, 0.75) : Qt.rgba(1, 1, 1, 0.85)
+            }
+
+            // Front rectangle (vibrant blue accent)
+            Rectangle {
+              x: Math.round(parent.width * 0.28)
+              y: Math.round(parent.height * 0.28)
+              width: Math.round(parent.width * 0.72)
+              height: Math.round(parent.height * 0.72)
+              radius: 2
+              color: root.isBarLight ? Qt.rgba(0, 0.4, 0.8, 0.22) : Qt.rgba(0, 0.47, 0.83, 0.35)
+              border.width: 1.6
+              border.color: root.isBarLight ? "#0067c0" : "#60cdff"
+            }
+          }
+        }
+
+        // 3. Pinned Apps with Authentic Windows 11 SVGs
+        Item {
+          visible: !modelData.isStart && !modelData.isTaskView && !modelData.isDynamic
+          anchors.fill: parent
+
+          Image {
+            anchors.centerIn: parent
+            width: root.iconSize
+            height: root.iconSize
+            sourceSize: Qt.size(root.iconSize, root.iconSize)
+            source: modelData.iconFile ? ("file://" + root.homeDir + "/.local/share/icons/win11/" + modelData.iconFile) : ""
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+            mipmap: true
+          }
+        }
+
+        // 4. Dynamic Application Icon (For unpinned running windows like Telegram)
         Item {
           visible: modelData.isDynamic === true
           anchors.fill: parent
 
-          Text {
+          Image {
+            id: dynamicAppIcon
             anchors.centerIn: parent
-            text: "🗖"
-            font.pixelSize: Math.round(root.iconSize * 0.8)
-            color: root.isDark ? "#ffffff" : "#1a1a1a"
+            width: root.iconSize
+            height: root.iconSize
+            sourceSize: Qt.size(root.iconSize, root.iconSize)
+            source: modelData.iconUrl || ""
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+            mipmap: true
+          }
+
+          Text {
+            visible: dynamicAppIcon.status !== Image.Ready
+            anchors.centerIn: parent
+            text: "🗔"
+            font.pixelSize: Math.round(root.iconSize * 0.75)
+            color: root.isBarLight ? "#111111" : "#ffffff"
           }
         }
 
-        // 4. Windows 11 Running/Focus Pill Indicator Under Icon
+        // 5. Windows 11 Running/Focus Pill Indicator Under Icon
         Rectangle {
           id: bottomIndicator
           visible: !modelData.isStart && !modelData.isTaskView && itemBox.appRunning
           anchors.bottom: parent.bottom
-          anchors.bottomMargin: 1
+          anchors.bottomMargin: 0
           anchors.horizontalCenter: parent.horizontalCenter
-          width: itemBox.appFocused ? Math.round(root.tileWidth * 0.45) : 6
-          height: 3
-          radius: 1.5
-          color: itemBox.appFocused ? (root.isDark ? "#60cdff" : "#0067c0") : (root.isDark ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0, 0, 0, 0.40))
+          width: itemBox.appFocused ? (root.barH <= 28 ? 14 : 16) : (itemMouse.containsMouse ? (root.barH <= 28 ? 9 : 10) : 6)
+          height: (root.barH <= 28) ? 2 : 3
+          radius: 1
+          z: 10
+          color: itemBox.appFocused
+                 ? (root.isBarLight ? "#0067c0" : "#60cdff")
+                 : (root.isBarLight ? Qt.rgba(0.25, 0.25, 0.25, 0.85) : Qt.rgba(0.9, 0.9, 0.9, 0.85))
+          border.width: itemBox.appFocused ? 0 : 1
+          border.color: root.isBarLight ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.4)
 
           Behavior on width {
-            NumberAnimation { duration: 150; easing.type: Easing.OutQuad }
+            NumberAnimation { duration: 160; easing.type: Easing.OutBack }
           }
         }
 
-        // 5. Windows 11 Preview Card with Close (✕) and Minimize (—) Controls
+        // 6. Windows 11 Preview Card with Close (✕) and Minimize (—) Controls
         Rectangle {
           id: previewCard
           visible: itemMouse.containsMouse && !modelData.isStart && !modelData.isTaskView
@@ -313,7 +529,7 @@ BarWidget {
             spacing: 8
 
             Text {
-              text: itemBox.activeTl ? (itemBox.activeTl.title || modelData.name) : modelData.name
+              text: itemBox.activeClient ? (itemBox.activeClient.title || modelData.name) : modelData.name
               font.family: "Segoe UI"
               font.pixelSize: 11
               color: root.isDark ? "#ffffff" : "#1a1a1a"
@@ -358,11 +574,7 @@ BarWidget {
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
-                  if (itemBox.activeTl) {
-                    itemBox.activeTl.close()
-                  } else {
-                    Quickshell.execDetached(["hyprctl", "dispatch", "killactive"])
-                  }
+                  root.closeClient(itemBox.activeClient)
                 }
               }
             }
@@ -414,23 +626,33 @@ BarWidget {
               Repeater {
                 model: root.workspaceList
                 Rectangle {
-                  implicitWidth: 64
+                  implicitWidth: 36
                   implicitHeight: 36
                   radius: 4
-                  color: (modelData === root.activeWorkspaceId) ? (root.isDark ? Qt.rgba(1, 1, 1, 0.18) : Qt.rgba(0, 0, 0, 0.12)) : (deskM.containsMouse ? (root.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.06)) : "transparent")
-                  border.color: (modelData === root.activeWorkspaceId) ? (root.isDark ? "#60cdff" : "#0067c0") : (root.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.10))
-                  border.width: (modelData === root.activeWorkspaceId) ? 2 : 1
+                  color: (modelData === root.activeWorkspaceId)
+                         ? (root.isDark ? "#0078d4" : "#0067c0")
+                         : (deskM.containsMouse ? (root.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.08)) : (root.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04)))
+                  border.color: (modelData === root.activeWorkspaceId)
+                                ? (root.isDark ? "#60cdff" : "#004275")
+                                : (root.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08))
+                  border.width: 1
 
                   ColumnLayout {
                     anchors.centerIn: parent
                     spacing: 1
                     Text {
-                      anchors.horizontalCenter: parent.horizontalCenter
-                      text: "Desktop " + modelData
+                      Layout.alignment: Qt.AlignHCenter
+                      text: "󰍹"
+                      font.pixelSize: 12
+                      color: (modelData === root.activeWorkspaceId) ? "#ffffff" : (root.isDark ? "#ffffff" : "#1a1a1a")
+                    }
+                    Text {
+                      Layout.alignment: Qt.AlignHCenter
+                      text: modelData.toString()
                       font.family: "Segoe UI"
-                      font.pixelSize: 10
-                      font.bold: (modelData === root.activeWorkspaceId)
-                      color: root.isDark ? "#ffffff" : "#1a1a1a"
+                      font.pixelSize: 9
+                      font.bold: true
+                      color: (modelData === root.activeWorkspaceId) ? "#ffffff" : (root.isDark ? "#ffffff" : "#1a1a1a")
                     }
                   }
 
@@ -440,7 +662,7 @@ BarWidget {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                      Quickshell.execDetached(["hyprctl", "dispatch", "workspace", modelData.toString()])
+                      root.switchToWorkspace(modelData.toString())
                       root.activeWorkspaceId = modelData
                     }
                   }
@@ -470,7 +692,7 @@ BarWidget {
                   hoverEnabled: true
                   cursorShape: Qt.PointingHandCursor
                   onClicked: {
-                    Quickshell.execDetached(["hyprctl", "dispatch", "workspace", "empty"])
+                    root.switchToWorkspace("empty")
                   }
                 }
               }
@@ -510,36 +732,35 @@ BarWidget {
           acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
 
           onWheel: function(wheel) {
-            // Taskbar workspace seeking
-            if (wheel.angleDelta.y > 0) {
-              Quickshell.execDetached(["hyprctl", "dispatch", "workspace", "e-1"])
-            } else if (wheel.angleDelta.y < 0) {
-              Quickshell.execDetached(["hyprctl", "dispatch", "workspace", "e+1"])
-            }
+            root.seekWorkspace(wheel.angleDelta.y)
           }
 
           onClicked: function(mouse) {
             if (mouse.button === Qt.MiddleButton) {
-              // Windows behavior: Middle click closes the running window
-              if (itemBox.activeTl) {
-                itemBox.activeTl.close()
-              }
+              root.closeClient(itemBox.activeClient)
             } else if (mouse.button === Qt.RightButton) {
               if (modelData.isStart) {
                 root.runCmd("omarchy-undercover-settings")
-              } else if (itemBox.activeTl) {
-                // Toggle close on right click or open window switcher
-                itemBox.activeTl.close()
+              } else if (itemBox.appRunning && itemBox.activeClient) {
+                root.closeClient(itemBox.activeClient)
               } else {
                 root.runCmd("rofi -show window -theme ~/.config/rofi/windows11.rasi")
               }
             } else {
-              // Left click: Toggle Focus / Minimize
-              if (itemBox.appRunning && itemBox.activeTl) {
+              // Left click
+              if (modelData.isStart) {
+                root.runCmd(modelData.exec)
+                return
+              }
+              if (modelData.isTaskView) {
+                root.runCmd(modelData.exec)
+                return
+              }
+              if (itemBox.appRunning && itemBox.activeClient && itemBox.activeClient.address) {
                 if (itemBox.appFocused) {
                   root.runCmd("omarchy-undercover-minimize")
                 } else {
-                  itemBox.activeTl.activate()
+                  root.shiftToClient(itemBox.activeClient)
                 }
                 return
               }

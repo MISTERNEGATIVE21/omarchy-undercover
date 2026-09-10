@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <filter id="calShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#000000" flood-opacity="0.30"/>
+    </filter>
+  </defs>
+  <rect x="32" y="32" width="448" height="448" rx="105" fill="#ffffff" filter="url(#calShadow)"/>
+  <!-- Top Red Header -->
+  <path d="M32 137 C32 79 79 32 137 32 L375 32 C433 32 480 79 480 137 L480 155 L32 155 Z" fill="#ff3b30"/>
+  <text x="256" y="115" font-family="-apple-system, SF Pro Text, sans-serif" font-size="52" font-weight="bold" fill="#ffffff" text-anchor="middle">SEP</text>
+  <!-- Date Number -->
+  <text x="256" y="365" font-family="-apple-system, SF Pro Display, sans-serif" font-size="200" font-weight="300" fill="#1c1c1e" text-anchor="middle">9</text>
+</svg>
