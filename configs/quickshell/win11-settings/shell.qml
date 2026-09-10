@@ -1772,7 +1772,7 @@ ShellRoot {
                     ColumnLayout {
                       Layout.fillWidth: true
                       Text { text: "You're up to date"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 14; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
-                      Text { text: "Omarchy Undercover v4.0.0 • Omarchy Shell Plugin Protocol v1"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                      Text { text: "Omarchy Undercover v5.0.0 • Omarchy Shell Plugin Protocol v1"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
                     }
                     Rectangle {
                       implicitWidth: 130

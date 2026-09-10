@@ -7,8 +7,9 @@ BarWidget {
   id: root
   moduleName: "undercover.mac-siri"
 
-  implicitWidth: 32
-  implicitHeight: root.bar ? root.bar.barSize : 32
+  readonly property int slotWidth: Style.bar.iconSlot > 0 ? Style.bar.iconSlot : 28
+  implicitWidth: slotWidth
+  implicitHeight: root.bar ? root.bar.barSize : 28
 
   property bool isHovered: mouseArea.containsMouse
   property bool isListening: false

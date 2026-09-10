@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# 🕵️ OMARCHY UNDERCOVER — BASECAMP / CHARM TUI INSTALLER (v3.0.0)
+# 🕵️ OMARCHY UNDERCOVER — BASECAMP / CHARM TUI INSTALLER (v5.0.0)
 # Interactive Terminal Installer with Smooth Multi-Stage Animations & Styling
 #
 # Copyright (C) 2026 misternegative21
@@ -71,12 +71,12 @@ print_header_box() {
             --bold \
             "🕵️  OMARCHY UNDERCOVER  •  THE ULTIMATE DESKTOP TRANSFORMATION SUITE" \
             "   macOS Sequoia Frosted Glass  ╳  Windows 11 Fluent Acrylic        " \
-            "   Release v3.0.0  •  Engineered by misternegative21                "
+            "   Release v5.0.0  •  Engineered by misternegative21                "
     else
         echo -e "${BLUE}${BOLD}┌────────────────────────────────────────────────────────────────────────┐${NC}"
         echo -e "${BLUE}${BOLD}│${WHITE}  🕵️  OMARCHY UNDERCOVER  •  THE ULTIMATE DESKTOP TRANSFORMATION SUITE   ${BLUE}│${NC}"
         echo -e "${BLUE}${BOLD}│${CYAN}   macOS Sequoia Frosted Glass  ╳  Windows 11 Fluent Acrylic         ${BLUE}│${NC}"
-        echo -e "${BLUE}${BOLD}│${GRAY}   Release v3.0.0  •  Engineered by misternegative21                 ${BLUE}│${NC}"
+        echo -e "${BLUE}${BOLD}│${GRAY}   Release v5.0.0  •  Engineered by misternegative21                 ${BLUE}│${NC}"
         echo -e "${BLUE}${BOLD}└────────────────────────────────────────────────────────────────────────┘${NC}"
         echo ""
     fi
@@ -178,6 +178,27 @@ main() {
         if [[ -d "$SCRIPT_DIR/configs/gtk" ]]; then
             cp -rf "$SCRIPT_DIR/configs/gtk/"* "$CONFIG_DIR/gtk/" 2>/dev/null || true
         fi
+
+        # Neutralize any corrupted shell.json.omarchy-default containing undercover widgets
+        if [[ -f "$HOME/.config/omarchy/shell.json.omarchy-default" ]] && grep -q "undercover\." "$HOME/.config/omarchy/shell.json.omarchy-default"; then
+            if [[ -f "/usr/share/omarchy/config/omarchy/shell.json" ]]; then
+                cp -f "/usr/share/omarchy/config/omarchy/shell.json" "$HOME/.config/omarchy/shell.json.omarchy-default"
+            else
+                rm -f "$HOME/.config/omarchy/shell.json.omarchy-default"
+            fi
+        fi
+
+        # Clean up duplicate ~/.config/omarchy/hooks/theme-set if present
+        if [[ -f "$HOME/.config/omarchy/hooks/theme-set" ]] && grep -q "dandadan" "$HOME/.config/omarchy/hooks/theme-set"; then
+            rm -f "$HOME/.config/omarchy/hooks/theme-set" 2>/dev/null || true
+        fi
+
+        # Ensure dandadan theme-set hook never restores undercover widgets or clobbers shell.json when inactive
+        d_hook="$HOME/.config/omarchy/hooks/theme-set.d/dandadan-theme-set"
+        if [[ -f "$d_hook" ]] && ! grep -q "undercover\." "$d_hook"; then
+            sed -i "s/shell.json.omarchy-default\" \]\];/shell.json.omarchy-default\" \]\] || grep -q \"undercover\.\" \"\$HOME\/.config\/omarchy\/shell.json.omarchy-default\";/g" "$d_hook" 2>/dev/null || true
+            sed -i "s/shell.json.omarchy-default\" \]\]; then/shell.json.omarchy-default\" \]\] \&\& ! grep -q \"undercover\.\" \"\$HOME\/.config\/omarchy\/shell.json.omarchy-default\"; then/g" "$d_hook" 2>/dev/null || true
+        fi
     '
 
     # Step 6: CLI State Machine, Start Menu & Network Managers
@@ -220,6 +241,11 @@ main() {
             if ! grep -q "omarchy-undercover --toggle" "$HOME/.config/hypr/bindings.lua"; then
                 echo -e "\n-- Global Omarchy Undercover Mode Toggle (Super + Alt + U)\no.bind(\"SUPER + ALT + U\", \"Toggle Undercover Mode\", \"omarchy-undercover --toggle\")" >> "$HOME/.config/hypr/bindings.lua"
             fi
+        fi
+        hypr_lua="$HOME/.config/hypr/hyprland.lua"
+        if [[ -f "$hypr_lua" ]] && ! grep -Fq "/default/hypr/bootstrap.lua" "$hypr_lua"; then
+            sed -i "/-- Load user modules from ~\/\\.config/,/\\.\\. package\\.path$/d" "$hypr_lua" 2>/dev/null || true
+            sed -i "1s/^/-- Omarchy bootstrap keeps path setup out of user config.\\ndofile((os.getenv(\"OMARCHY_PATH\") or \"\/usr\/share\/omarchy\") .. \"\/default\/hypr\/bootstrap.lua\")\\n\\n/" "$hypr_lua" 2>/dev/null || true
         fi
         hyprctl reload >/dev/null 2>&1 || true
     '

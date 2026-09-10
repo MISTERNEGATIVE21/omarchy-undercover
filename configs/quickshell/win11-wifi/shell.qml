@@ -49,14 +49,23 @@ ShellRoot {
 
     readonly property var filteredNetworks: {
       var q = wifiWindow.searchText.toLowerCase().trim()
-      if (!q) return wifiWindow.networks
       var result = []
       for (var i = 0; i < wifiWindow.networks.length; i++) {
         var n = wifiWindow.networks[i]
-        if (n.ssid && n.ssid.toLowerCase().indexOf(q) !== -1) {
+        if (!n.ssid || n.ssid.length === 0) continue
+        if (!q ||
+            n.ssid.toLowerCase().indexOf(q) !== -1 ||
+            (n.security && n.security.toLowerCase().indexOf(q) !== -1) ||
+            (n.bssid && n.bssid.toLowerCase().replace(/[-:]/g, "").indexOf(q.replace(/[-:]/g, "")) !== -1)) {
           result.push(n)
         }
       }
+      // Best signal first, active network pinned to the top of results.
+      result.sort(function(a, b) {
+        if (a.inUse && !b.inUse) return -1
+        if (!a.inUse && b.inUse) return 1
+        return (b.signal || 0) - (a.signal || 0)
+      })
       return result
     }
 
@@ -87,7 +96,7 @@ ShellRoot {
     Process {
       id: radioPoller
       running: true
-      command: ["bash", "-c", "nmcli radio wifi"]
+      command: ["bash", "-c", "omarchy-wifi-dbus radio"]
       stdout: SplitParser {
         onRead: function(line) {
           wifiWindow.wifiEnabled = (String(line).trim().toLowerCase() === "enabled")
@@ -95,10 +104,10 @@ ShellRoot {
       }
     }
 
-    // Wi-Fi Scan Process
+    // Wi-Fi Scan Process (NetworkManager over D-Bus)
     Process {
       id: scanPoller
-      command: ["bash", "-c", "nmcli dev wifi list --rescan yes 2>/dev/null; nmcli -t -f in-use,ssid,signal,security dev wifi list 2>/dev/null"]
+      command: ["bash", "-c", "omarchy-wifi-dbus scan"]
       stdout: SplitParser {
         onRead: function(line) {
           var l = String(line).trim()
@@ -109,12 +118,13 @@ ShellRoot {
             var ssid = parts[1]
             var signal = parseInt(parts[2]) || 0
             var security = parts[3]
+            var bssid = parts.length >= 5 ? parts.slice(4).join(":") : ""
             if (ssid && ssid.length > 0) {
               if (inUse) wifiWindow.activeSsid = ssid
               var exists = false
               var currentList = wifiWindow.networks
               for (var i = 0; i < currentList.length; i++) {
-                if (currentList[i].ssid === ssid) {
+                if (currentList[i].ssid === ssid && currentList[i].bssid === bssid) {
                   currentList[i].signal = signal
                   currentList[i].inUse = inUse
                   exists = true
@@ -124,6 +134,7 @@ ShellRoot {
               if (!exists) {
                 currentList.push({
                   ssid: ssid,
+                  bssid: bssid,
                   signal: signal,
                   security: security,
                   inUse: inUse,
@@ -290,7 +301,7 @@ ShellRoot {
                 onClicked: {
                   var target = !wifiWindow.wifiEnabled
                   wifiWindow.wifiEnabled = target
-                  wifiWindow.runCmd("nmcli radio wifi " + (target ? "on" : "off"))
+                  wifiWindow.runCmd("omarchy-wifi-dbus " + (target ? "on" : "off"))
                   wifiWindow.triggerScan()
                 }
               }
@@ -430,7 +441,7 @@ ShellRoot {
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
-                  wifiWindow.runCmd("nmcli con down id '" + wifiWindow.activeSsid + "' || nmcli dev disconnect wlan0")
+                  wifiWindow.runCmd("omarchy-wifi-dbus disconnect")
                   wifiWindow.activeSsid = ""
                   wifiWindow.triggerScan()
                 }
@@ -609,7 +620,7 @@ ShellRoot {
                       wifiWindow.connectingSsid = (wifiWindow.connectingSsid === modelData.ssid ? "" : modelData.ssid)
                       wifiWindow.passwordInput = ""
                     } else {
-                      wifiWindow.runCmd("nmcli dev wifi connect '" + modelData.ssid + "'")
+                      wifiWindow.runCmd("omarchy-wifi-dbus connect \"" + modelData.ssid + "\"")
                       wifiWindow.triggerScan()
                     }
                   }
@@ -654,7 +665,7 @@ ShellRoot {
                         selectByMouse: true
                         onTextChanged: wifiWindow.passwordInput = text
                         onAccepted: {
-                          wifiWindow.runCmd("nmcli dev wifi connect '" + modelData.ssid + "' password '" + pwInput.text + "'")
+                          wifiWindow.runCmd("omarchy-wifi-dbus connect \"" + modelData.ssid + "\" \"" + pwInput.text + "\"")
                           wifiWindow.connectingSsid = ""
                           wifiWindow.triggerScan()
                         }
@@ -678,7 +689,7 @@ ShellRoot {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                          wifiWindow.runCmd("nmcli dev wifi connect '" + modelData.ssid + "' password '" + pwInput.text + "'")
+                          wifiWindow.runCmd("omarchy-wifi-dbus connect \"" + modelData.ssid + "\" \"" + pwInput.text + "\"")
                           wifiWindow.connectingSsid = ""
                           wifiWindow.triggerScan()
                         }

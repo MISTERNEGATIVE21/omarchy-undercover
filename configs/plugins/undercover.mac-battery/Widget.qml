@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Layouts
 import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
@@ -9,9 +8,6 @@ import qs.Ui
 BarWidget {
   id: root
   moduleName: "undercover.mac-battery"
-
-  implicitWidth: button.implicitWidth
-  implicitHeight: button.implicitHeight
 
   property int batteryPct: 90
   property bool isCharging: false
@@ -47,14 +43,19 @@ BarWidget {
     }
   }
 
+  readonly property int contentWidth: Math.max(68, Math.ceil(batteryContent.implicitWidth + 20))
+
+  implicitWidth: contentWidth
+  implicitHeight: root.bar ? root.bar.barSize : 28
+
   WidgetButton {
     id: button
     anchors.fill: parent
     bar: root.bar
     text: " "
     labelVisible: false
+    fixedWidth: root.contentWidth
     tooltipText: "Battery: " + root.batteryPct + "% (" + (root.isCharging ? "Power Source: Power Adapter" : "Power Source: Battery") + ")"
-    horizontalMargin: 6
 
     onPressed: function() {
       if (root.bar) {
@@ -64,12 +65,15 @@ BarWidget {
       }
     }
 
-    RowLayout {
+    Row {
+      id: batteryContent
       anchors.centerIn: parent
-      spacing: 5
+      spacing: 6
 
       // Battery Percentage
       Text {
+        id: pctLabel
+        anchors.verticalCenter: parent.verticalCenter
         text: root.batteryPct + "%"
         font.family: "SF Pro Text, -apple-system, sans-serif"
         font.pixelSize: 12
@@ -79,6 +83,9 @@ BarWidget {
 
       // Vector macOS Battery Capsule
       Item {
+        anchors.verticalCenter: parent.verticalCenter
+        width: 24
+        height: 12
         implicitWidth: 24
         implicitHeight: 12
 

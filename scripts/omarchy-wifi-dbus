@@ -1,0 +1,200 @@
+#!/usr/bin/env python3
+"""
+omarchy-wifi-dbus — Wi-Fi control via NetworkManager D-Bus API.
+
+Subcommands (used by the Quickshell flyouts):
+  radio                -> prints "enabled" / "disabled"
+  on / off             -> enables / disables the Wi-Fi radio
+  scan                 -> triggers a rescan then prints APs as
+                          *:SSID:SIGNAL:SECURITY:BSSID (nmcli-terse style)
+  connect <ssid> [pw]  -> activates a connection to <ssid>
+"""
+
+import sys
+import time
+import uuid
+
+import dbus
+
+NM_BUS = "org.freedesktop.NetworkManager"
+NM_PATH = "/org/freedesktop/NetworkManager"
+NM_IFACE = "org.freedesktop.NetworkManager"
+NM_DEVICE_IFACE = "org.freedesktop.NetworkManager.Device"
+NM_WIRELESS_IFACE = "org.freedesktop.NetworkManager.Device.Wireless"
+NM_AP_IFACE = "org.freedesktop.NetworkManager.AccessPoint"
+NM_SETTINGS_IFACE = "org.freedesktop.NetworkManager.Settings"
+DBUS_PROPS = "org.freedesktop.DBus.Properties"
+DBUS_INTROSPECT = "org.freedesktop.DBus.Introspectable"
+
+# NM_802_11_AP_FLAGS
+AP_FLAG_PRIVACY = 0x1
+AP_FLAG_WPA = 0x2
+AP_FLAG_WPA2 = 0x4
+AP_FLAG_WPA3 = 0x8
+
+
+def get_bus():
+    return dbus.SystemBus()
+
+
+def get_nm():
+    bus = get_bus()
+    return bus.get_object(NM_BUS, NM_PATH)
+
+
+def get_wireless_devices():
+    nm = get_nm()
+    devs = dbus.Interface(nm, DBUS_PROPS).Get(NM_IFACE, "Devices")
+    wireless = []
+    bus = get_bus()
+    for dev_path in devs:
+        obj = bus.get_object(NM_BUS, dev_path)
+        iface = dbus.Interface(obj, DBUS_PROPS).Get(NM_DEVICE_IFACE, "DeviceType")
+        if int(iface) == 2:  # NM_DEVICE_TYPE_WIFI
+            wireless.append(dev_path)
+    return wireless
+
+
+def wireless_enabled():
+    nm = get_nm()
+    return bool(dbus.Interface(nm, DBUS_PROPS).Get(NM_IFACE, "WirelessEnabled"))
+
+
+def set_wireless(enabled):
+    nm = get_nm()
+    dbus.Interface(nm, NM_IFACE).SetRadio(2, enabled)  # NM_RADIO_WIFI
+
+
+def security_for(flags, wpa_flags, rsn_flags):
+    if int(rsn_flags) & AP_FLAG_WPA3:
+        return "WPA3"
+    if int(rsn_flags) & AP_FLAG_WPA2 or int(wpa_flags) & AP_FLAG_WPA2:
+        return "WPA2"
+    if int(flags) & AP_FLAG_WPA or int(wpa_flags) & AP_FLAG_WPA:
+        return "WPA"
+    if int(flags) & AP_FLAG_PRIVACY:
+        return "WEP"
+    return "--"
+
+
+def cmd_radio():
+    print("enabled" if wireless_enabled() else "disabled")
+
+
+def cmd_set(kind):
+    set_wireless(kind == "on")
+    print("ok")
+
+
+def cmd_scan():
+    wireless = get_wireless_devices()
+    if not wireless:
+        return
+    bus = get_bus()
+    for dev_path in wireless:
+        obj = bus.get_object(NM_BUS, dev_path)
+        try:
+            dbus.Interface(obj, NM_WIRELESS_IFACE).RequestScan({})
+        except dbus.DBusException:
+            pass
+        time.sleep(3)
+        ap_paths = dbus.Interface(obj, DBUS_PROPS).Get(NM_WIRELESS_IFACE, "AccessPoints")
+        active_ap = dbus.Interface(obj, DBUS_PROPS).Get(NM_WIRELESS_IFACE, "ActiveAccessPoint")
+        for ap_path in ap_paths:
+            try:
+                ap = bus.get_object(NM_BUS, ap_path)
+                props = dbus.Interface(ap, DBUS_PROPS)
+                ssid_bytes = bytes(props.Get(NM_AP_IFACE, "Ssid"))
+                if not ssid_bytes:
+                    continue
+                ssid = ssid_bytes.decode("utf-8", "replace")
+                strength = int(props.Get(NM_AP_IFACE, "Strength"))
+                flags = int(props.Get(NM_AP_IFACE, "Flags"))
+                wpa_flags = int(props.Get(NM_AP_IFACE, "WpaFlags"))
+                rsn_flags = int(props.Get(NM_AP_IFACE, "RsnFlags"))
+                bssid = str(props.Get(NM_AP_IFACE, "HwAddress"))
+                sec = security_for(flags, wpa_flags, rsn_flags)
+                inp = "*" if str(ap_path) == str(active_ap) else ""
+                print("%s:%s:%d:%s:%s" % (inp, ssid, strength, sec, bssid))
+            except dbus.DBusException:
+                continue
+
+
+def cmd_disconnect():
+    """Disconnect all active Wi-Fi connections."""
+    bus = get_bus()
+    nm = get_nm()
+    active = dbus.Interface(nm, DBUS_PROPS).Get(NM_IFACE, "ActiveConnections")
+    for ac_path in active:
+        try:
+            ac = bus.get_object(NM_BUS, ac_path)
+            props = dbus.Interface(ac, DBUS_PROPS)
+            if int(props.Get(NM_IFACE + ".Connection.Active", "Type")) != 802:
+                continue
+            dbus.Interface(ac, NM_IFACE + ".Connection.Active").Deactivate()
+            print("disconnected")
+        except dbus.DBusException:
+            continue
+
+
+def cmd_connect(ssid, password=""):
+    wireless = get_wireless_devices()
+    if not wireless:
+        print("no wifi device")
+        return
+    dev_path = wireless[0]
+    bus = get_bus()
+    nm = get_nm()
+
+    connection = {
+        "connection": {
+            "type": "802-11-wireless",
+            "uuid": str(uuid.uuid4()),
+            "id": ssid,
+        },
+        "802-11-wireless": {
+            "ssid": dbus.ByteArray(ssid.encode("utf-8")),
+            "mode": "infrastructure",
+        },
+    }
+    if password:
+        connection["802-11-wireless-security"] = {
+            "key-mgmt": "wpa-psk",
+            "psk": password,
+        }
+
+    # Use shared settings object if possible, else the per-device autoconnect.
+    try:
+        settings = bus.get_object(NM_BUS, "/org/freedesktop/NetworkManager/Settings")
+        dbus.Interface(nm, NM_IFACE).AddAndActivateConnection(
+            connection, dbus.ObjectPath(dev_path), dbus.ObjectPath("/")
+        )
+        print("connecting %s" % ssid)
+    except dbus.DBusException as e:
+        print("failed: %s" % e.get_dbus_message())
+
+
+def main():
+    args = sys.argv[1:]
+    if not args:
+        cmd_radio()
+        return
+    cmd = args[0]
+    if cmd == "radio":
+        cmd_radio()
+    elif cmd in ("on", "off"):
+        cmd_set(cmd)
+    elif cmd == "scan":
+        cmd_scan()
+    elif cmd == "disconnect":
+        cmd_disconnect()
+    elif cmd == "connect":
+        ssid = args[1] if len(args) > 1 else ""
+        password = args[2] if len(args) > 2 else ""
+        cmd_connect(ssid, password)
+    else:
+        cmd_radio()
+
+
+if __name__ == "__main__":
+    main()

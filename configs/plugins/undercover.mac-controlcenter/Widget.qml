@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Layouts
 import Quickshell
 import qs.Commons
 import qs.Ui
@@ -8,8 +7,10 @@ BarWidget {
   id: root
   moduleName: "undercover.mac-controlcenter"
 
-  implicitWidth: button.implicitWidth
-  implicitHeight: button.implicitHeight
+  readonly property int contentWidth: Style.bar.iconSlot > 0 ? Style.bar.iconSlot : 28
+
+  implicitWidth: contentWidth
+  implicitHeight: root.bar ? root.bar.barSize : 28
 
   WidgetButton {
     id: button
@@ -17,7 +18,7 @@ BarWidget {
     bar: root.bar
     text: " "
     labelVisible: false
-    fixedWidth: Style.bar.iconSlot > 0 ? Style.bar.iconSlot : 28
+    fixedWidth: root.contentWidth
     tooltipText: "Control Center"
 
     onPressed: function() {

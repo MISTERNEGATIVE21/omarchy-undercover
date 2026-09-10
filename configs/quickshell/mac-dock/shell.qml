@@ -20,8 +20,9 @@ ShellRoot {
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.namespace: "mac-dock"
     
-    // Dynamic Exclusion: When autohide is active, windows can take full screen height
-    exclusionMode: dockWindow.isAutohide ? ExclusionMode.Ignore : ExclusionMode.Auto
+    // Always overlays on top of windows without resizing them (the dock's
+    // magnified icons + tooltips paint over whatever is behind it).
+    exclusionMode: ExclusionMode.Ignore
     color: "transparent"
 
     readonly property real screenWidth: dockWindow.screen ? dockWindow.screen.width : 1920
@@ -31,14 +32,37 @@ ShellRoot {
     // Responsive scale factor based on screen height and DPI
     readonly property real responsiveScale: Math.max(0.85, Math.min(1.4, (screenHeight >= 1440 ? 1.15 : (screenHeight >= 1080 ? 1.0 : 0.9))))
 
-    implicitWidth: dockCard.implicitWidth + Math.round(32 * responsiveScale)
-    implicitHeight: dockCard.height + Math.round(36 * responsiveScale)
+    // Configured icon size (px) from settings.conf DOCK_SIZE
+    property int dockSize: 44
+    // Max number of app icons to show (DOCK_MAX_ITEMS), caps runaway running apps
+    property int maxDockItems: 24
+    // User-defined apps from defaults.json mac_custom_apps
+    property var customDockApps: []
 
-    property real baseIconSize: Math.round(44 * responsiveScale)
-    property real maxMagnification: 1.38
-    property real effectRadius: Math.round(120.0 * responsiveScale)
+    readonly property real baseIconSize: Math.round(Math.max(24, dockWindow.dockSize) * dockWindow.responsiveScale)
+
+    // Icon size dynamically re-computed so the whole dock always fits the screen
+    readonly property real effectiveIconSize: {
+      var count = dockWindow.dockItemCount
+      if (count <= 1) return dockWindow.baseIconSize
+      var spacing = Math.round(4 * dockWindow.responsiveScale)
+      var avail = dockWindow.screenWidth * 0.94 - spacing * (count - 1)
+      var fit = Math.floor(avail / count)
+      return Math.max(Math.round(24 * dockWindow.responsiveScale), Math.min(dockWindow.baseIconSize, fit))
+    }
+
+    // Vertical headroom for magnified icons + tooltips (no top clipping / overlap)
+    readonly property real magnifyRoom: Math.round((dockWindow.maxMagnification - 1.0) * dockWindow.effectiveIconSize + 28 * dockWindow.responsiveScale)
+
+    implicitWidth: dockCard.implicitWidth + Math.round(32 * responsiveScale)
+    implicitHeight: dockCard.height + Math.round(36 * responsiveScale) + (dockWindow.isMouseOverDock ? dockWindow.magnifyRoom : Math.round(6 * responsiveScale))
+
+    property real maxMagnification: 1.24
+    property real effectRadius: Math.round(70.0 * responsiveScale)
     property bool isMouseOverDock: false
     property real currentMouseX: 0
+    // Dock background transparency (0-100, 100 = fully opaque)
+    property int dockTransparency: 76
 
     property string homeDir: Quickshell.env("HOME")
     property string iconBasePath: homeDir + "/.local/share/icons/mac-dock/"
@@ -98,12 +122,24 @@ ShellRoot {
       onLoaded: {
         var s = text()
         dockWindow.isAutohide = (s.indexOf("AUTOHIDE=true") !== -1 || s.indexOf("AUTOHIDE=1") !== -1)
+        var dm = s.match(/DOCK_SIZE=(\d+)/)
+        if (dm && dm[1]) dockWindow.dockSize = Math.max(24, parseInt(dm[1]))
+        var mm = s.match(/DOCK_MAX_ITEMS=(\d+)/)
+        if (mm && mm[1]) dockWindow.maxDockItems = Math.max(4, parseInt(mm[1]))
+        var dt = s.match(/DOCK_TRANSPARENCY=(\d+)/)
+        if (dt && dt[1]) dockWindow.dockTransparency = Math.max(10, Math.min(100, parseInt(dt[1])))
         if (!dockWindow.isAutohide) dockWindow.isDockRevealed = true
       }
       onFileChanged: {
         reload()
         var s = text()
         dockWindow.isAutohide = (s.indexOf("AUTOHIDE=true") !== -1 || s.indexOf("AUTOHIDE=1") !== -1)
+        var dm = s.match(/DOCK_SIZE=(\d+)/)
+        if (dm && dm[1]) dockWindow.dockSize = Math.max(24, parseInt(dm[1]))
+        var mm = s.match(/DOCK_MAX_ITEMS=(\d+)/)
+        if (mm && mm[1]) dockWindow.maxDockItems = Math.max(4, parseInt(mm[1]))
+        var dt = s.match(/DOCK_TRANSPARENCY=(\d+)/)
+        if (dt && dt[1]) dockWindow.dockTransparency = Math.max(10, Math.min(100, parseInt(dt[1])))
         if (!dockWindow.isAutohide) dockWindow.isDockRevealed = true
       }
     }
@@ -133,6 +169,7 @@ ShellRoot {
         try {
           var d = JSON.parse(text())
           if (d && d.mac_pins) dockWindow.macPinsConfig = d.mac_pins
+          if (d && d.mac_custom_apps) dockWindow.customDockApps = d.mac_custom_apps
         } catch(e) {}
       }
       onFileChanged: {
@@ -140,6 +177,7 @@ ShellRoot {
         try {
           var d = JSON.parse(text())
           if (d && d.mac_pins) dockWindow.macPinsConfig = d.mac_pins
+          if (d && d.mac_custom_apps) dockWindow.customDockApps = d.mac_custom_apps
         } catch(e) {}
       }
     }
@@ -171,6 +209,14 @@ ShellRoot {
         return true
       })
 
+      // Merge user-defined custom apps (respecting per-app mac_pins toggles)
+      var custom = (dockWindow.customDockApps || []).filter(function(app) {
+        if (dockWindow.macPinsConfig && dockWindow.macPinsConfig[app.id] !== undefined) {
+          return dockWindow.macPinsConfig[app.id] === true
+        }
+        return true
+      })
+
       // Discover unpinned running applications
       var list = (ToplevelManager.toplevels && ToplevelManager.toplevels.values) ? ToplevelManager.toplevels.values : []
       var unpinned = []
@@ -179,7 +225,7 @@ ShellRoot {
       for (var i = 0; i < list.length; i++) {
         var tl = list[i]
         if (!tl) continue
-        var isPinned = pinned.some(function(p) { return dockWindow.matches(tl, p.matchers) })
+        var isPinned = pinned.concat(custom).some(function(p) { return dockWindow.matches(tl, p.matchers) })
         if (!isPinned) {
           var aid = (tl.appId || "app").toLowerCase()
           if (!seenAppIds[aid]) {
@@ -198,8 +244,16 @@ ShellRoot {
         }
       }
 
-      return pinned.concat(unpinned)
+      // Control the dock element count: keep pinned + custom, then cap running apps
+      var fixed = pinned.length + custom.length
+      var dynamicBudget = Math.max(0, dockWindow.maxDockItems - fixed)
+      var runningApps = unpinned.slice(0, dynamicBudget)
+
+      return pinned.concat(custom).concat(runningApps)
     }
+
+    // Total slots used by the full dock row (apps + divider + trash), drives fit-scaling
+    readonly property int dockItemCount: dockWindow.getVisibleDockApps ? (dockWindow.getVisibleDockApps().length + 2) : 2
 
     // Native Wayland Bottom Edge Trigger Strip
     MouseArea {
@@ -255,11 +309,11 @@ ShellRoot {
       }
 
       implicitWidth: dockLayoutRow.implicitWidth + Math.round(20 * dockWindow.responsiveScale)
-      implicitHeight: dockWindow.baseIconSize + Math.round(16 * dockWindow.responsiveScale)
+      implicitHeight: dockWindow.effectiveIconSize + Math.round(16 * dockWindow.responsiveScale)
       radius: Math.round(18 * dockWindow.responsiveScale)
 
       // Authentic Sequoia Glassmorphism
-      color: dockWindow.isLight ? Qt.rgba(0.98, 0.98, 1.0, 0.76) : Qt.rgba(0.12, 0.12, 0.16, 0.76)
+      color: dockWindow.isLight ? Qt.rgba(0.98, 0.98, 1.0, dockWindow.dockTransparency / 100.0) : Qt.rgba(0.12, 0.12, 0.16, dockWindow.dockTransparency / 100.0)
       border.color: dockWindow.isLight ? Qt.rgba(0, 0, 0, 0.12) : Qt.rgba(1, 1, 1, 0.22)
       border.width: 1
 
@@ -277,7 +331,7 @@ ShellRoot {
       RowLayout {
         id: dockLayoutRow
         anchors.centerIn: parent
-        spacing: Math.round(6 * dockWindow.responsiveScale)
+        spacing: Math.round(4 * dockWindow.responsiveScale)
 
         // 1. Primary & Dynamic App Icons
         Repeater {
@@ -286,7 +340,9 @@ ShellRoot {
 
           Item {
             id: appItem
-            implicitWidth: Math.round(dockWindow.baseIconSize + (appItem.currentScale - 1.0) * dockWindow.baseIconSize * 0.45)
+            // Fixed slot: layout never reflows during magnification, so the
+            // icon wave stays perfectly stable under the cursor (no shaking).
+            implicitWidth: dockWindow.effectiveIconSize
             implicitHeight: dockCard.height
 
             property var appData: modelData
@@ -309,7 +365,7 @@ ShellRoot {
 
             property real currentScale: 1.0
             Behavior on currentScale {
-              NumberAnimation { duration: 110; easing.type: Easing.OutQuad }
+              NumberAnimation { duration: 70; easing.type: Easing.OutCubic }
             }
             Binding {
               target: appItem
@@ -342,18 +398,18 @@ ShellRoot {
             SequentialAnimation {
               id: bounceAnim
               running: false
-              NumberAnimation { target: appItem; property: "bounceOffset"; to: -24; duration: 200; easing.type: Easing.OutQuad }
-              NumberAnimation { target: appItem; property: "bounceOffset"; to: 0; duration: 180; easing.type: Easing.InQuad }
-              NumberAnimation { target: appItem; property: "bounceOffset"; to: -14; duration: 150; easing.type: Easing.OutQuad }
+              NumberAnimation { target: appItem; property: "bounceOffset"; to: -24; duration: 140; easing.type: Easing.OutQuad }
               NumberAnimation { target: appItem; property: "bounceOffset"; to: 0; duration: 130; easing.type: Easing.InQuad }
-              NumberAnimation { target: appItem; property: "bounceOffset"; to: -5; duration: 90; easing.type: Easing.OutQuad }
-              NumberAnimation { target: appItem; property: "bounceOffset"; to: 0; duration: 70; easing.type: Easing.InQuad }
+              NumberAnimation { target: appItem; property: "bounceOffset"; to: -14; duration: 110; easing.type: Easing.OutQuad }
+              NumberAnimation { target: appItem; property: "bounceOffset"; to: 0; duration: 90; easing.type: Easing.InQuad }
+              NumberAnimation { target: appItem; property: "bounceOffset"; to: -5; duration: 70; easing.type: Easing.OutQuad }
+              NumberAnimation { target: appItem; property: "bounceOffset"; to: 0; duration: 60; easing.type: Easing.InQuad }
             }
 
             // Tooltip
             Rectangle {
               id: tooltip
-              visible: dockWindow.isMouseOverDock && appItem.distToMouse < 26
+              visible: dockWindow.isMouseOverDock && appItem.distToMouse < Math.round(dockWindow.effectiveIconSize * 0.42)
               anchors.bottom: iconContainer.top
               anchors.bottomMargin: 8
               anchors.horizontalCenter: parent.horizontalCenter
@@ -382,10 +438,11 @@ ShellRoot {
               anchors.horizontalCenter: parent.horizontalCenter
               anchors.bottom: parent.bottom
               anchors.bottomMargin: Math.round(9 * dockWindow.responsiveScale)
-              width: dockWindow.baseIconSize
-              height: dockWindow.baseIconSize
+              width: dockWindow.effectiveIconSize
+              height: dockWindow.effectiveIconSize
               scale: appItem.currentScale
               transformOrigin: Item.Bottom
+              z: Math.round(appItem.currentScale * 10)
 
               transform: Translate {
                 y: appItem.bounceOffset
@@ -434,16 +491,17 @@ ShellRoot {
         // 2. Vertical Glass Divider Separator
         Rectangle {
           Layout.preferredWidth: 1
-          Layout.preferredHeight: Math.round(dockWindow.baseIconSize * 0.75)
+          Layout.preferredHeight: Math.round(dockWindow.effectiveIconSize * 0.75)
           Layout.alignment: Qt.AlignVCenter
           color: dockWindow.isLight ? Qt.rgba(0, 0, 0, 0.16) : Qt.rgba(1, 1, 1, 0.20)
         }
 
         // 3. Special App: Trash Can
-        Item {
-          id: trashItem
-          implicitWidth: Math.round(dockWindow.baseIconSize + (trashItem.currentScale - 1.0) * dockWindow.baseIconSize * 0.45)
-          implicitHeight: dockCard.height
+Item {
+            id: trashItem
+            // Fixed slot (same stability principle as app items above)
+            implicitWidth: dockWindow.effectiveIconSize
+            implicitHeight: dockCard.height
 
           property real bounceOffset: 0
           readonly property real itemCenterX: dockLayoutRow.x + trashItem.x + trashItem.width / 2
@@ -458,7 +516,7 @@ ShellRoot {
 
           property real currentScale: 1.0
           Behavior on currentScale {
-            NumberAnimation { duration: 110; easing.type: Easing.OutQuad }
+            NumberAnimation { duration: 70; easing.type: Easing.OutCubic }
           }
           Binding {
             target: trashItem
@@ -478,15 +536,15 @@ ShellRoot {
           SequentialAnimation {
             id: trashBounceAnim
             running: false
-            NumberAnimation { target: trashItem; property: "bounceOffset"; to: -22; duration: 200; easing.type: Easing.OutQuad }
-            NumberAnimation { target: trashItem; property: "bounceOffset"; to: 0; duration: 180; easing.type: Easing.InQuad }
-            NumberAnimation { target: trashItem; property: "bounceOffset"; to: -10; duration: 140; easing.type: Easing.OutQuad }
-            NumberAnimation { target: trashItem; property: "bounceOffset"; to: 0; duration: 120; easing.type: Easing.InQuad }
+            NumberAnimation { target: trashItem; property: "bounceOffset"; to: -22; duration: 140; easing.type: Easing.OutQuad }
+            NumberAnimation { target: trashItem; property: "bounceOffset"; to: 0; duration: 130; easing.type: Easing.InQuad }
+            NumberAnimation { target: trashItem; property: "bounceOffset"; to: -10; duration: 100; easing.type: Easing.OutQuad }
+            NumberAnimation { target: trashItem; property: "bounceOffset"; to: 0; duration: 80; easing.type: Easing.InQuad }
           }
 
           // Tooltip
           Rectangle {
-            visible: dockWindow.isMouseOverDock && trashItem.distToMouse < 26
+            visible: dockWindow.isMouseOverDock && trashItem.distToMouse < Math.round(dockWindow.effectiveIconSize * 0.42)
             anchors.bottom: trashContainer.top
             anchors.bottomMargin: 8
             anchors.horizontalCenter: parent.horizontalCenter
@@ -514,10 +572,11 @@ ShellRoot {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
             anchors.bottomMargin: Math.round(9 * dockWindow.responsiveScale)
-            width: dockWindow.baseIconSize
-            height: dockWindow.baseIconSize
+            width: dockWindow.effectiveIconSize
+            height: dockWindow.effectiveIconSize
             scale: trashItem.currentScale
             transformOrigin: Item.Bottom
+            z: Math.round(trashItem.currentScale * 10)
 
             transform: Translate {
               y: trashItem.bounceOffset
@@ -541,7 +600,7 @@ ShellRoot {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         anchors.top: parent.top
-        anchors.topMargin: -Math.round(dockWindow.baseIconSize * 0.65)
+        anchors.topMargin: -Math.round(dockWindow.effectiveIconSize * 0.75)
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         cursorShape: Qt.PointingHandCursor

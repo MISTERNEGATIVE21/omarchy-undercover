@@ -27,7 +27,7 @@ ShellRoot {
     color: "transparent"
 
     implicitWidth: 360
-    implicitHeight: 520
+    implicitHeight: 600
 
     property string homeDir: Quickshell.env("HOME")
     property bool isLight: false
@@ -36,6 +36,8 @@ ShellRoot {
     property bool dndOn: false
     property int displayBrightness: 85
     property int masterVolume: 70
+    property int micLevel: 70
+    property bool micMuted: false
     property string wifiSsid: "Wi-Fi"
     property string btDeviceName: "Bluetooth"
     property string musicTitle: "No Track Playing"
@@ -75,18 +77,20 @@ ShellRoot {
         "wifi=$(nmcli radio wifi 2>/dev/null || echo 'disabled'); " +
         "bt=$(bluetoothctl show 2>/dev/null | grep -q 'Powered: yes' && echo '1' || echo '0'); " +
         "vol=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null | awk '{print int($2*100)}' || echo '70'); " +
+        "mic=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@ 2>/dev/null | awk '{print int($2*100)}' || echo '70'); " +
+        "micmut=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@ 2>/dev/null | grep -qi 'MUTED' && echo '1' || echo '0'); " +
         "bri=$(brightnessctl -m 2>/dev/null | cut -d, -f4 | tr -d '%' || echo '85'); " +
         "ssid=$(nmcli -t -f active,ssid dev wifi 2>/dev/null | grep '^yes:' | cut -d: -f2 || echo 'Wi-Fi'); " +
         "track=$(playerctl metadata title 2>/dev/null || echo 'No Track Playing'); " +
         "artist=$(playerctl metadata artist 2>/dev/null || echo 'Media Player'); " +
         "mstatus=$(playerctl status 2>/dev/null || echo 'Stopped'); " +
-        "echo \"$wifi|$bt|$vol|$bri|$ssid|$track|$artist|$mstatus\""
+        "echo \"$wifi|$bt|$vol|$bri|$ssid|$track|$artist|$mstatus|$mic|$micmut\""
       ]
       stdout: SplitParser {
         onRead: function(line) {
           if (!line) return
           var p = line.trim().split("|")
-          if (p.length >= 8) {
+          if (p.length >= 10) {
             controlCenterWindow.wifiOn = (p[0].indexOf("enabled") !== -1)
             controlCenterWindow.btOn = (p[1] === "1")
             var v = parseInt(p[2]); if (!isNaN(v)) controlCenterWindow.masterVolume = Math.max(0, Math.min(100, v))
@@ -95,6 +99,8 @@ ShellRoot {
             if (p[5]) controlCenterWindow.musicTitle = p[5]
             if (p[6]) controlCenterWindow.musicArtist = p[6]
             controlCenterWindow.musicPlaying = (p[7].toLowerCase() === "playing")
+            var m = parseInt(p[8]); if (!isNaN(m)) controlCenterWindow.micLevel = Math.max(0, Math.min(100, m))
+            controlCenterWindow.micMuted = (p[9] === "1")
           }
         }
       }
@@ -491,7 +497,90 @@ ShellRoot {
           }
         }
 
-        // Row 4: Now Playing / MPRIS Card
+        // Row 4: Microphone Slider Card
+        Rectangle {
+          Layout.fillWidth: true
+          implicitHeight: 64
+          radius: 14
+          color: controlCenterWindow.isLight ? Qt.rgba(1, 1, 1, 0.90) : Qt.rgba(1, 1, 1, 0.08)
+          border.color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.10) : Qt.rgba(1, 1, 1, 0.12)
+          border.width: 1
+
+          ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 10
+            spacing: 6
+
+            RowLayout {
+              Layout.fillWidth: true
+              Text { text: "Microphone"; font.pixelSize: 11; font.bold: true; color: controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff" }
+              Item { Layout.fillWidth: true }
+              Text { text: controlCenterWindow.micMuted ? "Muted" : controlCenterWindow.micLevel + "%"; font.pixelSize: 11; color: controlCenterWindow.isLight ? "#515154" : Qt.rgba(1, 1, 1, 0.72) }
+            }
+
+            Rectangle {
+              Layout.fillWidth: true
+              height: 24
+              radius: 12
+              color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.14)
+              clip: true
+
+              Rectangle {
+                width: parent.width * (controlCenterWindow.micLevel / 100.0)
+                height: parent.height
+                radius: 12
+                color: controlCenterWindow.micMuted ? (controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.35) : Qt.rgba(1, 1, 1, 0.35)) : (controlCenterWindow.isLight ? "#007aff" : "#ffffff")
+              }
+
+              Text {
+                anchors.left: parent.left
+                anchors.leftMargin: 8
+                anchors.verticalCenter: parent.verticalCenter
+                text: "󰍬"
+                font.pixelSize: 13
+                color: controlCenterWindow.isLight ? "#ffffff" : (controlCenterWindow.micLevel > 15 ? "#1a1a1a" : "#ffffff")
+              }
+
+              MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onPositionChanged: function(mouse) {
+                  var p = Math.max(0, Math.min(100, Math.round((mouse.x / width) * 100)))
+                  controlCenterWindow.micLevel = p
+                  controlCenterWindow.runCmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0 && wpctl set-volume @DEFAULT_AUDIO_SOURCE@ " + (p / 100.0) + " >/dev/null 2>&1")
+                  controlCenterWindow.micMuted = false
+                }
+                onClicked: function(mouse) {
+                  var p = Math.max(0, Math.min(100, Math.round((mouse.x / width) * 100)))
+                  controlCenterWindow.micLevel = p
+                  controlCenterWindow.runCmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0 && wpctl set-volume @DEFAULT_AUDIO_SOURCE@ " + (p / 100.0) + " >/dev/null 2>&1")
+                  controlCenterWindow.micMuted = false
+                }
+              }
+            }
+
+            RowLayout {
+              Layout.fillWidth: true
+              spacing: 8
+              Item { Layout.fillWidth: true }
+              Text {
+                text: controlCenterWindow.micMuted ? "󰍭 Unmute" : "󰍬 Mute"
+                font.pixelSize: 11
+                color: controlCenterWindow.isLight ? "#515154" : Qt.rgba(1, 1, 1, 0.72)
+                MouseArea {
+                  anchors.fill: parent
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: {
+                    controlCenterWindow.micMuted = !controlCenterWindow.micMuted
+                    controlCenterWindow.runCmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ " + (controlCenterWindow.micMuted ? "1" : "0"))
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // Row 5: Now Playing / MPRIS Card
         Rectangle {
           Layout.fillWidth: true
           implicitHeight: 74

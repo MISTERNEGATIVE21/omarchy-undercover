@@ -62,6 +62,8 @@ ShellRoot {
     property bool btEnabled: true
     property bool autohideActive: false
     property int dockSize: 52
+    property int maxDockItems: 24
+    property int dockTransparency: 76
     property string dockPosition: "bottom"
     property int windowGaps: 8
     property int windowRounding: 10
@@ -113,6 +115,10 @@ ShellRoot {
         if (m && m[1]) settingsWin.activeAccent = m[1]
         var md = s.match(/DOCK_SIZE=([0-9]+)/)
         if (md && md[1]) settingsWin.dockSize = parseInt(md[1])
+        var mm = s.match(/DOCK_MAX_ITEMS=([0-9]+)/)
+        if (mm && mm[1]) settingsWin.maxDockItems = parseInt(mm[1])
+        var dt = s.match(/DOCK_TRANSPARENCY=([0-9]+)/)
+        if (dt && dt[1]) settingsWin.dockTransparency = Math.max(10, Math.min(100, parseInt(dt[1])))
         var mg = s.match(/WINDOW_GAPS=([0-9]+)/)
         if (mg && mg[1]) settingsWin.windowGaps = parseInt(mg[1])
         var mr = s.match(/WINDOW_ROUNDING=([0-9]+)/)
@@ -127,6 +133,10 @@ ShellRoot {
         if (m && m[1]) settingsWin.activeAccent = m[1]
         var md = s.match(/DOCK_SIZE=([0-9]+)/)
         if (md && md[1]) settingsWin.dockSize = parseInt(md[1])
+        var mm = s.match(/DOCK_MAX_ITEMS=([0-9]+)/)
+        if (mm && mm[1]) settingsWin.maxDockItems = parseInt(mm[1])
+        var dt = s.match(/DOCK_TRANSPARENCY=([0-9]+)/)
+        if (dt && dt[1]) settingsWin.dockTransparency = Math.max(10, Math.min(100, parseInt(dt[1])))
         var mg = s.match(/WINDOW_GAPS=([0-9]+)/)
         if (mg && mg[1]) settingsWin.windowGaps = parseInt(mg[1])
         var mr = s.match(/WINDOW_ROUNDING=([0-9]+)/)
@@ -974,7 +984,7 @@ ShellRoot {
 
                 Rectangle {
                   Layout.fillWidth: true
-                  implicitHeight: 180
+                  implicitHeight: 220
                   radius: 10
                   color: settingsWin.cardBg
                   border.color: settingsWin.cardBorder
@@ -1001,6 +1011,52 @@ ShellRoot {
                         onMoved: {
                           settingsWin.dockSize = Math.round(value)
                           settingsWin.saveSetting("DOCK_SIZE", settingsWin.dockSize)
+                          settingsWin.runCmd("omarchy-undercover --reload")
+                        }
+                      }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    // Max Dock Items Slider
+                    RowLayout {
+                      Layout.fillWidth: true
+                      Text {
+                        text: "Max Dock Items (" + settingsWin.maxDockItems + ")"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 12
+                        color: settingsWin.textPrimary
+                      }
+                      Item { Layout.fillWidth: true }
+                      Slider {
+                        from: 4; to: 56; stepSize: 1
+                        value: settingsWin.maxDockItems
+                        onMoved: {
+                          settingsWin.maxDockItems = Math.round(value)
+                          settingsWin.saveSetting("DOCK_MAX_ITEMS", settingsWin.maxDockItems)
+                          settingsWin.runCmd("omarchy-undercover --reload")
+                        }
+                      }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    // Dock Transparency Slider
+                    RowLayout {
+                      Layout.fillWidth: true
+                      Text {
+                        text: "Dock Transparency (" + settingsWin.dockTransparency + "%)"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 12
+                        color: settingsWin.textPrimary
+                      }
+                      Item { Layout.fillWidth: true }
+                      Slider {
+                        from: 10; to: 100; stepSize: 1
+                        value: settingsWin.dockTransparency
+                        onMoved: {
+                          settingsWin.dockTransparency = Math.round(value)
+                          settingsWin.saveSetting("DOCK_TRANSPARENCY", settingsWin.dockTransparency)
                           settingsWin.runCmd("omarchy-undercover --reload")
                         }
                       }

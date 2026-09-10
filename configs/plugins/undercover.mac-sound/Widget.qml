@@ -1,14 +1,17 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.Commons
 import qs.Ui
 
 BarWidget {
   id: root
   moduleName: "undercover.mac-sound"
 
-  implicitWidth: button.implicitWidth
-  implicitHeight: button.implicitHeight
+  readonly property int contentWidth: Style.bar.iconSlot > 0 ? Style.bar.iconSlot : 28
+
+  implicitWidth: contentWidth
+  implicitHeight: root.bar ? root.bar.barSize : 28
 
   property real volumeLevel: 0.65
   property bool isMuted: false

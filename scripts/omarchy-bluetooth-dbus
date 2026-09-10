@@ -1,0 +1,195 @@
+#!/usr/bin/env python3
+"""
+omarchy-bluetooth-dbus — Bluetooth control via BlueZ D-Bus API.
+
+Subcommands (used by the Quickshell flyouts):
+  power          -> prints "yes" / "no"
+  on / off       -> powers the first adapter on/off
+  discover       -> runs a short discovery scan (~5s) then lists devices
+  list           -> prints Device MAC NAME lines (bluetoothctl-style)
+  listwin        -> prints mac|connected|name (win11 flyout style)
+  connect <mac>  -> connects a device
+  disconnect <mac> -> disconnects a device
+  pair <mac>     -> starts pairing
+"""
+
+import sys
+import time
+
+import dbus
+
+BLUEZ_BUS = "org.bluez"
+DBUS_OM = "org.freedesktop.DBus.ObjectManager"
+DBUS_PROPS = "org.freedesktop.DBus.Properties"
+ADAPTER_IFACE = "org.bluez.Adapter1"
+DEVICE_IFACE = "org.bluez.Device1"
+
+
+def get_bus():
+    return dbus.SystemBus()
+
+
+def get_managed():
+    bus = get_bus()
+    om = bus.get_object(BLUEZ_BUS, "/")
+    return dbus.Interface(om, DBUS_OM).GetManagedObjects()
+
+
+def get_adapter(managed):
+    for path, ifaces in managed.items():
+        if ADAPTER_IFACE in ifaces:
+            return path, ifaces[ADAPTER_IFACE]
+    return None, None
+
+
+def get_devices(managed):
+    devs = []
+    for path, ifaces in managed.items():
+        if DEVICE_IFACE in ifaces:
+            devs.append((path, ifaces[DEVICE_IFACE]))
+    return devs
+
+
+def adapter_powered():
+    managed = get_managed()
+    _, props = get_adapter(managed)
+    if props is None:
+        return False
+    return bool(props.get("Powered", False))
+
+
+def set_adapter_powered(enabled):
+    bus = get_bus()
+    managed = get_managed()
+    path, _ = get_adapter(managed)
+    if path is None:
+        return
+    obj = bus.get_object(BLUEZ_BUS, path)
+    dbus.Interface(obj, DBUS_PROPS).Set(ADAPTER_IFACE, "Powered", enabled)
+
+
+def cmd_power():
+    print("yes" if adapter_powered() else "no")
+
+
+def cmd_set(kind):
+    set_adapter_powered(kind == "on")
+    print("ok")
+
+
+def _icon_for(name):
+    low = name.lower()
+    if any(k in low for k in ("headset", "audio", "airpods", "buds", "sound", "speaker", "wh-")):
+        return "headphone"
+    if any(k in low for k in ("mouse", "trackpad")):
+        return "mouse"
+    if "key" in low:
+        return "keyboard"
+    if any(k in low for k in ("controller", "xbox", "gamepad", "joy")):
+        return "gamepad"
+    return "other"
+
+
+def cmd_discover():
+    bus = get_bus()
+    managed = get_managed()
+    path, _ = get_adapter(managed)
+    if path is None:
+        print("no adapter")
+        return
+    obj = bus.get_object(BLUEZ_BUS, path)
+    adapter = dbus.Interface(obj, ADAPTER_IFACE)
+    try:
+        adapter.StartDiscovery()
+    except dbus.DBusException:
+        pass
+    time.sleep(5)
+    try:
+        adapter.StopDiscovery()
+    except dbus.DBusException:
+        pass
+    cmd_list()
+
+
+def cmd_list():
+    managed = get_managed()
+    for path, props in get_devices(managed):
+        name = props.get("Alias") or props.get("Name") or ""
+        mac = props.get("Address", "")
+        if not mac:
+            continue
+        print("Device %s %s" % (mac, name))
+
+
+def cmd_listwin():
+    managed = get_managed()
+    for path, props in get_devices(managed):
+        name = props.get("Alias") or props.get("Name") or ""
+        mac = props.get("Address", "")
+        if not mac:
+            continue
+        connected = "1" if props.get("Connected", False) else "0"
+        print("%s|%s|%s" % (mac, connected, name))
+    cmd_power()
+
+
+def _device_call(mac, method, fallback=None):
+    bus = get_bus()
+    managed = get_managed()
+    target = None
+    for path, props in get_devices(managed):
+        if props.get("Address") == mac:
+            target = path
+            break
+    if target is None:
+        print("device not found: %s" % mac)
+        return
+    obj = bus.get_object(BLUEZ_BUS, target)
+    iface = dbus.Interface(obj, DEVICE_IFACE)
+    try:
+        getattr(iface, method)()
+        print("ok")
+    except dbus.DBusException as e:
+        if fallback:
+            print(fallback)
+        else:
+            print("failed: %s" % e.get_dbus_message())
+
+
+def cmd_connect(mac):
+    _device_call(mac, "Connect")
+
+
+def cmd_disconnect(mac):
+    _device_call(mac, "Disconnect")
+
+
+def cmd_pair(mac):
+    _device_call(mac, "Pair")
+
+
+def main():
+    args = sys.argv[1:]
+    cmd = args[0] if args else "power"
+    if cmd == "power":
+        cmd_power()
+    elif cmd in ("on", "off"):
+        cmd_set(cmd)
+    elif cmd == "discover":
+        cmd_discover()
+    elif cmd == "list":
+        cmd_list()
+    elif cmd == "listwin":
+        cmd_listwin()
+    elif cmd == "connect" and len(args) > 1:
+        cmd_connect(args[1])
+    elif cmd == "disconnect" and len(args) > 1:
+        cmd_disconnect(args[1])
+    elif cmd == "pair" and len(args) > 1:
+        cmd_pair(args[1])
+    else:
+        cmd_power()
+
+
+if __name__ == "__main__":
+    main()

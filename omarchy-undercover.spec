@@ -1,5 +1,5 @@
 Name:           omarchy-undercover
-Version:        4.0.0
+Version:        5.0.0
 Release:        1%{?dist}
 Summary:        Camouflage & desktop transformation suite (macOS Sequoia & Windows 11 Fluent) for Omarchy Hyprland
 
@@ -70,5 +70,14 @@ install -m 0644 LICENSE %{buildroot}%{_licensedir}/%{name}/LICENSE
 %{_licensedir}/%{name}/LICENSE
 
 %changelog
-* Thu Aug 13 2026 John Varghese <john@omarchy.org> - 1.0.0-1
+* Thu Sep 10 2026 MISTERNEGATIVE21 <MISTERNEGATIVE21@gmail.com> - 5.0.0-1
+- Major release v5.0.0:
+- Fix issue where toggling theme triggered Omarchy Undercover
+- Add transparent taskbar toggle and UI setting
+- Overhaul Wi-Fi and Bluetooth QuickShell managers with high-contrast Fluent styling
+- Fix taskbar window switching and active application tracking
+- Re-spaced system tray and clock with native Windows 11 margins
+- Add high-resolution macOS and Windows 11 desktop screenshots
+
+* Thu Aug 13 2026 MISTERNEGATIVE21 <MISTERNEGATIVE21@gmail.com> - 1.0.0-1
 - Initial release of Omarchy Undercover

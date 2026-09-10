@@ -46,7 +46,6 @@ ShellRoot {
 
     readonly property var filteredDevices: {
       var q = btWindow.searchText.toLowerCase().trim()
-      if (!q) return btWindow.pairedDevices
       var result = []
       for (var i = 0; i < btWindow.pairedDevices.length; i++) {
         var d = btWindow.pairedDevices[i]
@@ -54,6 +53,12 @@ ShellRoot {
           result.push(d)
         }
       }
+      // Connected first, then alphabetically by name.
+      result.sort(function(a, b) {
+        if (a.connected && !b.connected) return -1
+        if (!a.connected && b.connected) return 1
+        return (a.name || "").localeCompare(b.name || "")
+      })
       return result
     }
 
@@ -78,7 +83,7 @@ ShellRoot {
     Process {
       id: powerPoller
       running: true
-      command: ["bash", "-c", "bluetoothctl show | grep -i 'Powered:' | awk '{print $2}' || echo 'no'"]
+      command: ["bash", "-c", "omarchy-bluetooth-dbus power"]
       stdout: SplitParser {
         onRead: function(line) {
           btWindow.btEnabled = (String(line).trim().toLowerCase() === "yes")
@@ -86,32 +91,11 @@ ShellRoot {
       }
     }
 
-    // Devices query & scan
+    // Devices query & scan (BlueZ over D-Bus)
     Process {
       id: devicesPoller
       running: true
-      command: ["bash", "-c", "python3 -u -c \"
-import subprocess
-try:
-    conn_raw = subprocess.check_output(['bluetoothctl', 'devices', 'Connected'], stderr=subprocess.DEVNULL).decode()
-    conn_macs = set([line.split()[1] for line in conn_raw.splitlines() if line.startswith('Device ')])
-except Exception:
-    conn_macs = set()
-try:
-    all_raw = subprocess.check_output(['bluetoothctl', 'devices'], stderr=subprocess.DEVNULL).decode()
-    seen = set()
-    for line in all_raw.splitlines():
-        if line.startswith('Device '):
-            parts = line.split(' ', 2)
-            mac = parts[1]
-            if mac in seen: continue
-            seen.add(mac)
-            name = parts[2] if len(parts) > 2 else mac
-            connected = '1' if mac in conn_macs else '0'
-            print(f'{mac}|{connected}|{name}', flush=True)
-except Exception:
-    pass
-\""]
+      command: ["bash", "-c", "omarchy-bluetooth-dbus listwin"]
       stdout: SplitParser {
         onRead: function(line) {
           var l = String(line).trim()
@@ -308,7 +292,7 @@ except Exception:
                 onClicked: {
                   var target = !btWindow.btEnabled
                   btWindow.btEnabled = target
-                  btWindow.runCmd("bluetoothctl power " + (target ? "on" : "off"))
+                  btWindow.runCmd("omarchy-bluetooth-dbus " + (target ? "on" : "off"))
                   btWindow.triggerQuery()
                 }
               }
@@ -578,9 +562,9 @@ except Exception:
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
                       if (modelData.connected) {
-                        btWindow.runCmd("bluetoothctl disconnect " + modelData.mac)
+btWindow.runCmd("omarchy-bluetooth-dbus disconnect " + modelData.mac)
                       } else {
-                        btWindow.runCmd("bluetoothctl connect " + modelData.mac)
+                        btWindow.runCmd("omarchy-bluetooth-dbus connect " + modelData.mac)
                       }
                       btWindow.triggerQuery()
                     }
@@ -596,7 +580,7 @@ except Exception:
                 acceptedButtons: Qt.RightButton
                 onClicked: {
                   if (modelData.connected) {
-                    btWindow.runCmd("bluetoothctl disconnect " + modelData.mac)
+                    btWindow.runCmd("omarchy-bluetooth-dbus disconnect " + modelData.mac)
                     btWindow.triggerQuery()
                   }
                 }

@@ -35,7 +35,6 @@ ShellRoot {
 
     readonly property var filteredDevices: {
       var q = macBtWindow.searchText.toLowerCase().trim()
-      if (!q) return macBtWindow.pairedDevices
       var result = []
       for (var i = 0; i < macBtWindow.pairedDevices.length; i++) {
         var d = macBtWindow.pairedDevices[i]
@@ -43,6 +42,12 @@ ShellRoot {
           result.push(d)
         }
       }
+      // Connected first, then alphabetically by name.
+      result.sort(function(a, b) {
+        if (a.connected && !b.connected) return -1
+        if (!a.connected && b.connected) return 1
+        return (a.name || "").localeCompare(b.name || "")
+      })
       return result
     }
 
@@ -69,11 +74,11 @@ ShellRoot {
       }
     }
 
-    // Bluetooth power poller
+    // Bluetooth power poller (BlueZ over D-Bus)
     Process {
       id: powerPoller
       running: true
-      command: ["bash", "-c", "bluetoothctl show | grep -i 'Powered:' | awk '{print $2}' || echo 'no'"]
+      command: ["bash", "-c", "omarchy-bluetooth-dbus power"]
       stdout: SplitParser {
         onRead: function(line) {
           macBtWindow.btEnabled = (String(line).trim().toLowerCase() === "yes")
@@ -81,10 +86,10 @@ ShellRoot {
       }
     }
 
-    // Devices query & discovery scan
+    // Devices query & discovery scan (BlueZ over D-Bus)
     Process {
       id: devicesPoller
-      command: ["bash", "-c", "bluetoothctl --timeout 5 scan on >/dev/null 2>&1 & bluetoothctl devices Paired 2>/dev/null; bluetoothctl devices 2>/dev/null"]
+      command: ["bash", "-c", "omarchy-bluetooth-dbus discover"]
       onExited: function() {
         macBtWindow.isScanning = false
       }
@@ -196,7 +201,7 @@ ShellRoot {
               onClicked: {
                 var target = !macBtWindow.btEnabled
                 macBtWindow.btEnabled = target
-                macBtWindow.runCmd("bluetoothctl power " + (target ? "on" : "off"))
+                macBtWindow.runCmd("omarchy-bluetooth-dbus " + (target ? "on" : "off"))
                 if (!devicesPoller.running) devicesPoller.running = true
               }
             }
@@ -340,7 +345,7 @@ ShellRoot {
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
-                  macBtWindow.runCmd("bluetoothctl connect " + modelData.mac)
+                  macBtWindow.runCmd("omarchy-bluetooth-dbus connect " + modelData.mac)
                 }
               }
             }

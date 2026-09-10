@@ -1,4 +1,4 @@
-# 🕵️ Omarchy Undercover (v4.0.0)
+# 🕵️ Omarchy Undercover (v5.0.0)
 
 ```
   ██████╗ ███╗   ███╗ █████╗ ██████╗  ██████╗██╗  ██╗██╗   ██╗
@@ -15,7 +15,7 @@
   ╚═════╝ ╚═╝  ╚═══╝╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝   ╚═══╝  ╚══════╝╚═╝  ╚═╝
 ```
 
-[![Release](https://img.shields.io/badge/Release-v4.0.0-blue.svg?style=for-the-badge)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases/tag/v4.0.0)
+[![Release](https://img.shields.io/badge/Release-v5.0.0-blue.svg?style=for-the-badge)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases/tag/v5.0.0)
 [![Compositor](https://img.shields.io/badge/Compositor-Hyprland-00f2fe.svg?style=for-the-badge)](https://hyprland.org)
 [![Theme Engine](https://img.shields.io/badge/Theme-Omarchy-ff2d55.svg?style=for-the-badge)](https://github.com/MISTERNEGATIVE21/omarchy-undercover)
 [![License](https://img.shields.io/badge/License-GPL--3.0-green.svg?style=for-the-badge)](LICENSE)
@@ -25,27 +25,32 @@
 
 ---
 
-## 🚀 What's New in v4.0.0
+## 🚀 What's New in v5.0.0
 
-* **Native macOS System Settings App**: Brand-new pure QuickShell System Settings window with 9 categories (Disguise, Appearance, Wallpaper, Dock, Sound, Wi-Fi, Bluetooth, Search & General) and 1:1 Sequoia styling — launched straight from the Apple Menu.
-* **Pure QuickShell Windows 11 Settings App**: Integrated native $980\times660$ Fluent window with 7 categories and built-in **PowerToys Tools** (FancyZones, Awake, ColorPicker, Always on Top).
-* **Remastered Wi-Fi & Bluetooth Panels**: Overhauled Fluent QuickShell dashboards with live signal/device states, password-protected network connect, paired-device controls and per-panel theming.
-* **macOS Sequoia Window Traffic Lights**: Pixel-perfect 12px circular controls with centered vector SVG hover glyphs (✕, –, ⤢), authentic Sequoia colors, and unfocused backdrop dimming.
-* **Proportional Windows 11 Taskbar**: Dynamic 1:1 square tiles, dynamic running open window detection via `ToplevelManager`, and hover preview cards.
-* **Edge-Sensing 30s Auto-Hide Dock**: Zero-latency cursor-down bottom wake strip and intelligent 30-second inactivity auto-hide daemon.
-* **Realistic Window Minimize Physics**: Smooth downward slide transitions towards the dock/taskbar in Hyprland and instant focus transfer to open windows without stutter.
-* **Wayland Snap Assist**: Hotkey and CLI window tiling controller (`omarchy-undercover-snap`) supporting Halves, Thirds, and Quarters.
-* **Marketplace Publishing Compliance**: 100% compliant with Omarchy Quattro plugin contract schema v1 for official marketplace publishing.
+* **🛡️ Theme-Switching Conflict Immunity**: Neutralized the layout collision where changing or toggling Omarchy themes (`omarchy-menu toggle theme`, `omarchy theme set`, or `SUPER+SHIFT+CTRL+SPACE`) accidentally reloaded Undercover widgets. Added defensive validation guards and self-healing sanitization across all hooks.
+* **🪟 Transparent Windows 11 Taskbar**: Added fully dynamic acrylic / transparent taskbar support with dedicated CLI switch (`--taskbar-transparent [true|false|toggle]`) and native toggles in Windows 11 Settings ▸ Personalization.
+* **📶 Overhauled Wireless & Bluetooth Dashboards**: Remastered QuickShell network and Bluetooth flyouts with high-contrast Fluent styling, live signal meters, AP scanning, and direct device pairing controls.
+* **🎯 Interactive Taskbar Window Switching**: Fixed Wayland `ToplevelManager` active window tracking and focus navigation — clicking open application icons reliably shifts focus and activates workspaces.
+* **⏰ Spacious System Tray & Clock Margins**: Enhanced taskbar right-corner geometry with authentic Windows 11 padding, refined indicator spacing, and hover card actions.
+* **📸 High-Resolution Desktop Imagery**: Updated 2560×1440 desktop and system assets for macOS Sequoia and Windows 11 Fluent transformations.
 
 ---
 
 ## 📸 Screenshots
 
-Try the disguise on your own desktop — macOS Sequoia mode and the Windows 11 Fluent Settings app in action:
+Experience the disguise in action — pixel-perfect macOS Sequoia and Windows 11 Fluent transformations:
 
-| Apple macOS Sequoia Desktop | Windows 11 Fluent Settings |
+### 🍏 Apple macOS Sequoia
+
+| macOS Sequoia (Dark) | macOS Sequoia (Light) |
 | :---: | :---: |
-| <img src="assets/screenshots/macos-desktop.png" alt="Omarchy Undercover macOS Sequoia desktop" width="500"/> | <img src="assets/screenshots/windows11-settings.png" alt="Omarchy Undercover Windows 11 Fluent Settings" width="500"/> |
+| <img src="assets/screenshots/MacOS_Dark.png" alt="Omarchy Undercover macOS Sequoia Dark desktop" width="500"/> | <img src="assets/screenshots/MacOS_Light.png" alt="Omarchy Undercover macOS Sequoia Light desktop" width="500"/> |
+
+### 🪟 Windows 11 Fluent
+
+| Windows 11 Fluent (Dark) | Windows 11 Fluent (Light) | Windows 11 Fluent (Transparent Taskbar) |
+| :---: | :---: | :---: |
+| <img src="assets/screenshots/Windows11_Dark.png" alt="Omarchy Undercover Windows 11 Dark desktop" width="330"/> | <img src="assets/screenshots/Windows11_Light.png" alt="Omarchy Undercover Windows 11 Light desktop" width="330"/> | <img src="assets/screenshots/Windows11_Trannsparent.png" alt="Omarchy Undercover Windows 11 Transparent Taskbar" width="330"/> |
 
 Toggle between both disguises anytime with <kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>U</kbd>.
 
@@ -116,6 +121,28 @@ $$\Large \text{🎭 Undercover Disguise (macOS / Windows 11)} \iff \text{🐧 De
 │  • macOS Spring / Ease Physics       │  • Fluent Cubic Bezier Animations    │
 │  • Bottom-Slide Minimize Physics     │  • Taskbar Minimize & Window Focus   │
 └──────────────────────────────────────┴──────────────────────────────────────┘
+```
+
+---
+
+## 🎛️ Dock & Taskbar Customization
+
+The macOS dock and Windows 11 taskbar auto-scale to fit your display without icons overlapping. Tune them from **System Settings ▸ Desktop & Dock** or directly in `~/.config/omarchy-undercover/settings.conf`:
+
+```ini
+DOCK_SIZE=56          # Base icon size in px (24–128)
+DOCK_MAX_ITEMS=24     # Pin the max number of icons before running-apps are capped
+DOCK_TRANSPARENCY=76  # Dock background opacity in % (10–100)
+```
+
+**Custom dock apps** (`~/.config/omarchy-undercover/defaults.json`) — append your own entries and they will launch right from the dock:
+
+```json
+{
+  "mac_custom_apps": [
+    { "id": "myapp", "name": "My App", "icon": "myapp.svg", "exec": "myapp", "matchers": ["myapp"] }
+  ]
+}
 ```
 
 ---

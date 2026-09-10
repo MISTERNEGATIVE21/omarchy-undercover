@@ -8,8 +8,10 @@ BarWidget {
   id: root
   moduleName: "undercover.mac-spotlight"
 
-  implicitWidth: button.implicitWidth
-  implicitHeight: button.implicitHeight
+  readonly property int contentWidth: Style.bar.iconSlot > 0 ? Style.bar.iconSlot : 28
+
+  implicitWidth: contentWidth
+  implicitHeight: root.bar ? root.bar.barSize : 28
 
   WidgetButton {
     id: button
@@ -17,7 +19,7 @@ BarWidget {
     bar: root.bar
     text: " "
     labelVisible: false
-    fixedWidth: Style.bar.iconSlot > 0 ? Style.bar.iconSlot : 28
+    fixedWidth: root.contentWidth
     tooltipText: "Spotlight (Super + Space)"
 
     onPressed: function() {

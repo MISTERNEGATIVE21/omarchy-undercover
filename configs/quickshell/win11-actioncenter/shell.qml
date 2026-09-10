@@ -27,7 +27,7 @@ ShellRoot {
     color: "transparent"
 
     implicitWidth: 380
-    implicitHeight: 460
+    implicitHeight: 500
 
     property string homeDir: Quickshell.env("HOME")
     property bool isDark: true
@@ -38,6 +38,8 @@ ShellRoot {
     property bool nightLightEnabled: false
     property bool batterySaverEnabled: false
     property int volumeVal: 70
+    property int micVal: 70
+    property bool micMuted: false
     property int brightnessVal: 80
     property int batteryPct: 90
     property bool isCharging: false
@@ -77,24 +79,28 @@ ShellRoot {
         "wifi=$(nmcli radio wifi 2>/dev/null || echo 'disabled'); " +
         "bt=$(bluetoothctl show 2>/dev/null | grep -q 'Powered: yes' && echo '1' || echo '0'); " +
         "vol=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null | awk '{print int($2*100)}' || echo '70'); " +
+        "mic=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@ 2>/dev/null | awk '{print int($2*100)}' || echo '70'); " +
+        "micmut=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@ 2>/dev/null | grep -qi 'MUTED' && echo '1' || echo '0'); " +
         "bri=$(brightnessctl -m 2>/dev/null | cut -d, -f4 | tr -d '%' || echo '80'); " +
         "bat=$(cat /sys/class/power_supply/BAT*/capacity 2>/dev/null | head -1 || echo '90'); " +
         "chg=$(cat /sys/class/power_supply/BAT*/status 2>/dev/null | head -1 || echo 'Discharging'); " +
         "ssid=$(nmcli -t -f active,ssid dev wifi 2>/dev/null | grep '^yes:' | cut -d: -f2 || echo 'Connected'); " +
-        "echo \"$wifi|$bt|$vol|$bri|$bat|$chg|$ssid\""
+        "echo \"$wifi|$bt|$vol|$mic|$micmut|$bri|$bat|$chg|$ssid\""
       ]
       stdout: SplitParser {
         onRead: function(line) {
           if (!line) return
           var p = line.trim().split("|")
-          if (p.length >= 7) {
+          if (p.length >= 9) {
             actionCenterWindow.wifiEnabled = (p[0].indexOf("enabled") !== -1)
             actionCenterWindow.btEnabled = (p[1] === "1")
             var v = parseInt(p[2]); if (!isNaN(v)) actionCenterWindow.volumeVal = Math.max(0, Math.min(100, v))
-            var b = parseInt(p[3]); if (!isNaN(b)) actionCenterWindow.brightnessVal = Math.max(5, Math.min(100, b))
-            var bt = parseInt(p[4]); if (!isNaN(bt)) actionCenterWindow.batteryPct = Math.max(1, Math.min(100, bt))
-            actionCenterWindow.isCharging = (p[5].toLowerCase().indexOf("charg") !== -1)
-            if (p[6]) actionCenterWindow.wifiSsid = p[6]
+            var m = parseInt(p[3]); if (!isNaN(m)) actionCenterWindow.micVal = Math.max(0, Math.min(100, m))
+            actionCenterWindow.micMuted = (p[4] === "1")
+            var b = parseInt(p[5]); if (!isNaN(b)) actionCenterWindow.brightnessVal = Math.max(5, Math.min(100, b))
+            var bt = parseInt(p[6]); if (!isNaN(bt)) actionCenterWindow.batteryPct = Math.max(1, Math.min(100, bt))
+            actionCenterWindow.isCharging = (p[7].toLowerCase().indexOf("charg") !== -1)
+            if (p[8]) actionCenterWindow.wifiSsid = p[8]
           }
         }
       }
@@ -555,7 +561,65 @@ ShellRoot {
           }
         }
 
-        // 4. Footer Bar with Battery & Settings Gear
+        // 4. Microphone Slider
+        RowLayout {
+          Layout.fillWidth: true
+          spacing: 10
+
+          Text { text: actionCenterWindow.micMuted ? "󰍭" : "󰍬"; font.pixelSize: 16; color: actionCenterWindow.isDark ? "#ffffff" : "#1a1a1a" }
+
+          Rectangle {
+            Layout.fillWidth: true
+            height: 18
+            radius: 9
+            color: actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)
+            clip: true
+
+            Rectangle {
+              width: parent.width * (actionCenterWindow.micVal / 100.0)
+              height: parent.height
+              radius: 9
+              color: actionCenterWindow.micMuted
+                     ? (actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.35) : Qt.rgba(0, 0, 0, 0.35))
+                     : (actionCenterWindow.isDark ? "#60cdff" : "#0067c0")
+            }
+
+            MouseArea {
+              anchors.fill: parent
+              cursorShape: Qt.PointingHandCursor
+              onPositionChanged: function(mouse) {
+                var p = Math.max(0, Math.min(100, Math.round((mouse.x / width) * 100)))
+                actionCenterWindow.micVal = p
+                actionCenterWindow.micMuted = false
+                actionCenterWindow.runCmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0 && wpctl set-volume @DEFAULT_AUDIO_SOURCE@ " + (p / 100.0) + " >/dev/null 2>&1")
+              }
+              onClicked: function(mouse) {
+                var p = Math.max(0, Math.min(100, Math.round((mouse.x / width) * 100)))
+                actionCenterWindow.micVal = p
+                actionCenterWindow.micMuted = false
+                actionCenterWindow.runCmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0 && wpctl set-volume @DEFAULT_AUDIO_SOURCE@ " + (p / 100.0) + " >/dev/null 2>&1")
+              }
+            }
+          }
+
+          Text {
+            text: actionCenterWindow.micMuted ? "Muted" : actionCenterWindow.micVal + "%"
+            font.family: "Segoe UI"
+            font.pixelSize: 10
+            color: actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.75) : Qt.rgba(0, 0, 0, 0.75)
+            MouseArea {
+              visible: !actionCenterWindow.micMuted
+              anchors.fill: parent
+              cursorShape: Qt.PointingHandCursor
+              onClicked: {
+                actionCenterWindow.micMuted = true
+                actionCenterWindow.runCmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 1")
+              }
+            }
+          }
+        }
+
+        // 5. Footer Bar with Battery & Settings Gear
         Rectangle {
           Layout.fillWidth: true
           implicitHeight: 40

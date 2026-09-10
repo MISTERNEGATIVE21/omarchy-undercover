@@ -103,13 +103,13 @@ ensure_setting() {
 }
 
 # Copy a config file/dir from the project presets into the user config dir,
-# preferring the installed copy under CONFIG_DIR.
+# preferring the repository source under SCRIPT_DIR when available.
 project_file() {
     local rel="$1"
-    if [[ -e "$CONFIG_DIR/$rel" ]]; then
-        echo "$CONFIG_DIR/$rel"
-    elif [[ -e "${SCRIPT_DIR}/../configs/$rel" ]]; then
+    if [[ -e "${SCRIPT_DIR}/../configs/$rel" ]]; then
         echo "${SCRIPT_DIR}/../configs/$rel"
+    elif [[ -e "$CONFIG_DIR/$rel" ]]; then
+        echo "$CONFIG_DIR/$rel"
     elif [[ -e "/usr/share/omarchy-undercover/configs/$rel" ]]; then
         echo "/usr/share/omarchy-undercover/configs/$rel"
     else
@@ -119,10 +119,10 @@ project_file() {
 
 asset_dir() {
     local rel="$1"
-    if [[ -e "$CONFIG_DIR/$rel" ]]; then
-        echo "$CONFIG_DIR/$rel"
-    elif [[ -e "${SCRIPT_DIR}/../assets/$rel" ]]; then
+    if [[ -e "${SCRIPT_DIR}/../assets/$rel" ]]; then
         echo "${SCRIPT_DIR}/../assets/$rel"
+    elif [[ -e "$CONFIG_DIR/$rel" ]]; then
+        echo "$CONFIG_DIR/$rel"
     elif [[ -e "/usr/share/omarchy-undercover/assets/$rel" ]]; then
         echo "/usr/share/omarchy-undercover/assets/$rel"
     else
@@ -244,14 +244,16 @@ ensure_omarchy_quickshell_assets() {
         qs_src="${SCRIPT_DIR}/../configs/quickshell"
     fi
 
-    mkdir -p "$HOME/.config/omarchy/plugins" "$HOME/.config/omarchy/themes" "$CONFIG_DIR/quickshell"
+    mkdir -p "$HOME/.config/omarchy/plugins" "$HOME/.config/omarchy/themes" "$CONFIG_DIR/quickshell" "$CONFIG_DIR/plugins" "$CONFIG_DIR/themes"
     mkdir -p "$HOME/.local/share/icons/win11" "$HOME/.local/share/icons/mac-dock" "$HOME/.local/share/icons/hicolor/scalable/apps"
 
     if [[ -d "$plugins_src" ]]; then
         cp -rf "$plugins_src/"* "$HOME/.config/omarchy/plugins/" 2>/dev/null || true
+        cp -rf "$plugins_src/"* "$CONFIG_DIR/plugins/" 2>/dev/null || true
     fi
     if [[ -d "$themes_src" ]]; then
         cp -rf "$themes_src/"* "$HOME/.config/omarchy/themes/" 2>/dev/null || true
+        cp -rf "$themes_src/"* "$CONFIG_DIR/themes/" 2>/dev/null || true
     fi
     if [[ -d "$qs_src" ]]; then
         cp -rf "$qs_src/"* "$CONFIG_DIR/quickshell/" 2>/dev/null || true
@@ -265,7 +267,44 @@ ensure_omarchy_quickshell_assets() {
     if [[ -d "$icons_apps_src" ]]; then
         cp -rf "$icons_apps_src/"* "$HOME/.local/share/icons/hicolor/scalable/apps/" 2>/dev/null || true
     fi
+    sanitize_theme_hooks_and_defaults
 }
+
+sanitize_theme_hooks_and_defaults() {
+    # 1. Neutralize corrupted shell.json.omarchy-default if it contains undercover widgets
+    local omarchy_default="$HOME/.config/omarchy/shell.json.omarchy-default"
+    local sys_default="/usr/share/omarchy/config/omarchy/shell.json"
+    if [[ -f "$omarchy_default" ]] && grep -q "undercover\." "$omarchy_default"; then
+        if [[ -f "$sys_default" ]]; then
+            cp -f "$sys_default" "$omarchy_default"
+        else
+            rm -f "$omarchy_default"
+        fi
+    fi
+
+    # 2. Guard dandadan-theme-set hook against restoring undercover widgets or overwriting shell.json when inactive
+    local d_hook="$HOME/.config/omarchy/hooks/theme-set.d/dandadan-theme-set"
+    if [[ -f "$d_hook" ]]; then
+        if ! grep -q "undercover\." "$d_hook"; then
+            sed -i 's/if \[\[ ! -f "\$HOME\/.config\/omarchy\/shell.json.omarchy-default" \]\];/if \[\[ ! -f "\$HOME\/.config\/omarchy\/shell.json.omarchy-default" \]\] || grep -q "undercover\\." "\$HOME\/.config\/omarchy\/shell.json.omarchy-default";/g' "$d_hook" 2>/dev/null || true
+            sed -i 's/if \[\[ -f "\$HOME\/.config\/omarchy\/shell.json.omarchy-default" \]\]; then/if \[\[ -f "\$HOME\/.config\/omarchy\/shell.json.omarchy-default" \]\] \&\& ! grep -q "undercover\\." "\$HOME\/.config\/omarchy\/shell.json.omarchy-default"; then/g' "$d_hook" 2>/dev/null || true
+        fi
+    fi
+
+    # 3. Clean up duplicate ~/.config/omarchy/hooks/theme-set if it copies shell.json.omarchy-default
+    local root_hook="$HOME/.config/omarchy/hooks/theme-set"
+    if [[ -f "$root_hook" ]] && grep -q "dandadan" "$root_hook"; then
+        rm -f "$root_hook" 2>/dev/null || true
+    fi
+
+    # 4. Ensure ~/.config/hypr/hyprland.lua loads Omarchy's bootstrap.lua (fixes workspace-layouts require error)
+    local hypr_lua="$HOME/.config/hypr/hyprland.lua"
+    if [[ -f "$hypr_lua" ]] && ! grep -Fq '/default/hypr/bootstrap.lua' "$hypr_lua"; then
+        sed -i '/-- Load user modules from ~\/\.config/,/\.\. package\.path$/d' "$hypr_lua" 2>/dev/null || true
+        sed -i '1s/^/-- Omarchy bootstrap keeps path setup out of user config.\ndofile((os.getenv("OMARCHY_PATH") or "\/usr\/share\/omarchy") .. "\/default\/hypr\/bootstrap.lua")\n\n/' "$hypr_lua"
+    fi
+}
+
 
 apply_wallpaper() {
     local preset
@@ -461,8 +500,9 @@ apply_shell_mac() {
             src="${SCRIPT_DIR}/../configs/shell/shell-mac.json"
         fi
         if [[ -f "$src" ]]; then
-            mkdir -p "$HOME/.config/omarchy"
+            mkdir -p "$HOME/.config/omarchy" "$CONFIG_DIR/shell"
             cp -f "$src" "$HOME/.config/omarchy/shell.json"
+            cp -f "$src" "$CONFIG_DIR/shell/shell-mac.json"
             msg "Apple macOS Sequoia Quickshell menu bar applied (Omarchy 4.0 top bar)."
         fi
     fi
@@ -1027,6 +1067,7 @@ switch_to_omarchy() {
     # Crucial: restore shell.json AFTER theme set so omarchy-theme-set IPC doesn't overwrite it
     restore_shell_from_baseline "$baseline"
     restore_undercover_nautilus "$baseline"
+    sanitize_theme_hooks_and_defaults
 
     if command_exists gsettings; then
         gsettings set org.gnome.desktop.wm.preferences button-layout "close:minimize,maximize" 2>/dev/null || true
@@ -1103,6 +1144,7 @@ restore_baseline() {
     # Crucial: restore shell.json AFTER theme set so omarchy-theme-set IPC doesn't overwrite it
     restore_shell_from_baseline "$baseline"
     restore_undercover_nautilus "$baseline"
+    sanitize_theme_hooks_and_defaults
 
     omarchy_reload_bar
     omarchy_reload_hyprland

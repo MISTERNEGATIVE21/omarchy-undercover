@@ -17,9 +17,10 @@ BarWidget {
   }
 
   readonly property string formattedTime: Qt.formatDateTime(root.date, "ddd d MMM  h:mm AP")
+  readonly property int contentWidth: Math.max(80, Math.ceil(clockLabel.implicitWidth + 24))
 
-  implicitWidth: button.implicitWidth
-  implicitHeight: button.implicitHeight
+  implicitWidth: contentWidth
+  implicitHeight: root.bar ? root.bar.barSize : 28
 
   WidgetButton {
     id: button
@@ -27,10 +28,11 @@ BarWidget {
     bar: root.bar
     text: " "
     labelVisible: false
+    fixedWidth: root.contentWidth
     tooltipText: Qt.formatDateTime(root.date, "dddd, MMMM d, yyyy") + "\n• Left-Click: Notification Center & Widgets\n• Right-Click: Toggle Clock Panel"
-    horizontalMargin: 8
 
     Text {
+      id: clockLabel
       anchors.centerIn: parent
       text: root.formattedTime
       font.family: "SF Pro Text, -apple-system, sans-serif"
