@@ -50,7 +50,7 @@ Experience the disguise in action — pixel-perfect macOS Sequoia and Windows 11
 
 | Windows 11 Fluent (Dark) | Windows 11 Fluent (Light) | Windows 11 Fluent (Transparent Taskbar) |
 | :---: | :---: | :---: |
-| <img src="assets/screenshots/Windows11_Dark.png" alt="Omarchy Undercover Windows 11 Dark desktop" width="330"/> | <img src="assets/screenshots/Windows11_Light.png" alt="Omarchy Undercover Windows 11 Light desktop" width="330"/> | <img src="assets/screenshots/Windows11_Trannsparent.png" alt="Omarchy Undercover Windows 11 Transparent Taskbar" width="330"/> |
+| <img src="assets/screenshots/Windows11_Dark.png" alt="Omarchy Undercover Windows 11 Dark desktop" width="330"/> | <img src="assets/screenshots/Windows11_Light.png" alt="Omarchy Undercover Windows 11 Light desktop" width="330"/> | <img src="assets/screenshots/Windows11_Transparent.png" alt="Omarchy Undercover Windows 11 Transparent Taskbar" width="330"/> |
 
 Toggle between both disguises anytime with <kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>U</kbd>.
 
