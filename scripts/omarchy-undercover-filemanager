@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Omarchy Undercover File Manager Dispatcher
+# Launches Flea with tailored UI/UX matching the active Undercover disguise
+# ==============================================================================
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "${SCRIPT_DIR}/../manifest.json" ]]; then
+    PLUGIN_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+elif [[ -d "$HOME/.config/omarchy/plugins/undercover" ]]; then
+    PLUGIN_DIR="$HOME/.config/omarchy/plugins/undercover"
+else
+    PLUGIN_DIR="${SCRIPT_DIR}/.."
+fi
+
+STATE_FILE="$PLUGIN_DIR/state"
+MODE="default"
+if [[ -f "$STATE_FILE" ]]; then
+    s=$(cat "$STATE_FILE" 2>/dev/null || echo "default")
+    if [[ "$s" == *"mac"* || "$s" == *"apple"* ]]; then
+        MODE="mac"
+    elif [[ "$s" == *"win"* ]]; then
+        MODE="windows"
+    fi
+fi
+
+# Ensure Flea UI layout and keymap matches disguise
+if command -v flea >/dev/null 2>&1; then
+    case "$MODE" in
+        mac)
+            flea --ui-state '{"view":"columns","density":"comfortable","keys":"mac","places":{"sidebarWidth":200}}' >/dev/null 2>&1 || true
+            ;;
+        windows)
+            flea --ui-state '{"view":"list","density":"normal","keys":"windows","places":{"sidebarWidth":220}}' >/dev/null 2>&1 || true
+            ;;
+        *)
+            flea --ui-state '{"view":"columns","density":"normal","keys":"default"}' >/dev/null 2>&1 || true
+            ;;
+    esac
+
+    if [[ $# -eq 0 ]]; then
+        exec flea "$HOME"
+    else
+        exec flea "$@"
+    fi
+else
+    echo "omarchy-undercover-filemanager: flea is not installed" >&2
+    exit 1
+fi
