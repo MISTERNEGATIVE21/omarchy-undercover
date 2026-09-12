@@ -85,7 +85,7 @@ def read_defaults_json():
             pass
     return {
         "browser": "microsoft-edge",
-        "file_manager": "nautilus",
+        "file_manager": "flea",
         "terminal": "kitty",
         "editor": "antigravity-ide",
         "media": "spotify",
@@ -138,7 +138,7 @@ def detect_installed_apps(category):
             ("epiphany", "GNOME Web (Epiphany)", "org.gnome.Epiphany.desktop"),
         ],
         "file_manager": [
-            ("nautilus", "GNOME Files (Nautilus)", "org.gnome.Nautilus.desktop"),
+            ("flea", "Flea File Manager (QuickShell)", "com.thisisgm.flea.desktop"),
             ("thunar", "Thunar File Manager", "thunar.desktop"),
             ("dolphin", "KDE Dolphin", "org.kde.dolphin.desktop"),
             ("nemo", "Nemo File Manager", "nemo.desktop"),
@@ -819,7 +819,7 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         win_pin_items = [
             ("antigravity", "Antigravity IDE", "Show Antigravity IDE / Code editor on taskbar"),
             ("browser", "Microsoft Edge", "Show Microsoft Edge / Web Browser on taskbar"),
-            ("explorer", "File Explorer", "Show File Explorer / Nautilus on taskbar"),
+            ("explorer", "File Explorer", "Show File Explorer / Flea on taskbar"),
             ("terminal", "Terminal Console", "Show Terminal emulator on taskbar"),
             ("notepad", "Notepad Text Editor", "Show Notepad / Gedit text editor on taskbar"),
             ("settings", "Windows Settings", "Show Settings control center on taskbar"),

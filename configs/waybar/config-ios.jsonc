@@ -34,7 +34,7 @@
     "custom/finder-title": {
       "format": "Finder",
       "tooltip": "macOS Finder",
-      "on-click": "nautilus --new-window computer:///"
+      "on-click": "flea"
     },
     "custom/menu-file": { "format": "File", "tooltip": false },
     "custom/menu-edit": { "format": "Edit", "tooltip": false },
@@ -95,7 +95,7 @@
     "custom/dock-finder": {
       "format": "󰀶",
       "tooltip": "Finder",
-      "on-click": "nautilus --new-window computer:///"
+      "on-click": "flea"
     },
     "custom/dock-launchpad": {
       "format": "󰀻",

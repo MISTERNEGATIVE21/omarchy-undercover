@@ -36,7 +36,7 @@
     "custom/finder-title": {
       "format": "Finder",
       "tooltip": "macOS Finder",
-      "on-click": "nautilus --new-window computer:///"
+      "on-click": "flea"
     },
     "hyprland/window": {
       "format": "{}",
@@ -119,7 +119,7 @@
     "custom/dock-finder": {
       "format": "   ",
       "tooltip": "Finder",
-      "on-click": "nautilus --new-window computer:///"
+      "on-click": "flea"
     },
     "custom/dock-launchpad": {
       "format": "   ",
@@ -144,7 +144,7 @@
     "custom/dock-photos": {
       "format": "   ",
       "tooltip": "Photos",
-      "on-click": "nautilus ~/Pictures"
+      "on-click": "flea ~/Pictures"
     },
     "custom/dock-appstore": {
       "format": "   ",

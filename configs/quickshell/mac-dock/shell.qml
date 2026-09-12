@@ -184,7 +184,7 @@ ShellRoot {
 
     // Primary Curated macOS Sequoia Applications
     property var primaryDockApps: [
-      { id: "finder", name: "Finder", icon: "finder.svg", exec: "nautilus computer:/// || thunar || dolphin", matchers: ["nautilus", "thunar", "dolphin", "files", "org.gnome.nautilus"] },
+      { id: "finder", name: "Finder", icon: "finder.svg", exec: "omarchy-undercover-filemanager ~ || flea", matchers: ["flea", "nautilus", "thunar", "dolphin", "files", "org.gnome.nautilus"] },
       { id: "launchpad", name: "Launchpad", icon: "launchpad.svg", exec: "rofi -show drun -theme ~/.config/rofi/mac.rasi", matchers: [] },
       { id: "safari", name: "Safari", icon: "safari.svg", exec: "omarchy-browser", matchers: ["safari", "chrome", "chromium", "firefox", "vivaldi", "brave", "zen", "browser", "epiphany"] },
       { id: "messages", name: "Messages", icon: "messages.svg", exec: "telegram-desktop || discord || signal-desktop || vesktop", matchers: ["telegram", "discord", "signal", "vesktop"] },
@@ -530,7 +530,7 @@ Item {
 
           function launch() {
             bounce()
-            Quickshell.execDetached(["bash", "-c", "nautilus trash:/// || thunar trash:/// || pcmanfm trash:/// || dolphin trash:///"])
+            Quickshell.execDetached(["bash", "-c", "flea trash:/// || thunar trash:/// || pcmanfm trash:/// || dolphin trash:///"])
           }
 
           SequentialAnimation {

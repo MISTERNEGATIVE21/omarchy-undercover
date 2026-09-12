@@ -185,9 +185,8 @@ hl.bind("SUPER + TAB", hl.dsp.exec_cmd("rofi -show window -theme ~/.config/rofi/
 -- Win + D: Show desktop
 hl.bind("SUPER + D", hl.dsp.exec_cmd("omarchy-undercover-show-desktop"), { description = "Show desktop" })
 
--- Win + E: File Explorer - opens the "My Computer" (This PC) screen with a
--- stock GNOME look but Windows app skin (Fluent) icons
-hl.bind("SUPER + E", hl.dsp.exec_cmd("env GTK_THEME=Adwaita:dark GTK_ICON_THEME=Fluent-dark nautilus --new-window computer:///"), { description = "File explorer" })
+-- Win + E: File Explorer - opens Flea File Manager with Windows 11 preset
+hl.bind("SUPER + E", hl.dsp.exec_cmd("omarchy-undercover-filemanager"), { description = "File explorer" })
 
 -- Win + I: Settings
 hl.bind("SUPER + I", hl.dsp.exec_cmd("uwsm-app -- omarchy-undercover-settings"), { description = "Settings" })

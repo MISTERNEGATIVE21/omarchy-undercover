@@ -95,7 +95,7 @@ ShellRoot {
       { name: "Photos", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/photos.svg", exec: "eog || gwenview || loupe" },
       { name: "Settings", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/settings.svg", exec: "omarchy-undercover-settings" },
       { name: "Terminal", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/terminal.svg", exec: "xdg-terminal-exec" },
-      { name: "Explorer", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/explorer.svg", exec: "nautilus computer:/// || thunar || dolphin" },
+      { name: "Explorer", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/explorer.svg", exec: "omarchy-undercover-filemanager || flea" },
       { name: "Calculator", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/calculator.svg", exec: "gnome-calculator || kcalc || galculator" },
       { name: "Spotify", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/spotify.svg", exec: "spotify || omarchy-win11-widgets" },
       { name: "Antigravity", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/antigravity-ide.svg", exec: "antigravity-ide || code || vscodium" },

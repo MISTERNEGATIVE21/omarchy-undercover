@@ -12,11 +12,14 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GLib
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+FM_CMD = str(SCRIPT_DIR / "omarchy-undercover-filemanager") if (SCRIPT_DIR / "omarchy-undercover-filemanager").exists() else "omarchy-undercover-filemanager"
+
 MENU_DEFINITIONS = {
     "file": [
         ("New Window", "uwsm-app -- xdg-terminal-exec"),
-        ("New File / Document", "nautilus"),
-        ("Open...", "nautilus"),
+        ("New File / Document", f"{FM_CMD} ~"),
+        ("Open...", f"{FM_CMD} ~"),
         ("Close Window", "hyprctl dispatch killactive"),
     ],
     "edit": [
@@ -34,12 +37,12 @@ MENU_DEFINITIONS = {
         ("Cycle Mode", "omarchy-undercover --toggle"),
     ],
     "go": [
-        ("Home", "nautilus ~"),
-        ("Documents", "nautilus ~/Documents"),
-        ("Downloads", "nautilus ~/Downloads"),
-        ("Pictures", "nautilus ~/Pictures"),
+        ("Home", f"{FM_CMD} ~"),
+        ("Documents", f"{FM_CMD} ~/Documents"),
+        ("Downloads", f"{FM_CMD} ~/Downloads"),
+        ("Pictures", f"{FM_CMD} ~/Pictures"),
         ("Applications", "rofi -show drun -theme ~/.config/rofi/mac.rasi"),
-        ("Computer", "nautilus computer:///"),
+        ("Computer", f"{FM_CMD} /"),
     ],
     "window": [
         ("Minimize", "omarchy-undercover-minimize"),

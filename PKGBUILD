@@ -6,7 +6,7 @@ pkgdesc="Windows 11 desktop transformation tool for Omarchy Hyprland"
 arch=('any')
 url="https://github.com/omarchy/omarchy-undercover"
 license=('GPL-3.0-or-later')
-depends=('hyprland' 'waybar' 'rofi' 'jq' 'python' 'python-gobject' 'python-nautilus' 'gtk4' 'libadwaita' 'xdg-utils' 'gettext')
+depends=('hyprland' 'waybar' 'rofi' 'jq' 'python' 'python-gobject' 'gtk4' 'libadwaita' 'xdg-utils' 'flea')
 optdepends=('wofi: Alternative application launcher')
 source=()
 sha256sums=()
@@ -31,7 +31,6 @@ package() {
     done
     install -m 644 "$srcdir/scripts/common.sh" "$pkgdir/usr/share/omarchy-undercover/scripts/common.sh"
     install -m 755 "$srcdir/scripts/common.sh" "$pkgdir/usr/bin/omarchy-undercover-common.sh"
-    install -m 755 "$srcdir/uninstall.sh" "$pkgdir/usr/bin/omarchy-undercover-uninstall"
 
     # Install configuration files
     cp -r "$srcdir/configs/"* "$pkgdir/usr/share/omarchy-undercover/configs/"
@@ -58,25 +57,7 @@ package() {
     # Install desktop files & assets
     install -m 644 "$srcdir/assets/omarchy-undercover.desktop" "$pkgdir/usr/share/applications/"
     install -m 644 "$srcdir/assets/omarchy-undercover-settings.desktop" "$pkgdir/usr/share/applications/"
-    # Nautilus override: launch the file manager with the stock GNOME (Adwaita)
-    # look instead of the Windows skin, but with the Windows app skin
-    # (Fluent) icons, opening on the My Computer view
-    install -m 644 "$srcdir/assets/org.gnome.Nautilus.desktop" "$pkgdir/usr/share/applications/"
 
-    # My Computer for Nautilus extension (system-wide)
-    install -d "$pkgdir/usr/share/nautilus-python/extensions"
-    install -d "$pkgdir/usr/share/glib-2.0/schemas"
-    install -m 644 "$srcdir/assets/nautilus-my-computer/nautilus-my-computer.py" "$pkgdir/usr/share/nautilus-python/extensions/nautilus-my-computer.py"
-    cp -r "$srcdir/assets/nautilus-my-computer/nautilus_my_computer" "$pkgdir/usr/share/nautilus-python/extensions/"
-    install -m 644 "$srcdir/assets/nautilus-my-computer/io.github.yannmasoch.nautilus-my-computer.gschema.xml" "$pkgdir/usr/share/glib-2.0/schemas/"
-    glib-compile-schemas --targetdir="$pkgdir/usr/share/glib-2.0/schemas" "$srcdir/assets/nautilus-my-computer"
-    # Translations
-    for po_file in "$srcdir"/assets/nautilus-my-computer/po/*.po; do
-        [ -f "$po_file" ] || continue
-        lang=$(basename "$po_file" .po)
-        install -d "$pkgdir/usr/share/locale/$lang/LC_MESSAGES"
-        msgfmt "$po_file" -o "$pkgdir/usr/share/locale/$lang/LC_MESSAGES/nautilus-my-computer.mo"
-    done
     # The Omarchy Undercover logo powers the app/desktop icons; the start-icon
     # SVG stays in assets and is used directly by the Start menu button.
     if [ -f "$srcdir/assets/omarchy-undercover-logo.svg" ]; then

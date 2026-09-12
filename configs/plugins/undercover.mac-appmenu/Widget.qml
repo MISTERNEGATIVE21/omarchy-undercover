@@ -30,7 +30,7 @@ BarWidget {
 
     if (appId) {
       var aid = appId.toLowerCase()
-      if (aid.indexOf("nautilus") !== -1 || aid.indexOf("thunar") !== -1 || aid.indexOf("dolphin") !== -1) return "Finder"
+      if (aid.indexOf("flea") !== -1 || aid.indexOf("nautilus") !== -1 || aid.indexOf("thunar") !== -1 || aid.indexOf("dolphin") !== -1) return "Finder"
       if (aid.indexOf("alacritty") !== -1 || aid.indexOf("kitty") !== -1 || aid.indexOf("terminal") !== -1 || aid.indexOf("foot") !== -1) return "Terminal"
       if (aid.indexOf("code") !== -1 || aid.indexOf("vscodium") !== -1) return "Visual Studio Code"
       if (aid.indexOf("antigravity") !== -1) return "Antigravity IDE"
@@ -179,8 +179,8 @@ BarWidget {
             } else if (root.openMenu === "file") {
               return [
                 { text: "New Window", shortcut: "⌘N", cmd: "xdg-terminal-exec || alacritty" },
-                { text: "New Finder Window", shortcut: "⇧⌘N", cmd: "nautilus" },
-                { text: "Open...", shortcut: "⌘O", cmd: "nautilus" },
+                { text: "New Finder Window", shortcut: "⇧⌘N", cmd: "omarchy-undercover-filemanager ~" },
+                { text: "Open...", shortcut: "⌘O", cmd: "omarchy-undercover-filemanager ~" },
                 { isSeparator: true },
                 { text: "Close Window", shortcut: "⌘W", cmd: "hyprctl dispatch killactive" }
               ]
@@ -205,12 +205,12 @@ BarWidget {
               ]
             } else if (root.openMenu === "go") {
               return [
-                { text: "Home", shortcut: "⇧⌘H", cmd: "nautilus ~" },
-                { text: "Documents", shortcut: "⇧⌘O", cmd: "nautilus ~/Documents" },
-                { text: "Downloads", shortcut: "⌥⌘L", cmd: "nautilus ~/Downloads" },
-                { text: "Pictures", shortcut: "", cmd: "nautilus ~/Pictures" },
+                { text: "Home", shortcut: "⇧⌘H", cmd: "omarchy-undercover-filemanager ~" },
+                { text: "Documents", shortcut: "⇧⌘O", cmd: "omarchy-undercover-filemanager ~/Documents" },
+                { text: "Downloads", shortcut: "⌥⌘L", cmd: "omarchy-undercover-filemanager ~/Downloads" },
+                { text: "Pictures", shortcut: "", cmd: "omarchy-undercover-filemanager ~/Pictures" },
                 { text: "Applications", shortcut: "⇧⌘A", cmd: "rofi -show drun -theme ~/.config/rofi/mac.rasi" },
-                { text: "Computer", shortcut: "⇧⌘C", cmd: "nautilus computer:///" }
+                { text: "Computer", shortcut: "⇧⌘C", cmd: "omarchy-undercover-filemanager /" }
               ]
             } else if (root.openMenu === "window") {
               return [

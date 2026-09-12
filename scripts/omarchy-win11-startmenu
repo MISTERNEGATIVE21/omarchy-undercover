@@ -42,6 +42,7 @@ else:
 CONFIG_DIR = PLUGIN_DIR
 SETTINGS_FILE = CONFIG_DIR / "settings.conf"
 STATE_FILE = CONFIG_DIR / "state"
+FM_CMD = str(PLUGIN_DIR / "scripts" / "omarchy-undercover-filemanager") if (PLUGIN_DIR / "scripts" / "omarchy-undercover-filemanager").exists() else "omarchy-undercover-filemanager"
 
 def read_setting(key, default=""):
     if SETTINGS_FILE.exists():
@@ -78,7 +79,7 @@ PINNED_APPS = [
     ("🖼️", "Photos", "eog || gwenview || loupe"),
     ("⚙️", "Settings", "omarchy-undercover-settings"),
     ("💻", "Terminal", "uwsm-app -- xdg-terminal-exec || alacritty"),
-    ("📁", "Explorer", "env GTK_THEME=Win11-Dark nautilus computer:/// || thunar || dolphin"),
+    ("📁", "Explorer", f"{FM_CMD} ~ || thunar || dolphin"),
     ("🔢", "Calculator", "gnome-calculator || kcalc || galculator"),
     ("🎵", "Spotify", "spotify || xdg-open https://spotify.com"),
     ("🚀", "Antigravity", "antigravity-ide || code || vscodium"),
@@ -111,7 +112,7 @@ ALL_APPS_LIST = [
     ("⏰", "Clock & Alarms", "C", "gnome-clocks || kclock"),
     ("💬", "Discord", "D", "discord || vesktop"),
     ("📑", "Document Viewer", "D", "evince || okular"),
-    ("📁", "File Explorer", "F", "nautilus computer:/// || thunar"),
+    ("📁", "File Explorer", "F", f"{FM_CMD} ~ || thunar"),
     ("🦊", "Firefox Browser", "F", "firefox"),
     ("🎨", "GIMP Image Editor", "G", "gimp"),
     ("🌐", "Google Chrome", "G", "google-chrome-stable || chromium"),
