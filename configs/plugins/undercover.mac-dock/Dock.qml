@@ -62,11 +62,95 @@ Panel {
   property int dockTransparency: 76
 
   property string homeDir: Quickshell.env("HOME")
-  property string configDir: homeDir + "/.config/omarchy/plugins/undercover"
+  property string configDir: homeDir + "/.config/omarchy-undercover"
   property string iconBasePath: homeDir + "/.local/share/icons/mac-dock/"
   property bool isLight: false
   property bool isAutohide: false
   property bool isDockRevealed: true
+
+  // Workspaces & Running Windows Tracking via Native Hyprland State
+  property var dockAppsList: []
+  property var hyprClients: []
+  property var hyprActiveWindow: ({})
+  property int activeWorkspaceId: 1
+
+  Process {
+    id: hyprStateProc
+    command: [
+      "bash", "-c",
+      "echo \"$(hyprctl activeworkspace -j 2>/dev/null | tr -d '\\n')|||$(hyprctl workspaces -j 2>/dev/null | tr -d '\\n')|||$(hyprctl clients -j 2>/dev/null | tr -d '\\n')|||$(hyprctl activewindow -j 2>/dev/null | tr -d '\\n')\""
+    ]
+    stdout: SplitParser {
+      onRead: function(line) {
+        if (!line) return
+        try {
+          var parts = line.split("|||")
+          if (parts.length >= 1 && parts[0].trim()) {
+            var actWs = JSON.parse(parts[0].trim())
+            if (actWs && actWs.id) dockWindow.activeWorkspaceId = actWs.id
+          }
+          if (parts.length >= 3 && parts[2].trim()) {
+            var cls = JSON.parse(parts[2].trim())
+            if (Array.isArray(cls)) {
+              dockWindow.hyprClients = cls.filter(function(c) { return c && c.mapped && !c.hidden })
+            }
+          }
+          if (parts.length >= 4 && parts[3].trim()) {
+            var actWin = JSON.parse(parts[3].trim())
+            if (actWin && actWin.address) {
+              dockWindow.hyprActiveWindow = actWin
+            } else {
+              dockWindow.hyprActiveWindow = ({})
+            }
+          }
+        } catch(e) {}
+        dockWindow.refreshDock()
+      }
+    }
+  }
+
+  Timer {
+    id: fastPoller
+    interval: 300
+    running: true
+    repeat: true
+    triggeredOnStart: true
+    onTriggered: {
+      if (!hyprStateProc.running) hyprStateProc.running = true
+    }
+  }
+
+  Timer {
+    id: refreshTimer
+    interval: 60
+    running: false
+    repeat: false
+    onTriggered: {
+      if (!hyprStateProc.running) hyprStateProc.running = true
+    }
+  }
+
+  Process {
+    id: socketListener
+    command: [
+      "bash", "-c",
+      "sock=\"$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock\"; if [ -S \"$sock\" ]; then exec socat -u UNIX-CONNECT:\"$sock\" -; fi"
+    ]
+    running: true
+    stdout: SplitParser {
+      onRead: function(line) {
+        var l = String(line)
+        if (l.indexOf("activewindow>>") === 0 ||
+            l.indexOf("activewindowv2>>") === 0 ||
+            l.indexOf("openwindow>>") === 0 ||
+            l.indexOf("closewindow>>") === 0 ||
+            l.indexOf("workspace>>") === 0 ||
+            l.indexOf("focusedmon>>") === 0) {
+          refreshTimer.restart()
+        }
+      }
+    }
+  }
 
   // Quick macOS-style autohide delay (400ms) after mouse exits dock
   Timer {
@@ -142,19 +226,126 @@ Panel {
     }
   }
 
-  function matches(tl, matchers) {
-    if (!tl || !matchers || matchers.length === 0) return false
-    var target = ((tl.appId || "") + " " + (tl.title || "")).toLowerCase()
-    return matchers.some(function(p) { return target.indexOf(p.toLowerCase()) !== -1 })
+  function findRunningClient(matchers) {
+    if (!matchers || matchers.length === 0) return null
+    var firstMatch = null
+    for (var i = 0; i < dockWindow.hyprClients.length; i++) {
+      var c = dockWindow.hyprClients[i]
+      if (!c) continue
+      var target = ((c.class || "") + " " + (c.initialClass || "") + " " + (c.title || "")).toLowerCase()
+      for (var j = 0; j < matchers.length; j++) {
+        if (target.indexOf(matchers[j].toLowerCase()) !== -1) {
+          if (dockWindow.hyprActiveWindow && dockWindow.hyprActiveWindow.address && c.address === dockWindow.hyprActiveWindow.address) {
+            return c
+          }
+          if (!firstMatch) firstMatch = c
+          break
+        }
+      }
+    }
+    return firstMatch
   }
 
-  function isRunning(matchers) {
-    var list = (ToplevelManager.toplevels && ToplevelManager.toplevels.values) ? ToplevelManager.toplevels.values : []
-    return list.some(function(tl) { return dockWindow.matches(tl, matchers) })
+  function isClientFocused(client) {
+    if (!client || !client.address || !dockWindow.hyprActiveWindow || !dockWindow.hyprActiveWindow.address) return false
+    return client.address === dockWindow.hyprActiveWindow.address
   }
 
-  function isFocused(matchers) {
-    return dockWindow.matches(ToplevelManager.activeToplevel, matchers)
+  function shiftToClient(client) {
+    if (!client || !client.address) return
+    var addr = client.address
+    if (client.workspace && client.workspace.id < 0) {
+      Quickshell.execDetached(["omarchy-undercover-minimize", addr])
+      refreshTimer.restart()
+      return
+    }
+    var wsId = (client.workspace && client.workspace.id) ? client.workspace.id : ""
+    var cmd = "if hyprctl dispatch \"hl.dsp.focus({ window = 'address:" + addr + "' })\" 2>/dev/null; then :; else " +
+              (wsId ? "hyprctl dispatch workspace " + wsId + " 2>/dev/null; " : "") +
+              "hyprctl dispatch focuswindow \"address:" + addr + "\" 2>/dev/null; fi"
+    Quickshell.execDetached(["bash", "-c", cmd])
+    refreshTimer.restart()
+  }
+
+  function closeClient(client) {
+    if (!client || !client.address) {
+      var cmd = "if hyprctl dispatch \"hl.dsp.window.close()\" 2>/dev/null; then :; else hyprctl dispatch killactive 2>/dev/null; fi"
+      Quickshell.execDetached(["bash", "-c", cmd])
+      refreshTimer.restart()
+      return
+    }
+    var addr = client.address
+    var cmd = "if hyprctl dispatch \"hl.dsp.window.close({ window = 'address:" + addr + "' })\" 2>/dev/null; then :; else hyprctl dispatch closewindow \"address:" + addr + "\" 2>/dev/null; fi"
+    Quickshell.execDetached(["bash", "-c", cmd])
+    refreshTimer.restart()
+  }
+
+  function resolveAppIcon(c) {
+    if (!c) return ""
+    var cls = c.class || ""
+    var initCls = c.initialClass || ""
+    var lowerCls = cls.toLowerCase()
+    var lowerInit = initCls.toLowerCase()
+
+    if (lowerCls.indexOf("telegram") !== -1 || lowerInit.indexOf("telegram") !== -1) {
+      return "file://" + dockWindow.iconBasePath + "messages.svg"
+    }
+    if (lowerCls.indexOf("antigravity") !== -1 || lowerInit.indexOf("antigravity") !== -1) {
+      return "file://" + dockWindow.iconBasePath + "antigravity-ide.svg"
+    }
+    if (lowerCls.indexOf("flea") !== -1 || lowerInit.indexOf("flea") !== -1) {
+      return "file://" + dockWindow.iconBasePath + "finder.svg"
+    }
+    if (lowerCls.indexOf("terminal") !== -1 || lowerCls.indexOf("kitty") !== -1 || lowerCls.indexOf("alacritty") !== -1 || lowerCls.indexOf("foot") !== -1 || lowerCls.indexOf("ghostty") !== -1) {
+      return "file://" + dockWindow.iconBasePath + "terminal.svg"
+    }
+
+    var candidates = [cls, initCls, lowerCls, lowerInit]
+    var parts = cls.split(".")
+    for (var i = parts.length - 1; i >= 0; i--) {
+      if (parts[i]) {
+        candidates.push(parts[i])
+        candidates.push(parts[i].toLowerCase())
+      }
+    }
+
+    for (var k = 0; k < candidates.length; k++) {
+      var name = candidates[k]
+      if (!name) continue
+      var ip = Quickshell.iconPath(name)
+      if (ip && ip.length > 0) {
+        if (ip.indexOf("image://") === 0 || ip.indexOf("file://") === 0) return ip
+        if (ip.indexOf("/") === 0) return "file://" + ip
+        return ip
+      }
+    }
+
+    return "image://icon/" + (initCls || cls || "application-x-executable")
+  }
+
+  function resolveModelIcon(modelData) {
+    if (!modelData) return ""
+    if (modelData.iconUrl) {
+      return modelData.iconUrl
+    }
+    if (modelData.isDynamic && modelData.hyprClient) {
+      return dockWindow.resolveAppIcon(modelData.hyprClient)
+    }
+    if (modelData.icon) {
+      if (modelData.icon.indexOf("/") === 0) return "file://" + modelData.icon
+      if (modelData.icon.indexOf("image://") === 0 || modelData.icon.indexOf("file://") === 0) return modelData.icon
+      return "file://" + dockWindow.iconBasePath + modelData.icon
+    }
+    if (modelData.appId) {
+      var ip = Quickshell.iconPath(modelData.appId)
+      if (ip) {
+        if (ip.indexOf("image://") === 0 || ip.indexOf("file://") === 0) return ip
+        if (ip.indexOf("/") === 0) return "file://" + ip
+        return ip
+      }
+      return "image://icon/" + modelData.appId
+    }
+    return ""
   }
 
   property var macPinsConfig: ({})
@@ -168,6 +359,7 @@ Panel {
         if (d && d.mac_pins) dockWindow.macPinsConfig = d.mac_pins
         if (d && d.mac_custom_apps) dockWindow.customDockApps = d.mac_custom_apps
       } catch(e) {}
+      dockWindow.refreshDock()
     }
     onFileChanged: {
       reload()
@@ -176,6 +368,7 @@ Panel {
         if (d && d.mac_pins) dockWindow.macPinsConfig = d.mac_pins
         if (d && d.mac_custom_apps) dockWindow.customDockApps = d.mac_custom_apps
       } catch(e) {}
+      dockWindow.refreshDock()
     }
   }
 
@@ -213,42 +406,66 @@ Panel {
       return true
     })
 
-    var list = (ToplevelManager.toplevels && ToplevelManager.toplevels.values) ? ToplevelManager.toplevels.values : []
-    var unpinned = []
-    var seenAppIds = {}
+    var pinnedAndCustom = pinned.concat(custom)
 
-    for (var i = 0; i < list.length; i++) {
-      var tl = list[i]
-      if (!tl) continue
-      var isPinned = pinned.concat(custom).some(function(p) { return dockWindow.matches(tl, p.matchers) })
+    // Unpinned running applications from native Hyprland clients
+    var unpinned = []
+    var seenKeys = {}
+
+    for (var i = 0; i < dockWindow.hyprClients.length; i++) {
+      var c = dockWindow.hyprClients[i]
+      if (!c || !c.address) continue
+      var cls = (c.class || "").toLowerCase()
+      var initCls = (c.initialClass || "").toLowerCase()
+      var title = (c.title || "").toLowerCase()
+
+      // Skip internal quickshell desktop overlays / bars / panels
+      if (cls === "org.quickshell" || cls === "quickshell") continue
+
+      var isPinned = pinnedAndCustom.some(function(p) {
+        if (!p.matchers || p.matchers.length === 0) return false
+        var target = (cls + " " + initCls + " " + title)
+        return p.matchers.some(function(m) { return target.indexOf(m.toLowerCase()) !== -1 })
+      })
+
       if (!isPinned) {
-        var aid = (tl.appId || "app").toLowerCase()
-        if (!seenAppIds[aid]) {
-          seenAppIds[aid] = true
+        var baseKey = (initCls || cls || "app")
+        if (baseKey.indexOf("telegram") !== -1) baseKey = "telegram"
+        if (!seenKeys[baseKey]) {
+          seenKeys[baseKey] = true
           unpinned.push({
-            id: "running_" + aid,
-            name: tl.title || tl.appId || "Application",
-            toplevel: tl,
+            id: "running_" + c.address,
+            name: c.title || c.initialTitle || c.class || "Application",
+            hyprClient: c,
             isDynamic: true,
-            appId: tl.appId || "",
+            iconUrl: dockWindow.resolveAppIcon(c),
+            appId: c.class || c.initialClass || "",
             icon: "",
             exec: "",
-            matchers: [tl.appId || ""]
+            matchers: [c.class || "", c.initialClass || ""]
           })
         }
       }
     }
 
     // Control the dock element count: keep pinned + custom, then cap running apps
-    var fixed = pinned.length + custom.length
+    var fixed = pinnedAndCustom.length
     var dynamicBudget = Math.max(0, dockWindow.maxDockItems - fixed)
     var runningApps = unpinned.slice(0, dynamicBudget)
 
-    return pinned.concat(custom).concat(runningApps)
+    return pinnedAndCustom.concat(runningApps)
+  }
+
+  function refreshDock() {
+    dockAppsList = getVisibleDockApps()
+  }
+
+  Component.onCompleted: {
+    dockWindow.refreshDock()
   }
 
   // Total slots used by the full dock row (apps + divider + trash), drives fit-scaling
-  readonly property int dockItemCount: dockWindow.getVisibleDockApps ? (dockWindow.getVisibleDockApps().length + 2) : 2
+  readonly property int dockItemCount: (dockWindow.dockAppsList && dockWindow.dockAppsList.length) ? (dockWindow.dockAppsList.length + 2) : 2
 
   // Native Wayland Bottom Edge Trigger Strip
   MouseArea {
@@ -331,18 +548,34 @@ Panel {
       // 1. Primary & Dynamic App Icons
       Repeater {
         id: appsRepeater
-        model: dockWindow.getVisibleDockApps()
+        model: dockWindow.dockAppsList
 
-Item {
-            id: appItem
-            // Fixed slot: layout never reflows during magnification, so the
-            // icon wave stays perfectly stable under the cursor (no shaking).
-            implicitWidth: dockWindow.effectiveIconSize
-            implicitHeight: dockCard.height
+        Item {
+          id: appItem
+          // Fixed slot: layout never reflows during magnification, so the
+          // icon wave stays perfectly stable under the cursor (no shaking).
+          implicitWidth: dockWindow.effectiveIconSize
+          implicitHeight: dockCard.height
 
           property var appData: modelData
-          property bool appRunning: modelData.isDynamic ? true : dockWindow.isRunning(modelData.matchers)
-          property bool appFocused: modelData.isDynamic ? (ToplevelManager.activeToplevel === modelData.toplevel) : dockWindow.isFocused(modelData.matchers)
+
+          property var activeClient: {
+            if (modelData.isDynamic) {
+              if (dockWindow.hyprActiveWindow && dockWindow.hyprActiveWindow.address) {
+                var act = dockWindow.hyprActiveWindow
+                var actKey = ((act.initialClass || "") + " " + (act.class || "")).toLowerCase()
+                var myKey = (modelData.appId || "").toLowerCase()
+                if (myKey && actKey.indexOf(myKey) !== -1) {
+                  return act
+                }
+              }
+              return modelData.hyprClient
+            }
+            return dockWindow.findRunningClient(modelData.matchers)
+          }
+
+          property bool appRunning: activeClient !== null && activeClient !== undefined
+          property bool appFocused: dockWindow.isClientFocused(activeClient)
           property real bounceOffset: 0
 
           // Distance to mouse in dock coordinates (reactive)
@@ -360,7 +593,7 @@ Item {
 
           property real currentScale: 1.0
           Behavior on currentScale {
-NumberAnimation { duration: 70; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: 70; easing.type: Easing.OutCubic }
           }
           Binding {
             target: appItem
@@ -372,19 +605,23 @@ NumberAnimation { duration: 70; easing.type: Easing.OutCubic }
             bounceAnim.restart()
           }
 
-          function launch() {
+          function launch(mouse) {
             bounce()
-            if (modelData.isDynamic && modelData.toplevel && typeof modelData.toplevel.activate === "function") {
-              modelData.toplevel.activate()
+            if (mouse && (mouse.button === Qt.RightButton || mouse.button === Qt.MiddleButton)) {
+              if (appRunning && activeClient) {
+                dockWindow.closeClient(activeClient)
+                return
+              }
+            }
+            if (appRunning && activeClient && activeClient.address) {
+              if (appFocused) {
+                Quickshell.execDetached(["omarchy-undercover-minimize"])
+              } else {
+                dockWindow.shiftToClient(activeClient)
+              }
               return
             }
-            var match = (ToplevelManager.toplevels && ToplevelManager.toplevels.values) ? ToplevelManager.toplevels.values.find(function(tl) {
-              return dockWindow.matches(tl, appData.matchers)
-            }) : null
-
-            if (match && typeof match.activate === "function") {
-              match.activate()
-            } else if (appData && appData.exec) {
+            if (appData && appData.exec) {
               Quickshell.execDetached(["bash", "-c", appData.exec])
             }
           }
@@ -408,7 +645,7 @@ NumberAnimation { duration: 70; easing.type: Easing.OutCubic }
             anchors.bottom: iconContainer.top
             anchors.bottomMargin: 8
             anchors.horizontalCenter: parent.horizontalCenter
-            implicitWidth: tooltipText.implicitWidth + 16
+            implicitWidth: Math.min(320, tooltipText.implicitWidth + 16)
             implicitHeight: 22
             radius: 5
             color: Qt.rgba(0.12, 0.12, 0.16, 0.94)
@@ -419,11 +656,15 @@ NumberAnimation { duration: 70; easing.type: Easing.OutCubic }
             Text {
               id: tooltipText
               anchors.centerIn: parent
-              text: modelData.name
+              anchors.leftMargin: 8
+              anchors.rightMargin: 8
+              width: Math.min(300, implicitWidth)
+              text: modelData.name || "Application"
               font.family: "SF Pro Text, -apple-system, sans-serif"
               font.pixelSize: 11
               font.bold: true
               color: "#ffffff"
+              elide: Text.ElideRight
             }
           }
 
@@ -446,22 +687,15 @@ NumberAnimation { duration: 70; easing.type: Easing.OutCubic }
             Image {
               id: appIcon
               anchors.fill: parent
-              source: {
-                if (modelData.isDynamic && modelData.appId) {
-                  var ip = Quickshell.iconPath(modelData.appId)
-                  if (ip) return "file://" + ip
-                  return "image://icon/" + modelData.appId
-                }
-                if (modelData.icon) {
-                  var p = dockWindow.iconBasePath + modelData.icon
-                  if (modelData.icon.indexOf("/") !== -1 || modelData.icon.indexOf("file://") === 0) return modelData.icon
-                  return "file://" + p
-                }
-                return ""
-              }
+              source: dockWindow.resolveModelIcon(modelData)
               fillMode: Image.PreserveAspectFit
               smooth: true
               mipmap: true
+              onStatusChanged: {
+                if (status === Image.Error && source !== ("file://" + dockWindow.iconBasePath + "appstore.svg")) {
+                  source = "file://" + dockWindow.iconBasePath + "appstore.svg"
+                }
+              }
             }
           }
 
@@ -524,16 +758,16 @@ NumberAnimation { duration: 70; easing.type: Easing.OutCubic }
 
         function launch() {
           bounce()
-          Quickshell.execDetached(["bash", "-c", "flea trash:/// || thunar trash:/// || pcmanfm trash:/// || dolphin trash:///"])
+          Quickshell.execDetached(["bash", "-c", "omarchy-undercover-filemanager trash:/// || flea trash:/// || thunar trash:/// || pcmanfm trash:/// || dolphin trash:///"])
         }
 
         SequentialAnimation {
           id: trashBounceAnim
           running: false
-NumberAnimation { target: trashItem; property: "bounceOffset"; to: -22; duration: 140; easing.type: Easing.OutQuad }
-            NumberAnimation { target: trashItem; property: "bounceOffset"; to: 0; duration: 130; easing.type: Easing.InQuad }
-            NumberAnimation { target: trashItem; property: "bounceOffset"; to: -10; duration: 100; easing.type: Easing.OutQuad }
-            NumberAnimation { target: trashItem; property: "bounceOffset"; to: 0; duration: 80; easing.type: Easing.InQuad }
+          NumberAnimation { target: trashItem; property: "bounceOffset"; to: -22; duration: 140; easing.type: Easing.OutQuad }
+          NumberAnimation { target: trashItem; property: "bounceOffset"; to: 0; duration: 130; easing.type: Easing.InQuad }
+          NumberAnimation { target: trashItem; property: "bounceOffset"; to: -10; duration: 100; easing.type: Easing.OutQuad }
+          NumberAnimation { target: trashItem; property: "bounceOffset"; to: 0; duration: 80; easing.type: Easing.InQuad }
         }
 
         // Tooltip
@@ -596,7 +830,7 @@ NumberAnimation { target: trashItem; property: "bounceOffset"; to: -22; duration
       anchors.top: parent.top
       anchors.topMargin: -Math.round(dockWindow.effectiveIconSize * 0.75)
       hoverEnabled: true
-      acceptedButtons: Qt.LeftButton | Qt.RightButton
+      acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
       cursorShape: Qt.PointingHandCursor
 
       onEntered: {
@@ -624,7 +858,7 @@ NumberAnimation { target: trashItem; property: "bounceOffset"; to: -22; duration
           if (item) {
             var leftX = dockLayoutRow.x + item.x
             if (mx >= leftX && mx <= (leftX + item.width)) {
-              item.launch()
+              item.launch(mouse)
               return
             }
           }

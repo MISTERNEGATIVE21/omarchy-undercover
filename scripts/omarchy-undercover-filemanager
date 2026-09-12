@@ -15,7 +15,10 @@ else
     PLUGIN_DIR="${SCRIPT_DIR}/.."
 fi
 
-STATE_FILE="$PLUGIN_DIR/state"
+STATE_FILE="$HOME/.config/omarchy-undercover/state"
+if [[ ! -f "$STATE_FILE" && -f "$PLUGIN_DIR/state" ]]; then
+    STATE_FILE="$PLUGIN_DIR/state"
+fi
 MODE="default"
 if [[ -f "$STATE_FILE" ]]; then
     s=$(cat "$STATE_FILE" 2>/dev/null || echo "default")

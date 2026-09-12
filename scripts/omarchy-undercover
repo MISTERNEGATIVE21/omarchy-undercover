@@ -646,7 +646,14 @@ EOF
     enable_dock=$(read_setting "ENABLE_MAC_DOCK" "true")
     if [[ "$enable_dock" == "true" ]]; then
         pkill -f "quickshell.*mac-dock" 2>/dev/null || true
-        setsid -f quickshell -p "$CONFIG_DIR/quickshell/mac-dock" >/dev/null 2>&1 || (nohup quickshell -p "$CONFIG_DIR/quickshell/mac-dock" >/dev/null 2>&1 &)
+        local dock_dir="$CONFIG_DIR/quickshell/mac-dock"
+        mkdir -p "$dock_dir"
+        if [[ -f "$PLUGIN_DIR/configs/quickshell/mac-dock/shell.qml" ]]; then
+            cp -f "$PLUGIN_DIR/configs/quickshell/mac-dock/shell.qml" "$dock_dir/shell.qml" 2>/dev/null || true
+        elif [[ -f "${SCRIPT_DIR}/../configs/quickshell/mac-dock/shell.qml" ]]; then
+            cp -f "${SCRIPT_DIR}/../configs/quickshell/mac-dock/shell.qml" "$dock_dir/shell.qml" 2>/dev/null || true
+        fi
+        setsid -f quickshell -p "$dock_dir" >/dev/null 2>&1 || (nohup quickshell -p "$dock_dir" >/dev/null 2>&1 &)
     fi
 
     msg "Switched to Apple macOS Sequoia ($variant) — done!"

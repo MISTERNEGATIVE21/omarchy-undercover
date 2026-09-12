@@ -19,8 +19,9 @@ if [[ -f "$STATE_FILE" ]]; then
 fi
 
 QS_DOCK_SRC="$CONFIG_DIR/quickshell/mac-dock"
-if [[ ! -d "$QS_DOCK_SRC" && -d "${SCRIPT_DIR}/../configs/quickshell/mac-dock" ]]; then
-    QS_DOCK_SRC="${SCRIPT_DIR}/../configs/quickshell/mac-dock"
+if [[ -d "${SCRIPT_DIR}/../configs/quickshell/mac-dock" ]]; then
+    mkdir -p "$QS_DOCK_SRC"
+    cp -f "${SCRIPT_DIR}/../configs/quickshell/mac-dock/shell.qml" "$QS_DOCK_SRC/shell.qml" 2>/dev/null || true
 fi
 
 # Kill any previous instance of the dock
