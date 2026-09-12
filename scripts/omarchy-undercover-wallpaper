@@ -13,9 +13,24 @@
 # and starts swaybg (or hyprpaper) with it. Runs automatically at Hyprland
 # startup via windows-mode.lua so the wallpaper survives relogin.
 
-CONFIG_DIR="$HOME/.config/omarchy-undercover"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "${SCRIPT_DIR}/../manifest.json" ]]; then
+    PLUGIN_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+elif [[ -d "$HOME/.config/omarchy/plugins/undercover" ]]; then
+    PLUGIN_DIR="$HOME/.config/omarchy/plugins/undercover"
+else
+    PLUGIN_DIR="$HOME/.config/omarchy-undercover"
+fi
+
+CONFIG_DIR="$PLUGIN_DIR"
 SETTINGS_FILE="$CONFIG_DIR/settings.conf"
-WP_DIR="$CONFIG_DIR/wallpapers"
+if [[ -d "$CONFIG_DIR/assets/wallpapers" ]]; then
+    WP_DIR="$CONFIG_DIR/assets/wallpapers"
+elif [[ -d "$CONFIG_DIR/wallpapers" ]]; then
+    WP_DIR="$CONFIG_DIR/wallpapers"
+else
+    WP_DIR="${SCRIPT_DIR}/../assets/wallpapers"
+fi
 
 # Preset wallpapers shipped with omarchy-undercover
 declare -A PRESETS=(

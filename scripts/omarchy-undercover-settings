@@ -30,11 +30,19 @@ from gi.repository import Gtk, Adw, Gio, GLib, Gdk
 APP_ID = "org.omarchy.undercover.settings"
 VERSION = "3.0.0"
 
-CONFIG_DIR = Path.home() / ".config" / "omarchy-undercover"
+_script_parent = Path(__file__).resolve().parent.parent
+if (_script_parent / "manifest.json").exists():
+    PLUGIN_DIR = _script_parent
+elif (Path.home() / ".config/omarchy/plugins/undercover").exists():
+    PLUGIN_DIR = Path.home() / ".config/omarchy/plugins/undercover"
+else:
+    PLUGIN_DIR = Path.home() / ".config/omarchy-undercover"
+
+CONFIG_DIR = PLUGIN_DIR
 STATE_FILE = CONFIG_DIR / "state"
 SETTINGS_FILE = CONFIG_DIR / "settings.conf"
-WALLPAPER_DIR = CONFIG_DIR / "wallpapers"
-ICON_PATH = Path.home() / ".local/share/icons/hicolor/scalable/apps/omarchy-undercover.svg"
+WALLPAPER_DIR = CONFIG_DIR / "assets" / "wallpapers" if (CONFIG_DIR / "assets" / "wallpapers").exists() else CONFIG_DIR / "wallpapers"
+ICON_PATH = CONFIG_DIR / "assets" / "icons" / "omarchy-undercover" / "scalable" / "apps" / "omarchy-undercover.svg"
 
 WALLPAPERS = [
     ("macOS-Sequoia-Dark.jpg", "macOS Sequoia Dark (6K)", "mac"),
@@ -43,20 +51,22 @@ WALLPAPERS = [
     ("Sonoma-light.jpg", "macOS Sonoma Light (4K)", "mac"),
     ("Ventura-dark.jpg", "macOS Ventura Dark (4K)", "mac"),
     ("Ventura-light.jpg", "macOS Ventura Light (4K)", "mac"),
-    ("Monterey-dark.jpg", "macOS Monterey Dark (5K)", "mac"),
-    ("Monterey-light.jpg", "macOS Monterey Light (5K)", "mac"),
-    ("win11_bloom_dark.jpg", "Windows 11 Bloom Dark (4K)", "win"),
-    ("win11_bloom_light.jpg", "Windows 11 Bloom Light (4K)", "win"),
+    ("win11_bloom_dark.jpg", "Windows 11 Bloom Dark (6K)", "win"),
+    ("win11_bloom_light.jpg", "Windows 11 Bloom Light (6K)", "win"),
     ("win11_flow_dark.jpg", "Windows 11 Flow Dark (4K)", "win"),
     ("ios18_dark.jpg", "iOS 18 Dark Beams (4K)", "ios"),
     ("ios18_light.jpg", "iOS 18 Light Beams (4K)", "ios"),
 ]
 
 def find_cli():
+    local_script = Path(__file__).resolve().parent / "omarchy-undercover"
+    if local_script.exists():
+        return str(local_script)
     which_path = shutil.which("omarchy-undercover")
     if which_path and os.path.exists(which_path):
         return which_path
     for c in (
+        Path.home() / ".config/omarchy/plugins/undercover/scripts/omarchy-undercover",
         Path.home() / ".local/bin/omarchy-undercover",
         Path("/usr/local/bin/omarchy-undercover"),
         Path("/usr/bin/omarchy-undercover"),

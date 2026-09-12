@@ -81,20 +81,31 @@ omarchy plugin disable undercover
 omarchy plugin remove undercover
 ```
 
----
+## 🧩 Official Omarchy Plugin Usage & Management
 
-## ⚡ 1-Line Basecamp-Styled TUI Quick Install
+As per the official Omarchy plugin guide, plugins reside self-contained inside `~/.config/omarchy/plugins/<plugin-id>/` and are managed via standard `omarchy plugin` commands:
 
+### Installation
 ```bash
-bash <(curl -sL https://raw.githubusercontent.com/MISTERNEGATIVE21/omarchy-undercover/main/install.sh)
+omarchy plugin add https://github.com/MISTERNEGATIVE21/omarchy-undercover.git --enable --yes
 ```
 
-Or clone and run the interactive Charm Gum installer:
-
+### Enable / Place Widget
+Place the Undercover Switcher widget into your status bar:
 ```bash
-git clone https://github.com/MISTERNEGATIVE21/omarchy-undercover.git
-cd omarchy-undercover
-./install.sh
+omarchy plugin enable undercover --section right
+```
+
+### Validate Plugin
+Verify compliance against the Omarchy plugin manifest schema:
+```bash
+omarchy plugin validate ~/.config/omarchy/plugins/undercover
+```
+
+### Disable or Remove
+```bash
+omarchy plugin disable undercover
+omarchy plugin remove undercover
 ```
 
 ---
@@ -235,8 +246,8 @@ omarchy-undercover-settings -s
 ---
 
 ## 🖼️ Included 6K & 4K Wallpapers Library
-
-Stored in `~/.config/omarchy-undercover/wallpapers/`:
+ 
+ Stored in `assets/wallpapers/`:
 - `macOS-Sequoia-Dark.jpg` & `macOS-Sequoia-Light.jpg` (Official 6K Solar Noon/Midnight)
 - `Sonoma-dark.jpg` & `Sonoma-light.jpg` (Official 4K Sonoma Ribbons)
 - `Ventura-dark.jpg` & `Ventura-light.jpg` (Official 4K Ventura Flower)

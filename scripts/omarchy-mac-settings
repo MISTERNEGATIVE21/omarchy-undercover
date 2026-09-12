@@ -5,14 +5,18 @@
 # License: GPL-3.0-or-later
 # ==============================================================================
 
-DIR="$HOME/.config/quickshell/mac-settings"
-if [[ ! -d "$DIR" ]]; then
-    REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-    if [[ -d "$REPO_DIR/configs/quickshell/mac-settings" ]]; then
-        DIR="$REPO_DIR/configs/quickshell/mac-settings"
-    elif [[ -d "$HOME/.config/omarchy-undercover/quickshell/mac-settings" ]]; then
-        DIR="$HOME/.config/omarchy-undercover/quickshell/mac-settings"
-    fi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "${SCRIPT_DIR}/../manifest.json" ]]; then
+    PLUGIN_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+elif [[ -d "$HOME/.config/omarchy/plugins/undercover" ]]; then
+    PLUGIN_DIR="$HOME/.config/omarchy/plugins/undercover"
+else
+    PLUGIN_DIR="$HOME/.config/omarchy-undercover"
+fi
+
+DIR="$PLUGIN_DIR/configs/quickshell/mac-settings"
+if [[ ! -d "$DIR" && -d "$PLUGIN_DIR/quickshell/mac-settings" ]]; then
+    DIR="$PLUGIN_DIR/quickshell/mac-settings"
 fi
 
 if command -v hyprctl >/dev/null 2>&1; then
@@ -26,4 +30,8 @@ if command -v quickshell >/dev/null 2>&1 && [[ -d "$DIR" ]]; then
     exec quickshell -p "$DIR"
 fi
 
-exec omarchy-undercover-settings --mac "$@"
+if command -v omarchy-undercover-settings >/dev/null 2>&1; then
+    exec omarchy-undercover-settings --mac "$@"
+else
+    exec "${SCRIPT_DIR}/omarchy-undercover-settings" --mac "$@"
+fi

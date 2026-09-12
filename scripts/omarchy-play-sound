@@ -4,7 +4,15 @@
 # Plays authentic macOS / Windows 11 notification and switch sound effects
 # ==============================================================================
 
-SOUNDS_DIR="$HOME/.config/omarchy-undercover/sounds"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -d "${SCRIPT_DIR}/../assets/sounds" ]]; then
+    SOUNDS_DIR="${SCRIPT_DIR}/../assets/sounds"
+elif [[ -d "$HOME/.config/omarchy/plugins/undercover/assets/sounds" ]]; then
+    SOUNDS_DIR="$HOME/.config/omarchy/plugins/undercover/assets/sounds"
+else
+    SOUNDS_DIR="$HOME/.config/omarchy-undercover/sounds"
+fi
+
 TYPE="${1:-notify}"
 
 SOUND_FILE="$SOUNDS_DIR/current-notify.wav"

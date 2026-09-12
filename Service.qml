@@ -6,21 +6,25 @@ Item {
   id: root
 
   property string homeDir: Quickshell.env("HOME")
-  property string configDir: homeDir + "/.config/omarchy-undercover"
-  property string statePath: configDir + "/state"
-  property string settingsPath: configDir + "/settings.conf"
+  property string pluginDir: homeDir + "/.config/omarchy/plugins/undercover"
+  property string statePath: pluginDir + "/state"
+  property string settingsPath: pluginDir + "/settings.conf"
   property string currentState: "mac-dark"
   property string previousState: ""
 
   function runCmd(cmd) {
-    Quickshell.execDetached(["bash", "-c", cmd])
+    var fullCmd = cmd.replace(/^omarchy-([a-zA-Z0-9_-]+)/, function(match) {
+      return root.pluginDir + "/scripts/" + match
+    })
+    Quickshell.execDetached(["bash", "-c", fullCmd])
   }
 
   function playSwitchSound(mode) {
     var soundFile = (mode.indexOf("win") !== -1)
-      ? root.homeDir + "/.config/omarchy-undercover/sounds/win11-switch.wav"
-      : root.homeDir + "/.config/omarchy-undercover/sounds/mac-switch.wav"
-    Quickshell.execDetached(["omarchy-play-sound", soundFile])
+      ? root.pluginDir + "/assets/sounds/win11-switch.wav"
+      : root.pluginDir + "/assets/sounds/mac-switch.wav"
+    var soundScript = root.pluginDir + "/scripts/omarchy-play-sound"
+    Quickshell.execDetached(["bash", "-c", soundScript + " " + soundFile])
   }
 
   FileView {

@@ -12,7 +12,13 @@ import sys
 
 def scan_apps():
     home = os.path.expanduser("~")
-    config_dir = os.path.join(home, ".config", "omarchy-undercover")
+    script_parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if os.path.isfile(os.path.join(script_parent, "manifest.json")):
+        config_dir = script_parent
+    elif os.path.isdir(os.path.join(home, ".config", "omarchy", "plugins", "undercover")):
+        config_dir = os.path.join(home, ".config", "omarchy", "plugins", "undercover")
+    else:
+        config_dir = os.path.join(home, ".config", "omarchy-undercover")
     os.makedirs(config_dir, exist_ok=True)
     out_file = os.path.join(config_dir, "apps.json")
 

@@ -19,7 +19,15 @@ import shutil
 import subprocess
 import signal
 
-CONFIG_DIR = os.path.expanduser("~/.config/omarchy-undercover")
+_script_parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if os.path.isfile(os.path.join(_script_parent, "manifest.json")):
+    PLUGIN_DIR = _script_parent
+elif os.path.isdir(os.path.expanduser("~/.config/omarchy/plugins/undercover")):
+    PLUGIN_DIR = os.path.expanduser("~/.config/omarchy/plugins/undercover")
+else:
+    PLUGIN_DIR = os.path.expanduser("~/.config/omarchy-undercover")
+
+CONFIG_DIR = PLUGIN_DIR
 PID_FILE = os.path.join(CONFIG_DIR, "autohide.pid")
 STATE_FILE = os.path.join(CONFIG_DIR, "state")
 SETTINGS_FILE = os.path.join(CONFIG_DIR, "settings.conf")

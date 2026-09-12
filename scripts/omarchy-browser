@@ -4,8 +4,17 @@
 # Launches the configured or auto-detected default web browser
 # =============================================================================
 
-SETTINGS_FILE="$HOME/.config/omarchy-undercover/settings.conf"
-DEFAULTS_JSON="$HOME/.config/omarchy-undercover/defaults.json"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "${SCRIPT_DIR}/../manifest.json" ]]; then
+    PLUGIN_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+elif [[ -d "$HOME/.config/omarchy/plugins/undercover" ]]; then
+    PLUGIN_DIR="$HOME/.config/omarchy/plugins/undercover"
+else
+    PLUGIN_DIR="$HOME/.config/omarchy-undercover"
+fi
+
+SETTINGS_FILE="$PLUGIN_DIR/settings.conf"
+DEFAULTS_JSON="$PLUGIN_DIR/defaults.json"
 BROWSER_SETTING=""
 
 if [[ -f "$DEFAULTS_JSON" ]]; then

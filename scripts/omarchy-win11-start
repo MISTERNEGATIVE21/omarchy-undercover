@@ -4,7 +4,14 @@
 # =============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_DIR="$HOME/.config/omarchy-undercover"
+if [[ -f "${SCRIPT_DIR}/../manifest.json" ]]; then
+    PLUGIN_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+elif [[ -d "$HOME/.config/omarchy/plugins/undercover" ]]; then
+    PLUGIN_DIR="$HOME/.config/omarchy/plugins/undercover"
+else
+    PLUGIN_DIR="$HOME/.config/omarchy-undercover"
+fi
+CONFIG_DIR="$PLUGIN_DIR"
 
 # 1. Toggle if already running
 if pgrep -f "quickshell.*win11-start" >/dev/null; then
@@ -17,7 +24,7 @@ if pgrep -f "omarchy-win11-startmenu" >/dev/null; then
     exit 0
 fi
 
-QS_SRC="$CONFIG_DIR/quickshell/win11-start"
+QS_SRC="$CONFIG_DIR/configs/quickshell/win11-start"
 if [[ ! -d "$QS_SRC" && -d "${SCRIPT_DIR}/../configs/quickshell/win11-start" ]]; then
     QS_SRC="${SCRIPT_DIR}/../configs/quickshell/win11-start"
 fi

@@ -302,10 +302,25 @@ rollback_transaction() {
 }
 
 # ---------------------------------------------------------------------------
-# Settings persistence (~/.config/omarchy-undercover/settings.conf)
+# Settings persistence (resolved inside official Omarchy plugin directory)
 # ---------------------------------------------------------------------------
+undercover_plugin_dir() {
+    local base_dir="${SCRIPT_DIR:-.}"
+    if [[ -f "$base_dir/manifest.json" ]]; then
+        (cd "$base_dir" && pwd)
+    elif [[ -f "$base_dir/../manifest.json" ]]; then
+        (cd "$base_dir/.." && pwd)
+    elif [[ -d "$HOME/.config/omarchy/plugins/undercover" ]]; then
+        echo "$HOME/.config/omarchy/plugins/undercover"
+    else
+        echo "$HOME/.config/omarchy/plugins/undercover"
+    fi
+}
+
 undercover_settings_file() {
-    echo "$HOME/.config/omarchy-undercover/settings.conf"
+    local pdir
+    pdir=$(undercover_plugin_dir)
+    echo "$pdir/settings.conf"
 }
 
 read_setting() {

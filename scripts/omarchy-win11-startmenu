@@ -31,8 +31,15 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio, GLib, Gdk
 
-USERNAME = getpass.getuser()
-CONFIG_DIR = Path.home() / ".config" / "omarchy-undercover"
+_script_parent = Path(__file__).resolve().parent.parent
+if (_script_parent / "manifest.json").exists():
+    PLUGIN_DIR = _script_parent
+elif (Path.home() / ".config/omarchy/plugins/undercover").exists():
+    PLUGIN_DIR = Path.home() / ".config/omarchy/plugins/undercover"
+else:
+    PLUGIN_DIR = Path.home() / ".config/omarchy-undercover"
+
+CONFIG_DIR = PLUGIN_DIR
 SETTINGS_FILE = CONFIG_DIR / "settings.conf"
 STATE_FILE = CONFIG_DIR / "state"
 

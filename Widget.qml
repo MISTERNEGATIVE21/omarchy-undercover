@@ -11,7 +11,7 @@ BarWidget {
   moduleName: "undercover"
 
   property string homeDir: Quickshell.env("HOME")
-  property string configDir: homeDir + "/.config/omarchy-undercover"
+  property string configDir: homeDir + "/.config/omarchy/plugins/undercover"
   property string statePath: configDir + "/state"
   property string settingsPath: configDir + "/settings.conf"
   property string activeState: "mac-dark"
@@ -115,10 +115,14 @@ BarWidget {
       else cmd = "omarchy-undercover -mac"
     }
 
+    var fullCmd = cmd.replace(/^omarchy-([a-zA-Z0-9_-]+)/, function(match) {
+      return root.configDir + "/scripts/" + match
+    })
+
     if (root.bar) {
-      root.bar.run(cmd)
+      root.bar.run(fullCmd)
     } else {
-      Quickshell.execDetached(["bash", "-c", cmd])
+      Quickshell.execDetached(["bash", "-c", fullCmd])
     }
   }
 

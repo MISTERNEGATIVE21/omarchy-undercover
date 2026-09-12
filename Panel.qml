@@ -18,6 +18,7 @@ Panel {
   readonly property var barIdentity: hostWidget || root
 
   readonly property string homeDir: Quickshell.env("HOME")
+  readonly property string pluginDir: homeDir + "/.config/omarchy/plugins/undercover"
   readonly property string currentMode: widget ? widget.currentMode : "mac"
   readonly property string activeState: widget ? widget.activeState : "mac-dark"
   readonly property bool isAutohide: widget ? widget.isAutohide : false
@@ -25,10 +26,13 @@ Panel {
   readonly property real activeOpacity: widget ? widget.activeOpacity : 0.95
 
   function runCmd(cmd) {
+    var fullCmd = cmd.replace(/^omarchy-([a-zA-Z0-9_-]+)/, function(match) {
+      return root.pluginDir + "/scripts/" + match
+    })
     if (root.bar) {
-      root.bar.run(cmd)
+      root.bar.run(fullCmd)
     } else {
-      Quickshell.execDetached(["bash", "-c", cmd])
+      Quickshell.execDetached(["bash", "-c", fullCmd])
     }
   }
 
