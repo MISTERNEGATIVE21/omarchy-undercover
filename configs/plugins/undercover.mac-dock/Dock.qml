@@ -62,6 +62,7 @@ Panel {
   property int dockTransparency: 76
 
   property string homeDir: Quickshell.env("HOME")
+  property string configDir: homeDir + "/.config/omarchy/plugins/undercover"
   property string iconBasePath: homeDir + "/.local/share/icons/mac-dock/"
   property bool isLight: false
   property bool isAutohide: false
@@ -95,7 +96,7 @@ Panel {
 
   FileView {
     id: stateWatcher
-    path: dockWindow.homeDir + "/.config/omarchy-undercover/state"
+    path: dockWindow.configDir + "/state"
     watchChanges: true
     onLoaded: {
       var s = text().trim()
@@ -114,7 +115,7 @@ Panel {
 
   FileView {
     id: settingsWatcher
-    path: dockWindow.homeDir + "/.config/omarchy-undercover/settings.conf"
+    path: dockWindow.configDir + "/settings.conf"
     watchChanges: true
     onLoaded: {
       var s = text()
@@ -159,7 +160,7 @@ Panel {
   property var macPinsConfig: ({})
   FileView {
     id: defaultsFile
-    path: dockWindow.homeDir + "/.config/omarchy-undercover/defaults.json"
+    path: dockWindow.configDir + "/defaults.json"
     watchChanges: true
     onLoaded: {
       try {

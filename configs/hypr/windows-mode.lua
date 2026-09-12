@@ -13,7 +13,11 @@
 -- provided by Omarchy's hyprland.lua bootstrap.
 -- =============================================================================
 
-local settings_path = os.getenv("HOME") .. "/.config/omarchy-undercover/settings.conf"
+local home = os.getenv("HOME")
+local settings_path = home .. "/.config/omarchy/plugins/undercover/settings.conf"
+if not io.open(settings_path, "r") then
+  settings_path = home .. "/.config/omarchy-undercover/settings.conf"
+end
 
 local function get_setting(key, default)
   local file = io.open(settings_path, "r")

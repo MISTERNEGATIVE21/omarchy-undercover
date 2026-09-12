@@ -2,7 +2,11 @@
 -- Omarchy Undercover - Apple macOS Sequoia Mode for Hyprland (Lua module)
 -- =============================================================================
 
-local settings_path = os.getenv("HOME") .. "/.config/omarchy-undercover/settings.conf"
+local home = os.getenv("HOME")
+local settings_path = home .. "/.config/omarchy/plugins/undercover/settings.conf"
+if not io.open(settings_path, "r") then
+  settings_path = home .. "/.config/omarchy-undercover/settings.conf"
+end
 
 local function get_setting(key, default)
   local file = io.open(settings_path, "r")
@@ -17,7 +21,8 @@ local function get_setting(key, default)
 end
 
 local mode = get_setting("MODE", "")
-local state_file = io.open(os.getenv("HOME") .. "/.config/omarchy-undercover/state", "r")
+local state_path = home .. "/.config/omarchy/plugins/undercover/state"
+local state_file = io.open(state_path, "r") or io.open(home .. "/.config/omarchy-undercover/state", "r")
 if state_file then
   local s = state_file:read("*l")
   state_file:close()

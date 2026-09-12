@@ -9,6 +9,7 @@ BarWidget {
   moduleName: "undercover.win11-taskbar"
 
   property string homeDir: Quickshell.env("HOME")
+  property string configDir: homeDir + "/.config/omarchy/plugins/undercover"
   property bool isDark: true
   property var winPinsConfig: ({})
   onWinPinsConfigChanged: root.refreshTaskbar()
@@ -232,7 +233,7 @@ BarWidget {
   // Reactive Theme state watcher via FileView
   FileView {
     id: stateWatcher
-    path: root.homeDir + "/.config/omarchy-undercover/state"
+    path: root.configDir + "/state"
     watchChanges: true
     onLoaded: {
       var s = text().trim()
@@ -248,7 +249,7 @@ BarWidget {
   // Defaults & pinned apps poller via FileView
   FileView {
     id: defaultsFile
-    path: root.homeDir + "/.config/omarchy-undercover/defaults.json"
+    path: root.configDir + "/defaults.json"
     watchChanges: true
     onLoaded: {
       try {

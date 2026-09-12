@@ -28,7 +28,7 @@ BarWidget {
   // Theme state detection
   FileView {
     id: stateFile
-    path: Quickshell.env("HOME") + "/.config/omarchy-undercover/state"
+    path: Quickshell.env("HOME") + "/.config/omarchy/plugins/undercover/state"
     watchChanges: true
     onLoaded: {
       var s = text().trim()
