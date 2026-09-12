@@ -212,13 +212,6 @@ gtk-font-name=$WINDOWS_FONT_NAME
 gtk-decoration-layout=:minimize,maximize,close
 EOF
 
-    # Nautilus (File Explorer) tweaks - keep it looking like stock GNOME
-    # (Adwaita) rather than the Windows skin; breadcrumbs are cleaner.
-    if command_exists gsettings; then
-        gsettings set org.gnome.nautilus.preferences always-use-location-entry false 2>/dev/null || true
-        gsettings set org.gnome.nautilus.preferences show-create-link true 2>/dev/null || true
-        gsettings set org.gnome.nautilus.preferences show-delete-permanently true 2>/dev/null || true
-    fi
     # Add a Windows-style "My Computer" (This PC) bookmark to the sidebar
     local bookmarks="$HOME/.config/gtk-3.0/bookmarks"
     mkdir -p "$HOME/.config/gtk-3.0"
@@ -227,9 +220,6 @@ EOF
     else
         echo "computer:/// My Computer" >> "$bookmarks"
     fi
-
-    # Restart Nautilus daemon if running
-    nautilus -q 2>/dev/null || true
 
     omarchy_set_gnome_theme "$WINDOWS_GTK_THEME" "$WINDOWS_ICON_THEME" "$WINDOWS_CURSOR_THEME" "$cursor_size"
     gsettings set org.gnome.desktop.interface font-name "$WINDOWS_FONT_NAME" 2>/dev/null || true
@@ -471,24 +461,6 @@ backup_original_configs() {
     backup_config_dir "alacritty" "$cur_backup"
     backup_config_dir "fontconfig" "$cur_backup"
 
-    # Nautilus file manager override + My Computer extension (so toggling back
-    # can restore the original file-manager experience)
-    local nautilus_backup="$cur_backup/nautilus"
-    mkdir -p "$nautilus_backup"
-    if [[ -f "$HOME/.local/share/applications/org.gnome.Nautilus.desktop" ]]; then
-        cp -a "$HOME/.local/share/applications/org.gnome.Nautilus.desktop" "$nautilus_backup/"
-    else
-        touch "$nautilus_backup/.absent_nautilus_desktop"
-    fi
-    if [[ -d "$HOME/.local/share/nautilus-python/extensions" ]]; then
-        cp -a "$HOME/.local/share/nautilus-python/extensions" "$nautilus_backup/extensions"
-    else
-        touch "$nautilus_backup/.absent_extensions"
-    fi
-    if [[ -f "$HOME/.local/share/glib-2.0/schemas/io.github.yannmasoch.nautilus-my-computer.gschema.xml" ]]; then
-        cp -a "$HOME/.local/share/glib-2.0/schemas/io.github.yannmasoch.nautilus-my-computer.gschema.xml" "$nautilus_backup/"
-    fi
-
     # Capture gtk settings
     local gtk_file="$cur_backup/gtk_settings.conf"
     if command_exists gsettings; then
@@ -529,57 +501,27 @@ restore_gtk_from_baseline() {
     # Remove custom Undercover GTK styling and reset button layout
     rm -f "$HOME/.config/gtk-3.0/gtk.css" "$HOME/.config/gtk-4.0/gtk.css" 2>/dev/null || true
     gsettings set org.gnome.desktop.wm.preferences button-layout ":close" 2>/dev/null || true
-    nautilus -q 2>/dev/null || true
 }
 
-# Restore the file manager to its original condition: removes the Nautilus
-# desktop override, the My Computer extension, its schema, settings and
-# translations. Uses the baseline snapshot when available, otherwise removes
-# the known undercover artifacts so the stock file manager comes back.
-restore_undercover_nautilus() {
-    local baseline="$1"
-    local nautilus_backup="$baseline/nautilus"
-    local app_dir="$HOME/.local/share/applications"
-    local ext_dir="$HOME/.local/share/nautilus-python/extensions"
-    local schema_dir="$HOME/.local/share/glib-2.0/schemas"
-    local schema_id="io.github.yannmasoch.nautilus-my-computer"
-
-    gsettings reset-recursively "$schema_id" 2>/dev/null || true
-
-    if [[ -d "$nautilus_backup" ]]; then
-        if [[ -f "$nautilus_backup/org.gnome.Nautilus.desktop" ]]; then
-            mkdir -p "$app_dir"
-            cp -a "$nautilus_backup/org.gnome.Nautilus.desktop" "$app_dir/"
-        elif [[ -f "$nautilus_backup/.absent_nautilus_desktop" ]]; then
-            rm -f "$app_dir/org.gnome.Nautilus.desktop"
-        fi
-
-        if [[ -d "$nautilus_backup/extensions" ]]; then
-            rm -rf "$ext_dir"
-            mkdir -p "$(dirname "$ext_dir")"
-            cp -a "$nautilus_backup/extensions" "$(dirname "$ext_dir")/"
-        elif [[ -f "$nautilus_backup/.absent_extensions" ]]; then
-            rm -rf "$ext_dir"
-        fi
-
-        if [[ -f "$nautilus_backup/$schema_id.gschema.xml" ]]; then
-            mkdir -p "$schema_dir"
-            cp -a "$nautilus_backup/$schema_id.gschema.xml" "$schema_dir/"
-        else
-            rm -f "$schema_dir/$schema_id.gschema.xml"
-        fi
-    else
-        # Legacy baseline predating Nautilus tracking: drop known artifacts.
-        rm -f "$app_dir/org.gnome.Nautilus.desktop"
-        rm -f "$ext_dir/nautilus-my-computer.py"
-        rm -rf "$ext_dir/nautilus_my_computer"
-        rm -f "$ext_dir/__pycache__/nautilus-my-computer"*.pyc 2>/dev/null || true
-        rm -f "$schema_dir/$schema_id.gschema.xml"
+apply_flea_mac() {
+    if command_exists flea; then
+        flea --ui-state '{"view":"columns","density":"comfortable","keys":"mac","places":{"sidebarWidth":200}}' >/dev/null 2>&1 || true
+        msg "Configured Flea for Apple macOS Finder (column view, Mac keymap)."
     fi
+}
 
-    glib-compile-schemas "$schema_dir" 2>/dev/null || true
-    find "$HOME/.local/share/locale" -name "nautilus-my-computer.mo" -delete 2>/dev/null || true
-    nautilus -q 2>/dev/null || true
+apply_flea_windows() {
+    if command_exists flea; then
+        flea --ui-state '{"view":"list","density":"normal","keys":"windows","places":{"sidebarWidth":220}}' >/dev/null 2>&1 || true
+        msg "Configured Flea for Windows 11 File Explorer (list view, Windows keymap)."
+    fi
+}
+
+restore_flea_defaults() {
+    if command_exists flea; then
+        flea --ui-state '{"view":"columns","density":"normal","keys":"default"}' >/dev/null 2>&1 || true
+        msg "Restored Flea default UI configuration."
+    fi
 }
 
 switch_to_mac() {
@@ -660,10 +602,11 @@ Gtk/DecorationLayout "close,minimize,maximize:"
 EOF
     killall -HUP xsettingsd 2>/dev/null || true
 
+    apply_flea_mac
+
     # Deploy macOS Finder file manager icon
     if [[ -f "$HOME/.local/share/icons/hicolor/scalable/apps/mac-finder.svg" ]]; then
-        cp -f "$HOME/.local/share/icons/hicolor/scalable/apps/mac-finder.svg" "$HOME/.local/share/icons/hicolor/scalable/apps/org.gnome.Nautilus.svg" 2>/dev/null || true
-        cp -f "$HOME/.local/share/icons/hicolor/scalable/apps/mac-finder.svg" "$HOME/.local/share/icons/hicolor/scalable/apps/system-file-manager.svg" 2>/dev/null || true
+        cp -f "$HOME/.local/share/icons/hicolor/scalable/apps/system-file-manager.svg" 2>/dev/null || true
         cp -f "$HOME/.local/share/icons/hicolor/scalable/apps/mac-finder.svg" "$HOME/.local/share/icons/mac-dock/finder.svg" 2>/dev/null || true
         gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
     fi
@@ -789,9 +732,10 @@ Gtk/DecorationLayout ":minimize,maximize,close"
 EOF
     killall -HUP xsettingsd 2>/dev/null || true
 
+    apply_flea_windows
+
     # Deploy Windows 11 Fluent File Explorer icon
     if [[ -f "$HOME/.local/share/icons/hicolor/scalable/apps/win11-explorer.svg" ]]; then
-        cp -f "$HOME/.local/share/icons/hicolor/scalable/apps/win11-explorer.svg" "$HOME/.local/share/icons/hicolor/scalable/apps/org.gnome.Nautilus.svg" 2>/dev/null || true
         cp -f "$HOME/.local/share/icons/hicolor/scalable/apps/win11-explorer.svg" "$HOME/.local/share/icons/hicolor/scalable/apps/system-file-manager.svg" 2>/dev/null || true
         gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
     fi
@@ -899,7 +843,7 @@ switch_to_omarchy() {
 
     # Crucial: restore shell.json AFTER theme set so omarchy-theme-set IPC doesn't overwrite it
     restore_shell_from_baseline "$baseline"
-    restore_undercover_nautilus "$baseline"
+    restore_flea_defaults
 
     if command_exists gsettings; then
         gsettings set org.gnome.desktop.wm.preferences button-layout "close:minimize,maximize" 2>/dev/null || true
@@ -975,7 +919,7 @@ restore_baseline() {
 
     # Crucial: restore shell.json AFTER theme set so omarchy-theme-set IPC doesn't overwrite it
     restore_shell_from_baseline "$baseline"
-    restore_undercover_nautilus "$baseline"
+    restore_flea_defaults
 
     omarchy_reload_bar
     omarchy_reload_hyprland
