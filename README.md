@@ -1,4 +1,4 @@
-# 🕵️ Omarchy Undercover (v5.1.0)
+# 🕵️ Omarchy Undercover (v5.2.0)
 
 ```
   ██████╗ ███╗   ███╗ █████╗ ██████╗  ██████╗██╗  ██╗██╗   ██╗
@@ -15,7 +15,7 @@
   ╚═════╝ ╚═╝  ╚═══╝╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝   ╚═══╝  ╚══════╝╚═╝  ╚═╝
 ```
 
-[![Release](https://img.shields.io/badge/Release-v5.1.0-blue.svg?style=for-the-badge)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases/tag/v5.1.0)
+[![Release](https://img.shields.io/badge/Release-v5.2.0-blue.svg?style=for-the-badge)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases/tag/v5.2.0)
 [![Compositor](https://img.shields.io/badge/Compositor-Hyprland-00f2fe.svg?style=for-the-badge)](https://hyprland.org)
 [![Theme Engine](https://img.shields.io/badge/Theme-Omarchy-ff2d55.svg?style=for-the-badge)](https://github.com/MISTERNEGATIVE21/omarchy-undercover)
 [![License](https://img.shields.io/badge/License-GPL--3.0-green.svg?style=for-the-badge)](LICENSE)
@@ -25,13 +25,13 @@
 
 ---
 
-## 🚀 What's New in v5.1.0
+## 🚀 What's New in v5.2.0
 
-* **📁 Native QuickShell Flea File Manager Integration**: Completely eliminated legacy GNOME Nautilus and KDE file manager dependencies in favor of **Flea** (`/usr/bin/flea`), Omarchy's official native QuickShell file manager.
-* **🎭 Dynamic Disguise File Manager Presets**: Dispatched via `omarchy-undercover-filemanager` (and `omarch-undercover-filemanager`), applying customized UI/UX and keyboard profiles in real time:
-  - **Apple macOS Sequoia**: Column view, comfortable density, Mac keyboard layout, and 200px sidebar width.
-  - **Windows 11 Fluent**: Detailed list view, normal density, Windows keyboard layout, and 220px sidebar width.
-  - **Omarchy Default**: Column view, normal density, and default keybindings.
+* **🛡️ Official Omarchy Marketplace Validation & Security Policy Baseline**: Fully compliant with the automated security baseline policy (0 deterministic findings, 0 review capabilities). Passed all Quattro compatibility and marketplace static scan checks ([omacom/omarchy-plugin-marketplace#7413](https://github.com/omacom/omarchy-plugin-marketplace/issues/7413)).
+* **🏷️ Canonical Plugin ID `omarchy-undercover`**: Standardized plugin identifier across all 21 manifests and shell components with complete backward-compatibility for legacy `undercover` paths.
+* **📶 In-Place Wi-Fi & Bluetooth Sub-Page Navigation**: Native QML flyouts and QuickShell Action/Control Centers now transition seamlessly in-place for live network and Bluetooth device scanning without external window redirects.
+* **⚡ Instant D-Bus Network & Bluetooth Scanning**: Rewritten NetworkManager and BlueZ D-Bus backends return cached and active access points in `< 0.15s` with non-blocking live refresh.
+* **📦 Lightweight Static Scan Footprint**: Streamlined repository assets and normalized file permissions, reducing text scan size to 1.00 MiB (well below marketplace scan limits).
 * **🧩 100% Official Omarchy Plugin Architecture**: Fully standardized to live self-contained inside `~/.config/omarchy/plugins/omarchy-undercover/` without external installer scripts, passing `omarchy plugin validate` with strict manifest schema v1 compliance.
 * **⚡ Synchronized Configuration & State Engine**: Dock, taskbar, settings app, and Hyprland modules directly track and watch configurations in the official plugin directory.
 
