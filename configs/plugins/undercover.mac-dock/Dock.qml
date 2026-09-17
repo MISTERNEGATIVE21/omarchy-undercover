@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
 import Quickshell.Io
+import qs.Commons
 import qs.Ui
 
 Panel {
@@ -78,30 +79,23 @@ Panel {
     id: hyprStateProc
     command: [
       "bash", "-c",
-      "echo \"$(hyprctl activeworkspace -j 2>/dev/null | tr -d '\\n')|||$(hyprctl workspaces -j 2>/dev/null | tr -d '\\n')|||$(hyprctl clients -j 2>/dev/null | tr -d '\\n')|||$(hyprctl activewindow -j 2>/dev/null | tr -d '\\n')\""
+      "{ hyprctl activeworkspace -j 2>/dev/null || echo '{}'; hyprctl workspaces -j 2>/dev/null || echo '[]'; hyprctl clients -j 2>/dev/null || echo '[]'; hyprctl activewindow -j 2>/dev/null || echo '{}'; } | jq -s -c '{actWs: (.[0] // {}), allWs: (.[1] // []), cls: (.[2] // []), actWin: (.[3] // {})}'"
     ]
     stdout: SplitParser {
       onRead: function(line) {
         if (!line) return
         try {
-          var parts = line.split("|||")
-          if (parts.length >= 1 && parts[0].trim()) {
-            var actWs = JSON.parse(parts[0].trim())
-            if (actWs && actWs.id) dockWindow.activeWorkspaceId = actWs.id
+          var data = JSON.parse(line.trim())
+          if (data.actWs && data.actWs.id) {
+            dockWindow.activeWorkspaceId = data.actWs.id
           }
-          if (parts.length >= 3 && parts[2].trim()) {
-            var cls = JSON.parse(parts[2].trim())
-            if (Array.isArray(cls)) {
-              dockWindow.hyprClients = cls.filter(function(c) { return c && c.mapped && !c.hidden })
-            }
+          if (Array.isArray(data.cls)) {
+            dockWindow.hyprClients = data.cls.filter(function(c) { return c && c.mapped && !c.hidden })
           }
-          if (parts.length >= 4 && parts[3].trim()) {
-            var actWin = JSON.parse(parts[3].trim())
-            if (actWin && actWin.address) {
-              dockWindow.hyprActiveWindow = actWin
-            } else {
-              dockWindow.hyprActiveWindow = ({})
-            }
+          if (data.actWin && data.actWin.address) {
+            dockWindow.hyprActiveWindow = data.actWin
+          } else {
+            dockWindow.hyprActiveWindow = ({})
           }
         } catch(e) {}
         dockWindow.refreshDock()
@@ -253,29 +247,32 @@ Panel {
 
   function shiftToClient(client) {
     if (!client || !client.address) return
-    var addr = client.address
+    var rawAddr = String(client.address).trim()
+    if (!/^0x[0-9a-fA-F]+$/.test(rawAddr)) return
     if (client.workspace && client.workspace.id < 0) {
-      Quickshell.execDetached(["omarchy-undercover-minimize", addr])
+      Quickshell.execDetached(["omarchy-undercover-minimize", rawAddr])
       refreshTimer.restart()
       return
     }
-    var wsId = (client.workspace && client.workspace.id) ? client.workspace.id : ""
-    var cmd = "if hyprctl dispatch \"hl.dsp.focus({ window = 'address:" + addr + "' })\" 2>/dev/null; then :; else " +
-              (wsId ? "hyprctl dispatch workspace " + wsId + " 2>/dev/null; " : "") +
-              "hyprctl dispatch focuswindow \"address:" + addr + "\" 2>/dev/null; fi"
+    var wsId = (client.workspace && client.workspace.id) ? parseInt(client.workspace.id) : 0
+    var safeWs = (wsId > 0) ? ("hyprctl dispatch workspace " + wsId + " 2>/dev/null; ") : ""
+    var cmd = "if hyprctl dispatch " + Util.shellQuote("hl.dsp.focus({ window = 'address:" + rawAddr + "' })") + " 2>/dev/null; then :; else " +
+              safeWs +
+              "hyprctl dispatch focuswindow " + Util.shellQuote("address:" + rawAddr) + " 2>/dev/null; fi"
     Quickshell.execDetached(["bash", "-c", cmd])
     refreshTimer.restart()
   }
 
   function closeClient(client) {
     if (!client || !client.address) {
-      var cmd = "if hyprctl dispatch \"hl.dsp.window.close()\" 2>/dev/null; then :; else hyprctl dispatch killactive 2>/dev/null; fi"
-      Quickshell.execDetached(["bash", "-c", cmd])
+      var fallbackCmd = "if hyprctl dispatch \"hl.dsp.window.close()\" 2>/dev/null; then :; else hyprctl dispatch killactive 2>/dev/null; fi"
+      Quickshell.execDetached(["bash", "-c", fallbackCmd])
       refreshTimer.restart()
       return
     }
-    var addr = client.address
-    var cmd = "if hyprctl dispatch \"hl.dsp.window.close({ window = 'address:" + addr + "' })\" 2>/dev/null; then :; else hyprctl dispatch closewindow \"address:" + addr + "\" 2>/dev/null; fi"
+    var rawAddr = String(client.address).trim()
+    if (!/^0x[0-9a-fA-F]+$/.test(rawAddr)) return
+    var cmd = "if hyprctl dispatch " + Util.shellQuote("hl.dsp.window.close({ window = 'address:" + rawAddr + "' })") + " 2>/dev/null; then :; else hyprctl dispatch closewindow " + Util.shellQuote("address:" + rawAddr) + " 2>/dev/null; fi"
     Quickshell.execDetached(["bash", "-c", cmd])
     refreshTimer.restart()
   }
@@ -293,7 +290,7 @@ Panel {
     if (lowerCls.indexOf("antigravity") !== -1 || lowerInit.indexOf("antigravity") !== -1) {
       return "file://" + dockWindow.iconBasePath + "antigravity-ide.svg"
     }
-    if (lowerCls.indexOf("flea") !== -1 || lowerInit.indexOf("flea") !== -1) {
+    if (lowerCls.indexOf("flea") !== -1 || lowerInit.indexOf("flea") !== -1 || lowerCls.indexOf("nautilus") !== -1 || lowerCls.indexOf("thunar") !== -1 || lowerCls.indexOf("dolphin") !== -1 || lowerCls.indexOf("nemo") !== -1 || lowerCls.indexOf("pcmanfm") !== -1) {
       return "file://" + dockWindow.iconBasePath + "finder.svg"
     }
     if (lowerCls.indexOf("terminal") !== -1 || lowerCls.indexOf("kitty") !== -1 || lowerCls.indexOf("alacritty") !== -1 || lowerCls.indexOf("foot") !== -1 || lowerCls.indexOf("ghostty") !== -1) {
@@ -373,7 +370,7 @@ Panel {
   }
 
   property var primaryDockApps: [
-    { id: "finder", name: "Finder", icon: "finder.svg", exec: "omarchy-undercover-filemanager ~ || flea", matchers: ["flea", "nautilus", "thunar", "dolphin", "files", "org.gnome.nautilus"] },
+    { id: "finder", name: "Finder", icon: "finder.svg", exec: "omarchy-undercover-filemanager ~ || flea", matchers: ["flea", "nautilus", "thunar", "dolphin", "nemo", "pcmanfm", "files", "org.gnome.nautilus"] },
     { id: "launchpad", name: "Launchpad", icon: "launchpad.svg", exec: "rofi -show drun -theme ~/.config/rofi/mac.rasi", matchers: [] },
     { id: "safari", name: "Safari", icon: "safari.svg", exec: "omarchy-browser", matchers: ["safari", "chrome", "chromium", "firefox", "vivaldi", "brave", "zen", "browser", "epiphany"] },
     { id: "messages", name: "Messages", icon: "messages.svg", exec: "telegram-desktop || discord || signal-desktop || vesktop", matchers: ["telegram", "discord", "signal", "vesktop"] },

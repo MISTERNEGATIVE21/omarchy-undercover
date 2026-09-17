@@ -139,6 +139,7 @@ def detect_installed_apps(category):
         ],
         "file_manager": [
             ("flea", "Flea File Manager (QuickShell)", "com.thisisgm.flea.desktop"),
+            ("nautilus", "GNOME Files (Nautilus)", "org.gnome.Nautilus.desktop"),
             ("thunar", "Thunar File Manager", "thunar.desktop"),
             ("dolphin", "KDE Dolphin", "org.kde.dolphin.desktop"),
             ("nemo", "Nemo File Manager", "nemo.desktop"),

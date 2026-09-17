@@ -141,8 +141,9 @@ reload_active_bar() {
     else
         # Reload waybar
         pkill -9 -x waybar 2>/dev/null || true
-        sleep 0.15
-        nohup waybar >/tmp/waybar.log 2>&1 &
+        local log_dir="${XDG_RUNTIME_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}}/omarchy-undercover"
+        mkdir -p -m 0700 "$log_dir" 2>/dev/null || true
+        nohup waybar >"$log_dir/waybar.log" 2>&1 &
         disown 2>/dev/null || true
     fi
 }

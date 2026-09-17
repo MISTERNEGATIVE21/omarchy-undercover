@@ -54,8 +54,9 @@ else
         local retry=0
         while pgrep -x waybar >/dev/null && [[ $retry -lt 8 ]]; do sleep 0.05; ((retry++)); done
         pkill -9 -x waybar 2>/dev/null || true
-        sleep 0.15
-        nohup waybar >/tmp/waybar.log 2>&1 &
+        local log_dir="${XDG_RUNTIME_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}}/omarchy-undercover"
+        mkdir -p -m 0700 "$log_dir" 2>/dev/null || true
+        nohup waybar >"$log_dir/waybar.log" 2>&1 &
         disown 2>/dev/null || true
         sleep 0.35
         local pids=($(pgrep -x waybar))
@@ -505,22 +506,36 @@ restore_gtk_from_baseline() {
 
 apply_flea_mac() {
     if command_exists flea; then
-        flea --ui-state '{"view":"columns","density":"comfortable","keys":"mac","places":{"sidebarWidth":200}}' >/dev/null 2>&1 || true
-        msg "Configured Flea for Apple macOS Finder (column view, Mac keymap)."
+        flea --ui-state '{"view":"columns","density":"comfortable","keys":"mac","places":{"sidebarWidth":192,"showHome":true,"showNetwork":true,"showDevices":true,"showTrash":true,"driveSize":true,"trashCount":false,"rail":"shown"},"preview":{"column":true,"loadOn":"automatic","thumbnails":"media","thumbSize":"medium","ctrlZoom":true},"columns":["name","date","kind","size"],"foldersFirst":true,"hidden":false}' >/dev/null 2>&1 || true
+        msg "Configured Flea for Apple macOS Finder (column view, Mac keymap, preview column)."
     fi
 }
 
 apply_flea_windows() {
     if command_exists flea; then
-        flea --ui-state '{"view":"list","density":"normal","keys":"windows","places":{"sidebarWidth":220}}' >/dev/null 2>&1 || true
-        msg "Configured Flea for Windows 11 File Explorer (list view, Windows keymap)."
+        flea --ui-state '{"view":"list","density":"normal","keys":"windows","places":{"sidebarWidth":224,"showHome":true,"showNetwork":true,"showDevices":true,"showTrash":true,"driveSize":true,"trashCount":false,"rail":"shown"},"preview":{"column":false},"columns":["name","date","kind","size"],"foldersFirst":true,"hidden":false}' >/dev/null 2>&1 || true
+        msg "Configured Flea for Windows 11 File Explorer (Details list view, Windows keymap, full width)."
     fi
 }
 
 restore_flea_defaults() {
     if command_exists flea; then
-        flea --ui-state '{"view":"columns","density":"normal","keys":"default"}' >/dev/null 2>&1 || true
+        flea --ui-state '{"view":"columns","density":"normal","keys":"default","preview":{"column":true}}' >/dev/null 2>&1 || true
         msg "Restored Flea default UI configuration."
+    fi
+}
+
+sync_undercover_themes() {
+    local src
+    src=$(project_file "omarchy-theme")
+    if [[ -n "$src" && -d "$src" ]]; then
+        mkdir -p "$HOME/.config/omarchy/themes"
+        for t in "macos-dark" "macos-light" "windows11-dark" "windows11-light"; do
+            if [[ -d "$src/$t" ]]; then
+                mkdir -p "$HOME/.config/omarchy/themes/$t"
+                cp -r "$src/$t/"* "$HOME/.config/omarchy/themes/$t/" 2>/dev/null || true
+            fi
+        done
     fi
 }
 
@@ -540,6 +555,7 @@ switch_to_mac() {
     write_setting "LAST_UNDERCOVER_MODE" "mac-$variant"
     rm -f "$HOME/.local/state/omarchy/toggles/bar-off" 2>/dev/null || true
 
+    sync_undercover_themes
     if command_exists omarchy-theme-set; then
         omarchy-theme-set "macos-$variant" 2>/dev/null || true
     fi
@@ -677,6 +693,7 @@ switch_to_win11() {
     write_setting "LAST_UNDERCOVER_MODE" "win11-$variant"
     rm -f "$HOME/.local/state/omarchy/toggles/bar-off" 2>/dev/null || true
 
+    sync_undercover_themes
     if command_exists omarchy-theme-set; then
         omarchy-theme-set "windows11-$variant" 2>/dev/null || true
     fi

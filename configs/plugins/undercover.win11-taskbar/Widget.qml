@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
+import qs.Commons
 import qs.Ui
 
 BarWidget {
@@ -49,43 +50,56 @@ BarWidget {
 
   function shiftToClient(client) {
     if (!client || !client.address) return
-    var addr = client.address
+    var rawAddr = String(client.address).trim()
+    if (!/^0x[0-9a-fA-F]+$/.test(rawAddr)) return
     if (client.workspace && client.workspace.id < 0) {
-      Quickshell.execDetached(["omarchy-undercover-minimize", addr])
+      Quickshell.execDetached(["omarchy-undercover-minimize", rawAddr])
       refreshTimer.restart()
       return
     }
-    var wsId = (client.workspace && client.workspace.id) ? client.workspace.id : ""
-    var cmd = "if hyprctl dispatch \"hl.dsp.focus({ window = 'address:" + addr + "' })\" 2>/dev/null; then :; else " +
-              (wsId ? "hyprctl dispatch workspace " + wsId + " 2>/dev/null; " : "") +
-              "hyprctl dispatch focuswindow \"address:" + addr + "\" 2>/dev/null; fi"
-    Quickshell.execDetached(["bash", "-c", cmd])
+    var wsId = (client.workspace && client.workspace.id) ? parseInt(client.workspace.id) : 0
+    var safeWs = (wsId > 0) ? ("hyprctl dispatch workspace " + wsId + " 2>/dev/null; ") : ""
+    var cmd = "if hyprctl dispatch " + Util.shellQuote("hl.dsp.focus({ window = 'address:" + rawAddr + "' })") + " 2>/dev/null; then :; else " +
+              safeWs +
+              "hyprctl dispatch focuswindow " + Util.shellQuote("address:" + rawAddr) + " 2>/dev/null; fi"
+    if (root.bar) {
+      root.bar.run(cmd)
+    } else {
+      Quickshell.execDetached(["bash", "-c", cmd])
+    }
     refreshTimer.restart()
   }
 
   function closeClient(client) {
     if (!client || !client.address) {
-      var cmd = "if hyprctl dispatch \"hl.dsp.window.close()\" 2>/dev/null; then :; else hyprctl dispatch killactive 2>/dev/null; fi"
-      Quickshell.execDetached(["bash", "-c", cmd])
+      var fallbackCmd = "if hyprctl dispatch \"hl.dsp.window.close()\" 2>/dev/null; then :; else hyprctl dispatch killactive 2>/dev/null; fi"
+      if (root.bar) root.bar.run(fallbackCmd)
+      else Quickshell.execDetached(["bash", "-c", fallbackCmd])
       refreshTimer.restart()
       return
     }
-    var addr = client.address
-    var cmd = "if hyprctl dispatch \"hl.dsp.window.close({ window = 'address:" + addr + "' })\" 2>/dev/null; then :; else hyprctl dispatch closewindow \"address:" + addr + "\" 2>/dev/null; fi"
-    Quickshell.execDetached(["bash", "-c", cmd])
+    var rawAddr = String(client.address).trim()
+    if (!/^0x[0-9a-fA-F]+$/.test(rawAddr)) return
+    var cmd = "if hyprctl dispatch " + Util.shellQuote("hl.dsp.window.close({ window = 'address:" + rawAddr + "' })") + " 2>/dev/null; then :; else hyprctl dispatch closewindow " + Util.shellQuote("address:" + rawAddr) + " 2>/dev/null; fi"
+    if (root.bar) root.bar.run(cmd)
+    else Quickshell.execDetached(["bash", "-c", cmd])
     refreshTimer.restart()
   }
 
   function switchToWorkspace(ws) {
-    var cmd = "if hyprctl dispatch \"hl.dsp.focus({ workspace = '" + ws + "' })\" 2>/dev/null; then :; else hyprctl dispatch workspace \"" + ws + "\" 2>/dev/null; fi"
-    Quickshell.execDetached(["bash", "-c", cmd])
+    var rawWs = String(ws).trim()
+    if (!/^[0-9a-zA-Z_+-]+$/.test(rawWs)) return
+    var cmd = "if hyprctl dispatch " + Util.shellQuote("hl.dsp.focus({ workspace = '" + rawWs + "' })") + " 2>/dev/null; then :; else hyprctl dispatch workspace " + Util.shellQuote(rawWs) + " 2>/dev/null; fi"
+    if (root.bar) root.bar.run(cmd)
+    else Quickshell.execDetached(["bash", "-c", cmd])
     refreshTimer.restart()
   }
 
   function seekWorkspace(delta) {
     var wsArg = delta > 0 ? "e-1" : "e+1"
-    var cmd = "if hyprctl dispatch \"hl.dsp.focus({ workspace = '" + wsArg + "' })\" 2>/dev/null; then :; else hyprctl dispatch workspace \"" + wsArg + "\" 2>/dev/null; fi"
-    Quickshell.execDetached(["bash", "-c", cmd])
+    var cmd = "if hyprctl dispatch " + Util.shellQuote("hl.dsp.focus({ workspace = '" + wsArg + "' })") + " 2>/dev/null; then :; else hyprctl dispatch workspace " + Util.shellQuote(wsArg) + " 2>/dev/null; fi"
+    if (root.bar) root.bar.run(cmd)
+    else Quickshell.execDetached(["bash", "-c", cmd])
     refreshTimer.restart()
   }
 
@@ -99,43 +113,33 @@ BarWidget {
     id: hyprStateProc
     command: [
       "bash", "-c",
-      "echo \"$(hyprctl activeworkspace -j 2>/dev/null | tr -d '\\n')|||$(hyprctl workspaces -j 2>/dev/null | tr -d '\\n')|||$(hyprctl clients -j 2>/dev/null | tr -d '\\n')|||$(hyprctl activewindow -j 2>/dev/null | tr -d '\\n')\""
+      "{ hyprctl activeworkspace -j 2>/dev/null || echo '{}'; hyprctl workspaces -j 2>/dev/null || echo '[]'; hyprctl clients -j 2>/dev/null || echo '[]'; hyprctl activewindow -j 2>/dev/null || echo '{}'; } | jq -s -c '{actWs: (.[0] // {}), allWs: (.[1] // []), cls: (.[2] // []), actWin: (.[3] // {})}'"
     ]
     stdout: SplitParser {
       onRead: function(line) {
         if (!line) return
         try {
-          var parts = line.split("|||")
-          if (parts.length >= 1 && parts[0].trim()) {
-            var actWs = JSON.parse(parts[0].trim())
-            if (actWs && actWs.id) root.activeWorkspaceId = actWs.id
+          var data = JSON.parse(line.trim())
+          if (data.actWs && data.actWs.id) {
+            root.activeWorkspaceId = data.actWs.id
           }
-          if (parts.length >= 2 && parts[1].trim()) {
-            var allWs = JSON.parse(parts[1].trim())
-            if (Array.isArray(allWs)) {
-              var ids = allWs.map(function(w) { return w.id }).filter(function(id) { return id > 0 && id <= 10 })
+          if (Array.isArray(data.allWs)) {
+            var ids = data.allWs.map(function(w) { return w.id }).filter(function(id) { return id > 0 && id <= 10 })
+            ids.sort(function(a, b) { return a - b })
+            if (ids.indexOf(root.activeWorkspaceId) === -1 && root.activeWorkspaceId > 0) {
+              ids.push(root.activeWorkspaceId)
               ids.sort(function(a, b) { return a - b })
-              if (ids.indexOf(root.activeWorkspaceId) === -1 && root.activeWorkspaceId > 0) {
-                ids.push(root.activeWorkspaceId)
-                ids.sort(function(a, b) { return a - b })
-              }
-              if (ids.length === 0) ids = [1]
-              root.workspaceList = ids
             }
+            if (ids.length === 0) ids = [1]
+            root.workspaceList = ids
           }
-          if (parts.length >= 3 && parts[2].trim()) {
-            var cls = JSON.parse(parts[2].trim())
-            if (Array.isArray(cls)) {
-              root.hyprClients = cls.filter(function(c) { return c && c.mapped && !c.hidden })
-            }
+          if (Array.isArray(data.cls)) {
+            root.hyprClients = data.cls.filter(function(c) { return c && c.mapped && !c.hidden })
           }
-          if (parts.length >= 4 && parts[3].trim()) {
-            var actWin = JSON.parse(parts[3].trim())
-            if (actWin && actWin.address) {
-              root.hyprActiveWindow = actWin
-            } else {
-              root.hyprActiveWindow = ({})
-            }
+          if (data.actWin && data.actWin.address) {
+            root.hyprActiveWindow = data.actWin
+          } else {
+            root.hyprActiveWindow = ({})
           }
         } catch(e) {}
         root.refreshTaskbar()
@@ -270,7 +274,7 @@ BarWidget {
   property var winApps: [
     { id: "start", name: "Start", isStart: true, iconFile: "start.svg", exec: "omarchy-win11-start", matchers: [] },
     { id: "taskview", name: "Task View", isTaskView: true, iconFile: "taskview.svg", exec: "rofi -show window -theme ~/.config/rofi/windows11.rasi", matchers: [] },
-    { id: "explorer", name: "File Explorer", iconFile: "explorer.svg", exec: "omarchy-undercover-filemanager ~ || flea", matchers: ["flea", "nautilus", "thunar", "dolphin", "files", "org.gnome.nautilus"] },
+    { id: "explorer", name: "File Explorer", iconFile: "explorer.svg", exec: "omarchy-undercover-filemanager ~ || flea", matchers: ["flea", "nautilus", "thunar", "dolphin", "nemo", "pcmanfm", "files", "org.gnome.nautilus"] },
     { id: "browser", name: "Microsoft Edge", iconFile: "microsoft-edge.svg", exec: "omarchy-browser", matchers: ["edge", "microsoft-edge", "chrome", "chromium", "firefox", "vivaldi", "brave", "zen", "browser", "google-chrome"] },
     { id: "antigravity", name: "Antigravity IDE", iconFile: "antigravity-ide.svg", exec: "antigravity-ide || code || vscodium", matchers: ["antigravity", "code", "vscodium", "vscode", "codium"] },
     { id: "terminal", name: "Terminal", iconFile: "terminal.svg", exec: "xdg-terminal-exec || alacritty || kitty", matchers: ["kitty", "alacritty", "foot", "terminal", "wezterm", "ghostty", "ptyxis", "xterm", "console"] },

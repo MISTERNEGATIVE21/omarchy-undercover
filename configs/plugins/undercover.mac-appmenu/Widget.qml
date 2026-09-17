@@ -30,7 +30,7 @@ BarWidget {
 
     if (appId) {
       var aid = appId.toLowerCase()
-      if (aid.indexOf("flea") !== -1 || aid.indexOf("nautilus") !== -1 || aid.indexOf("thunar") !== -1 || aid.indexOf("dolphin") !== -1) return "Finder"
+      if (aid.indexOf("flea") !== -1 || aid.indexOf("nautilus") !== -1 || aid.indexOf("thunar") !== -1 || aid.indexOf("dolphin") !== -1 || aid.indexOf("nemo") !== -1 || aid.indexOf("pcmanfm") !== -1) return "Finder"
       if (aid.indexOf("alacritty") !== -1 || aid.indexOf("kitty") !== -1 || aid.indexOf("terminal") !== -1 || aid.indexOf("foot") !== -1) return "Terminal"
       if (aid.indexOf("code") !== -1 || aid.indexOf("vscodium") !== -1) return "Visual Studio Code"
       if (aid.indexOf("antigravity") !== -1) return "Antigravity IDE"

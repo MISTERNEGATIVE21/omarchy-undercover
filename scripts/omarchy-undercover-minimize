@@ -20,8 +20,14 @@ fi
 
 move_window_to_ws() {
     local addr="$1" ws="$2"
+    if [[ ! "$addr" =~ ^0x[0-9a-fA-F]+$ ]]; then
+        return 1
+    fi
     if [[ "$ws" == "current" || -z "$ws" ]]; then
         ws=$(hyprctl activeworkspace -j 2>/dev/null | python3 -c 'import sys, json; print(json.load(sys.stdin).get("id", 1))' 2>/dev/null || echo "1")
+    fi
+    if [[ ! "$ws" =~ ^[0-9a-zA-Z_:-]+$ ]]; then
+        ws="1"
     fi
     if hyprctl dispatch "hl.dsp.window.move({ window = \"address:$addr\", workspace = \"$ws\", follow = false })" >/dev/null 2>&1; then
         :
@@ -40,6 +46,9 @@ move_window_to_ws() {
 # If a specific window address was requested to restore
 if [[ "${1:-}" == "address:"* ]] || [[ "${1:-}" == "0x"* ]]; then
     target_addr="${1#address:}"
+    if [[ ! "$target_addr" =~ ^0x[0-9a-fA-F]+$ ]]; then
+        exit 1
+    fi
     if [[ -f "$STATE_FILE" ]]; then
         grep -v "^$target_addr " "$STATE_FILE" > "$STATE_FILE.tmp" 2>/dev/null || true
         mv -f "$STATE_FILE.tmp" "$STATE_FILE"

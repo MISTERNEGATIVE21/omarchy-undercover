@@ -130,7 +130,9 @@ omarchy_reload_waybar() {
     sleep 0.15
 
     # 2. Launch single instance
-    nohup waybar >/tmp/waybar.log 2>&1 &
+    local log_dir="${XDG_RUNTIME_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}}/omarchy-undercover"
+    mkdir -p -m 0700 "$log_dir" 2>/dev/null || true
+    nohup waybar >"$log_dir/waybar.log" 2>&1 &
     disown 2>/dev/null || true
 
     # 3. Strict Self-Check: Enforce singleton
@@ -141,7 +143,7 @@ omarchy_reload_waybar() {
             kill -9 "${pids[$i]}" 2>/dev/null || true
         done
     elif [[ ${#pids[@]} -eq 0 ]]; then
-        nohup waybar >/tmp/waybar.log 2>&1 &
+        nohup waybar >"$log_dir/waybar.log" 2>&1 &
         disown 2>/dev/null || true
     fi
 }
@@ -248,6 +250,12 @@ backup_config_dir() {
 restore_config_dir() {
     local dir_name="$1"
     local backup_target_dir="$2"
+
+    # Directory traversal defense: ensure dir_name is a clean relative basename
+    if [[ -z "$dir_name" || "$dir_name" == *".."* || "$dir_name" == *"/"* || "$dir_name" == *"\\"* ]]; then
+        return 1
+    fi
+
     local source_dir="$HOME/.config/$dir_name"
 
     if [[ -f "$backup_target_dir/.absent_$dir_name" ]]; then

@@ -1,0 +1,100 @@
+# Omarchy shell surfaces for Windows 11 Fluent Dark.
+# Configures QuickShell and Flea (File Explorer mode) typography, layout, and control styling.
+
+[bar]
+scale-with-font  = true
+size-horizontal  = 48
+size-vertical    = 48
+background       = "#202020"
+background-alpha = 0.90
+text             = "#ffffff"
+active           = "#0078d4"
+
+[hyprland]
+active-border            = "#0078d4"
+active-border-foreground = "#ffffff"
+
+[controls]
+normal-color        = "#ffffff"
+normal-fill-alpha   = 0.05
+normal-border       = "#ffffff"
+normal-border-width = 1
+normal-border-alpha = 0.16
+
+hover-cursor-color        = "#ffffff"
+hover-cursor-fill-alpha   = 0.10
+hover-cursor-border       = "#ffffff"
+hover-cursor-border-width = 1
+hover-cursor-border-alpha = 0.28
+
+focus-color        = "#0078d4"
+focus-fill-alpha   = 0.12
+focus-border       = "#0078d4"
+focus-border-width = 1
+focus-border-alpha = 0.50
+
+selected-color        = "#0078d4"
+selected-fill-alpha   = 0.22
+selected-border       = "#0078d4"
+selected-border-width = 0
+selected-border-alpha = 1.0
+
+pressed-fill-alpha   = 0.26
+selection-fill-alpha = 0.35
+
+[spacing]
+scale = 1.00
+scale-with-font = true
+
+[font]
+base-size = 12
+
+[popups]
+background       = "#202020"
+background-alpha = 0.95
+text             = "#ffffff"
+border           = "#ffffff"
+border-alpha     = 0.14
+
+[tooltip]
+background       = "#202020"
+background-alpha = 0.96
+text             = "#ffffff"
+border           = "#ffffff"
+border-alpha     = 0.18
+
+[notifications]
+background       = "#202020"
+background-alpha = 0.95
+text             = "#ffffff"
+border           = "#0078d4"
+border-alpha     = 0.60
+countdown        = "#0078d4"
+
+[launcher]
+background                = "#202020"
+background-alpha          = 0.95
+text                      = "#ffffff"
+border                    = "#ffffff"
+border-alpha              = 0.14
+scrim                     = "#000000"
+scrim-alpha               = 0.45
+selected-background       = "#0078d4"
+selected-background-alpha = 0.24
+selected-text             = "#ffffff"
+selected-border           = "#0078d4"
+selected-border-alpha     = 0.40
+
+[menu]
+background                = "#202020"
+background-alpha          = 0.96
+text                      = "#ffffff"
+border                    = "#ffffff"
+border-alpha              = 0.14
+scrim                     = "#000000"
+scrim-alpha               = 0.40
+selected-background       = "#0078d4"
+selected-background-alpha = 0.20
+selected-text             = "#ffffff"
+selected-border           = "#0078d4"
+selected-border-alpha     = 0.30

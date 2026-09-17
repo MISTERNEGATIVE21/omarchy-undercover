@@ -154,3 +154,22 @@ if o and o.window then
     opacity = "1 1",
   })
 end
+
+-- macOS Finder / File Manager Window Rules
+hl.window_rule({
+  match = { class = "(com.thisisgm.flea|flea|org.gnome.Nautilus|thunar|org.kde.dolphin|nemo|pcmanfm)" },
+  float = true,
+  center = true,
+  size = { 1060, 660 },
+  rounding = 16,
+})
+
+if o and o.window then
+  o.window({ class = "^(com.thisisgm.flea|flea|org.gnome.Nautilus|thunar|org.kde.dolphin|nemo|pcmanfm)$" }, {
+    float = true,
+    center = true,
+    size = { 1060, 660 },
+    rounding = 16,
+  })
+end
+

@@ -24,7 +24,7 @@ Item {
       ? root.pluginDir + "/assets/sounds/win11-switch.wav"
       : root.pluginDir + "/assets/sounds/mac-switch.wav"
     var soundScript = root.pluginDir + "/scripts/omarchy-play-sound"
-    Quickshell.execDetached(["bash", "-c", soundScript + " " + soundFile])
+    Quickshell.execDetached([soundScript, soundFile])
   }
 
   FileView {

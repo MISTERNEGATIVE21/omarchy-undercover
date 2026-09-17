@@ -1,5 +1,7 @@
 #!/bin/bash
-CACHE_FILE="/tmp/omarchy-weather-cache.json"
+CACHE_DIR="${XDG_RUNTIME_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}}/omarchy-undercover"
+mkdir -p -m 0700 "$CACHE_DIR" 2>/dev/null || true
+CACHE_FILE="$CACHE_DIR/weather-cache.json"
 CACHE_AGE=900 # 15 minutes
 
 if [[ -f "$CACHE_FILE" ]]; then
@@ -10,8 +12,8 @@ if [[ -f "$CACHE_FILE" ]]; then
     fi
 fi
 
-# Fetch accurate location & weather from wttr.in
-weather_raw=$(curl -s --max-time 4 "wttr.in/?format=%c+%t+%C" 2>/dev/null | tr -d '\n')
+# Fetch accurate location & weather from wttr.in over HTTPS
+weather_raw=$(curl -s --max-time 4 "https://wttr.in/?format=%c+%t+%C" 2>/dev/null | tr -d '\n')
 
 if [[ -n "$weather_raw" && "$weather_raw" != *"Unknown"* && "$weather_raw" != *"50"* ]]; then
     # Extract condition and temp

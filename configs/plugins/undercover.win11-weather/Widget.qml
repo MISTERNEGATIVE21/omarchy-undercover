@@ -61,7 +61,7 @@ BarWidget {
     id: weatherPoller
     command: [
       "bash", "-c",
-      "curl -s --max-time 2 'wttr.in/?format=%t+%C' 2>/dev/null | grep -E '[0-9]' || echo '+72°F Partly cloudy'"
+      "curl -s --max-time 2 'https://wttr.in/?format=%t+%C' 2>/dev/null | grep -E '[0-9]' || echo '+72°F Partly cloudy'"
     ]
     stdout: SplitParser {
       onRead: function(line) {

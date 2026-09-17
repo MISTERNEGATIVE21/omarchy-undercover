@@ -29,26 +29,70 @@ if [[ -f "$STATE_FILE" ]]; then
     fi
 fi
 
-# Ensure Flea UI layout and keymap matches disguise
+SETTINGS_FILE="$HOME/.config/omarchy/plugins/undercover/settings.conf"
+if [[ ! -f "$SETTINGS_FILE" ]]; then
+    SETTINGS_FILE="$HOME/.config/omarchy-undercover/settings.conf"
+fi
+
+CONFIGURED_FM="auto"
+if [[ -f "$SETTINGS_FILE" ]]; then
+    cf=$(grep -E "^DEFAULT_FILE_MANAGER=" "$SETTINGS_FILE" 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || true)
+    if [[ -n "$cf" ]]; then
+        CONFIGURED_FM="$cf"
+    fi
+fi
+
+# Sanitize and normalize path arguments (expand trash URIs and tildes)
+ARGS=()
+for arg in "$@"; do
+    if [[ "$arg" == "trash:///" || "$arg" == "trash:" ]]; then
+        trash_dir="${XDG_DATA_HOME:-$HOME/.local/share}/Trash/files"
+        mkdir -p "$trash_dir"
+        ARGS+=("$trash_dir")
+    elif [[ "$arg" == "~"* ]]; then
+        ARGS+=("${arg/#\~/$HOME}")
+    else
+        ARGS+=("$arg")
+    fi
+done
+
+# If user configured a specific alternative file manager that exists, prioritize it
+if [[ "$CONFIGURED_FM" != "auto" && "$CONFIGURED_FM" != "flea" ]] && command -v "$CONFIGURED_FM" >/dev/null 2>&1; then
+    if [[ ${#ARGS[@]} -eq 0 ]]; then
+        exec "$CONFIGURED_FM" "$HOME"
+    else
+        exec "$CONFIGURED_FM" "${ARGS[@]}"
+    fi
+fi
+
+# Primary: Flea QuickShell file manager with active disguise preset
 if command -v flea >/dev/null 2>&1; then
     case "$MODE" in
         mac)
-            flea --ui-state '{"view":"columns","density":"comfortable","keys":"mac","places":{"sidebarWidth":200}}' >/dev/null 2>&1 || true
+            flea --ui-state '{"view":"columns","density":"comfortable","keys":"mac","places":{"sidebarWidth":192,"showHome":true,"showNetwork":true,"showDevices":true,"showTrash":true,"driveSize":true,"trashCount":false,"rail":"shown"},"preview":{"column":true,"loadOn":"automatic","thumbnails":"media","thumbSize":"medium","ctrlZoom":true},"columns":["name","date","kind","size"],"foldersFirst":true,"hidden":false}' >/dev/null 2>&1 || true
             ;;
         windows)
-            flea --ui-state '{"view":"list","density":"normal","keys":"windows","places":{"sidebarWidth":220}}' >/dev/null 2>&1 || true
+            flea --ui-state '{"view":"list","density":"normal","keys":"windows","places":{"sidebarWidth":224,"showHome":true,"showNetwork":true,"showDevices":true,"showTrash":true,"driveSize":true,"trashCount":false,"rail":"shown"},"preview":{"column":false},"columns":["name","date","kind","size"],"foldersFirst":true,"hidden":false}' >/dev/null 2>&1 || true
             ;;
         *)
-            flea --ui-state '{"view":"columns","density":"normal","keys":"default"}' >/dev/null 2>&1 || true
+            flea --ui-state '{"view":"columns","density":"normal","keys":"default","preview":{"column":true}}' >/dev/null 2>&1 || true
             ;;
     esac
 
-    if [[ $# -eq 0 ]]; then
+    if [[ ${#ARGS[@]} -eq 0 ]]; then
         exec flea "$HOME"
     else
-        exec flea "$@"
+        exec flea "${ARGS[@]}"
     fi
-else
-    echo "omarchy-undercover-filemanager: flea is not installed" >&2
-    exit 1
 fi
+
+# Fallback: Launch alternative installed file manager
+for fm in nautilus thunar dolphin nemo pcmanfm pcmanfm-qt xdg-open; do
+    if command -v "$fm" >/dev/null 2>&1; then
+        target="${ARGS[0]:-$HOME}"
+        exec "$fm" "$target"
+    fi
+done
+
+echo "omarchy-undercover-filemanager: no supported file manager found" >&2
+exit 1

@@ -1,0 +1,100 @@
+# Omarchy shell surfaces for macOS Sequoia Dark.
+# Configures QuickShell and Flea (Finder mode) typography, layout, and control styling.
+
+[bar]
+scale-with-font  = true
+size-horizontal  = 28
+size-vertical    = 28
+background       = "#1e1e1e"
+background-alpha = 0.85
+text             = "#f5f5f7"
+active           = "#0a84ff"
+
+[hyprland]
+active-border            = "#0a84ff"
+active-border-foreground = "#ffffff"
+
+[controls]
+normal-color        = "#ffffff"
+normal-fill-alpha   = 0.06
+normal-border       = "#ffffff"
+normal-border-width = 1
+normal-border-alpha = 0.12
+
+hover-cursor-color        = "#ffffff"
+hover-cursor-fill-alpha   = 0.12
+hover-cursor-border       = "#ffffff"
+hover-cursor-border-width = 1
+hover-cursor-border-alpha = 0.20
+
+focus-color        = "#0a84ff"
+focus-fill-alpha   = 0.14
+focus-border       = "#0a84ff"
+focus-border-width = 1
+focus-border-alpha = 0.40
+
+selected-color        = "#0a84ff"
+selected-fill-alpha   = 0.24
+selected-border       = "#0a84ff"
+selected-border-width = 0
+selected-border-alpha = 1.0
+
+pressed-fill-alpha   = 0.28
+selection-fill-alpha = 0.35
+
+[spacing]
+scale = 1.05
+scale-with-font = true
+
+[font]
+base-size = 12
+
+[popups]
+background       = "#1e1e1e"
+background-alpha = 0.92
+text             = "#f5f5f7"
+border           = "#ffffff"
+border-alpha     = 0.15
+
+[tooltip]
+background       = "#1e1e1e"
+background-alpha = 0.95
+text             = "#f5f5f7"
+border           = "#ffffff"
+border-alpha     = 0.18
+
+[notifications]
+background       = "#1e1e1e"
+background-alpha = 0.92
+text             = "#f5f5f7"
+border           = "#0a84ff"
+border-alpha     = 0.60
+countdown        = "#0a84ff"
+
+[launcher]
+background                = "#1e1e1e"
+background-alpha          = 0.92
+text                      = "#f5f5f7"
+border                    = "#ffffff"
+border-alpha              = 0.15
+scrim                     = "#000000"
+scrim-alpha               = 0.40
+selected-background       = "#0a84ff"
+selected-background-alpha = 0.25
+selected-text             = "#ffffff"
+selected-border           = "#0a84ff"
+selected-border-alpha     = 0.40
+
+[menu]
+background                = "#1e1e1e"
+background-alpha          = 0.94
+text                      = "#f5f5f7"
+border                    = "#ffffff"
+border-alpha              = 0.15
+scrim                     = "#000000"
+scrim-alpha               = 0.35
+selected-background       = "#0a84ff"
+selected-background-alpha = 0.22
+selected-text             = "#ffffff"
+selected-border           = "#0a84ff"
+selected-border-alpha     = 0.30

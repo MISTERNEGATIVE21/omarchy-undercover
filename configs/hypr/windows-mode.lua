@@ -162,6 +162,24 @@ hl.window_rule({
   size = { "monitor_w * 0.5", "monitor_h * 0.6" },
 })
 
+-- File Explorer / File Manager window rules
+hl.window_rule({
+  match = { class = "(com.thisisgm.flea|flea|org.gnome.Nautilus|thunar|org.kde.dolphin|nemo|pcmanfm)" },
+  float = true,
+  center = true,
+  size = { 1080, 680 },
+  rounding = 10,
+})
+
+if o and o.window then
+  o.window({ class = "^(com.thisisgm.flea|flea|org.gnome.Nautilus|thunar|org.kde.dolphin|nemo|pcmanfm)$" }, {
+    float = true,
+    center = true,
+    size = { 1080, 680 },
+    rounding = 10,
+  })
+end
+
 -- Windows do not need a visible border when inactive (Win11 "flat" windows).
 hl.window_rule({
   match = { class = ".*" },
