@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """
-omarchy-wifi-dbus — Wi-Fi control via NetworkManager D-Bus API.
+omarchy-wifi-dbus — Wi-Fi control via NetworkManager D-Bus API with nmcli fallbacks.
 
-Subcommands (used by the Quickshell flyouts):
+Subcommands (used by Quickshell flyouts & menus):
   radio                -> prints "enabled" / "disabled"
   on / off             -> enables / disables the Wi-Fi radio
-  scan                 -> triggers a rescan then prints APs as
-                          *:SSID:SIGNAL:SECURITY:BSSID (nmcli-terse style)
-  connect <ssid> [pw]  -> activates a connection to <ssid>
+  scan                 -> scans / reads APs as *:SSID:SIGNAL:SECURITY:BSSID
+  connect <ssid> [pw]  -> connects to <ssid>
+  disconnect           -> disconnects active Wi-Fi connection
 """
 
+import subprocess
 import sys
-import time
 import uuid
 
 import dbus
@@ -24,7 +24,6 @@ NM_WIRELESS_IFACE = "org.freedesktop.NetworkManager.Device.Wireless"
 NM_AP_IFACE = "org.freedesktop.NetworkManager.AccessPoint"
 NM_SETTINGS_IFACE = "org.freedesktop.NetworkManager.Settings"
 DBUS_PROPS = "org.freedesktop.DBus.Properties"
-DBUS_INTROSPECT = "org.freedesktop.DBus.Introspectable"
 
 # NM_802_11_AP_FLAGS
 AP_FLAG_PRIVACY = 0x1
@@ -43,26 +42,39 @@ def get_nm():
 
 
 def get_wireless_devices():
-    nm = get_nm()
-    devs = dbus.Interface(nm, DBUS_PROPS).Get(NM_IFACE, "Devices")
-    wireless = []
-    bus = get_bus()
-    for dev_path in devs:
-        obj = bus.get_object(NM_BUS, dev_path)
-        iface = dbus.Interface(obj, DBUS_PROPS).Get(NM_DEVICE_IFACE, "DeviceType")
-        if int(iface) == 2:  # NM_DEVICE_TYPE_WIFI
-            wireless.append(dev_path)
-    return wireless
+    try:
+        nm = get_nm()
+        devs = dbus.Interface(nm, DBUS_PROPS).Get(NM_IFACE, "Devices")
+        wireless = []
+        bus = get_bus()
+        for dev_path in devs:
+            try:
+                obj = bus.get_object(NM_BUS, dev_path)
+                iface = dbus.Interface(obj, DBUS_PROPS).Get(NM_DEVICE_IFACE, "DeviceType")
+                if int(iface) == 2:  # NM_DEVICE_TYPE_WIFI
+                    wireless.append(dev_path)
+            except Exception:
+                continue
+        return wireless
+    except Exception:
+        return []
 
 
 def wireless_enabled():
-    nm = get_nm()
-    return bool(dbus.Interface(nm, DBUS_PROPS).Get(NM_IFACE, "WirelessEnabled"))
+    try:
+        nm = get_nm()
+        return bool(dbus.Interface(nm, DBUS_PROPS).Get(NM_IFACE, "WirelessEnabled"))
+    except Exception:
+        res = subprocess.run(["nmcli", "radio", "wifi"], capture_output=True, text=True)
+        return "enabled" in res.stdout.strip().lower()
 
 
 def set_wireless(enabled):
-    nm = get_nm()
-    dbus.Interface(nm, NM_IFACE).SetRadio(2, enabled)  # NM_RADIO_WIFI
+    try:
+        nm = get_nm()
+        dbus.Interface(nm, NM_IFACE).SetRadio(2, enabled)  # NM_RADIO_WIFI
+    except Exception:
+        subprocess.run(["nmcli", "radio", "wifi", "on" if enabled else "off"], check=False)
 
 
 def security_for(flags, wpa_flags, rsn_flags):
@@ -86,92 +98,168 @@ def cmd_set(kind):
     print("ok")
 
 
+def _scan_via_nmcli():
+    try:
+        res = subprocess.run(
+            ["nmcli", "-t", "-f", "in-use,ssid,signal,security,bssid", "dev", "wifi"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        for line in res.stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            parts = line.split(":")
+            if len(parts) >= 4:
+                in_use = "*" if parts[0].strip() == "*" else ""
+                ssid = parts[1].strip()
+                signal = parts[2].strip()
+                sec = parts[3].strip() or "--"
+                bssid = ":".join(parts[4:]).replace("\\", "") if len(parts) >= 5 else ""
+                if ssid:
+                    print("%s:%s:%s:%s:%s" % (in_use, ssid, signal, sec, bssid))
+    except Exception:
+        pass
+
+
 def cmd_scan():
     wireless = get_wireless_devices()
     if not wireless:
+        _scan_via_nmcli()
         return
+
     bus = get_bus()
+    results = []
+    seen = {}
+
     for dev_path in wireless:
-        obj = bus.get_object(NM_BUS, dev_path)
         try:
-            dbus.Interface(obj, NM_WIRELESS_IFACE).RequestScan({})
-        except dbus.DBusException:
-            pass
-        time.sleep(3)
-        ap_paths = dbus.Interface(obj, DBUS_PROPS).Get(NM_WIRELESS_IFACE, "AccessPoints")
-        active_ap = dbus.Interface(obj, DBUS_PROPS).Get(NM_WIRELESS_IFACE, "ActiveAccessPoint")
-        for ap_path in ap_paths:
+            obj = bus.get_object(NM_BUS, dev_path)
+            # Trigger asynchronous scan request (non-blocking, ignore throttling)
             try:
-                ap = bus.get_object(NM_BUS, ap_path)
-                props = dbus.Interface(ap, DBUS_PROPS)
-                ssid_bytes = bytes(props.Get(NM_AP_IFACE, "Ssid"))
-                if not ssid_bytes:
-                    continue
-                ssid = ssid_bytes.decode("utf-8", "replace")
-                strength = int(props.Get(NM_AP_IFACE, "Strength"))
-                flags = int(props.Get(NM_AP_IFACE, "Flags"))
-                wpa_flags = int(props.Get(NM_AP_IFACE, "WpaFlags"))
-                rsn_flags = int(props.Get(NM_AP_IFACE, "RsnFlags"))
-                bssid = str(props.Get(NM_AP_IFACE, "HwAddress"))
-                sec = security_for(flags, wpa_flags, rsn_flags)
-                inp = "*" if str(ap_path) == str(active_ap) else ""
-                print("%s:%s:%d:%s:%s" % (inp, ssid, strength, sec, bssid))
+                dbus.Interface(obj, NM_WIRELESS_IFACE).RequestScan({})
             except dbus.DBusException:
-                continue
+                pass
+
+            ap_paths = dbus.Interface(obj, DBUS_PROPS).Get(NM_WIRELESS_IFACE, "AccessPoints")
+            active_ap = dbus.Interface(obj, DBUS_PROPS).Get(NM_WIRELESS_IFACE, "ActiveAccessPoint")
+
+            for ap_path in ap_paths:
+                try:
+                    ap = bus.get_object(NM_BUS, ap_path)
+                    props = dbus.Interface(ap, DBUS_PROPS)
+                    ssid_bytes = bytes(props.Get(NM_AP_IFACE, "Ssid"))
+                    if not ssid_bytes:
+                        continue
+                    ssid = ssid_bytes.decode("utf-8", "replace")
+                    if not ssid:
+                        continue
+                    strength = int(props.Get(NM_AP_IFACE, "Strength"))
+                    flags = int(props.Get(NM_AP_IFACE, "Flags"))
+                    wpa_flags = int(props.Get(NM_AP_IFACE, "WpaFlags"))
+                    rsn_flags = int(props.Get(NM_AP_IFACE, "RsnFlags"))
+                    bssid = str(props.Get(NM_AP_IFACE, "HwAddress"))
+                    sec = security_for(flags, wpa_flags, rsn_flags)
+                    inp = "*" if str(ap_path) == str(active_ap) else ""
+
+                    # Deduplicate by SSID, preferring connected or higher strength
+                    if ssid not in seen or inp == "*" or strength > seen[ssid][1]:
+                        seen[ssid] = (inp, strength, sec, bssid)
+                except Exception:
+                    continue
+        except Exception:
+            continue
+
+    if seen:
+        for ssid, (inp, strength, sec, bssid) in seen.items():
+            print("%s:%s:%d:%s:%s" % (inp, ssid, strength, sec, bssid))
+    else:
+        # Fallback to nmcli if DBus list is empty
+        _scan_via_nmcli()
 
 
 def cmd_disconnect():
-    """Disconnect all active Wi-Fi connections."""
-    bus = get_bus()
-    nm = get_nm()
-    active = dbus.Interface(nm, DBUS_PROPS).Get(NM_IFACE, "ActiveConnections")
-    for ac_path in active:
-        try:
-            ac = bus.get_object(NM_BUS, ac_path)
-            props = dbus.Interface(ac, DBUS_PROPS)
-            if int(props.Get(NM_IFACE + ".Connection.Active", "Type")) != 802:
+    """Disconnect active Wi-Fi connections."""
+    disconnected = False
+    try:
+        bus = get_bus()
+        nm = get_nm()
+        active = dbus.Interface(nm, DBUS_PROPS).Get(NM_IFACE, "ActiveConnections")
+        for ac_path in active:
+            try:
+                ac = bus.get_object(NM_BUS, ac_path)
+                props = dbus.Interface(ac, DBUS_PROPS)
+                c_type = str(props.Get(NM_IFACE + ".Connection.Active", "Type"))
+                if "wireless" in c_type or c_type == "802-11-wireless":
+                    dbus.Interface(nm, NM_IFACE).DeactivateConnection(ac_path)
+                    disconnected = True
+            except Exception:
                 continue
-            dbus.Interface(ac, NM_IFACE + ".Connection.Active").Deactivate()
-            print("disconnected")
-        except dbus.DBusException:
-            continue
+    except Exception:
+        pass
+
+    if not disconnected:
+        subprocess.run(["nmcli", "dev", "disconnect", "wlan0"], capture_output=True, check=False)
+
+    print("disconnected")
 
 
 def cmd_connect(ssid, password=""):
-    wireless = get_wireless_devices()
-    if not wireless:
-        print("no wifi device")
+    if not ssid:
+        print("no ssid provided")
         return
-    dev_path = wireless[0]
-    bus = get_bus()
-    nm = get_nm()
 
-    connection = {
-        "connection": {
-            "type": "802-11-wireless",
-            "uuid": str(uuid.uuid4()),
-            "id": ssid,
-        },
-        "802-11-wireless": {
-            "ssid": dbus.ByteArray(ssid.encode("utf-8")),
-            "mode": "infrastructure",
-        },
-    }
-    if password:
-        connection["802-11-wireless-security"] = {
-            "key-mgmt": "wpa-psk",
-            "psk": password,
-        }
-
-    # Use shared settings object if possible, else the per-device autoconnect.
-    try:
-        settings = bus.get_object(NM_BUS, "/org/freedesktop/NetworkManager/Settings")
-        dbus.Interface(nm, NM_IFACE).AddAndActivateConnection(
-            connection, dbus.ObjectPath(dev_path), dbus.ObjectPath("/")
-        )
+    # If connection profile already exists, try activating it
+    res = subprocess.run(
+        ["nmcli", "connection", "up", "id", ssid],
+        capture_output=True,
+        text=True,
+    )
+    if res.returncode == 0:
         print("connecting %s" % ssid)
-    except dbus.DBusException as e:
-        print("failed: %s" % e.get_dbus_message())
+        return
+
+    # If password is provided or not, use nmcli dev wifi connect
+    cmd = ["nmcli", "dev", "wifi", "connect", ssid]
+    if password:
+        cmd.extend(["password", password])
+
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    if res.returncode == 0:
+        print("connecting %s" % ssid)
+    else:
+        # DBus fallback
+        wireless = get_wireless_devices()
+        if not wireless:
+            print("failed: %s" % res.stderr.strip())
+            return
+        dev_path = wireless[0]
+        bus = get_bus()
+        nm = get_nm()
+        connection = {
+            "connection": {
+                "type": "802-11-wireless",
+                "uuid": str(uuid.uuid4()),
+                "id": ssid,
+            },
+            "802-11-wireless": {
+                "ssid": dbus.ByteArray(ssid.encode("utf-8")),
+                "mode": "infrastructure",
+            },
+        }
+        if password:
+            connection["802-11-wireless-security"] = {
+                "key-mgmt": "wpa-psk",
+                "psk": password,
+            }
+        try:
+            dbus.Interface(nm, NM_IFACE).AddAndActivateConnection(
+                connection, dbus.ObjectPath(dev_path), dbus.ObjectPath("/")
+            )
+            print("connecting %s" % ssid)
+        except Exception as e:
+            print("failed: %s" % str(e))
 
 
 def main():

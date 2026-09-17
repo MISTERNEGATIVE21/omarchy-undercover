@@ -95,6 +95,7 @@ ShellRoot {
     // Wi-Fi Scan Process (NetworkManager over D-Bus)
     Process {
       id: scanPoller
+      running: true
       command: ["bash", "-c", "omarchy-wifi-dbus scan"]
       onExited: function() {
         macWifiWindow.isScanning = false
@@ -112,10 +113,10 @@ ShellRoot {
             var bssid = parts.length >= 5 ? parts.slice(4).join(":") : ""
             if (ssid && ssid.length > 0) {
               if (inUse) macWifiWindow.activeSsid = ssid
+              var currentList = macWifiWindow.networks.slice(0)
               var exists = false
-              var currentList = macWifiWindow.networks
               for (var i = 0; i < currentList.length; i++) {
-                if (currentList[i].ssid === ssid && currentList[i].bssid === bssid) {
+                if (currentList[i].ssid === ssid) {
                   currentList[i].signal = signal
                   currentList[i].inUse = inUse
                   exists = true

@@ -100,16 +100,16 @@ BarWidget {
       cursorShape: Qt.PointingHandCursor
       onClicked: function(mouse) {
         if (mouse.button === Qt.RightButton) {
-          if (root.bar) root.bar.run("omarchy-wifi-manager")
-          else Quickshell.execDetached(["omarchy-wifi-manager"])
+          if (root.bar) root.bar.run("omarchy-win11-wifi")
+          else Quickshell.execDetached(["omarchy-win11-wifi"])
         } else {
           if (root.bar) root.bar.run("omarchy-win11-actioncenter")
           else Quickshell.execDetached(["omarchy-win11-actioncenter"])
         }
       }
       onPressAndHold: {
-        if (root.bar) root.bar.run("omarchy-wifi-manager")
-        else Quickshell.execDetached(["omarchy-wifi-manager"])
+        if (root.bar) root.bar.run("omarchy-win11-wifi")
+        else Quickshell.execDetached(["omarchy-win11-wifi"])
       }
     }
   }

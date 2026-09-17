@@ -143,10 +143,60 @@ ShellRoot {
       }
     }
 
+    Process {
+      id: discoverPoller
+      command: ["bash", "-c", "omarchy-bluetooth-dbus scan"]
+      stdout: SplitParser {
+        onRead: function(line) {
+          var l = String(line).trim()
+          if (!l) return
+          var parts = l.split("|")
+          if (parts.length >= 3) {
+            var mac = parts[0]
+            var connected = (parts[1] === "1")
+            var name = parts.slice(2).join("|")
+            var currentList = btWindow.pairedDevices.slice(0)
+            var exists = false
+            for (var i = 0; i < currentList.length; i++) {
+              if (currentList[i].mac === mac) {
+                currentList[i].name = name
+                currentList[i].connected = connected
+                exists = true
+                break
+              }
+            }
+            if (!exists) {
+              var low = name.toLowerCase()
+              var iconType = "📱"
+              if (low.indexOf("headset") !== -1 || low.indexOf("audio") !== -1 || low.indexOf("airpods") !== -1 || low.indexOf("wh-") !== -1 || low.indexOf("buds") !== -1 || low.indexOf("sound") !== -1 || low.indexOf("speaker") !== -1) {
+                iconType = "🎧"
+              } else if (low.indexOf("mouse") !== -1 || low.indexOf("trackpad") !== -1) {
+                iconType = "🖱️"
+              } else if (low.indexOf("key") !== -1) {
+                iconType = "⌨️"
+              } else if (low.indexOf("controller") !== -1 || low.indexOf("xbox") !== -1 || low.indexOf("gamepad") !== -1 || low.indexOf("joy-con") !== -1) {
+                iconType = "🎮"
+              }
+              currentList.push({
+                mac: mac,
+                name: name,
+                connected: connected,
+                type: iconType
+              })
+            }
+            btWindow.pairedDevices = currentList
+          }
+        }
+      }
+      onExited: function() {
+        btWindow.isScanning = false
+      }
+    }
+
     function triggerQuery() {
       btWindow.isScanning = true
       btWindow.pairedDevices = []
-      if (!devicesPoller.running) devicesPoller.running = true
+      if (!discoverPoller.running) discoverPoller.running = true
     }
 
     Timer {

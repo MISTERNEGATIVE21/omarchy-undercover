@@ -901,7 +901,7 @@ ShellRoot {
                   MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: settingsWin.runCmd("omarchy-bluetooth-manager || blueman-manager")
+                    onClicked: settingsWin.runCmd("omarchy-win11-bluetooth || blueman-manager")
                   }
                 }
               }
@@ -960,7 +960,7 @@ ShellRoot {
                   MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: settingsWin.runCmd("omarchy-wifi-manager || nm-connection-editor")
+                    onClicked: settingsWin.runCmd("omarchy-win11-wifi || nm-connection-editor")
                   }
                 }
               }

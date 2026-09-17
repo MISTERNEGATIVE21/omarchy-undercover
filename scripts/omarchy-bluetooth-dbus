@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 """
-omarchy-bluetooth-dbus — Bluetooth control via BlueZ D-Bus API.
+omarchy-bluetooth-dbus — Bluetooth control via BlueZ D-Bus API with bluetoothctl fallbacks.
 
-Subcommands (used by the Quickshell flyouts):
+Subcommands (used by Quickshell flyouts & menus):
   power          -> prints "yes" / "no"
-  on / off       -> powers the first adapter on/off
-  discover       -> runs a short discovery scan (~5s) then lists devices
-  list           -> prints Device MAC NAME lines (bluetoothctl-style)
-  listwin        -> prints mac|connected|name (win11 flyout style)
+  on / off       -> powers the adapter on/off
+  scan           -> runs discovery (~1.5s) then prints in mac|connected|name format
+  discover       -> runs discovery (~1.5s) then prints in Device MAC NAME format
+  list           -> prints known devices in Device MAC NAME format
+  listwin        -> prints known devices in mac|connected|name format
   connect <mac>  -> connects a device
   disconnect <mac> -> disconnects a device
-  pair <mac>     -> starts pairing
+  pair <mac>     -> pairs a device
 """
 
+import subprocess
 import sys
 import time
 
@@ -30,9 +32,12 @@ def get_bus():
 
 
 def get_managed():
-    bus = get_bus()
-    om = bus.get_object(BLUEZ_BUS, "/")
-    return dbus.Interface(om, DBUS_OM).GetManagedObjects()
+    try:
+        bus = get_bus()
+        om = bus.get_object(BLUEZ_BUS, "/")
+        return dbus.Interface(om, DBUS_OM).GetManagedObjects()
+    except Exception:
+        return {}
 
 
 def get_adapter(managed):
@@ -51,21 +56,29 @@ def get_devices(managed):
 
 
 def adapter_powered():
-    managed = get_managed()
-    _, props = get_adapter(managed)
-    if props is None:
-        return False
-    return bool(props.get("Powered", False))
+    try:
+        managed = get_managed()
+        _, props = get_adapter(managed)
+        if props is not None:
+            return bool(props.get("Powered", False))
+    except Exception:
+        pass
+    res = subprocess.run(["bluetoothctl", "show"], capture_output=True, text=True)
+    return "Powered: yes" in res.stdout
 
 
 def set_adapter_powered(enabled):
-    bus = get_bus()
-    managed = get_managed()
-    path, _ = get_adapter(managed)
-    if path is None:
-        return
-    obj = bus.get_object(BLUEZ_BUS, path)
-    dbus.Interface(obj, DBUS_PROPS).Set(ADAPTER_IFACE, "Powered", enabled)
+    try:
+        bus = get_bus()
+        managed = get_managed()
+        path, _ = get_adapter(managed)
+        if path is not None:
+            obj = bus.get_object(BLUEZ_BUS, path)
+            dbus.Interface(obj, DBUS_PROPS).Set(ADAPTER_IFACE, "Powered", enabled)
+            return
+    except Exception:
+        pass
+    subprocess.run(["bluetoothctl", "power", "on" if enabled else "off"], check=False)
 
 
 def cmd_power():
@@ -77,63 +90,81 @@ def cmd_set(kind):
     print("ok")
 
 
-def _icon_for(name):
-    low = name.lower()
-    if any(k in low for k in ("headset", "audio", "airpods", "buds", "sound", "speaker", "wh-")):
-        return "headphone"
-    if any(k in low for k in ("mouse", "trackpad")):
-        return "mouse"
-    if "key" in low:
-        return "keyboard"
-    if any(k in low for k in ("controller", "xbox", "gamepad", "joy")):
-        return "gamepad"
-    return "other"
+def _trigger_discovery(duration=1.5):
+    try:
+        bus = get_bus()
+        managed = get_managed()
+        path, _ = get_adapter(managed)
+        if path is not None:
+            obj = bus.get_object(BLUEZ_BUS, path)
+            adapter = dbus.Interface(obj, ADAPTER_IFACE)
+            try:
+                adapter.StartDiscovery()
+            except Exception:
+                pass
+            time.sleep(duration)
+            try:
+                adapter.StopDiscovery()
+            except Exception:
+                pass
+    except Exception:
+        pass
 
 
 def cmd_discover():
-    bus = get_bus()
-    managed = get_managed()
-    path, _ = get_adapter(managed)
-    if path is None:
-        print("no adapter")
-        return
-    obj = bus.get_object(BLUEZ_BUS, path)
-    adapter = dbus.Interface(obj, ADAPTER_IFACE)
-    try:
-        adapter.StartDiscovery()
-    except dbus.DBusException:
-        pass
-    time.sleep(5)
-    try:
-        adapter.StopDiscovery()
-    except dbus.DBusException:
-        pass
+    _trigger_discovery(1.5)
     cmd_list()
+
+
+def cmd_scan():
+    _trigger_discovery(1.5)
+    cmd_listwin()
 
 
 def cmd_list():
     managed = get_managed()
-    for path, props in get_devices(managed):
-        name = props.get("Alias") or props.get("Name") or ""
-        mac = props.get("Address", "")
-        if not mac:
-            continue
-        print("Device %s %s" % (mac, name))
+    devices = get_devices(managed)
+    if devices:
+        for path, props in devices:
+            name = props.get("Alias") or props.get("Name") or ""
+            mac = props.get("Address", "")
+            if not mac:
+                continue
+            print("Device %s %s" % (mac, name))
+    else:
+        res = subprocess.run(["bluetoothctl", "devices"], capture_output=True, text=True)
+        for line in res.stdout.splitlines():
+            line = line.strip()
+            if line:
+                print(line)
 
 
 def cmd_listwin():
     managed = get_managed()
-    for path, props in get_devices(managed):
-        name = props.get("Alias") or props.get("Name") or ""
-        mac = props.get("Address", "")
-        if not mac:
-            continue
-        connected = "1" if props.get("Connected", False) else "0"
-        print("%s|%s|%s" % (mac, connected, name))
-    cmd_power()
+    devices = get_devices(managed)
+    seen = set()
+    if devices:
+        for path, props in devices:
+            name = props.get("Alias") or props.get("Name") or ""
+            mac = props.get("Address", "")
+            if not mac:
+                continue
+            connected = "1" if props.get("Connected", False) else "0"
+            seen.add(mac)
+            print("%s|%s|%s" % (mac, connected, name))
+
+    # Fallback/complement with bluetoothctl devices
+    res = subprocess.run(["bluetoothctl", "devices"], capture_output=True, text=True)
+    for line in res.stdout.splitlines():
+        parts = line.strip().split(" ", 2)
+        if len(parts) >= 3 and parts[0] == "Device":
+            mac = parts[1]
+            if mac not in seen:
+                name = parts[2]
+                print("%s|0|%s" % (mac, name))
 
 
-def _device_call(mac, method, fallback=None):
+def _device_call(mac, method, fallback_cmd=None):
     bus = get_bus()
     managed = get_managed()
     target = None
@@ -141,31 +172,37 @@ def _device_call(mac, method, fallback=None):
         if props.get("Address") == mac:
             target = path
             break
-    if target is None:
-        print("device not found: %s" % mac)
-        return
-    obj = bus.get_object(BLUEZ_BUS, target)
-    iface = dbus.Interface(obj, DEVICE_IFACE)
-    try:
-        getattr(iface, method)()
-        print("ok")
-    except dbus.DBusException as e:
-        if fallback:
-            print(fallback)
+    if target is not None:
+        try:
+            obj = bus.get_object(BLUEZ_BUS, target)
+            iface = dbus.Interface(obj, DEVICE_IFACE)
+            getattr(iface, method)()
+            print("ok")
+            return
+        except Exception:
+            pass
+
+    # Fallback to bluetoothctl
+    if fallback_cmd:
+        res = subprocess.run(["bluetoothctl", fallback_cmd, mac], capture_output=True, text=True)
+        if res.returncode == 0:
+            print("ok")
         else:
-            print("failed: %s" % e.get_dbus_message())
+            print(res.stdout.strip() or res.stderr.strip() or "failed")
+    else:
+        print("failed")
 
 
 def cmd_connect(mac):
-    _device_call(mac, "Connect")
+    _device_call(mac, "Connect", "connect")
 
 
 def cmd_disconnect(mac):
-    _device_call(mac, "Disconnect")
+    _device_call(mac, "Disconnect", "disconnect")
 
 
 def cmd_pair(mac):
-    _device_call(mac, "Pair")
+    _device_call(mac, "Pair", "pair")
 
 
 def main():
@@ -175,8 +212,10 @@ def main():
         cmd_power()
     elif cmd in ("on", "off"):
         cmd_set(cmd)
-    elif cmd == "discover":
+    elif cmd in ("discover", "scan_mac"):
         cmd_discover()
+    elif cmd in ("scan", "discoverwin"):
+        cmd_scan()
     elif cmd == "list":
         cmd_list()
     elif cmd == "listwin":

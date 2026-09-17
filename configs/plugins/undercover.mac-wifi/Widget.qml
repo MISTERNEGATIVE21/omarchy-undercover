@@ -46,26 +46,14 @@ BarWidget {
     }
   }
 
-  function launchManager() {
-    if (root.bar) {
-      root.bar.run("omarchy-wifi-manager")
-    } else {
-      Quickshell.execDetached(["omarchy-wifi-manager"])
-    }
-  }
-
   BarIconButton {
     id: button
     anchors.fill: parent
     bar: root.bar
     text: root.wifiEnabled ? "󰤨" : "󰤭"
-    tooltipText: root.activeSsid.length > 0 ? "Wi-Fi: " + root.activeSsid + " (Long-press / Right-click to Scan & Search)" : (root.wifiEnabled ? "Wi-Fi: Connected (Long-press / Right-click to Scan & Search)" : "Wi-Fi: Disconnected (Long-press / Right-click to Scan & Search)")
+    tooltipText: root.activeSsid.length > 0 ? "Wi-Fi: " + root.activeSsid + " (Click to Open Wi-Fi Menu)" : (root.wifiEnabled ? "Wi-Fi: Connected (Click to Open Wi-Fi Menu)" : "Wi-Fi: Disconnected (Click to Open Wi-Fi Menu)")
     onPressed: function(btn) {
-      if (btn === Qt.RightButton) {
-        root.launchManager()
-      } else {
-        root.launchFlyout()
-      }
+      root.launchFlyout()
     }
   }
 
@@ -82,15 +70,11 @@ BarWidget {
     }
     onClicked: function(mouse) {
       if (root.bar) root.bar.hideTooltip(root)
-      if (mouse.button === Qt.RightButton) {
-        root.launchManager()
-      } else {
-        root.launchFlyout()
-      }
+      root.launchFlyout()
     }
     onPressAndHold: {
       if (root.bar) root.bar.hideTooltip(root)
-      root.launchManager()
+      root.launchFlyout()
     }
   }
 }

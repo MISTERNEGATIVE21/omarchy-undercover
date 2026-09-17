@@ -104,7 +104,7 @@ ALL_APPS_LIST = [
     ("🚀", "Antigravity IDE", "A", "antigravity-ide || code || vscodium"),
     ("💻", "Alacritty Terminal", "A", "alacritty || xdg-terminal-exec"),
     ("🛍️", "App Store / Software", "A", "pamac-manager || gnome-software || discover"),
-    ("🔷", "Bluetooth Devices", "B", "omarchy-win11-bluetooth || omarchy-bluetooth-manager"),
+    ("🔷", "Bluetooth Devices", "B", "omarchy-win11-bluetooth || blueman-manager"),
     ("🌐", "Browser (Edge)", "B", "omarchy-browser"),
     ("🔢", "Calculator", "C", "gnome-calculator || kcalc"),
     ("📅", "Calendar & Agenda", "C", "gnome-calendar || korganizer || omarchy-win11-notifications"),
@@ -136,7 +136,7 @@ ALL_APPS_LIST = [
     ("🧑‍💻", "VS Code Editor", "V", "code || vscodium || cursor"),
     ("🎬", "VLC Media Player", "V", "vlc"),
     ("🌤️", "Weather & Widgets", "W", "omarchy-win11-widgets"),
-    ("📶", "Wi-Fi Network Connections", "W", "omarchy-win11-wifi || omarchy-wifi-manager"),
+    ("📶", "Wi-Fi Network Connections", "W", "omarchy-win11-wifi || nm-connection-editor"),
 ]
 
 def build_css(dark=True, transparent=True):

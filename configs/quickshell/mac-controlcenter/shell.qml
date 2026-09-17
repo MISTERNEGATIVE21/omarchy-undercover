@@ -31,6 +31,9 @@ ShellRoot {
 
     property string homeDir: Quickshell.env("HOME")
     property bool isLight: false
+    property string currentView: "main" // "main" | "wifi" | "bluetooth"
+
+    // Hardware states
     property bool wifiOn: true
     property bool btOn: true
     property bool dndOn: false
@@ -44,9 +47,76 @@ ShellRoot {
     property string musicArtist: "Media Player"
     property bool musicPlaying: false
 
+    // Wi-Fi Sub-Page State
+    property var networks: []
+    property bool isScanningWifi: false
+    property string wifiSearchText: ""
+    property string connectingSsid: ""
+    property string wifiPasswordInput: ""
+
+    // Bluetooth Sub-Page State
+    property var btDevices: []
+    property bool isScanningBt: false
+    property string btSearchText: ""
+
+    readonly property var filteredNetworks: {
+      var q = controlCenterWindow.wifiSearchText.toLowerCase().trim()
+      var result = []
+      for (var i = 0; i < controlCenterWindow.networks.length; i++) {
+        var n = controlCenterWindow.networks[i]
+        if (!n.ssid || n.ssid.length === 0) continue
+        if (!q ||
+            n.ssid.toLowerCase().indexOf(q) !== -1 ||
+            (n.security && n.security.toLowerCase().indexOf(q) !== -1)) {
+          result.push(n)
+        }
+      }
+      result.sort(function(a, b) {
+        if (a.inUse && !b.inUse) return -1
+        if (!a.inUse && b.inUse) return 1
+        return (b.signal || 0) - (a.signal || 0)
+      })
+      return result
+    }
+
+    readonly property var filteredBtDevices: {
+      var q = controlCenterWindow.btSearchText.toLowerCase().trim()
+      var result = []
+      for (var i = 0; i < controlCenterWindow.btDevices.length; i++) {
+        var d = controlCenterWindow.btDevices[i]
+        if ((d.name && d.name.toLowerCase().indexOf(q) !== -1) || (d.mac && d.mac.toLowerCase().indexOf(q) !== -1)) {
+          result.push(d)
+        }
+      }
+      result.sort(function(a, b) {
+        if (a.connected && !b.connected) return -1
+        if (!a.connected && b.connected) return 1
+        return (a.name || "").localeCompare(b.name || "")
+      })
+      return result
+    }
+
+    function triggerWifiScan() {
+      controlCenterWindow.isScanningWifi = true
+      controlCenterWindow.networks = []
+      if (!wifiScanPoller.running) wifiScanPoller.running = true
+    }
+
+    function triggerBtScan() {
+      controlCenterWindow.isScanningBt = true
+      controlCenterWindow.btDevices = []
+      if (!btScanPoller.running) btScanPoller.running = true
+    }
+
     Shortcut {
       sequence: "Escape"
-      onActivated: Qt.quit()
+      onActivated: {
+        if (controlCenterWindow.currentView !== "main") {
+          controlCenterWindow.currentView = "main"
+        } else {
+          Qt.quit()
+        }
+      }
     }
 
     function runCmd(cmd) {
@@ -106,6 +176,104 @@ ShellRoot {
       }
     }
 
+    // Wi-Fi Scan Process
+    Process {
+      id: wifiScanPoller
+      command: ["bash", "-c", "omarchy-wifi-dbus scan"]
+      stdout: SplitParser {
+        onRead: function(line) {
+          var l = String(line).trim()
+          if (!l) return
+          var parts = l.split(":")
+          if (parts.length >= 4) {
+            var inUse = (parts[0] === "*")
+            var ssid = parts[1]
+            var signal = parseInt(parts[2]) || 0
+            var security = parts[3]
+            var bssid = parts.length >= 5 ? parts.slice(4).join(":") : ""
+            if (ssid && ssid.length > 0) {
+              if (inUse) controlCenterWindow.wifiSsid = ssid
+              var currentList = controlCenterWindow.networks.slice(0)
+              var exists = false
+              for (var i = 0; i < currentList.length; i++) {
+                if (currentList[i].ssid === ssid) {
+                  currentList[i].signal = signal
+                  currentList[i].inUse = inUse
+                  exists = true
+                  break
+                }
+              }
+              if (!exists) {
+                currentList.push({
+                  ssid: ssid,
+                  bssid: bssid,
+                  signal: signal,
+                  security: security,
+                  inUse: inUse,
+                  isSecured: (security.length > 0 && security !== "--")
+                })
+              }
+              controlCenterWindow.networks = currentList
+            }
+          }
+        }
+      }
+      onExited: function() {
+        controlCenterWindow.isScanningWifi = false
+      }
+    }
+
+    // Bluetooth Scan Process
+    Process {
+      id: btScanPoller
+      command: ["bash", "-c", "omarchy-bluetooth-dbus scan"]
+      stdout: SplitParser {
+        onRead: function(line) {
+          var l = String(line).trim()
+          if (!l) return
+          var parts = l.split("|")
+          if (parts.length >= 3) {
+            var mac = parts[0]
+            var connected = (parts[1] === "1")
+            var name = parts.slice(2).join("|")
+            var currentList = controlCenterWindow.btDevices.slice(0)
+            var exists = false
+            for (var i = 0; i < currentList.length; i++) {
+              if (currentList[i].mac === mac) {
+                currentList[i].name = name
+                currentList[i].connected = connected
+                exists = true
+                break
+              }
+            }
+            if (!exists) {
+              var low = name.toLowerCase()
+              var iconType = "📱"
+              if (low.indexOf("headset") !== -1 || low.indexOf("audio") !== -1 || low.indexOf("airpods") !== -1 || low.indexOf("wh-") !== -1 || low.indexOf("buds") !== -1 || low.indexOf("sound") !== -1 || low.indexOf("speaker") !== -1) {
+                iconType = "🎧"
+              } else if (low.indexOf("mouse") !== -1 || low.indexOf("trackpad") !== -1) {
+                iconType = "🖱️"
+              } else if (low.indexOf("key") !== -1) {
+                iconType = "⌨️"
+              } else if (low.indexOf("controller") !== -1 || low.indexOf("xbox") !== -1 || low.indexOf("gamepad") !== -1 || low.indexOf("joy-con") !== -1) {
+                iconType = "🎮"
+              }
+              currentList.push({
+                mac: mac,
+                name: name,
+                connected: connected,
+                type: iconType
+              })
+            }
+            controlCenterWindow.btDevices = currentList
+          }
+        }
+      }
+      onExited: function() {
+        controlCenterWindow.isScanningBt = false
+      }
+    }
+
     Timer {
       interval: 2500
       running: true
@@ -121,9 +289,10 @@ ShellRoot {
       id: bg
       anchors.fill: parent
       radius: 18
-      color: controlCenterWindow.isLight ? Qt.rgba(0.96, 0.96, 0.98, 0.82) : Qt.rgba(0.12, 0.12, 0.16, 0.82)
+      color: controlCenterWindow.isLight ? Qt.rgba(0.96, 0.96, 0.98, 0.88) : Qt.rgba(0.12, 0.12, 0.16, 0.88)
       border.color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.10) : Qt.rgba(1, 1, 1, 0.18)
       border.width: 1
+      clip: true
 
       // Top Specular Highlight
       Rectangle {
@@ -136,12 +305,17 @@ ShellRoot {
         color: Qt.rgba(1, 1, 1, 0.35)
       }
 
+      // ==========================================
+      // VIEW 1: MAIN CONTROL CENTER BENTO GRID
+      // ==========================================
       ColumnLayout {
+        id: mainBentoView
+        visible: controlCenterWindow.currentView === "main"
         anchors.fill: parent
         anchors.margins: 14
         spacing: 12
 
-        // Row 1: 2-Column Bento Grid (Network / Controls & Toggles)
+        // Row 1: 2-Column Bento Grid
         RowLayout {
           Layout.fillWidth: true
           spacing: 12
@@ -183,32 +357,47 @@ ShellRoot {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
                       controlCenterWindow.wifiOn = !controlCenterWindow.wifiOn
-                      controlCenterWindow.runCmd("nmcli radio wifi " + (controlCenterWindow.wifiOn ? "on" : "off"))
+                      controlCenterWindow.runCmd("omarchy-wifi-dbus " + (controlCenterWindow.wifiOn ? "on" : "off"))
                     }
                   }
                 }
 
-                ColumnLayout {
+                Item {
                   Layout.fillWidth: true
-                  spacing: 1
+                  Layout.fillHeight: true
 
-                  Text {
-                    text: "Wi-Fi"
-                    font.family: "SF Pro Text, -apple-system, sans-serif"
-                    font.pixelSize: 12
-                    font.bold: true
-                    color: controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff"
+                  ColumnLayout {
+                    anchors.fill: parent
+                    spacing: 1
+
+                    Text {
+                      text: "Wi-Fi"
+                      font.family: "SF Pro Text, -apple-system, sans-serif"
+                      font.pixelSize: 12
+                      font.bold: true
+                      color: controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff"
+                    }
+                    Text {
+                      text: controlCenterWindow.wifiOn ? controlCenterWindow.wifiSsid : "Off"
+                      font.family: "SF Pro Text, -apple-system, sans-serif"
+                      font.pixelSize: 10
+                      color: controlCenterWindow.isLight ? "#515154" : Qt.rgba(1, 1, 1, 0.72)
+                      elide: Text.ElideRight
+                      Layout.fillWidth: true
+                    }
                   }
-                  Text {
-                    text: controlCenterWindow.wifiOn ? controlCenterWindow.wifiSsid : "Off"
-                    font.family: "SF Pro Text, -apple-system, sans-serif"
-                    font.pixelSize: 10
-                    color: controlCenterWindow.isLight ? "#515154" : Qt.rgba(1, 1, 1, 0.72)
-                    elide: Text.ElideRight
-                    Layout.fillWidth: true
+
+                  MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                      controlCenterWindow.currentView = "wifi"
+                      controlCenterWindow.triggerWifiScan()
+                    }
                   }
                 }
 
+                // In-place chevron navigation
                 Text {
                   text: "›"
                   font.pixelSize: 18
@@ -216,7 +405,10 @@ ShellRoot {
                   MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: controlCenterWindow.runCmd("omarchy-mac-wifi")
+                    onClicked: {
+                      controlCenterWindow.currentView = "wifi"
+                      controlCenterWindow.triggerWifiScan()
+                    }
                   }
                 }
               }
@@ -251,30 +443,45 @@ ShellRoot {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
                       controlCenterWindow.btOn = !controlCenterWindow.btOn
-                      controlCenterWindow.runCmd("bluetoothctl power " + (controlCenterWindow.btOn ? "on" : "off"))
+                      controlCenterWindow.runCmd("omarchy-bluetooth-dbus " + (controlCenterWindow.btOn ? "on" : "off"))
                     }
                   }
                 }
 
-                ColumnLayout {
+                Item {
                   Layout.fillWidth: true
-                  spacing: 1
+                  Layout.fillHeight: true
 
-                  Text {
-                    text: "Bluetooth"
-                    font.family: "SF Pro Text, -apple-system, sans-serif"
-                    font.pixelSize: 12
-                    font.bold: true
-                    color: controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff"
+                  ColumnLayout {
+                    anchors.fill: parent
+                    spacing: 1
+
+                    Text {
+                      text: "Bluetooth"
+                      font.family: "SF Pro Text, -apple-system, sans-serif"
+                      font.pixelSize: 12
+                      font.bold: true
+                      color: controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff"
+                    }
+                    Text {
+                      text: controlCenterWindow.btOn ? "On" : "Off"
+                      font.family: "SF Pro Text, -apple-system, sans-serif"
+                      font.pixelSize: 10
+                      color: controlCenterWindow.isLight ? "#515154" : Qt.rgba(1, 1, 1, 0.72)
+                    }
                   }
-                  Text {
-                    text: controlCenterWindow.btOn ? "On" : "Off"
-                    font.family: "SF Pro Text, -apple-system, sans-serif"
-                    font.pixelSize: 10
-                    color: controlCenterWindow.isLight ? "#515154" : Qt.rgba(1, 1, 1, 0.72)
+
+                  MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                      controlCenterWindow.currentView = "bluetooth"
+                      controlCenterWindow.triggerBtScan()
+                    }
                   }
                 }
 
+                // In-place chevron navigation
                 Text {
                   text: "›"
                   font.pixelSize: 18
@@ -282,7 +489,10 @@ ShellRoot {
                   MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: controlCenterWindow.runCmd("omarchy-mac-bluetooth")
+                    onClicked: {
+                      controlCenterWindow.currentView = "bluetooth"
+                      controlCenterWindow.triggerBtScan()
+                    }
                   }
                 }
               }
@@ -662,6 +872,664 @@ ShellRoot {
                 color: controlCenterWindow.isLight ? "#1a1a1a" : "#ffffff"
                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: controlCenterWindow.runCmd("playerctl next") }
               }
+            }
+          }
+        }
+      }
+
+      // ==========================================
+      // VIEW 2: IN-PLACE WI-FI SUB-PAGE (macOS)
+      // ==========================================
+      ColumnLayout {
+        id: macWifiSubView
+        visible: controlCenterWindow.currentView === "wifi"
+        anchors.fill: parent
+        anchors.margins: 14
+        spacing: 10
+
+        // Header Row
+        RowLayout {
+          Layout.fillWidth: true
+          implicitHeight: 32
+          spacing: 8
+
+          Rectangle {
+            implicitWidth: 100
+            implicitHeight: 26
+            radius: 6
+            color: macWifiBackM.containsMouse ? (controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.12)) : "transparent"
+
+            RowLayout {
+              anchors.centerIn: parent
+              spacing: 4
+              Text {
+                text: "‹"
+                font.family: "SF Pro Text"
+                font.pixelSize: 16
+                font.bold: true
+                color: "#007aff"
+              }
+              Text {
+                text: "Control Center"
+                font.family: "SF Pro Text"
+                font.pixelSize: 11
+                font.bold: true
+                color: "#007aff"
+              }
+            }
+
+            MouseArea {
+              id: macWifiBackM
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: controlCenterWindow.currentView = "main"
+            }
+          }
+
+          Item { Layout.fillWidth: true }
+
+          // Scan / Refresh
+          Rectangle {
+            implicitWidth: 26
+            implicitHeight: 26
+            radius: 13
+            color: macWifiRefreshM.containsMouse ? (controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.12)) : "transparent"
+            Text {
+              anchors.centerIn: parent
+              text: "🔄"
+              font.pixelSize: 11
+              opacity: controlCenterWindow.isScanningWifi ? 0.4 : 1.0
+            }
+            MouseArea {
+              id: macWifiRefreshM
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: controlCenterWindow.triggerWifiScan()
+            }
+          }
+
+          // Wi-Fi Power Switch
+          Rectangle {
+            implicitWidth: 38
+            implicitHeight: 22
+            radius: 11
+            color: controlCenterWindow.wifiOn ? "#007aff" : Qt.rgba(0.5, 0.5, 0.5, 0.4)
+
+            Rectangle {
+              anchors.verticalCenter: parent.verticalCenter
+              x: controlCenterWindow.wifiOn ? parent.width - width - 2 : 2
+              implicitWidth: 18
+              implicitHeight: 18
+              radius: 9
+              color: "#ffffff"
+              Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+            }
+
+            MouseArea {
+              anchors.fill: parent
+              cursorShape: Qt.PointingHandCursor
+              onClicked: {
+                var target = !controlCenterWindow.wifiOn
+                controlCenterWindow.wifiOn = target
+                controlCenterWindow.runCmd("omarchy-wifi-dbus " + (target ? "on" : "off"))
+                controlCenterWindow.triggerWifiScan()
+              }
+            }
+          }
+        }
+
+        // Title
+        Text {
+          text: "Wi-Fi"
+          font.family: "SF Pro Text"
+          font.pixelSize: 15
+          font.bold: true
+          color: controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff"
+        }
+
+        // Search Bar
+        Rectangle {
+          visible: controlCenterWindow.wifiOn
+          Layout.fillWidth: true
+          implicitHeight: 32
+          radius: 8
+          color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.05) : Qt.rgba(1, 1, 1, 0.08)
+          border.color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.12)
+
+          RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 8
+            anchors.rightMargin: 8
+            spacing: 6
+
+            Text { text: "🔍"; font.pixelSize: 11; opacity: 0.6 }
+
+            TextInput {
+              id: macWifiSearchBox
+              Layout.fillWidth: true
+              color: controlCenterWindow.isLight ? "#1a1a1a" : "#ffffff"
+              font.family: "SF Pro Text"
+              font.pixelSize: 11
+              clip: true
+              onTextChanged: controlCenterWindow.wifiSearchText = text
+
+              Text {
+                text: "Search Wi-Fi networks..."
+                color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.4) : Qt.rgba(1, 1, 1, 0.4)
+                font: macWifiSearchBox.font
+                visible: !macWifiSearchBox.text && !macWifiSearchBox.activeFocus
+              }
+            }
+
+            Rectangle {
+              visible: macWifiSearchBox.text.length > 0
+              implicitWidth: 16
+              implicitHeight: 16
+              radius: 8
+              color: Qt.rgba(1, 1, 1, 0.2)
+              Text { anchors.centerIn: parent; text: "✕"; font.pixelSize: 9; color: "#ffffff" }
+              MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                  macWifiSearchBox.text = ""
+                  controlCenterWindow.wifiSearchText = ""
+                }
+              }
+            }
+          }
+        }
+
+        // Active Connection Capsule
+        Rectangle {
+          visible: controlCenterWindow.wifiSsid.length > 0 && controlCenterWindow.wifiSsid !== "Wi-Fi" && controlCenterWindow.wifiOn
+          Layout.fillWidth: true
+          implicitHeight: 40
+          radius: 8
+          color: controlCenterWindow.isLight ? Qt.rgba(0, 122, 255, 0.12) : Qt.rgba(0, 122, 255, 0.22)
+
+          RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 10
+            anchors.rightMargin: 10
+            spacing: 8
+
+            Text { text: "✓"; color: "#007aff"; font.bold: true }
+            Text {
+              text: controlCenterWindow.wifiSsid
+              font.family: "SF Pro Text"
+              font.pixelSize: 12
+              font.bold: true
+              color: controlCenterWindow.isLight ? "#1a1a1a" : "#ffffff"
+              Layout.fillWidth: true
+              elide: Text.ElideRight
+            }
+            Text { text: "󰤨"; font.pixelSize: 14; color: "#007aff" }
+          }
+        }
+
+        // Section Title
+        RowLayout {
+          visible: controlCenterWindow.wifiOn
+          Layout.fillWidth: true
+          Text {
+            text: controlCenterWindow.wifiSearchText.length > 0
+              ? "Search Results (" + controlCenterWindow.filteredNetworks.length + ")"
+              : "Available Networks"
+            font.family: "SF Pro Text"
+            font.pixelSize: 11
+            font.bold: true
+            color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.5) : Qt.rgba(1, 1, 1, 0.5)
+            Layout.fillWidth: true
+          }
+          Text {
+            visible: controlCenterWindow.isScanningWifi
+            text: "Scanning..."
+            font.family: "SF Pro Text"
+            font.pixelSize: 10
+            color: "#007aff"
+          }
+        }
+
+        // Networks List
+        ScrollView {
+          visible: controlCenterWindow.wifiOn
+          Layout.fillWidth: true
+          Layout.fillHeight: true
+          clip: true
+
+          ListView {
+            id: macCcNetList
+            width: parent.width
+            model: controlCenterWindow.filteredNetworks
+            spacing: 3
+
+            delegate: ColumnLayout {
+              width: macCcNetList.width
+              spacing: 3
+
+              Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 34
+                radius: 6
+                color: macRowM.containsMouse ? (controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.06) : Qt.rgba(1, 1, 1, 0.10)) : "transparent"
+
+                RowLayout {
+                  anchors.fill: parent
+                  anchors.leftMargin: 8
+                  anchors.rightMargin: 8
+                  spacing: 8
+
+                  Text {
+                    text: modelData.inUse ? "󰤨" : (modelData.signal > 60 ? "󰤨" : (modelData.signal > 30 ? "󰤥" : "󰤟"))
+                    font.pixelSize: 13
+                    color: modelData.inUse ? "#007aff" : (controlCenterWindow.isLight ? "#1a1a1a" : "#ffffff")
+                  }
+                  Text {
+                    text: modelData.ssid
+                    font.family: "SF Pro Text"
+                    font.pixelSize: 11
+                    font.bold: modelData.inUse
+                    color: modelData.inUse ? "#007aff" : (controlCenterWindow.isLight ? "#1a1a1a" : "#ffffff")
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
+                  }
+                  Text { visible: modelData.isSecured; text: "🔒"; font.pixelSize: 10 }
+                }
+
+                MouseArea {
+                  id: macRowM
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: {
+                    if (modelData.inUse) return
+                    if (modelData.isSecured) {
+                      controlCenterWindow.connectingSsid = (controlCenterWindow.connectingSsid === modelData.ssid ? "" : modelData.ssid)
+                      controlCenterWindow.wifiPasswordInput = ""
+                    } else {
+                      controlCenterWindow.runCmd("omarchy-wifi-dbus connect \"" + modelData.ssid + "\"")
+                      controlCenterWindow.triggerWifiScan()
+                    }
+                  }
+                }
+              }
+
+              // Password Entry if needed
+              Rectangle {
+                visible: controlCenterWindow.connectingSsid === modelData.ssid
+                Layout.fillWidth: true
+                implicitHeight: 38
+                radius: 6
+                color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.05) : Qt.rgba(1, 1, 1, 0.08)
+
+                RowLayout {
+                  anchors.fill: parent
+                  anchors.margins: 4
+                  spacing: 6
+
+                  TextInput {
+                    id: macPwInput
+                    Layout.fillWidth: true
+                    font.pixelSize: 11
+                    color: controlCenterWindow.isLight ? "#1a1a1a" : "#ffffff"
+                    echoMode: TextInput.Password
+                    clip: true
+                    onTextChanged: controlCenterWindow.wifiPasswordInput = text
+                    onAccepted: {
+                      controlCenterWindow.runCmd("omarchy-wifi-dbus connect \"" + modelData.ssid + "\" \"" + macPwInput.text + "\"")
+                      controlCenterWindow.connectingSsid = ""
+                      controlCenterWindow.triggerWifiScan()
+                    }
+                  }
+
+                  Rectangle {
+                    implicitWidth: 60
+                    implicitHeight: 26
+                    radius: 5
+                    color: "#007aff"
+                    Text { anchors.centerIn: parent; text: "Join"; color: "#ffffff"; font.family: "SF Pro Text"; font.pixelSize: 10; font.bold: true }
+                    MouseArea {
+                      anchors.fill: parent
+                      cursorShape: Qt.PointingHandCursor
+                      onClicked: {
+                        controlCenterWindow.runCmd("omarchy-wifi-dbus connect \"" + modelData.ssid + "\" \"" + macPwInput.text + "\"")
+                        controlCenterWindow.connectingSsid = ""
+                        controlCenterWindow.triggerWifiScan()
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // Footer Link
+        Rectangle {
+          Layout.fillWidth: true
+          implicitHeight: 28
+          radius: 6
+          color: macWifiPrefM.containsMouse ? (controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.05) : Qt.rgba(1, 1, 1, 0.08)) : "transparent"
+          Text {
+            anchors.centerIn: parent
+            text: "Wi-Fi Settings..."
+            font.family: "SF Pro Text"
+            font.pixelSize: 11
+            color: "#007aff"
+          }
+          MouseArea {
+            id: macWifiPrefM
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+              Qt.quit()
+              controlCenterWindow.runCmd("nm-connection-editor || omarchy-undercover-settings")
+            }
+          }
+        }
+      }
+
+      // ==========================================
+      // VIEW 3: IN-PLACE BLUETOOTH SUB-PAGE (macOS)
+      // ==========================================
+      ColumnLayout {
+        id: macBtSubView
+        visible: controlCenterWindow.currentView === "bluetooth"
+        anchors.fill: parent
+        anchors.margins: 14
+        spacing: 10
+
+        // Header Row
+        RowLayout {
+          Layout.fillWidth: true
+          implicitHeight: 32
+          spacing: 8
+
+          Rectangle {
+            implicitWidth: 100
+            implicitHeight: 26
+            radius: 6
+            color: macBtBackM.containsMouse ? (controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.12)) : "transparent"
+
+            RowLayout {
+              anchors.centerIn: parent
+              spacing: 4
+              Text {
+                text: "‹"
+                font.family: "SF Pro Text"
+                font.pixelSize: 16
+                font.bold: true
+                color: "#007aff"
+              }
+              Text {
+                text: "Control Center"
+                font.family: "SF Pro Text"
+                font.pixelSize: 11
+                font.bold: true
+                color: "#007aff"
+              }
+            }
+
+            MouseArea {
+              id: macBtBackM
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: controlCenterWindow.currentView = "main"
+            }
+          }
+
+          Item { Layout.fillWidth: true }
+
+          // Scan / Refresh
+          Rectangle {
+            implicitWidth: 26
+            implicitHeight: 26
+            radius: 13
+            color: macBtRefreshM.containsMouse ? (controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.12)) : "transparent"
+            Text {
+              anchors.centerIn: parent
+              text: "🔄"
+              font.pixelSize: 11
+              opacity: controlCenterWindow.isScanningBt ? 0.4 : 1.0
+            }
+            MouseArea {
+              id: macBtRefreshM
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: controlCenterWindow.triggerBtScan()
+            }
+          }
+
+          // Bluetooth Power Switch
+          Rectangle {
+            implicitWidth: 38
+            implicitHeight: 22
+            radius: 11
+            color: controlCenterWindow.btOn ? "#007aff" : Qt.rgba(0.5, 0.5, 0.5, 0.4)
+
+            Rectangle {
+              anchors.verticalCenter: parent.verticalCenter
+              x: controlCenterWindow.btOn ? parent.width - width - 2 : 2
+              implicitWidth: 18
+              implicitHeight: 18
+              radius: 9
+              color: "#ffffff"
+              Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+            }
+
+            MouseArea {
+              anchors.fill: parent
+              cursorShape: Qt.PointingHandCursor
+              onClicked: {
+                var target = !controlCenterWindow.btOn
+                controlCenterWindow.btOn = target
+                controlCenterWindow.runCmd("omarchy-bluetooth-dbus " + (target ? "on" : "off"))
+                controlCenterWindow.triggerBtScan()
+              }
+            }
+          }
+        }
+
+        // Title
+        Text {
+          text: "Bluetooth"
+          font.family: "SF Pro Text"
+          font.pixelSize: 15
+          font.bold: true
+          color: controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff"
+        }
+
+        // Search Bar
+        Rectangle {
+          visible: controlCenterWindow.btOn
+          Layout.fillWidth: true
+          implicitHeight: 32
+          radius: 8
+          color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.05) : Qt.rgba(1, 1, 1, 0.08)
+          border.color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.12)
+
+          RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 8
+            anchors.rightMargin: 8
+            spacing: 6
+
+            Text { text: "🔍"; font.pixelSize: 11; opacity: 0.6 }
+
+            TextInput {
+              id: macBtSearchBox
+              Layout.fillWidth: true
+              color: controlCenterWindow.isLight ? "#1a1a1a" : "#ffffff"
+              font.family: "SF Pro Text"
+              font.pixelSize: 11
+              clip: true
+              onTextChanged: controlCenterWindow.btSearchText = text
+
+              Text {
+                text: "Search Bluetooth devices..."
+                color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.4) : Qt.rgba(1, 1, 1, 0.4)
+                font: macBtSearchBox.font
+                visible: !macBtSearchBox.text && !macBtSearchBox.activeFocus
+              }
+            }
+
+            Rectangle {
+              visible: macBtSearchBox.text.length > 0
+              implicitWidth: 16
+              implicitHeight: 16
+              radius: 8
+              color: Qt.rgba(1, 1, 1, 0.2)
+              Text { anchors.centerIn: parent; text: "✕"; font.pixelSize: 9; color: "#ffffff" }
+              MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                  macBtSearchBox.text = ""
+                  controlCenterWindow.btSearchText = ""
+                }
+              }
+            }
+          }
+        }
+
+        // Section Title
+        RowLayout {
+          visible: controlCenterWindow.btOn
+          Layout.fillWidth: true
+          Text {
+            text: controlCenterWindow.btSearchText.length > 0
+              ? "Search Results (" + controlCenterWindow.filteredBtDevices.length + ")"
+              : "Devices"
+            font.family: "SF Pro Text"
+            font.pixelSize: 11
+            font.bold: true
+            color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.5) : Qt.rgba(1, 1, 1, 0.5)
+            Layout.fillWidth: true
+          }
+          Text {
+            visible: controlCenterWindow.isScanningBt
+            text: "Scanning..."
+            font.family: "SF Pro Text"
+            font.pixelSize: 10
+            color: "#007aff"
+          }
+        }
+
+        // Devices List
+        ScrollView {
+          visible: controlCenterWindow.btOn
+          Layout.fillWidth: true
+          Layout.fillHeight: true
+          clip: true
+
+          ListView {
+            id: macCcBtList
+            width: parent.width
+            model: controlCenterWindow.filteredBtDevices
+            spacing: 3
+
+            delegate: Rectangle {
+              width: macCcBtList.width
+              implicitHeight: 38
+              radius: 6
+              color: macCcBtRowM.containsMouse ? (controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.06) : Qt.rgba(1, 1, 1, 0.10)) : "transparent"
+
+              RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 8
+                anchors.rightMargin: 8
+                spacing: 8
+
+                Text { text: modelData.type; font.pixelSize: 16 }
+                Text {
+                  text: modelData.name
+                  font.family: "SF Pro Text"
+                  font.pixelSize: 11
+                  font.bold: modelData.connected
+                  color: controlCenterWindow.isLight ? "#1a1a1a" : "#ffffff"
+                  Layout.fillWidth: true
+                  elide: Text.ElideRight
+                }
+                Rectangle {
+                  implicitWidth: 60
+                  implicitHeight: 24
+                  radius: 5
+                  color: modelData.connected
+                    ? (controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.12))
+                    : (macCcBtBtnM.containsMouse ? "#007aff" : (controlCenterWindow.isLight ? Qt.rgba(0, 122, 255, 0.10) : Qt.rgba(0, 122, 255, 0.20)))
+
+                  Text {
+                    anchors.centerIn: parent
+                    text: modelData.connected ? "Disconnect" : "Connect"
+                    font.family: "SF Pro Text"
+                    font.pixelSize: 10
+                    font.bold: true
+                    color: modelData.connected
+                      ? (controlCenterWindow.isLight ? "#515154" : Qt.rgba(1, 1, 1, 0.75))
+                      : (macCcBtBtnM.containsMouse ? "#ffffff" : "#007aff")
+                  }
+
+                  MouseArea {
+                    id: macCcBtBtnM
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                      if (modelData.connected) {
+                        controlCenterWindow.runCmd("omarchy-bluetooth-dbus disconnect " + modelData.mac)
+                      } else {
+                        controlCenterWindow.runCmd("omarchy-bluetooth-dbus connect " + modelData.mac)
+                      }
+                      controlCenterWindow.triggerBtScan()
+                    }
+                  }
+                }
+              }
+
+              MouseArea {
+                id: macCcBtRowM
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                acceptedButtons: Qt.RightButton
+                onClicked: {
+                  if (modelData.connected) {
+                    controlCenterWindow.runCmd("omarchy-bluetooth-dbus disconnect " + modelData.mac)
+                    controlCenterWindow.triggerBtScan()
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // Footer Link
+        Rectangle {
+          Layout.fillWidth: true
+          implicitHeight: 28
+          radius: 6
+          color: macBtPrefM.containsMouse ? (controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.05) : Qt.rgba(1, 1, 1, 0.08)) : "transparent"
+          Text {
+            anchors.centerIn: parent
+            text: "Bluetooth Settings..."
+            font.family: "SF Pro Text"
+            font.pixelSize: 11
+            color: "#007aff"
+          }
+          MouseArea {
+            id: macBtPrefM
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+              Qt.quit()
+              controlCenterWindow.runCmd("blueman-manager || omarchy-undercover-settings")
             }
           }
         }

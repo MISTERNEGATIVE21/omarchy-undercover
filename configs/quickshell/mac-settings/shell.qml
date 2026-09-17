@@ -1261,7 +1261,7 @@ ShellRoot {
                     Item { Layout.fillWidth: true }
                     Button {
                       text: "Network Manager..."
-                      onClicked: settingsWin.runCmd("omarchy-mac-wifi || omarchy-wifi-manager")
+                      onClicked: settingsWin.runCmd("omarchy-mac-wifi || nm-connection-editor")
                     }
                   }
                 }
@@ -1315,7 +1315,7 @@ ShellRoot {
                     Item { Layout.fillWidth: true }
                     Button {
                       text: "Bluetooth Devices..."
-                      onClicked: settingsWin.runCmd("omarchy-mac-bluetooth || omarchy-bluetooth-manager")
+                      onClicked: settingsWin.runCmd("omarchy-mac-bluetooth || blueman-manager")
                     }
                   }
                 }

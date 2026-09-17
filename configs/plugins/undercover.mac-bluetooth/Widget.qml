@@ -43,26 +43,14 @@ BarWidget {
     }
   }
 
-  function launchManager() {
-    if (root.bar) {
-      root.bar.run("omarchy-bluetooth-manager")
-    } else {
-      Quickshell.execDetached(["omarchy-bluetooth-manager"])
-    }
-  }
-
   BarIconButton {
     id: button
     anchors.fill: parent
     bar: root.bar
     text: root.btEnabled ? "󰂯" : "󰂲"
-    tooltipText: root.btEnabled ? "Bluetooth: On (Long-press / Right-click to Scan & Search)" : "Bluetooth: Off (Long-press / Right-click to Scan & Search)"
+    tooltipText: root.btEnabled ? "Bluetooth: On (Click to Open Bluetooth Menu)" : "Bluetooth: Off (Click to Open Bluetooth Menu)"
     onPressed: function(btn) {
-      if (btn === Qt.RightButton) {
-        root.launchManager()
-      } else {
-        root.launchFlyout()
-      }
+      root.launchFlyout()
     }
   }
 
@@ -79,15 +67,11 @@ BarWidget {
     }
     onClicked: function(mouse) {
       if (root.bar) root.bar.hideTooltip(root)
-      if (mouse.button === Qt.RightButton) {
-        root.launchManager()
-      } else {
-        root.launchFlyout()
-      }
+      root.launchFlyout()
     }
     onPressAndHold: {
       if (root.bar) root.bar.hideTooltip(root)
-      root.launchManager()
+      root.launchFlyout()
     }
   }
 }

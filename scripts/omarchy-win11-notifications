@@ -248,10 +248,10 @@ class Win11NotificationsWindow(Gtk.Window):
         dnd_on = is_dnd_enabled()
 
         self.btn_wifi = Gtk.Button()
-        self.setup_tile(self.btn_wifi, "󰤨", "Wi-Fi", wifi_on, self.handle_wifi_toggle, lambda: subprocess.Popen(["omarchy-wifi-manager"]))
+        self.setup_tile(self.btn_wifi, "󰤨", "Wi-Fi", wifi_on, self.handle_wifi_toggle, lambda: subprocess.Popen(["omarchy-win11-wifi"]))
 
         self.btn_bt = Gtk.Button()
-        self.setup_tile(self.btn_bt, "󰂯", "Bluetooth", bt_on, self.handle_bt_toggle, lambda: subprocess.Popen(["omarchy-bluetooth-manager"]))
+        self.setup_tile(self.btn_bt, "󰂯", "Bluetooth", bt_on, self.handle_bt_toggle, lambda: subprocess.Popen(["omarchy-win11-bluetooth"]))
 
         self.btn_night = Gtk.Button()
         self.setup_tile(self.btn_night, "󰋙", "Night Light", False, self.handle_night_toggle)

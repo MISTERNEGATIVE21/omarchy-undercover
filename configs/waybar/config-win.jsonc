@@ -63,14 +63,14 @@
       "format-ethernet": "󰈀",
       "format-disconnected": "󰤭",
       "tooltip-format": "{ifname}: {ipaddr}",
-      "on-click": "omarchy-wifi-manager"
+      "on-click": "omarchy-win11-wifi"
     },
     "bluetooth": {
       "format": "󰂯",
       "format-disabled": "󰂲",
       "format-connected": "󰂱",
       "tooltip-format": "Bluetooth: {status}",
-      "on-click": "omarchy-bluetooth-manager"
+      "on-click": "omarchy-win11-bluetooth"
     },
     "pulseaudio": {
       "format": "{icon}",

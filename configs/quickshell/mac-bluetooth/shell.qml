@@ -54,7 +54,7 @@ ShellRoot {
     function triggerScan() {
       macBtWindow.isScanning = true
       macBtWindow.pairedDevices = []
-      if (!devicesPoller.running) devicesPoller.running = true
+      if (!discoverPoller.running) discoverPoller.running = true
     }
 
     function runCmd(cmd) {
@@ -89,7 +89,8 @@ ShellRoot {
     // Devices query & discovery scan (BlueZ over D-Bus)
     Process {
       id: devicesPoller
-      command: ["bash", "-c", "omarchy-bluetooth-dbus discover"]
+      running: true
+      command: ["bash", "-c", "omarchy-bluetooth-dbus listwin"]
       onExited: function() {
         macBtWindow.isScanning = false
       }
@@ -97,24 +98,88 @@ ShellRoot {
         onRead: function(line) {
           var l = String(line).trim()
           if (!l) return
-          var parts = l.split(" ")
-          if (parts.length >= 3 && parts[0] === "Device") {
-            var mac = parts[1]
-            var name = parts.slice(2).join(" ")
-            var currentList = macBtWindow.pairedDevices
+          var parts = l.split("|")
+          if (parts.length >= 3) {
+            var mac = parts[0]
+            var connected = (parts[1] === "1")
+            var name = parts.slice(2).join("|")
+            var currentList = macBtWindow.pairedDevices.slice(0)
             var exists = false
             for (var i = 0; i < currentList.length; i++) {
               if (currentList[i].mac === mac) {
                 currentList[i].name = name
+                currentList[i].connected = connected
                 exists = true
                 break
               }
             }
             if (!exists) {
+              var low = name.toLowerCase()
+              var iconType = "📱"
+              if (low.indexOf("headset") !== -1 || low.indexOf("audio") !== -1 || low.indexOf("airpods") !== -1 || low.indexOf("wh-") !== -1 || low.indexOf("buds") !== -1 || low.indexOf("sound") !== -1 || low.indexOf("speaker") !== -1) {
+                iconType = "🎧"
+              } else if (low.indexOf("mouse") !== -1 || low.indexOf("trackpad") !== -1) {
+                iconType = "🖱️"
+              } else if (low.indexOf("key") !== -1) {
+                iconType = "⌨️"
+              } else if (low.indexOf("controller") !== -1 || low.indexOf("xbox") !== -1 || low.indexOf("gamepad") !== -1 || low.indexOf("joy-con") !== -1) {
+                iconType = "🎮"
+              }
               currentList.push({
                 mac: mac,
                 name: name,
-                type: (name.toLowerCase().indexOf("airpods") !== -1 || name.toLowerCase().indexOf("head") !== -1 || name.toLowerCase().indexOf("audio") !== -1 || name.toLowerCase().indexOf("buds") !== -1) ? "🎧" : ((name.toLowerCase().indexOf("mouse") !== -1 || name.toLowerCase().indexOf("trackpad") !== -1) ? "🖱️" : ((name.toLowerCase().indexOf("key") !== -1) ? "⌨️" : "📱"))
+                connected: connected,
+                type: iconType
+              })
+            }
+            macBtWindow.pairedDevices = currentList
+          }
+        }
+      }
+    }
+
+    Process {
+      id: discoverPoller
+      command: ["bash", "-c", "omarchy-bluetooth-dbus scan"]
+      onExited: function() {
+        macBtWindow.isScanning = false
+      }
+      stdout: SplitParser {
+        onRead: function(line) {
+          var l = String(line).trim()
+          if (!l) return
+          var parts = l.split("|")
+          if (parts.length >= 3) {
+            var mac = parts[0]
+            var connected = (parts[1] === "1")
+            var name = parts.slice(2).join("|")
+            var currentList = macBtWindow.pairedDevices.slice(0)
+            var exists = false
+            for (var i = 0; i < currentList.length; i++) {
+              if (currentList[i].mac === mac) {
+                currentList[i].name = name
+                currentList[i].connected = connected
+                exists = true
+                break
+              }
+            }
+            if (!exists) {
+              var low = name.toLowerCase()
+              var iconType = "📱"
+              if (low.indexOf("headset") !== -1 || low.indexOf("audio") !== -1 || low.indexOf("airpods") !== -1 || low.indexOf("wh-") !== -1 || low.indexOf("buds") !== -1 || low.indexOf("sound") !== -1 || low.indexOf("speaker") !== -1) {
+                iconType = "🎧"
+              } else if (low.indexOf("mouse") !== -1 || low.indexOf("trackpad") !== -1) {
+                iconType = "🖱️"
+              } else if (low.indexOf("key") !== -1) {
+                iconType = "⌨️"
+              } else if (low.indexOf("controller") !== -1 || low.indexOf("xbox") !== -1 || low.indexOf("gamepad") !== -1 || low.indexOf("joy-con") !== -1) {
+                iconType = "🎮"
+              }
+              currentList.push({
+                mac: mac,
+                name: name,
+                connected: connected,
+                type: iconType
               })
             }
             macBtWindow.pairedDevices = currentList
@@ -331,10 +396,10 @@ ShellRoot {
                   elide: Text.ElideRight
                 }
                 Text {
-                  text: "Connect"
+                  text: modelData.connected ? "Disconnect" : "Connect"
                   font.family: "SF Pro Text"
                   font.pixelSize: 10
-                  color: "#007aff"
+                  color: modelData.connected ? (macBtWindow.isDark ? Qt.rgba(1, 1, 1, 0.6) : Qt.rgba(0, 0, 0, 0.5)) : "#007aff"
                   font.weight: Font.DemiBold
                 }
               }
@@ -345,7 +410,12 @@ ShellRoot {
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
-                  macBtWindow.runCmd("omarchy-bluetooth-dbus connect " + modelData.mac)
+                  if (modelData.connected) {
+                    macBtWindow.runCmd("omarchy-bluetooth-dbus disconnect " + modelData.mac)
+                  } else {
+                    macBtWindow.runCmd("omarchy-bluetooth-dbus connect " + modelData.mac)
+                  }
+                  macBtWindow.triggerScan()
                 }
               }
             }
