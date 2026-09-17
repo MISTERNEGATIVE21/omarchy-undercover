@@ -16,6 +16,8 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ -f "${SCRIPT_DIR}/../manifest.json" ]]; then
     PLUGIN_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+elif [[ -d "$HOME/.config/omarchy/plugins/omarchy-undercover" ]]; then
+    PLUGIN_DIR="$HOME/.config/omarchy/plugins/omarchy-undercover"
 elif [[ -d "$HOME/.config/omarchy/plugins/undercover" ]]; then
     PLUGIN_DIR="$HOME/.config/omarchy/plugins/undercover"
 else

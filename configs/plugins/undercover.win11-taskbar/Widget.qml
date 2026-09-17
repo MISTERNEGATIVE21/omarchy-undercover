@@ -10,7 +10,7 @@ BarWidget {
   moduleName: "undercover.win11-taskbar"
 
   property string homeDir: Quickshell.env("HOME")
-  property string configDir: homeDir + "/.config/omarchy/plugins/undercover"
+  property string configDir: homeDir + "/.config/omarchy/plugins/omarchy-undercover"
   property bool isDark: true
   property var winPinsConfig: ({})
   onWinPinsConfigChanged: root.refreshTaskbar()

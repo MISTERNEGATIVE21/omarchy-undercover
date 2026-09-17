@@ -6,7 +6,11 @@ Item {
   id: root
 
   property string homeDir: Quickshell.env("HOME")
-  property string pluginDir: homeDir + "/.config/omarchy/plugins/undercover"
+  property string pluginDir: {
+    var resolved = Qt.resolvedUrl(".").toString().replace(/^file:\/\//, "").replace(/\/$/, "");
+    if (resolved && resolved.length > 1 && resolved.indexOf("/") !== -1) return resolved;
+    return homeDir + "/.config/omarchy/plugins/omarchy-undercover";
+  }
   property string statePath: pluginDir + "/state"
   property string settingsPath: pluginDir + "/settings.conf"
   property string currentState: "mac-dark"

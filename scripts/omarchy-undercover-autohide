@@ -22,6 +22,8 @@ import signal
 _script_parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if os.path.isfile(os.path.join(_script_parent, "manifest.json")):
     PLUGIN_DIR = _script_parent
+elif os.path.isdir(os.path.expanduser("~/.config/omarchy/plugins/omarchy-undercover")):
+    PLUGIN_DIR = os.path.expanduser("~/.config/omarchy/plugins/omarchy-undercover")
 elif os.path.isdir(os.path.expanduser("~/.config/omarchy/plugins/undercover")):
     PLUGIN_DIR = os.path.expanduser("~/.config/omarchy/plugins/undercover")
 else:

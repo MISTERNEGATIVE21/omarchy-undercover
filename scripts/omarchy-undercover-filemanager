@@ -9,6 +9,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ -f "${SCRIPT_DIR}/../manifest.json" ]]; then
     PLUGIN_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+elif [[ -d "$HOME/.config/omarchy/plugins/omarchy-undercover" ]]; then
+    PLUGIN_DIR="$HOME/.config/omarchy/plugins/omarchy-undercover"
 elif [[ -d "$HOME/.config/omarchy/plugins/undercover" ]]; then
     PLUGIN_DIR="$HOME/.config/omarchy/plugins/undercover"
 else
@@ -29,7 +31,10 @@ if [[ -f "$STATE_FILE" ]]; then
     fi
 fi
 
-SETTINGS_FILE="$HOME/.config/omarchy/plugins/undercover/settings.conf"
+SETTINGS_FILE="$HOME/.config/omarchy/plugins/omarchy-undercover/settings.conf"
+if [[ ! -f "$SETTINGS_FILE" ]]; then
+    SETTINGS_FILE="$HOME/.config/omarchy/plugins/undercover/settings.conf"
+fi
 if [[ ! -f "$SETTINGS_FILE" ]]; then
     SETTINGS_FILE="$HOME/.config/omarchy-undercover/settings.conf"
 fi

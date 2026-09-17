@@ -16,6 +16,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Official Omarchy plugin directory
 if [[ -f "${SCRIPT_DIR}/../manifest.json" ]]; then
     PLUGIN_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+elif [[ -d "$HOME/.config/omarchy/plugins/omarchy-undercover" ]]; then
+    PLUGIN_DIR="$HOME/.config/omarchy/plugins/omarchy-undercover"
 elif [[ -d "$HOME/.config/omarchy/plugins/undercover" ]]; then
     PLUGIN_DIR="$HOME/.config/omarchy/plugins/undercover"
 else
@@ -972,6 +974,8 @@ verify_integrity() {
         local plugin_root="${SCRIPT_DIR}/.."
         if [[ -f "$plugin_root/manifest.json" ]] && omarchy-plugin-validate "$plugin_root" >/dev/null 2>&1; then
             echo "Omarchy Plugin Compliance: Valid (schema v1, root & sub-plugins compliant)"
+        elif [[ -d "$HOME/.config/omarchy/plugins/omarchy-undercover" ]] && omarchy-plugin-validate "$HOME/.config/omarchy/plugins/omarchy-undercover" >/dev/null 2>&1; then
+            echo "Omarchy Plugin Compliance: Valid (installed in ~/.config/omarchy/plugins/omarchy-undercover)"
         elif [[ -d "$HOME/.config/omarchy/plugins/undercover" ]] && omarchy-plugin-validate "$HOME/.config/omarchy/plugins/undercover" >/dev/null 2>&1; then
             echo "Omarchy Plugin Compliance: Valid (installed in ~/.config/omarchy/plugins/undercover)"
         fi

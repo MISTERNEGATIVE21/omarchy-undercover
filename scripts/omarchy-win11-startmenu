@@ -34,6 +34,8 @@ from gi.repository import Gtk, Adw, Gio, GLib, Gdk
 _script_parent = Path(__file__).resolve().parent.parent
 if (_script_parent / "manifest.json").exists():
     PLUGIN_DIR = _script_parent
+elif (Path.home() / ".config/omarchy/plugins/omarchy-undercover").exists():
+    PLUGIN_DIR = Path.home() / ".config/omarchy/plugins/omarchy-undercover"
 elif (Path.home() / ".config/omarchy/plugins/undercover").exists():
     PLUGIN_DIR = Path.home() / ".config/omarchy/plugins/undercover"
 else:

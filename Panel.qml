@@ -18,7 +18,11 @@ Panel {
   readonly property var barIdentity: hostWidget || root
 
   readonly property string homeDir: Quickshell.env("HOME")
-  readonly property string pluginDir: homeDir + "/.config/omarchy/plugins/undercover"
+  readonly property string pluginDir: {
+    var resolved = Qt.resolvedUrl(".").toString().replace(/^file:\/\//, "").replace(/\/$/, "");
+    if (resolved && resolved.length > 1 && resolved.indexOf("/") !== -1) return resolved;
+    return homeDir + "/.config/omarchy/plugins/omarchy-undercover";
+  }
   readonly property string currentMode: widget ? widget.currentMode : "mac"
   readonly property string activeState: widget ? widget.activeState : "mac-dark"
   readonly property bool isAutohide: widget ? widget.isAutohide : false

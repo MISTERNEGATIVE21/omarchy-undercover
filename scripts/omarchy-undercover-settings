@@ -33,6 +33,8 @@ VERSION = "3.0.0"
 _script_parent = Path(__file__).resolve().parent.parent
 if (_script_parent / "manifest.json").exists():
     PLUGIN_DIR = _script_parent
+elif (Path.home() / ".config/omarchy/plugins/omarchy-undercover").exists():
+    PLUGIN_DIR = Path.home() / ".config/omarchy/plugins/omarchy-undercover"
 elif (Path.home() / ".config/omarchy/plugins/undercover").exists():
     PLUGIN_DIR = Path.home() / ".config/omarchy/plugins/undercover"
 else:
@@ -66,6 +68,7 @@ def find_cli():
     if which_path and os.path.exists(which_path):
         return which_path
     for c in (
+        Path.home() / ".config/omarchy/plugins/omarchy-undercover/scripts/omarchy-undercover",
         Path.home() / ".config/omarchy/plugins/undercover/scripts/omarchy-undercover",
         Path.home() / ".local/bin/omarchy-undercover",
         Path("/usr/local/bin/omarchy-undercover"),

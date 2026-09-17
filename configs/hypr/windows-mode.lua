@@ -14,7 +14,10 @@
 -- =============================================================================
 
 local home = os.getenv("HOME")
-local settings_path = home .. "/.config/omarchy/plugins/undercover/settings.conf"
+local settings_path = home .. "/.config/omarchy/plugins/omarchy-undercover/settings.conf"
+if not io.open(settings_path, "r") then
+  settings_path = home .. "/.config/omarchy/plugins/undercover/settings.conf"
+end
 if not io.open(settings_path, "r") then
   settings_path = home .. "/.config/omarchy-undercover/settings.conf"
 end

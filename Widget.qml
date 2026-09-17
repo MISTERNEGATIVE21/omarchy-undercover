@@ -8,10 +8,14 @@ import qs.Ui
 
 BarWidget {
   id: root
-  moduleName: "undercover"
+  moduleName: "omarchy-undercover"
 
   property string homeDir: Quickshell.env("HOME")
-  property string configDir: homeDir + "/.config/omarchy/plugins/undercover"
+  property string configDir: {
+    var resolved = Qt.resolvedUrl(".").toString().replace(/^file:\/\//, "").replace(/\/$/, "");
+    if (resolved && resolved.length > 1 && resolved.indexOf("/") !== -1) return resolved;
+    return homeDir + "/.config/omarchy/plugins/omarchy-undercover";
+  }
   property string statePath: configDir + "/state"
   property string settingsPath: configDir + "/settings.conf"
   property string activeState: "mac-dark"

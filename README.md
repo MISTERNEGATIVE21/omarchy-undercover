@@ -32,7 +32,7 @@
   - **Apple macOS Sequoia**: Column view, comfortable density, Mac keyboard layout, and 200px sidebar width.
   - **Windows 11 Fluent**: Detailed list view, normal density, Windows keyboard layout, and 220px sidebar width.
   - **Omarchy Default**: Column view, normal density, and default keybindings.
-* **🧩 100% Official Omarchy Plugin Architecture**: Fully standardized to live self-contained inside `~/.config/omarchy/plugins/undercover/` without external installer scripts, passing `omarchy plugin validate` with strict manifest schema v1 compliance.
+* **🧩 100% Official Omarchy Plugin Architecture**: Fully standardized to live self-contained inside `~/.config/omarchy/plugins/omarchy-undercover/` without external installer scripts, passing `omarchy plugin validate` with strict manifest schema v1 compliance.
 * **⚡ Synchronized Configuration & State Engine**: Dock, taskbar, settings app, and Hyprland modules directly track and watch configurations in the official plugin directory.
 
 ---
@@ -70,7 +70,7 @@ Toggle between both disguises anytime with <kbd>Super</kbd> + <kbd>Alt</kbd> + <
 
 ## 🧩 Official Omarchy Plugin Installation & Management (Omarchy 4.0+)
 
-Omarchy Undercover follows the official Omarchy plugin specification. The plugin lives self-contained inside `~/.config/omarchy/plugins/undercover/` and is managed via standard `omarchy plugin` commands:
+Omarchy Undercover follows the official Omarchy plugin specification. The plugin lives self-contained inside `~/.config/omarchy/plugins/omarchy-undercover/` and is managed via standard `omarchy plugin` commands:
 
 ### Installation
 
@@ -85,7 +85,7 @@ omarchy plugin add https://github.com/MISTERNEGATIVE21/omarchy-undercover.git --
 Place the Undercover Camouflage Switcher widget onto your status bar:
 
 ```bash
-omarchy plugin enable undercover --section right
+omarchy plugin enable omarchy-undercover --section right
 ```
 
 ### Validate Plugin
@@ -93,7 +93,7 @@ omarchy plugin enable undercover --section right
 Verify compliance against the official Omarchy plugin manifest schema:
 
 ```bash
-omarchy plugin validate ~/.config/omarchy/plugins/undercover
+omarchy plugin validate ~/.config/omarchy/plugins/omarchy-undercover
 ```
 
 ### Disable or Remove
@@ -102,10 +102,10 @@ To cleanly disable or uninstall the plugin from Omarchy shell:
 
 ```bash
 # Disable plugin
-omarchy plugin disable undercover
+omarchy plugin disable omarchy-undercover
 
 # Remove plugin
-omarchy plugin remove undercover
+omarchy plugin remove omarchy-undercover
 ```
 
 ---
@@ -139,7 +139,7 @@ $$\Large \text{🎭 Undercover Disguise (macOS / Windows 11)} \iff \text{🐧 De
 
 ## 🎛️ Dock & Taskbar Customization
 
-The macOS dock and Windows 11 taskbar auto-scale to fit your display without icons overlapping. Tune them from **System Settings ▸ Desktop & Dock** or directly in `~/.config/omarchy/plugins/undercover/settings.conf`:
+The macOS dock and Windows 11 taskbar auto-scale to fit your display without icons overlapping. Tune them from **System Settings ▸ Desktop & Dock** or directly in `~/.config/omarchy/plugins/omarchy-undercover/settings.conf`:
 
 ```ini
 DOCK_SIZE=56          # Base icon size in px (24–128)
@@ -147,7 +147,7 @@ DOCK_MAX_ITEMS=24     # Pin the max number of icons before running-apps are capp
 DOCK_TRANSPARENCY=76  # Dock background opacity in % (10–100)
 ```
 
-**Custom dock apps** (`~/.config/omarchy/plugins/undercover/defaults.json`) — append your own entries and they will launch right from the dock:
+**Custom dock apps** (`~/.config/omarchy/plugins/omarchy-undercover/defaults.json`) — append your own entries and they will launch right from the dock:
 
 ```json
 {

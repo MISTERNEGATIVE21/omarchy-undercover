@@ -318,10 +318,12 @@ undercover_plugin_dir() {
         (cd "$base_dir" && pwd)
     elif [[ -f "$base_dir/../manifest.json" ]]; then
         (cd "$base_dir/.." && pwd)
+    elif [[ -d "$HOME/.config/omarchy/plugins/omarchy-undercover" ]]; then
+        echo "$HOME/.config/omarchy/plugins/omarchy-undercover"
     elif [[ -d "$HOME/.config/omarchy/plugins/undercover" ]]; then
         echo "$HOME/.config/omarchy/plugins/undercover"
     else
-        echo "$HOME/.config/omarchy/plugins/undercover"
+        echo "$HOME/.config/omarchy/plugins/omarchy-undercover"
     fi
 }
 
