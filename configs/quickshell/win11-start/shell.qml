@@ -718,7 +718,7 @@ ShellRoot {
               font.family: "Segoe UI"; font.pixelSize: 11
               color: p1.containsMouse ? "#ffffff" : (startWindow.isDark ? "#ffffff" : "#111111")
             }
-            MouseArea { id: p1; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: startWindow.runCmd("systemctl suspend") }
+            MouseArea { id: p1; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: startWindow.runCmd("loginctl suspend") }
           }
           Rectangle {
             Layout.fillWidth: true
@@ -731,7 +731,7 @@ ShellRoot {
               font.family: "Segoe UI"; font.pixelSize: 11
               color: p2.containsMouse ? "#ffffff" : (startWindow.isDark ? "#ffffff" : "#111111")
             }
-            MouseArea { id: p2; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: startWindow.runCmd("systemctl reboot") }
+            MouseArea { id: p2; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: startWindow.runCmd("loginctl reboot") }
           }
           Rectangle {
             Layout.fillWidth: true
@@ -744,7 +744,7 @@ ShellRoot {
               font.family: "Segoe UI"; font.pixelSize: 11
               color: p3.containsMouse ? "#ffffff" : (startWindow.isDark ? "#ffffff" : "#111111")
             }
-            MouseArea { id: p3; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: startWindow.runCmd("systemctl poweroff") }
+            MouseArea { id: p3; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: startWindow.runCmd("loginctl poweroff") }
           }
           Rectangle {
             Layout.fillWidth: true

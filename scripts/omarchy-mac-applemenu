@@ -131,15 +131,15 @@ class MacAppleMenuWindow(Gtk.Window):
 
     def action_suspend(self):
         self.destroy()
-        subprocess.run(["systemctl", "suspend"], check=False)
+        subprocess.run(["loginctl", "suspend"], check=False)
 
     def action_reboot(self):
         self.destroy()
-        subprocess.run(["systemctl", "reboot"], check=False)
+        subprocess.run(["loginctl", "reboot"], check=False)
 
     def action_shutdown(self):
         self.destroy()
-        subprocess.run(["systemctl", "poweroff"], check=False)
+        subprocess.run(["loginctl", "poweroff"], check=False)
 
 class AboutMacDialog(Adw.Window):
     def __init__(self):

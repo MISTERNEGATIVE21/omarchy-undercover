@@ -179,7 +179,7 @@ BarWidget {
             font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12
             color: m5.containsMouse ? "#ffffff" : Color.foreground
           }
-          MouseArea { id: m5; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.runCmd("systemctl suspend") }
+          MouseArea { id: m5; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.runCmd("loginctl suspend") }
         }
 
         Rectangle {
@@ -193,7 +193,7 @@ BarWidget {
             font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12
             color: m6.containsMouse ? "#ffffff" : Color.foreground
           }
-          MouseArea { id: m6; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.runCmd("systemctl reboot") }
+          MouseArea { id: m6; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.runCmd("loginctl reboot") }
         }
 
         Rectangle {
@@ -207,7 +207,7 @@ BarWidget {
             font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12
             color: m7.containsMouse ? "#ffffff" : Color.foreground
           }
-          MouseArea { id: m7; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.runCmd("systemctl poweroff") }
+          MouseArea { id: m7; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.runCmd("loginctl poweroff") }
         }
 
         Rectangle { Layout.fillWidth: true; height: 1; color: Color.separator }
