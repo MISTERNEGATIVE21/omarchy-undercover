@@ -255,6 +255,7 @@ BarWidget {
     id: defaultsFile
     path: root.configDir + "/defaults.json"
     watchChanges: true
+    printErrors: false
     onLoaded: {
       try {
         var d = JSON.parse(text())
@@ -589,7 +590,7 @@ BarWidget {
         // Windows 11 Virtual Desktops Preview & Workspace Seeking Card
         Rectangle {
           id: taskViewCard
-          visible: itemMouse.containsMouse && modelData.isTaskView
+          visible: Boolean(itemMouse.containsMouse && modelData && modelData.isTaskView)
           anchors.bottom: parent.top
           anchors.bottomMargin: 8
           anchors.horizontalCenter: parent.horizontalCenter
@@ -707,7 +708,7 @@ BarWidget {
 
         // Standard Tooltip for Start
         Rectangle {
-          visible: itemMouse.containsMouse && modelData.isStart
+          visible: Boolean(itemMouse.containsMouse && modelData && modelData.isStart)
           anchors.bottom: parent.top
           anchors.bottomMargin: 6
           anchors.horizontalCenter: parent.horizontalCenter

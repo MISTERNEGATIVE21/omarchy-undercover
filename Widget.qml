@@ -61,6 +61,7 @@ BarWidget {
     id: stateFile
     path: root.statePath
     watchChanges: true
+    printErrors: false
     onLoaded: root.updateFromState()
     onFileChanged: { reload(); root.updateFromState() }
   }
@@ -69,6 +70,7 @@ BarWidget {
     id: settingsFile
     path: root.settingsPath
     watchChanges: true
+    printErrors: false
     onLoaded: root.updateFromSettings()
     onFileChanged: { reload(); root.updateFromSettings() }
   }

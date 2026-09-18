@@ -38,8 +38,9 @@ Item {
 
   FileView {
     id: stateFile
-    path: root.statePath
+    path: root.pluginDir + "/state"
     watchChanges: true
+    printErrors: false
     onLoaded: {
       var s = text().trim()
       if (s) {
