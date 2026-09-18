@@ -12,29 +12,34 @@
     "layout": {
       "left": [
         {
-          "id": "undercover.win11-weather"
+          "id": "omarchy-undercover.win11-weather"
         }
       ],
       "center": [
         {
-          "id": "undercover.win11-taskbar"
+          "id": "omarchy-undercover.win11-taskbar"
         }
       ],
       "right": [
         {
+          "id": "omarchy-undercover"
+        },
+        {
           "id": "omarchy.tray"
         },
         {
-          "id": "undercover.win11-actioncenter"
+          "id": "omarchy-undercover.win11-actioncenter"
         },
         {
-          "id": "undercover.win11-clock"
+          "id": "omarchy-undercover.win11-clock"
         },
         {
-          "id": "undercover.win11-showdesktop"
+          "id": "omarchy-undercover.win11-showdesktop"
         }
       ]
     }
   },
-  "plugins": []
+  "plugins": [
+    "omarchy-undercover"
+  ]
 }

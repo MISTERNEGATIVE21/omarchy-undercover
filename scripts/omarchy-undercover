@@ -309,14 +309,14 @@ apply_shell_windows() {
             align=$(read_setting "TASKBAR_ALIGNMENT" "center")
             if [[ "$align" == "center" ]]; then
                 if command_exists jq; then
-                    jq '.bar.centerAnchor = "" | .bar.layout.left = [{"id": "undercover.win11-weather"}] | .bar.layout.center = [{"id": "undercover.win11-taskbar"}]' "$src" > "$HOME/.config/omarchy/shell.json" 2>/dev/null || cp -f "$src" "$HOME/.config/omarchy/shell.json"
+                    jq '.bar.centerAnchor = "" | .bar.layout.left = [{"id": "omarchy-undercover.win11-weather"}] | .bar.layout.center = [{"id": "omarchy-undercover.win11-taskbar"}]' "$src" > "$HOME/.config/omarchy/shell.json" 2>/dev/null || cp -f "$src" "$HOME/.config/omarchy/shell.json"
                 else
                     cp -f "$src" "$HOME/.config/omarchy/shell.json"
                 fi
             else
                 # Left-aligned classic Windows layout
                 if command_exists jq; then
-                    jq '.bar.centerAnchor = "" | .bar.layout.left = [{"id": "undercover.win11-taskbar"}] | .bar.layout.center = [{"id": "undercover.win11-weather"}]' "$src" > "$HOME/.config/omarchy/shell.json" 2>/dev/null || cp -f "$src" "$HOME/.config/omarchy/shell.json"
+                    jq '.bar.centerAnchor = "" | .bar.layout.left = [{"id": "omarchy-undercover.win11-taskbar"}] | .bar.layout.center = [{"id": "omarchy-undercover.win11-weather"}]' "$src" > "$HOME/.config/omarchy/shell.json" 2>/dev/null || cp -f "$src" "$HOME/.config/omarchy/shell.json"
                 else
                     cp -f "$src" "$HOME/.config/omarchy/shell.json"
                 fi

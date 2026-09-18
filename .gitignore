@@ -7,6 +7,15 @@ dist/
 *.pkg.tar.zst
 .DS_Store
 
+# Runtime state, backups & caches
+backups/
+state
+baseline
+settings.conf
+*.bak
+*.bak.*
+settings.conf.bak*
+
 # Superpowers artifacts & scratch
 .superpowers/
 docs/superpowers/

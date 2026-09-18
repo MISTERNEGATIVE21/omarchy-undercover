@@ -21,6 +21,7 @@
     ],
     "modules-center": ["clock"],
     "modules-right": [
+      "custom/undercover",
       "custom/siri",
       "network",
       "bluetooth",
@@ -94,6 +95,12 @@
       "format": "󰄨",
       "tooltip": "Control Center",
       "on-click": "omarchy-ios-control-center"
+    },
+    "custom/undercover": {
+      "format": "  ",
+      "tooltip": "Omarchy Undercover Camouflage Switcher\n• Click: Toggle Undercover Mode\n• Right-Click: Switch to Windows 11",
+      "on-click": "omarchy-undercover --toggle",
+      "on-click-right": "omarchy-undercover -w11"
     }
   },
   {

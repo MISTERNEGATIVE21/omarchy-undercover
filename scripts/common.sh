@@ -413,6 +413,23 @@ enable_undercover_hyprland() {
         chmod 644 "$toggles_dir/undercover.lua"
     fi
 
+    # Deploy undercover.conf to Omarchy dynamic toggles (for conf-based Hyprland setups)
+    local undercover_conf="$toggles_dir/undercover.conf"
+    local conf_src=""
+    if [[ "$mode" == "windows" || "$mode" == "win11" ]]; then
+        conf_src="${plugin_root}/configs/hypr/windows-mode.conf"
+    elif [[ "$mode" == "mac" || "$mode" == "ios" ]]; then
+        conf_src="${plugin_root}/configs/hypr/mac-mode.conf"
+    fi
+    {
+        echo "# Omarchy Undercover Dynamic Hyprland Toggle"
+        echo "bind = SUPER ALT, u, exec, omarchy-undercover --toggle"
+        if [[ -n "$conf_src" && -f "$conf_src" ]]; then
+            echo "source = $conf_src"
+        fi
+    } > "$undercover_conf"
+    chmod 644 "$undercover_conf"
+
     # Deploy windows-mode.lua and mac-mode.lua to ~/.config/hypr/ for compatibility
     local src_win="${plugin_root}/configs/hypr/windows-mode.lua"
     [[ ! -f "$src_win" ]] && src_win="${SCRIPT_DIR:-.}/../configs/hypr/windows-mode.lua"
@@ -444,6 +461,53 @@ enable_undercover_hyprland() {
         fi
     fi
 
+    # Ensure modular sub-plugins are accessible to omarchy-shell
+    local subplugins_dir="${plugin_root}/configs/plugins"
+    if [[ -d "$subplugins_dir" ]]; then
+        mkdir -p "$HOME/.config/omarchy/plugins"
+        for p in "$subplugins_dir"/*; do
+            if [[ -d "$p" ]]; then
+                local pb
+                pb="$(basename "$p")"
+                ln -sfn "$p" "$HOME/.config/omarchy/plugins/$pb" 2>/dev/null || true
+                if [[ "$pb" == omarchy-undercover.* ]]; then
+                    local legacy_pb="undercover.${pb#omarchy-undercover.}"
+                    ln -sfn "$p" "$HOME/.config/omarchy/plugins/$legacy_pb" 2>/dev/null || true
+                fi
+            fi
+        done
+    fi
+
+    # Ensure icons and asset themes are accessible
+    local assets_icons="${plugin_root}/assets/icons"
+    if [[ -d "$assets_icons" ]]; then
+        mkdir -p "$HOME/.local/share/icons"
+        for ic in "$assets_icons"/*; do
+            if [[ -e "$ic" ]]; then
+                local ib
+                ib="$(basename "$ic")"
+                if [[ -d "$ic" ]]; then
+                    mkdir -p "$HOME/.local/share/icons/$ib"
+                    cp -rn "$ic"/* "$HOME/.local/share/icons/$ib/" 2>/dev/null || true
+                else
+                    ln -sfn "$ic" "$HOME/.local/share/icons/$ib" 2>/dev/null || true
+                fi
+            fi
+        done
+    fi
+    if [[ -d "${plugin_root}/assets/mac-dock" ]]; then
+        mkdir -p "$HOME/.local/share/icons"
+        ln -sfn "${plugin_root}/assets/mac-dock" "$HOME/.local/share/icons/mac-dock" 2>/dev/null || true
+    fi
+
+    # Backward-compatible config paths for legacy scripts
+    if [[ ! -e "$HOME/.config/omarchy-undercover" || -L "$HOME/.config/omarchy-undercover" ]]; then
+        ln -sfn "$plugin_root" "$HOME/.config/omarchy-undercover" 2>/dev/null || true
+    fi
+    if [[ ! -e "$HOME/.config/omarchy/plugins/undercover" || -L "$HOME/.config/omarchy/plugins/undercover" ]]; then
+        ln -sfn "$plugin_root" "$HOME/.config/omarchy/plugins/undercover" 2>/dev/null || true
+    fi
+
     # Immediately activate bindings via hyprctl eval and reload
     if command_exists hyprctl; then
         if [[ "$mode" == "windows" || "$mode" == "win11" ]] && [[ -f "$HOME/.config/hypr/windows-mode.lua" ]]; then
@@ -453,9 +517,19 @@ enable_undercover_hyprland() {
         fi
         hyprctl reload >/dev/null 2>&1 || true
     fi
+
+    if command_exists omarchy-shell; then
+        omarchy-shell -q shell rescanPlugins >/dev/null 2>&1 || true
+    fi
 }
 
 disable_undercover_hyprland() {
+    rm -f "$HOME/.config/hypr/windows-mode.lua" \
+          "$HOME/.config/hypr/mac-mode.lua" 2>/dev/null || true
+    enable_undercover_hyprland "omarchy"
+}
+
+uninstall_undercover_hyprland() {
     rm -f "$HOME/.local/state/omarchy/toggles/hypr/undercover.lua" \
           "$HOME/.local/state/omarchy/toggles/hypr/undercover.conf" \
           "$HOME/.config/hypr/windows-mode.lua" \
@@ -472,3 +546,4 @@ enable_windows_hyprland() {
 disable_windows_hyprland() {
     disable_undercover_hyprland
 }
+

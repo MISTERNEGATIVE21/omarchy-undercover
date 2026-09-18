@@ -65,6 +65,46 @@ Item {
   }
 
   IpcHandler {
+    target: "omarchy-undercover-service"
+
+    function toggle(): void {
+      root.runCmd("omarchy-undercover --toggle")
+    }
+
+    function mac(): void {
+      root.runCmd("omarchy-undercover -mac")
+    }
+
+    function macLight(): void {
+      root.runCmd("omarchy-undercover -mac-light")
+    }
+
+    function win11(): void {
+      root.runCmd("omarchy-undercover -w11")
+    }
+
+    function win11Light(): void {
+      root.runCmd("omarchy-undercover -w11-light")
+    }
+
+    function restore(): void {
+      root.runCmd("omarchy-undercover --disable")
+    }
+
+    function autohide(val: string): void {
+      root.runCmd("omarchy-undercover --autohide " + (val === "on" || val === "true" ? "1" : "0"))
+    }
+
+    function transparency(val: string): void {
+      root.runCmd("omarchy-undercover --transparency " + (val === "off" || val === "false" ? "off" : "on"))
+    }
+
+    function status(): string {
+      return root.currentState
+    }
+  }
+
+  IpcHandler {
     target: "undercover-service"
 
     function toggle(): void {

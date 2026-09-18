@@ -1,287 +1,187 @@
-# 🕵️ Omarchy Undercover (v5.2.0)
+# Omarchy Undercover
 
-```
-  ██████╗ ███╗   ███╗ █████╗ ██████╗  ██████╗██╗  ██╗██╗   ██╗
- ██╔═══██╗████╗ ████║██╔══██╗██╔══██╗██╔════╝██║  ██║╚██╗ ██╔╝
- ██║   ██║██╔████╔██║███████║██████╔╝██║     ███████║ ╚████╔╝ 
- ██║   ██║██║╚██╔╝██║██╔══██║██╔══██╗██║     ██╔══██║  ╚██╔╝  
- ╚██████╔╝██║ ╚═╝ ██║██║  ██║██║  ██║╚██████╗██║  ██║   ██║   
-  ╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝   ╚═╝   
- ██╗   ██╗███╗   ██╗██████╗ ███████╗██████╗  ██████╗ ██████╗ ██╗   ██╗███████╗██████╗ 
- ██║   ██║████╗  ██║██╔══██╗██╔════╝██╔══██╗██╔════╝██╔═══██╗██║   ██║██╔════╝██╔══██╗
- ██║   ██║██╔██╗ ██║██║  ██║█████╗  ██████╔╝██║     ██║   ██║██║   ██║█████╗  ██████╔╝
- ██║   ██║██║╚██╗██║██║  ██║██╔══╝  ██╔══██╗██║     ██║   ██║╚██╗ ██╔╝██╔══╝  ██╔══██╗
- ╚██████╔╝██║ ╚████║██████╔╝███████╗██║  ██║╚██████╗╚██████╔╝ ╚████╔╝ ███████╗██║  ██║
-  ╚═════╝ ╚═╝  ╚═══╝╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝   ╚═══╝  ╚══════╝╚═╝  ╚═╝
-```
+[![Release](https://img.shields.io/github/v/release/MISTERNEGATIVE21/omarchy-undercover?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases)
+[![Compositor](https://img.shields.io/badge/compositor-Hyprland-00f2fe?style=flat-square)](https://hyprland.org)
+[![Engine](https://img.shields.io/badge/engine-Quickshell%20%7C%20Waybar-ff2d55?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover)
+[![License](https://img.shields.io/badge/license-GPL--3.0--or--later-green?style=flat-square)](LICENSE)
 
-[![Release](https://img.shields.io/badge/Release-v5.2.0-blue.svg?style=for-the-badge)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases/tag/v5.2.0)
-[![Compositor](https://img.shields.io/badge/Compositor-Hyprland-00f2fe.svg?style=for-the-badge)](https://hyprland.org)
-[![Theme Engine](https://img.shields.io/badge/Theme-Omarchy-ff2d55.svg?style=for-the-badge)](https://github.com/MISTERNEGATIVE21/omarchy-undercover)
-[![License](https://img.shields.io/badge/License-GPL--3.0-green.svg?style=for-the-badge)](LICENSE)
+Omarchy Undercover is a desktop transformation plugin for Omarchy Hyprland. It allows users to switch between a native macOS Sequoia interface, a Windows 11 Fluent environment, and the baseline Omarchy desktop on demand.
 
-> **The Ultimate Camouflage & Desktop Transformation Suite for Linux / Hyprland**  
-> Effortlessly morph your Linux desktop into pixel-perfect **Apple macOS Sequoia** or **Windows 11 Fluent**, complete with authentic typography, native blur/mica glassmorphism, dynamic auto-sizing dock, live weather, functional radio dropdowns, native Flea QuickShell file manager presets, and universal GTK/Qt theming.
+The suite configures status bars, docks, application launchers, window rules, compositor animations, and typography to deliver an authentic look and feel across both Quickshell (Omarchy 4.0+) and Waybar environments.
 
 ---
 
-## 🚀 What's New in v5.2.0
+## Features
 
-* **🛡️ Official Omarchy Marketplace Validation & Security Policy Baseline**: Fully compliant with the automated security baseline policy (0 deterministic findings, 0 review capabilities). Passed all Quattro compatibility and marketplace static scan checks ([omacom/omarchy-plugin-marketplace#7413](https://github.com/omacom/omarchy-plugin-marketplace/issues/7413)).
-* **🏷️ Canonical Plugin ID `omarchy-undercover`**: Standardized plugin identifier across all 21 manifests and shell components with complete backward-compatibility for legacy `undercover` paths.
-* **📶 In-Place Wi-Fi & Bluetooth Sub-Page Navigation**: Native QML flyouts and QuickShell Action/Control Centers now transition seamlessly in-place for live network and Bluetooth device scanning without external window redirects.
-* **⚡ Instant D-Bus Network & Bluetooth Scanning**: Rewritten NetworkManager and BlueZ D-Bus backends return cached and active access points in `< 0.15s` with non-blocking live refresh.
-* **📦 Lightweight Static Scan Footprint**: Streamlined repository assets and normalized file permissions, reducing text scan size to 1.00 MiB (well below marketplace scan limits).
-* **🧩 100% Official Omarchy Plugin Architecture**: Fully standardized to live self-contained inside `~/.config/omarchy/plugins/omarchy-undercover/` without external installer scripts, passing `omarchy plugin validate` with strict manifest schema v1 compliance.
-* **⚡ Synchronized Configuration & State Engine**: Dock, taskbar, settings app, and Hyprland modules directly track and watch configurations in the official plugin directory.
+### Apple macOS Sequoia Mode
+* Frosted glass top menu bar with Apple menu, global application menu, and Control Center.
+* Auto-sizing macOS dock with responsive scaling, magnification, and running app indicators.
+* Spotlight application and file search (<kbd>Super</kbd> + <kbd>Space</kbd>).
+* Mission Control window switcher (<kbd>Super</kbd> + <kbd>Tab</kbd>).
+* macOS-style window tiling and snap hotkeys.
+* SF Pro typography, authentic traffic-light window controls, and spring physics animations.
 
----
+### Windows 11 Fluent Mode
+* Centered taskbar with Start menu, search, live weather flyout, and system tray.
+* Windows 11 Start menu with pinned application grid and search integration.
+* Quick Settings and Action Center flyouts with volume, brightness, Wi-Fi, and Bluetooth controls.
+* Task View window switcher (<kbd>Super</kbd> + <kbd>Tab</kbd>) and Snap Assist layouts.
+* Segoe UI typography, flat window styling, and cubic bezier animation curves.
 
-## 🚀 What's New in v5.0.0
-
-* **🛡️ Theme-Switching Conflict Immunity**: Neutralized layout collisions when changing or toggling Omarchy themes (`omarchy-menu toggle theme`, `omarchy theme set`, or `SUPER+SHIFT+CTRL+SPACE`). Added defensive validation guards and self-healing sanitization across all hooks.
-* **🪟 Transparent Windows 11 Taskbar**: Added dynamic acrylic / transparent taskbar support with dedicated CLI switch (`--taskbar-transparent [true|false|toggle]`) and native toggles in Windows 11 Settings ▸ Personalization.
-* **📶 Overhauled Wireless & Bluetooth Dashboards**: Remastered QuickShell network and Bluetooth flyouts with high-contrast Fluent styling, live signal meters, AP scanning, and direct device pairing controls.
-* **🎯 Interactive Taskbar Window Switching**: Fixed Wayland `ToplevelManager` active window tracking and focus navigation — clicking open application icons reliably shifts focus and activates workspaces.
-* **⏰ Spacious System Tray & Clock Margins**: Enhanced taskbar right-corner geometry with authentic Windows 11 padding, refined indicator spacing, and hover card actions.
-* **📸 High-Resolution Desktop Imagery**: Updated 2560×1440 desktop and system assets for macOS Sequoia and Windows 11 Fluent transformations.
-
----
-
-## 📸 Screenshots
-
-Experience the disguise in action — pixel-perfect macOS Sequoia and Windows 11 Fluent transformations:
-
-### 🍏 Apple macOS Sequoia
-
-| macOS Sequoia (Dark) | macOS Sequoia (Light) |
-| :---: | :---: |
-| <img src="assets/screenshots/MacOS_Dark.png" alt="Omarchy Undercover macOS Sequoia Dark desktop" width="500"/> | <img src="assets/screenshots/MacOS_Light.png" alt="Omarchy Undercover macOS Sequoia Light desktop" width="500"/> |
-
-### 🪟 Windows 11 Fluent
-
-| Windows 11 Fluent (Dark) | Windows 11 Fluent (Light) | Windows 11 Fluent (Transparent Taskbar) |
-| :---: | :---: | :---: |
-| <img src="assets/screenshots/Windows11_Dark.png" alt="Omarchy Undercover Windows 11 Dark desktop" width="330"/> | <img src="assets/screenshots/Windows11_Light.png" alt="Omarchy Undercover Windows 11 Light desktop" width="330"/> | <img src="assets/screenshots/Windows11_Transparent.png" alt="Omarchy Undercover Windows 11 Transparent Taskbar" width="330"/> |
-
-Toggle between both disguises anytime with <kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>U</kbd>.
+### Plugin Integration & Tray Switcher
+* Self-contained plugin architecture adhering to the Omarchy Plugin Manifest Schema (v1).
+* Modular status bar widget with a multi-state tray icon for cycling or toggling modes.
+* Non-destructive configuration management with automated baseline backup and restore.
+* Seamless fallback to Waybar for legacy installations.
 
 ---
 
-## 🧩 Official Omarchy Plugin Installation & Management (Omarchy 4.0+)
+## Installation
 
-Omarchy Undercover follows the official Omarchy plugin specification. The plugin lives self-contained inside `~/.config/omarchy/plugins/omarchy-undercover/` and is managed via standard `omarchy plugin` commands:
+Omarchy Undercover is packaged as an official Omarchy shell plugin.
 
-### Installation
-
-Install and enable **Omarchy Undercover** directly into your running `omarchy-shell`:
+### Install via Omarchy CLI
 
 ```bash
 omarchy plugin add https://github.com/MISTERNEGATIVE21/omarchy-undercover.git --enable --yes
 ```
 
-### Enable / Place Status Bar Widget
+This clones the repository into `~/.config/omarchy/plugins/omarchy-undercover`, validates the manifest, links modular widgets into the shell plugin directory, and registers the global toggle keybindings.
 
-Place the Undercover Camouflage Switcher widget onto your status bar:
+### Enable the Bar / Tray Widget
+
+To place the mode switcher icon in your status bar:
 
 ```bash
 omarchy plugin enable omarchy-undercover --section right
 ```
 
-### Validate Plugin
+---
 
-Verify compliance against the official Omarchy plugin manifest schema:
+## Usage
+
+### Switching Modes via CLI
 
 ```bash
-omarchy plugin validate ~/.config/omarchy/plugins/omarchy-undercover
+# macOS Sequoia (Dark)
+omarchy-undercover -mac
+
+# macOS Sequoia (Light)
+omarchy-undercover -mac-light
+
+# Windows 11 Fluent (Dark)
+omarchy-undercover -w11
+
+# Windows 11 Fluent (Light)
+omarchy-undercover -w11-light
+
+# Toggle between Undercover mode and baseline Omarchy desktop
+omarchy-undercover --toggle
+
+# Restore baseline Omarchy desktop configuration
+omarchy-undercover --restore
 ```
 
-### Disable or Remove
+### Mode Switcher Widget
 
-To cleanly disable or uninstall the plugin from Omarchy shell:
-
-```bash
-# Disable plugin
-omarchy plugin disable omarchy-undercover
-
-# Remove plugin
-omarchy plugin remove omarchy-undercover
-```
+When placed on the bar, the Undercover widget displays the active mode emblem and provides instant control:
+* **Left-Click**: Opens the Undercover Control Center flyout.
+* **Right-Click**: Fast-cycles between macOS, Windows 11, and baseline Omarchy.
+* **Middle-Click**: Toggles between the current disguise and baseline Omarchy.
+* **Scroll Wheel**: Cycles forward or backward through available modes.
 
 ---
 
-## 🌟 Transformation Presets & Undercover Toggle
-
-Press **`Super + Alt + U`** to instantly toggle between your active Undercover disguise and the Default Omarchy desktop:
-
-$$\Large \text{🎭 Undercover Disguise (macOS / Windows 11)} \iff \text{🐧 Default Omarchy Desktop}$$
-
-```
-┌──────────────────────────────────────┬──────────────────────────────────────┐
-│  🍏 Apple macOS Sequoia              │  🪟 Windows 11 Fluent                │
-├──────────────────────────────────────┼──────────────────────────────────────┤
-│  • Frosted Top Menu Bar              │  • Centered Mica Acrylic Taskbar     │
-│  • Apple Menu ( About This Mac)     │  • Windows 11 Start Menu & Power Hub │
-│  • Dynamic Auto-Sizing Dock          │  • Pure QuickShell Settings App      │
-│  • Flea macOS Finder Column View     │  • Flea Win11 File Explorer List View│
-│  • Full Vector Apple Icon Suite      │  • PowerToys Tools & Snap Assist     │
-│  • 12px Traffic Lights with Glyphs   │  • Flat Fluent Window Controls       │
-│  • SF Pro Text & SF Pro Display      │  • Segoe UI & Cascadia Code          │
-│  • Edge-Sensing 30s Auto-Hide Dock   │  • Proportional 1:1 Taskbar Tiles    │
-│  • Spotlight (Super + Space)         │  • Action Center with Live Sliders   │
-│  • Mission Control (Super + Tab)     │  • Task View Window Switcher         │
-│  • macOS Spring / Ease Physics       │  • Fluent Cubic Bezier Animations    │
-│  • Bottom-Slide Minimize Physics     │  • Taskbar Minimize & Window Focus   │
-└──────────────────────────────────────┴──────────────────────────────────────┘
-```
-
----
-
-## 🎛️ Dock & Taskbar Customization
-
-The macOS dock and Windows 11 taskbar auto-scale to fit your display without icons overlapping. Tune them from **System Settings ▸ Desktop & Dock** or directly in `~/.config/omarchy/plugins/omarchy-undercover/settings.conf`:
-
-```ini
-DOCK_SIZE=56          # Base icon size in px (24–128)
-DOCK_MAX_ITEMS=24     # Pin the max number of icons before running-apps are capped
-DOCK_TRANSPARENCY=76  # Dock background opacity in % (10–100)
-```
-
-**Custom dock apps** (`~/.config/omarchy/plugins/omarchy-undercover/defaults.json`) — append your own entries and they will launch right from the dock:
-
-```json
-{
-  "mac_custom_apps": [
-    { "id": "myapp", "name": "My App", "icon": "myapp.svg", "exec": "myapp", "matchers": ["myapp"] }
-  ]
-}
-```
-
----
-
-## ⌨️ Global Keyboard Shortcuts
+## Keyboard Shortcuts
 
 | Shortcut | Action | Description |
 | :--- | :--- | :--- |
-| <kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>U</kbd> | **Toggle Undercover Mode** | Toggles between active Undercover preset and Default Omarchy |
-| <kbd>Super</kbd> + <kbd>B</kbd> / <kbd>Win</kbd> + <kbd>B</kbd> | **Toggle Taskbar / Dock** | Instantly hides or shows the Waybar dock/taskbar |
-| <kbd>Super</kbd> + <kbd>E</kbd> / <kbd>Win</kbd> + <kbd>E</kbd> | **File Explorer / Finder** | Opens Flea File Manager with active disguise preset |
-| <kbd>Super</kbd> + <kbd>Space</kbd> / <kbd>Win</kbd> | **Spotlight / Start Menu** | Opens macOS Spotlight or Windows 11 Start menu |
-| <kbd>Super</kbd> + <kbd>Tab</kbd> | **Mission Control / Task View** | Opens interactive window switcher |
-| <kbd>Super</kbd> + <kbd>N</kbd> | **Notification Center** | Opens macOS Widget Center or Windows 11 Action Center |
-| <kbd>Super</kbd> + <kbd>D</kbd> / <kbd>Win</kbd> + <kbd>D</kbd> | **Show Desktop** | Minimizes/toggles all active windows |
-| <kbd>Alt</kbd> + <kbd>F4</kbd> | **Close Window** | Closes active window (Windows mode) |
+| <kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>U</kbd> | Toggle Undercover Mode | Cycles between active disguise and default Omarchy desktop |
+| <kbd>Super</kbd> + <kbd>Space</kbd> | Spotlight / Start Menu | Opens macOS Spotlight or Windows 11 Start menu |
+| <kbd>Super</kbd> + <kbd>Tab</kbd> | Mission Control / Task View | Opens interactive window switcher |
+| <kbd>Super</kbd> + <kbd>E</kbd> | File Manager | Launches Flea file manager configured with active mode layout |
+| <kbd>Super</kbd> + <kbd>B</kbd> | Toggle Taskbar / Bar | Toggles status bar or dock visibility |
+| <kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>B</kbd> | Toggle Auto-Hide | Enables or disables edge-sensing auto-hide daemon |
+| <kbd>Super</kbd> + <kbd>D</kbd> | Show Desktop | Minimizes or restores all visible windows |
+| <kbd>Super</kbd> + <kbd>N</kbd> | Notifications / Widgets | Opens Notification Center or Action Center |
+| <kbd>Super</kbd> + <kbd>Ctrl</kbd> + Arrows | macOS Tiling | Tiles active window to left/right halves or corners (Mac mode) |
+| <kbd>Super</kbd> + Arrows | Windows Snap | Snaps active window to left/right halves or maximizes (Windows mode) |
+| <kbd>Alt</kbd> + <kbd>F4</kbd> | Close Window | Closes active application window |
 
 ---
 
-## 🛠️ CLI Command Reference
+## Configuration
 
-### Mode Switching
+Configuration is stored in `~/.config/omarchy/plugins/omarchy-undercover/settings.conf`:
 
-```bash
-# 🍏 Switch to Apple macOS Sequoia (Dark mode)
-omarchy-undercover -mac
+```ini
+# Active Mode: windows | mac | omarchy
+MODE=mac
 
-# ☀️ Switch to Apple macOS Sequoia (Light mode)
-omarchy-undercover -mac-light
+# Theme variant: dark | light
+THEME_VARIANT=dark
 
-# 🪟 Switch to Windows 11 Fluent (Dark mode)
-omarchy-undercover -w11
+# Status bar backend: auto | quickshell | waybar
+SHELL_BACKEND=auto
 
-# 🌅 Switch to Windows 11 Fluent (Light mode)
-omarchy-undercover -w11-light
+# macOS Dock settings
+DOCK_SIZE=56
+DOCK_MAX_ITEMS=24
+DOCK_TRANSPARENCY=76
+ENABLE_MAC_DOCK=true
+
+# Windows 11 Taskbar settings
+TASKBAR_ALIGNMENT=center
+TASKBAR_TRANSPARENT=false
+
+# Intelligent edge auto-hide
+AUTOHIDE=false
 ```
 
-### File Manager Dispatcher
+Custom dock and taskbar pinned applications can be configured in `defaults.json` within the plugin directory.
+
+---
+
+## Architecture
+
+1. **Quickshell Host Integration (Omarchy 4.0+)**:
+   Status bar components are loaded natively as Quickshell `BarWidget` and `Panel` items. The main service (`Service.qml`) synchronizes Hyprland state files and dynamic layer rules on startup and upon configuration changes.
+2. **Hyprland Dynamic Toggles**:
+   Keybindings and window rules are deployed to `~/.local/state/omarchy/toggles/hypr/` (`undercover.lua` and `undercover.conf`). This enables hot-reloading via `hyprctl reload` without modifying the user's primary compositor configuration.
+3. **IPC Interface**:
+   External scripts and keyboard handlers communicate with the running shell instance over Quickshell IPC via the `omarchy-undercover` and `omarchy-undercover-service` targets.
+4. **Waybar & Standalone Fallback**:
+   On systems without Quickshell, the suite falls back to Waybar configurations (`configs/waybar/config-win.jsonc` and `config-mac.jsonc`), ensuring full compatibility.
+
+---
+
+## Requirements
+
+* **Omarchy Linux** (v3.0+ or v4.0+ Quattro)
+* **Hyprland** (Wayland compositor)
+* **Quickshell** (`omarchy-shell`, standard on Omarchy 4.0+) or **Waybar**
+* **Flea** (`flea`, Omarchy native file manager)
+* **Rofi-Wayland** (launcher and window switcher)
+* **PipeWire / WirePlumber** (`wpctl`)
+* **NetworkManager** (`nmcli`) and **BlueZ** (`bluetoothctl`)
+
+---
+
+## Uninstallation
+
+To remove the plugin and restore default settings:
 
 ```bash
-# 📁 Launch Flea File Manager with active disguise preset (Finder / Explorer)
-omarchy-undercover-filemanager [path]
-omarch-undercover-filemanager [path]
-```
+# Disable and remove the plugin
+omarchy plugin disable omarchy-undercover
+omarchy plugin remove omarchy-undercover
 
-### Engine & Desktop Customization
-
-```bash
-# 🔍 Detect Omarchy version and active status bar backend
-omarchy-detect-backend --json
-
-# ⚙️ Switch or enforce shell backend preference (auto, quickshell, waybar)
-omarchy-undercover --backend quickshell
-omarchy-undercover --backend waybar
-omarchy-undercover --backend auto
-
-# 🚀 Toggle bar visibility across Quickshell (Omarchy 4.0+) & Waybar
-omarchy-undercover-toggle-bar
-
-# 🎛️ Toggle edge-sensing auto-hide daemon
-omarchy-undercover --autohide
-
-# 🔄 Restore original baseline configuration
+# Restore baseline configuration
 omarchy-undercover --restore
-
-# 🩺 Deep protocol integrity verification
-omarchy-undercover --verify
 ```
 
 ---
 
-## ⚡ Dual-Engine Architecture (Quickshell & Waybar)
+## License
 
-Omarchy Undercover features **intelligent zero-configuration dual-engine architecture**:
-
-1. **Omarchy 4.0+ Native (Quickshell)**:
-   - On Omarchy 4.0+, the status bar and layer surfaces run on native **Quickshell** (`omarchy-shell`).
-   - Windows 11 mode automatically deploys Fluent bottom taskbar layout and clock configurations to `~/.config/omarchy/shell.json`.
-   - macOS Sequoia mode deploys Apple top menu bar with center-anchored clock.
-   - Comprehensive Hyprland Lua layer rules (`omarchy-bar`, `omarchy-menu`, `omarchy-notifications`, `omarchy-osd`) ensure smooth compositor blur without graphical tearing or flickering.
-
-2. **Legacy Omarchy & Standalone Waybar**:
-   - For Omarchy < 4.0 or custom setups, all Waybar configurations (`configs/waybar/*`), Rofi themes, and Mako configs are preserved intact.
-   - Seamlessly falls back to Waybar if Quickshell is not available.
-   - You can explicitly force the engine using `omarchy-undercover --backend <quickshell|waybar|auto>`.
-
----
-
-## 🛠️ GUI Control Center
-
-```bash
-# Launch GTK4 / Libadwaita Undercover Settings App (with 5-second evaporating splash)
-omarchy-undercover-settings
-
-# Launch direct settings (bypassing splash screen)
-omarchy-undercover-settings -s
-```
-
----
-
-## 🖼️ Included 6K & 4K Wallpapers Library
- 
- Stored in `assets/wallpapers/`:
-- `macOS-Sequoia-Dark.jpg` & `macOS-Sequoia-Light.jpg` (Official 6K Solar Noon/Midnight)
-- `Sonoma-dark.jpg` & `Sonoma-light.jpg` (Official 4K Sonoma Ribbons)
-- `Ventura-dark.jpg` & `Ventura-light.jpg` (Official 4K Ventura Flower)
-- `Monterey-dark.jpg` & `Monterey-light.jpg` (Official 5K Monterey Waves)
-- `win11_bloom_dark.jpg` & `win11_bloom_light.jpg` (Official 4K Windows 11 Bloom)
-- `win11_flow_dark.jpg` (Official 4K Flow Dark)
-- `ios18_dark.jpg` & `ios18_light.jpg` (Official 4K iOS 18 Beams)
-
----
-
-## 📦 External Dependencies
-
-Omarchy Undercover integrates with standard Linux and Omarchy system components:
-- **Hyprland**: Dynamic Wayland compositor (window tiling, physics & spring animations)
-- **Omarchy Shell / Quickshell**: Layer shell status bar and widgets engine (v4.0+)
-- **Flea**: Omarchy's native QuickShell file manager (`flea`)
-- **Rofi (Wayland)**: Keyboard application launcher and Mission Control / Task View window switcher
-- **WirePlumber (`wpctl`)**: Native PipeWire audio sink volume control
-- **brightnessctl**: Hardware display backlight controller
-- **NetworkManager (`nmcli`)**: Wi-Fi status and connection manager
-- **BlueZ (`bluetoothctl`)**: Bluetooth controller and peripheral manager
-
----
-
-## 📜 License
-
-GPL-3.0-or-later © **[misternegative21](https://github.com/MISTERNEGATIVE21)**
+GNU General Public License v3.0 or later (GPL-3.0-or-later). See [LICENSE](LICENSE) for details.

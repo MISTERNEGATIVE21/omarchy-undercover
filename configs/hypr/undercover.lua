@@ -73,6 +73,28 @@ local function get_active_mode()
   return "omarchy"
 end
 
+local function find_script(name)
+  local dirs = {
+    plugin_dir .. "/scripts",
+    home .. "/.local/bin",
+    "/usr/share/omarchy-undercover/scripts",
+  }
+  for _, dir in ipairs(dirs) do
+    local path = dir .. "/" .. name
+    local f = io.open(path, "r")
+    if f then
+      f:close()
+      return path
+    end
+  end
+  return name
+end
+
+-- Always bind the main camouflage toggle shortcut so user can switch anytime
+if hl and hl.bind then
+  hl.bind("SUPER + ALT + U", hl.dsp.exec_cmd(find_script("omarchy-undercover") .. " --toggle"), { description = "Toggle Undercover Mode" })
+end
+
 local mode = get_active_mode()
 
 if mode == "windows" then
@@ -94,3 +116,4 @@ elseif mode == "mac" then
     dofile(home .. "/.config/hypr/mac-mode.lua")
   end
 end
+

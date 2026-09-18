@@ -39,6 +39,9 @@
       ],
       "right": [
         {
+          "id": "omarchy-undercover"
+        },
+        {
           "id": "omarchy.tray"
         },
         {
@@ -62,5 +65,7 @@
       ]
     }
   },
-  "plugins": []
+  "plugins": [
+    "omarchy-undercover"
+  ]
 }

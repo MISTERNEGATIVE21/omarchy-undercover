@@ -131,6 +131,23 @@ BarWidget {
   }
 
   IpcHandler {
+    target: "omarchy-undercover"
+
+    function open(): void { root.open() }
+    function close(): void { root.close() }
+    function show(): void { root.open() }
+    function hide(): void { root.close() }
+    function toggle(): void { root.togglePanel() }
+    function mac(): void { root.switchMode("mac-dark") }
+    function macLight(): void { root.switchMode("mac-light") }
+    function win11(): void { root.switchMode("win11-dark") }
+    function win11Light(): void { root.switchMode("win11-light") }
+    function omarchy(): void { root.switchMode("omarchy") }
+    function next(): void { root.switchMode("next") }
+    function toggleMode(): void { root.switchMode("toggle") }
+  }
+
+  IpcHandler {
     target: "undercover"
 
     function open(): void { root.open() }

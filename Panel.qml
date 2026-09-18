@@ -8,8 +8,8 @@ import qs.Ui
 
 Panel {
   id: root
-  moduleName: "undercover"
-  ipcTarget: "undercover"
+  moduleName: "omarchy-undercover"
+  ipcTarget: "omarchy-undercover"
   manageIpc: false
 
   property var anchorItem: null
