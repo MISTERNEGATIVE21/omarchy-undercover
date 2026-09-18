@@ -17,8 +17,10 @@ else
     PLUGIN_DIR="${SCRIPT_DIR}/.."
 fi
 
-STATE_FILE="$HOME/.config/omarchy-undercover/state"
-if [[ ! -f "$STATE_FILE" && -f "$PLUGIN_DIR/state" ]]; then
+STATE_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/undercover/state"
+if [[ ! -f "$STATE_FILE" && -f "$HOME/.config/omarchy-undercover/state" ]]; then
+    STATE_FILE="$HOME/.config/omarchy-undercover/state"
+elif [[ ! -f "$STATE_FILE" && -f "$PLUGIN_DIR/state" ]]; then
     STATE_FILE="$PLUGIN_DIR/state"
 fi
 MODE="default"
@@ -31,12 +33,9 @@ if [[ -f "$STATE_FILE" ]]; then
     fi
 fi
 
-SETTINGS_FILE="$HOME/.config/omarchy/plugins/omarchy-undercover/settings.conf"
-if [[ ! -f "$SETTINGS_FILE" ]]; then
-    SETTINGS_FILE="$HOME/.config/omarchy/plugins/undercover/settings.conf"
-fi
-if [[ ! -f "$SETTINGS_FILE" ]]; then
-    SETTINGS_FILE="$HOME/.config/omarchy-undercover/settings.conf"
+SETTINGS_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy-undercover/settings.conf"
+if [[ ! -f "$SETTINGS_FILE" && -f "$PLUGIN_DIR/settings.conf" ]]; then
+    SETTINGS_FILE="$PLUGIN_DIR/settings.conf"
 fi
 
 CONFIGURED_FM="auto"

@@ -16,10 +16,10 @@
 # Dispatch uses the Hyprland Lua form first (0.55+) and falls back to the
 # legacy hyprlang syntax for older releases.
 
-CONFIG_DIR="$HOME/.config/omarchy-undercover"
-STATE_FILE="$CONFIG_DIR/show_desktop_state"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/undercover"
+STATE_FILE="$STATE_DIR/show_desktop_state"
 
-mkdir -p "$CONFIG_DIR"
+mkdir -p "$STATE_DIR"
 
 if ! command -v hyprctl >/dev/null 2>&1; then
     exit 1

@@ -83,7 +83,10 @@ case "$ACTION" in
     menu)
         # Show interactive Snap Layouts HUD using Rofi or Walker
         # Read current desktop state (macOS vs Windows 11)
-        STATE_FILE="$HOME/.config/omarchy/plugins/omarchy-undercover/state"
+        STATE_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/undercover/state"
+        if [[ ! -f "$STATE_FILE" ]]; then
+            STATE_FILE="$HOME/.config/omarchy/plugins/omarchy-undercover/state"
+        fi
         if [[ ! -f "$STATE_FILE" ]]; then
             STATE_FILE="$HOME/.config/omarchy/plugins/undercover/state"
         fi

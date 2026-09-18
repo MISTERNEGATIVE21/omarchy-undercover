@@ -9,10 +9,10 @@
 # omarchy:examples=omarchy-undercover-minimize
 # ==============================================================================
 
-CONFIG_DIR="$HOME/.config/omarchy-undercover"
-STATE_FILE="$CONFIG_DIR/minimize_state"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/undercover"
+STATE_FILE="$STATE_DIR/minimize_state"
 
-mkdir -p "$CONFIG_DIR"
+mkdir -p "$STATE_DIR"
 
 if ! command -v hyprctl >/dev/null 2>&1; then
     exit 1

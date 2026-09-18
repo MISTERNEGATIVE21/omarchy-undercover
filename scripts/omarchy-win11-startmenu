@@ -41,9 +41,26 @@ elif (Path.home() / ".config/omarchy/plugins/undercover").exists():
 else:
     PLUGIN_DIR = Path.home() / ".config/omarchy-undercover"
 
-CONFIG_DIR = PLUGIN_DIR
+_state_home = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state"))
+_config_home = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+
+CONFIG_DIR = _config_home / "omarchy-undercover"
+STATE_DIR = _state_home / "omarchy" / "undercover"
+CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+STATE_DIR.mkdir(parents=True, exist_ok=True)
+
+STATE_FILE = STATE_DIR / "state"
+if not STATE_FILE.exists() and (PLUGIN_DIR / "state").exists():
+    STATE_FILE = PLUGIN_DIR / "state"
+
 SETTINGS_FILE = CONFIG_DIR / "settings.conf"
-STATE_FILE = CONFIG_DIR / "state"
+if not SETTINGS_FILE.exists() and (PLUGIN_DIR / "settings.conf").exists():
+    try:
+        import shutil
+        shutil.copy2(PLUGIN_DIR / "settings.conf", SETTINGS_FILE)
+    except Exception:
+        pass
+
 FM_CMD = str(PLUGIN_DIR / "scripts" / "omarchy-undercover-filemanager") if (PLUGIN_DIR / "scripts" / "omarchy-undercover-filemanager").exists() else "omarchy-undercover-filemanager"
 
 def read_setting(key, default=""):

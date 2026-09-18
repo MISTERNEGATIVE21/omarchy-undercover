@@ -11,8 +11,8 @@ Item {
     if (resolved && resolved.length > 1 && resolved.indexOf("/") !== -1) return resolved;
     return homeDir + "/.config/omarchy/plugins/omarchy-undercover";
   }
-  property string statePath: pluginDir + "/state"
-  property string settingsPath: pluginDir + "/settings.conf"
+  property string stateHome: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state"))
+  property string statePath: stateHome + "/omarchy/undercover/state"
   property string currentState: "mac-dark"
   property string previousState: ""
 
@@ -38,7 +38,7 @@ Item {
 
   FileView {
     id: stateFile
-    path: root.pluginDir + "/state"
+    path: root.statePath
     watchChanges: true
     printErrors: false
     onLoaded: {

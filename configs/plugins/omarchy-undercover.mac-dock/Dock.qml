@@ -193,8 +193,9 @@ Panel {
 
   FileView {
     id: settingsWatcher
-    path: dockWindow.configDir + "/settings.conf"
+    path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/omarchy-undercover/settings.conf"
     watchChanges: true
+    printErrors: false
     onLoaded: {
       var s = text()
       dockWindow.isAutohide = (s.indexOf("AUTOHIDE=true") !== -1 || s.indexOf("AUTOHIDE=1") !== -1)

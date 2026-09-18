@@ -346,10 +346,38 @@ undercover_plugin_dir() {
     fi
 }
 
+undercover_config_dir() {
+    local cdir="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy-undercover"
+    mkdir -p "$cdir" 2>/dev/null || true
+    echo "$cdir"
+}
+
+undercover_state_dir() {
+    local sdir="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/undercover"
+    mkdir -p "$sdir" 2>/dev/null || true
+    echo "$sdir"
+}
+
+undercover_state_file() {
+    local sdir
+    sdir=$(undercover_state_dir)
+    echo "$sdir/state"
+}
+
 undercover_settings_file() {
-    local pdir
-    pdir=$(undercover_plugin_dir)
-    echo "$pdir/settings.conf"
+    local cdir
+    cdir=$(undercover_config_dir)
+    local cfg="$cdir/settings.conf"
+    if [[ ! -f "$cfg" ]]; then
+        local pdir
+        pdir=$(undercover_plugin_dir)
+        if [[ -f "$pdir/settings.conf" ]]; then
+            cp "$pdir/settings.conf" "$cfg" 2>/dev/null || true
+        else
+            touch "$cfg" 2>/dev/null || true
+        fi
+    fi
+    echo "$cfg"
 }
 
 read_setting() {
@@ -497,9 +525,14 @@ enable_undercover_hyprland() {
         ln -sfn "${plugin_root}/assets/mac-dock" "$HOME/.local/share/icons/mac-dock" 2>/dev/null || true
     fi
 
-    # Backward-compatible config path for legacy scripts
-    if [[ ! -e "$HOME/.config/omarchy-undercover" || -L "$HOME/.config/omarchy-undercover" ]]; then
-        ln -sfn "$plugin_root" "$HOME/.config/omarchy-undercover" 2>/dev/null || true
+    # User configuration directory
+    local user_cfg="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy-undercover"
+    if [[ -L "$user_cfg" ]]; then
+        rm -f "$user_cfg"
+    fi
+    mkdir -p "$user_cfg"
+    if [[ ! -f "$user_cfg/settings.conf" && -f "$plugin_root/settings.conf" ]]; then
+        cp "$plugin_root/settings.conf" "$user_cfg/settings.conf" 2>/dev/null || true
     fi
 
     # Clean up any duplicate legacy plugin symlinks inside ~/.config/omarchy/plugins/

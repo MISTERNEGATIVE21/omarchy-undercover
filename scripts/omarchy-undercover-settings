@@ -40,11 +40,28 @@ elif (Path.home() / ".config/omarchy/plugins/undercover").exists():
 else:
     PLUGIN_DIR = Path.home() / ".config/omarchy-undercover"
 
-CONFIG_DIR = PLUGIN_DIR
-STATE_FILE = CONFIG_DIR / "state"
+_state_home = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state"))
+_config_home = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+
+CONFIG_DIR = _config_home / "omarchy-undercover"
+STATE_DIR = _state_home / "omarchy" / "undercover"
+CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+STATE_DIR.mkdir(parents=True, exist_ok=True)
+
+STATE_FILE = STATE_DIR / "state"
+if not STATE_FILE.exists() and (PLUGIN_DIR / "state").exists():
+    STATE_FILE = PLUGIN_DIR / "state"
+
 SETTINGS_FILE = CONFIG_DIR / "settings.conf"
-WALLPAPER_DIR = CONFIG_DIR / "assets" / "wallpapers" if (CONFIG_DIR / "assets" / "wallpapers").exists() else CONFIG_DIR / "wallpapers"
-ICON_PATH = CONFIG_DIR / "assets" / "icons" / "omarchy-undercover" / "scalable" / "apps" / "omarchy-undercover.svg"
+if not SETTINGS_FILE.exists() and (PLUGIN_DIR / "settings.conf").exists():
+    try:
+        import shutil
+        shutil.copy2(PLUGIN_DIR / "settings.conf", SETTINGS_FILE)
+    except Exception:
+        pass
+
+WALLPAPER_DIR = PLUGIN_DIR / "assets" / "wallpapers" if (PLUGIN_DIR / "assets" / "wallpapers").exists() else PLUGIN_DIR / "wallpapers"
+ICON_PATH = PLUGIN_DIR / "assets" / "icons" / "omarchy-undercover" / "scalable" / "apps" / "omarchy-undercover.svg"
 
 WALLPAPERS = [
     ("macOS-Sequoia-Dark.jpg", "macOS Sequoia Dark (6K)", "mac"),

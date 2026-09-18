@@ -21,6 +21,11 @@ done
 SCRIPT_DIR="$(cd -P "$(dirname "$_SOURCE")" && pwd)"
 unset _SOURCE _DIR
 
+## Source common.sh
+if [[ -f "$SCRIPT_DIR/common.sh" ]]; then
+    source "$SCRIPT_DIR/common.sh"
+fi
+
 # Official Omarchy plugin directory
 if [[ -f "${SCRIPT_DIR}/../manifest.json" ]]; then
     PLUGIN_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -32,10 +37,14 @@ else
     PLUGIN_DIR="${SCRIPT_DIR}/.."
 fi
 
-CONFIG_DIR="$PLUGIN_DIR"
-STATE_FILE="$CONFIG_DIR/state"
-BACKUP_DIR="$CONFIG_DIR/backups"
-BASELINE_FILE="$CONFIG_DIR/baseline"
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy-undercover"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/undercover"
+
+mkdir -p "$CONFIG_DIR" "$STATE_DIR"
+
+STATE_FILE="$STATE_DIR/state"
+BACKUP_DIR="$STATE_DIR/backups"
+BASELINE_FILE="$STATE_DIR/baseline"
 SETTINGS_FILE="$CONFIG_DIR/settings.conf"
 
 WINDOWS_GTK_THEME="Win11-Dark"
@@ -45,10 +54,17 @@ WINDOWS_FONT_NAME="Roboto 10.5"
 
 mkdir -p "$BACKUP_DIR"
 
-# Source common.sh
-if [[ -f "$SCRIPT_DIR/common.sh" ]]; then
-    source "$SCRIPT_DIR/common.sh"
-elif [[ -f "$PLUGIN_DIR/scripts/common.sh" ]]; then
+# Seed default settings if missing
+if [[ ! -f "$SETTINGS_FILE" && -f "$PLUGIN_DIR/settings.conf" ]]; then
+    cp "$PLUGIN_DIR/settings.conf" "$SETTINGS_FILE" 2>/dev/null || true
+fi
+
+# Seed baseline if migrating from legacy plugin dir
+if [[ ! -f "$BASELINE_FILE" && -f "$PLUGIN_DIR/baseline" ]]; then
+    cp "$PLUGIN_DIR/baseline" "$BASELINE_FILE" 2>/dev/null || true
+fi
+
+if [[ -f "$PLUGIN_DIR/scripts/common.sh" ]]; then
     source "$PLUGIN_DIR/scripts/common.sh"
 elif [[ -f "$HOME/.config/omarchy/plugins/omarchy-undercover/scripts/common.sh" ]]; then
     source "$HOME/.config/omarchy/plugins/omarchy-undercover/scripts/common.sh"

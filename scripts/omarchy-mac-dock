@@ -5,8 +5,9 @@
 # =============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_DIR="$HOME/.config/omarchy-undercover"
-STATE_FILE="$CONFIG_DIR/state"
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy-undercover"
+STATE_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/undercover/state"
+[[ ! -f "$STATE_FILE" && -f "$CONFIG_DIR/state" ]] && STATE_FILE="$CONFIG_DIR/state"
 
 # Check active theme mode
 if [[ -f "$STATE_FILE" ]]; then

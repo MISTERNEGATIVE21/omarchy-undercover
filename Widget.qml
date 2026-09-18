@@ -16,8 +16,10 @@ BarWidget {
     if (resolved && resolved.length > 1 && resolved.indexOf("/") !== -1) return resolved;
     return homeDir + "/.config/omarchy/plugins/omarchy-undercover";
   }
-  property string statePath: configDir + "/state"
-  property string settingsPath: configDir + "/settings.conf"
+  property string stateHome: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state"))
+  property string configHome: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config"))
+  property string statePath: stateHome + "/omarchy/undercover/state"
+  property string settingsPath: configHome + "/omarchy-undercover/settings.conf"
   property string activeState: "mac-dark"
   property string currentMode: "mac" // "mac", "win11", "omarchy"
   property bool isLight: false
