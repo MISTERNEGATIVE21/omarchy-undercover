@@ -150,8 +150,8 @@ BarWidget {
 
     Rectangle {
       anchors.fill: parent
-      color: Color.popups.background
-      radius: Style.radius(10)
+      color: Color.background
+      radius: 10
       border.color: Qt.rgba(1, 1, 1, 0.16)
       border.width: 1
       clip: true
@@ -240,7 +240,7 @@ BarWidget {
               anchors.centerIn: parent
               width: parent.width - 8
               height: 1
-              color: Color.separator
+              color: Qt.rgba(1, 1, 1, 0.12)
             }
 
             Rectangle {

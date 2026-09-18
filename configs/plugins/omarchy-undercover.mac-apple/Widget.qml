@@ -77,8 +77,8 @@ BarWidget {
 
     Rectangle {
       anchors.fill: parent
-      color: Color.popups.background
-      radius: Style.radius(10)
+      color: Color.background
+      radius: 10
       border.color: Qt.rgba(1, 1, 1, 0.16)
       border.width: 1
       clip: true
@@ -104,7 +104,7 @@ BarWidget {
           MouseArea { id: m1; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.runCmd("omarchy-mac-applemenu") }
         }
 
-        Rectangle { Layout.fillWidth: true; height: 1; color: Color.separator }
+        Rectangle { Layout.fillWidth: true; height: 1; color: Qt.rgba(1, 1, 1, 0.12) }
 
         Rectangle {
           Layout.fillWidth: true
@@ -134,7 +134,7 @@ BarWidget {
           MouseArea { id: m3; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.runCmd("pamac-manager || gnome-software || discover") }
         }
 
-        Rectangle { Layout.fillWidth: true; height: 1; color: Color.separator }
+        Rectangle { Layout.fillWidth: true; height: 1; color: Qt.rgba(1, 1, 1, 0.12) }
 
         Rectangle {
           Layout.fillWidth: true
@@ -150,7 +150,7 @@ BarWidget {
           MouseArea { id: mRestore; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.runCmd("omarchy-undercover --disable") }
         }
 
-        Rectangle { Layout.fillWidth: true; height: 1; color: Color.separator }
+        Rectangle { Layout.fillWidth: true; height: 1; color: Qt.rgba(1, 1, 1, 0.12) }
 
         Rectangle {
           Layout.fillWidth: true
@@ -166,7 +166,7 @@ BarWidget {
           MouseArea { id: m4; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.runCmd("hyprctl kill") }
         }
 
-        Rectangle { Layout.fillWidth: true; height: 1; color: Color.separator }
+        Rectangle { Layout.fillWidth: true; height: 1; color: Qt.rgba(1, 1, 1, 0.12) }
 
         Rectangle {
           Layout.fillWidth: true
@@ -210,7 +210,7 @@ BarWidget {
           MouseArea { id: m7; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.runCmd("loginctl poweroff") }
         }
 
-        Rectangle { Layout.fillWidth: true; height: 1; color: Color.separator }
+        Rectangle { Layout.fillWidth: true; height: 1; color: Qt.rgba(1, 1, 1, 0.12) }
 
         Rectangle {
           Layout.fillWidth: true

@@ -28,8 +28,9 @@ BarWidget {
   // Theme state detection
   FileView {
     id: stateFile
-    path: Quickshell.env("HOME") + "/.config/omarchy/plugins/omarchy-undercover/state"
+    path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/omarchy/undercover/state"
     watchChanges: true
+    printErrors: false
     onLoaded: {
       var s = text().trim()
       root.isDark = (s.indexOf("light") === -1)

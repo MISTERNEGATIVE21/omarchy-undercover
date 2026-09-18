@@ -237,8 +237,9 @@ BarWidget {
   // Reactive Theme state watcher via FileView
   FileView {
     id: stateWatcher
-    path: root.configDir + "/state"
+    path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/omarchy/undercover/state"
     watchChanges: true
+    printErrors: false
     onLoaded: {
       var s = text().trim()
       root.isDark = (s.indexOf("light") === -1)

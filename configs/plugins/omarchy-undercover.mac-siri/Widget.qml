@@ -35,7 +35,6 @@ BarWidget {
       border.color: "#ff2d55"
       border.width: 1.5
       opacity: 0.85
-      rotation: ringRot.angle
 
       RotationAnimation on rotation {
         id: ringRot
@@ -56,7 +55,6 @@ BarWidget {
       border.color: "#00f2fe"
       border.width: 1.5
       opacity: 0.80
-      rotation: ringRot2.angle
 
       RotationAnimation on rotation {
         id: ringRot2

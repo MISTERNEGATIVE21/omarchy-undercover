@@ -32,6 +32,7 @@ BarWidget {
 
     // Vector macOS Spotlight Magnifying Glass
     Item {
+      id: spotIcon
       anchors.centerIn: parent
       width: 16
       height: 16
@@ -44,7 +45,7 @@ BarWidget {
         layer.samples: 4
 
         ShapePath {
-          strokeColor: parent.iconColor
+          strokeColor: spotIcon.iconColor
           strokeWidth: 1.5
           fillColor: "transparent"
           capStyle: ShapePath.RoundCap
@@ -61,7 +62,7 @@ BarWidget {
         }
 
         ShapePath {
-          strokeColor: parent.iconColor
+          strokeColor: spotIcon.iconColor
           strokeWidth: 1.6
           fillColor: "transparent"
           capStyle: ShapePath.RoundCap

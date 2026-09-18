@@ -174,8 +174,9 @@ Panel {
 
   FileView {
     id: stateWatcher
-    path: dockWindow.configDir + "/state"
+    path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/omarchy/undercover/state"
     watchChanges: true
+    printErrors: false
     onLoaded: {
       var s = text().trim()
       dockWindow.isLight = (s.indexOf("light") !== -1)

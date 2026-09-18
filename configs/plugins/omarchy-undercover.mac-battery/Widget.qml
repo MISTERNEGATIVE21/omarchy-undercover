@@ -83,6 +83,7 @@ BarWidget {
 
       // Vector macOS Battery Capsule
       Item {
+        id: batCapsule
         anchors.verticalCenter: parent.verticalCenter
         width: 24
         height: 12
@@ -90,7 +91,7 @@ BarWidget {
         implicitHeight: 12
 
         readonly property color fgColor: root.bar ? root.bar.foreground : "#ffffff"
-        readonly property color fillColor: root.batteryPct <= 20 ? "#ff453a" : (root.isCharging ? "#30d158" : parent.fgColor)
+        readonly property color fillColor: root.batteryPct <= 20 ? "#ff453a" : (root.isCharging ? "#30d158" : batCapsule.fgColor)
 
         // Outer Capsule
         Rectangle {
@@ -101,7 +102,7 @@ BarWidget {
           height: 11
           radius: 3
           color: "transparent"
-          border.color: parent.fgColor
+          border.color: batCapsule.fgColor
           border.width: 1.2
 
           // Interior Fill Level
@@ -112,7 +113,7 @@ BarWidget {
             width: Math.max(2, Math.round((outerBorder.width - 3) * (root.batteryPct / 100.0)))
             height: outerBorder.height - 3
             radius: 1.5
-            color: parent.parent.fillColor
+            color: batCapsule.fillColor
           }
 
           // Charging Bolt
