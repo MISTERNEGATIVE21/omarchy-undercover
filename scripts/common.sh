@@ -163,12 +163,9 @@ omarchy_reload_quickshell() {
     # Kill any leftover waybar processes so they do not overlap with quickshell
     pkill -9 -x waybar 2>/dev/null || true
 
-    if command_exists omarchy-shell; then
+    if command_exists omarchy-shell && omarchy-shell shell ping >/dev/null 2>&1; then
         omarchy-shell shell reloadConfig >/dev/null 2>&1 || true
-        omarchy-shell -q shell rescanPlugins >/dev/null 2>&1 || true
-    fi
-
-    if command_exists omarchy; then
+    elif command_exists omarchy; then
         omarchy restart shell 2>/dev/null || true
     elif command_exists omarchy-restart-shell; then
         omarchy-restart-shell 2>/dev/null || true
@@ -461,7 +458,7 @@ enable_undercover_hyprland() {
         fi
     fi
 
-    # Ensure modular sub-plugins are accessible to omarchy-shell
+    # Ensure modular sub-plugins are accessible to omarchy-shell (only create if missing)
     local subplugins_dir="${plugin_root}/configs/plugins"
     if [[ -d "$subplugins_dir" ]]; then
         mkdir -p "$HOME/.config/omarchy/plugins"
@@ -469,16 +466,15 @@ enable_undercover_hyprland() {
             if [[ -d "$p" ]]; then
                 local pb
                 pb="$(basename "$p")"
-                ln -sfn "$p" "$HOME/.config/omarchy/plugins/$pb" 2>/dev/null || true
-                if [[ "$pb" == omarchy-undercover.* ]]; then
-                    local legacy_pb="undercover.${pb#omarchy-undercover.}"
-                    ln -sfn "$p" "$HOME/.config/omarchy/plugins/$legacy_pb" 2>/dev/null || true
+                local target_p="$HOME/.config/omarchy/plugins/$pb"
+                if [[ ! -e "$target_p" ]]; then
+                    ln -sfn "$p" "$target_p" 2>/dev/null || true
                 fi
             fi
         done
     fi
 
-    # Ensure icons and asset themes are accessible
+    # Ensure icons and asset themes are accessible (only create if missing)
     local assets_icons="${plugin_root}/assets/icons"
     if [[ -d "$assets_icons" ]]; then
         mkdir -p "$HOME/.local/share/icons"
@@ -486,27 +482,28 @@ enable_undercover_hyprland() {
             if [[ -e "$ic" ]]; then
                 local ib
                 ib="$(basename "$ic")"
+                local target_ic="$HOME/.local/share/icons/$ib"
                 if [[ -d "$ic" ]]; then
-                    mkdir -p "$HOME/.local/share/icons/$ib"
-                    cp -rn "$ic"/* "$HOME/.local/share/icons/$ib/" 2>/dev/null || true
-                else
-                    ln -sfn "$ic" "$HOME/.local/share/icons/$ib" 2>/dev/null || true
+                    mkdir -p "$target_ic"
+                    cp -rn "$ic"/* "$target_ic/" 2>/dev/null || true
+                elif [[ ! -e "$target_ic" ]]; then
+                    ln -sfn "$ic" "$target_ic" 2>/dev/null || true
                 fi
             fi
         done
     fi
-    if [[ -d "${plugin_root}/assets/mac-dock" ]]; then
+    if [[ -d "${plugin_root}/assets/mac-dock" && ! -e "$HOME/.local/share/icons/mac-dock" ]]; then
         mkdir -p "$HOME/.local/share/icons"
         ln -sfn "${plugin_root}/assets/mac-dock" "$HOME/.local/share/icons/mac-dock" 2>/dev/null || true
     fi
 
-    # Backward-compatible config paths for legacy scripts
+    # Backward-compatible config path for legacy scripts
     if [[ ! -e "$HOME/.config/omarchy-undercover" || -L "$HOME/.config/omarchy-undercover" ]]; then
         ln -sfn "$plugin_root" "$HOME/.config/omarchy-undercover" 2>/dev/null || true
     fi
-    if [[ ! -e "$HOME/.config/omarchy/plugins/undercover" || -L "$HOME/.config/omarchy/plugins/undercover" ]]; then
-        ln -sfn "$plugin_root" "$HOME/.config/omarchy/plugins/undercover" 2>/dev/null || true
-    fi
+
+    # Clean up any duplicate legacy plugin symlinks inside ~/.config/omarchy/plugins/
+    rm -f "$HOME/.config/omarchy/plugins/undercover" "$HOME/.config/omarchy/plugins/undercover."* 2>/dev/null || true
 
     # Immediately activate bindings via hyprctl eval and reload
     if command_exists hyprctl; then
@@ -516,10 +513,6 @@ enable_undercover_hyprland() {
             hyprctl eval "dofile(\"$HOME/.config/hypr/mac-mode.lua\")" >/dev/null 2>&1 || true
         fi
         hyprctl reload >/dev/null 2>&1 || true
-    fi
-
-    if command_exists omarchy-shell; then
-        omarchy-shell -q shell rescanPlugins >/dev/null 2>&1 || true
     fi
 }
 

@@ -52,8 +52,8 @@ Panel {
 
     Rectangle {
       anchors.fill: parent
-      color: Color.popups.background
-      radius: Style.radius(16)
+      color: Color.background
+      radius: 16
       clip: true
 
       // Specular Top Border Highlight
@@ -69,7 +69,7 @@ Panel {
       Rectangle {
         anchors.fill: parent
         color: "transparent"
-        radius: Style.radius(16)
+        radius: 16
         border.color: Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.35)
         border.width: 1
       }
@@ -94,7 +94,7 @@ Panel {
             Rectangle {
               width: Style.space(44)
               height: Style.space(44)
-              radius: Style.radius(12)
+              radius: 12
               color: Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.18)
               border.color: Color.accent
               border.width: 1
@@ -124,7 +124,7 @@ Panel {
                 text: "Active: " + (root.currentMode === "mac" ? "macOS Sequoia (" + (root.activeState.indexOf("light") !== -1 ? "Light" : "Dark") + ")" : (root.currentMode === "win11" ? "Windows 11 Fluent (" + (root.activeState.indexOf("light") !== -1 ? "Light" : "Dark") + ")" : "Default Omarchy"))
                 font.family: Style.font.family
                 font.pixelSize: Style.font.caption
-                color: Color.mutedForeground
+                color: Color.muted
               }
             }
 
@@ -141,7 +141,7 @@ Panel {
           Rectangle {
             Layout.fillWidth: true
             height: 1
-            color: Color.separator
+            color: Qt.rgba(1, 1, 1, 0.12)
           }
 
           // 2. Disguise Presets
@@ -150,14 +150,14 @@ Panel {
             font.family: Style.font.family
             font.pixelSize: Style.font.caption - 1
             font.bold: true
-            color: Color.mutedForeground
+            color: Color.muted
           }
 
           // macOS Card
           Rectangle {
             Layout.fillWidth: true
             implicitHeight: Style.space(72)
-            radius: Style.radius(10)
+            radius: 10
             color: root.currentMode === "mac" ? Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.12) : Qt.rgba(1, 1, 1, 0.04)
             border.color: root.currentMode === "mac" ? Color.accent : Qt.rgba(1, 1, 1, 0.08)
             border.width: 1
@@ -187,7 +187,7 @@ Panel {
                   text: "Frosted Menu Bar • Dynamic Dock • SF Fonts"
                   font.family: "SF Pro Text, -apple-system, sans-serif"
                   font.pixelSize: Style.font.caption - 1
-                  color: Color.mutedForeground
+                  color: Color.muted
                 }
               }
 
@@ -209,7 +209,7 @@ Panel {
           Rectangle {
             Layout.fillWidth: true
             implicitHeight: Style.space(72)
-            radius: Style.radius(10)
+            radius: 10
             color: root.currentMode === "win11" ? Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.12) : Qt.rgba(1, 1, 1, 0.04)
             border.color: root.currentMode === "win11" ? Color.accent : Qt.rgba(1, 1, 1, 0.08)
             border.width: 1
@@ -239,7 +239,7 @@ Panel {
                   text: "Centered Mica Taskbar • Start Menu • Segoe UI"
                   font.family: "Segoe UI, sans-serif"
                   font.pixelSize: Style.font.caption - 1
-                  color: Color.mutedForeground
+                  color: Color.muted
                 }
               }
 
@@ -261,7 +261,7 @@ Panel {
           Rectangle {
             Layout.fillWidth: true
             implicitHeight: Style.space(52)
-            radius: Style.radius(10)
+            radius: 10
             color: root.currentMode === "omarchy" ? Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.12) : Qt.rgba(1, 1, 1, 0.04)
             border.color: root.currentMode === "omarchy" ? Color.accent : Qt.rgba(1, 1, 1, 0.08)
             border.width: 1
@@ -294,7 +294,7 @@ Panel {
           Rectangle {
             Layout.fillWidth: true
             height: 1
-            color: Color.separator
+            color: Qt.rgba(1, 1, 1, 0.12)
           }
 
           // 3. Desktop Feature Toggles
@@ -303,7 +303,7 @@ Panel {
             font.family: Style.font.family
             font.pixelSize: Style.font.caption - 1
             font.bold: true
-            color: Color.mutedForeground
+            color: Color.muted
           }
 
           GridLayout {
@@ -349,7 +349,7 @@ Panel {
           Rectangle {
             Layout.fillWidth: true
             height: 1
-            color: Color.separator
+            color: Qt.rgba(1, 1, 1, 0.12)
           }
 
           // 4. Quick Productivity Utilities
@@ -358,7 +358,7 @@ Panel {
             font.family: Style.font.family
             font.pixelSize: Style.font.caption - 1
             font.bold: true
-            color: Color.mutedForeground
+            color: Color.muted
           }
 
           RowLayout {
@@ -385,7 +385,7 @@ Panel {
           Rectangle {
             Layout.fillWidth: true
             height: 1
-            color: Color.separator
+            color: Qt.rgba(1, 1, 1, 0.12)
           }
 
           // 5. Quick Wallpapers Carousel
@@ -394,7 +394,7 @@ Panel {
             font.family: Style.font.family
             font.pixelSize: Style.font.caption - 1
             font.bold: true
-            color: Color.mutedForeground
+            color: Color.muted
           }
 
           RowLayout {
