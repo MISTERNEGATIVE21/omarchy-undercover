@@ -6,6 +6,17 @@
 # omarchy:summary=Core transactional engine and utility functions for Omarchy Undercover
 # omarchy:args=[internal-library]
 
+if [[ -z "${SCRIPT_DIR:-}" || ! -f "${SCRIPT_DIR}/common.sh" ]]; then
+    _C_SRC="${BASH_SOURCE[0]}"
+    while [ -h "$_C_SRC" ]; do
+        _C_DIR="$(cd -P "$(dirname "$_C_SRC")" && pwd)"
+        _C_SRC="$(readlink "$_C_SRC")"
+        [[ $_C_SRC != /* ]] && _C_SRC="$_C_DIR/$_C_SRC"
+    done
+    SCRIPT_DIR="$(cd -P "$(dirname "$_C_SRC")" && pwd)"
+    unset _C_SRC _C_DIR
+fi
+
 # Standard output helpers
 msg() {
     echo -e "\e[32m✔\e[0m  $1"
@@ -241,7 +252,18 @@ backup_config_dir() {
 
     mkdir -p "$backup_target_dir"
     if [[ -d "$source_dir" ]]; then
-        cp -a "$source_dir" "$backup_target_dir/$dir_name"
+        if [[ "$backup_target_dir" == "$source_dir"* ]]; then
+            mkdir -p "$backup_target_dir/$dir_name"
+            for item in "$source_dir"/*; do
+                local base
+                base="$(basename "$item")"
+                if [[ "$base" != "plugins" && "$base" != "backups" ]]; then
+                    cp -a "$item" "$backup_target_dir/$dir_name/" 2>/dev/null || true
+                fi
+            done
+        else
+            cp -a "$source_dir" "$backup_target_dir/$dir_name"
+        fi
     else
         touch "$backup_target_dir/.absent_$dir_name"
     fi
@@ -359,39 +381,94 @@ write_setting() {
 }
 
 # ---------------------------------------------------------------------------
-# Hyprland Lua integration (Windows mode module)
+# Hyprland integration (Omarchy toggle and Lua modules)
 # ---------------------------------------------------------------------------
-WINDOWS_MARKER_START="-- >>> Omarchy Undercover Windows Mode <<<"
-WINDOWS_MARKER_END="-- <<< Omarchy Undercover Windows Mode >>>"
 
-enable_windows_hyprland() {
-    local hypr_lua="$HOME/.config/hypr/hyprland.lua"
-    local windows_lua="$HOME/.config/hypr/windows-mode.lua"
-    local src_lua="${CONFIG_DIR:-$HOME/.config/omarchy-undercover}/hypr/windows-mode.lua"
+enable_undercover_hyprland() {
+    local mode="${1:-windows}"
+    local toggles_dir="$HOME/.local/state/omarchy/toggles/hypr"
+    local plugin_root=""
 
-    mkdir -p "$HOME/.config/hypr"
-    if [[ ! -f "$src_lua" ]]; then
-        src_lua="${SCRIPT_DIR:-.}/../configs/hypr/windows-mode.lua"
+    if [[ -f "${SCRIPT_DIR}/../manifest.json" ]]; then
+        plugin_root="$(cd "${SCRIPT_DIR}/.." && pwd)"
+    elif [[ -d "$HOME/.config/omarchy/plugins/omarchy-undercover" ]]; then
+        plugin_root="$HOME/.config/omarchy/plugins/omarchy-undercover"
+    elif [[ -d "$HOME/.config/omarchy/plugins/undercover" ]]; then
+        plugin_root="$HOME/.config/omarchy/plugins/undercover"
+    elif [[ -d "$HOME/.config/omarchy-undercover" ]]; then
+        plugin_root="$HOME/.config/omarchy-undercover"
     fi
-    if [[ -f "$src_lua" ]]; then
-        cp "$src_lua" "$windows_lua"
-        chmod 644 "$windows_lua"
+
+    mkdir -p "$toggles_dir" "$HOME/.config/hypr" "$HOME/.local/bin"
+
+    # Deploy undercover.lua to Omarchy dynamic toggles
+    local src_toggle=""
+    if [[ -f "$plugin_root/configs/hypr/undercover.lua" ]]; then
+        src_toggle="$plugin_root/configs/hypr/undercover.lua"
+    elif [[ -f "${SCRIPT_DIR}/../configs/hypr/undercover.lua" ]]; then
+        src_toggle="${SCRIPT_DIR}/../configs/hypr/undercover.lua"
+    fi
+    if [[ -n "$src_toggle" ]]; then
+        cp -f "$src_toggle" "$toggles_dir/undercover.lua"
+        chmod 644 "$toggles_dir/undercover.lua"
     fi
 
-    touch "$hypr_lua"
-    if ! grep -qF -- "$WINDOWS_MARKER_START" "$hypr_lua"; then
-        printf '\n-- %s\nrequire("hypr.windows-mode")\n-- %s\n' \
-            "$WINDOWS_MARKER_START" "$WINDOWS_MARKER_END" >> "$hypr_lua"
-        msg "Registered windows-mode.lua in Hyprland (Lua config)."
+    # Deploy windows-mode.lua and mac-mode.lua to ~/.config/hypr/ for compatibility
+    local src_win="${plugin_root}/configs/hypr/windows-mode.lua"
+    [[ ! -f "$src_win" ]] && src_win="${SCRIPT_DIR:-.}/../configs/hypr/windows-mode.lua"
+    if [[ -f "$src_win" ]]; then
+        cp -f "$src_win" "$HOME/.config/hypr/windows-mode.lua"
+        chmod 644 "$HOME/.config/hypr/windows-mode.lua"
+    fi
+
+    local src_mac="${plugin_root}/configs/hypr/mac-mode.lua"
+    [[ ! -f "$src_mac" ]] && src_mac="${SCRIPT_DIR:-.}/../configs/hypr/mac-mode.lua"
+    if [[ -f "$src_mac" ]]; then
+        cp -f "$src_mac" "$HOME/.config/hypr/mac-mode.lua"
+        chmod 644 "$HOME/.config/hypr/mac-mode.lua"
+    fi
+
+    # Ensure scripts directory is symlinked to ~/.local/bin if not in PATH
+    local scripts_dir="${plugin_root}/scripts"
+    [[ ! -d "$scripts_dir" ]] && scripts_dir="${SCRIPT_DIR}"
+    if [[ -d "$scripts_dir" ]]; then
+        for s in "$scripts_dir"/omarchy-*; do
+            if [[ -f "$s" ]]; then
+                local b
+                b="$(basename "$s")"
+                ln -sf "$s" "$HOME/.local/bin/$b" 2>/dev/null || true
+            fi
+        done
+        if [[ -f "$scripts_dir/common.sh" ]]; then
+            ln -sf "$scripts_dir/common.sh" "$HOME/.local/bin/common.sh" 2>/dev/null || true
+        fi
+    fi
+
+    # Immediately activate bindings via hyprctl eval and reload
+    if command_exists hyprctl; then
+        if [[ "$mode" == "windows" || "$mode" == "win11" ]] && [[ -f "$HOME/.config/hypr/windows-mode.lua" ]]; then
+            hyprctl eval "dofile(\"$HOME/.config/hypr/windows-mode.lua\")" >/dev/null 2>&1 || true
+        elif [[ "$mode" == "mac" || "$mode" == "ios" ]] && [[ -f "$HOME/.config/hypr/mac-mode.lua" ]]; then
+            hyprctl eval "dofile(\"$HOME/.config/hypr/mac-mode.lua\")" >/dev/null 2>&1 || true
+        fi
+        hyprctl reload >/dev/null 2>&1 || true
     fi
 }
 
-disable_windows_hyprland() {
-    local hypr_lua="$HOME/.config/hypr/hyprland.lua"
-
-    if [[ -f "$hypr_lua" ]]; then
-        sed -i "/^-- ${WINDOWS_MARKER_START}$/,/^-- ${WINDOWS_MARKER_END}$/d" "$hypr_lua"
-        sed -i '/^$/N;/^\n$/D' "$hypr_lua" 2>/dev/null || true
+disable_undercover_hyprland() {
+    rm -f "$HOME/.local/state/omarchy/toggles/hypr/undercover.lua" \
+          "$HOME/.local/state/omarchy/toggles/hypr/undercover.conf" \
+          "$HOME/.config/hypr/windows-mode.lua" \
+          "$HOME/.config/hypr/mac-mode.lua" 2>/dev/null || true
+    if command_exists hyprctl; then
+        hyprctl reload >/dev/null 2>&1 || true
     fi
-    rm -f "$HOME/.config/hypr/windows-mode.lua"
+}
+
+enable_windows_hyprland() {
+    enable_undercover_hyprland "windows"
+}
+
+disable_windows_hyprland() {
+    disable_undercover_hyprland
 }

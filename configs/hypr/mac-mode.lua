@@ -34,6 +34,34 @@ end
 
 if mode ~= "mac" and mode ~= "ios" then return end
 
+-- ---------------------------------------------------------------------------
+-- Script resolver: ensures commands resolve to plugin scripts if not in PATH
+-- ---------------------------------------------------------------------------
+local function find_script(name)
+  local dirs = {
+    home .. "/.config/omarchy/plugins/omarchy-undercover/scripts",
+    home .. "/.config/omarchy/plugins/undercover/scripts",
+    home .. "/.config/omarchy-undercover/scripts",
+    "/usr/share/omarchy-undercover/scripts",
+  }
+  for _, dir in ipairs(dirs) do
+    local path = dir .. "/" .. name
+    local f = io.open(path, "r")
+    if f then
+      f:close()
+      return path
+    end
+  end
+  return name
+end
+
+local function exec_cmd(cmd)
+  local resolved = cmd:gsub("([%w_-]*omarchy%-[%w_-]+)", function(name)
+    return find_script(name)
+  end)
+  return hl.dsp.exec_cmd(resolved)
+end
+
 hl.config({
   general = {
     gaps_in = 6,
@@ -105,32 +133,32 @@ hl.animation({ leaf = "layersOut", enabled = true, speed = 3, bezier = "macEase"
 
 -- System & Spotlight Keybindings
 hl.unbind("SUPER + SPACE")
-hl.bind("SUPER + SPACE", hl.dsp.exec_cmd("rofi -show drun -theme ~/.config/rofi/mac.rasi"), { description = "macOS Spotlight Search" })
+hl.bind("SUPER + SPACE", exec_cmd("rofi -show drun -theme ~/.config/rofi/mac.rasi"), { description = "macOS Spotlight Search" })
 hl.unbind("SUPER + TAB")
-hl.bind("SUPER + TAB", hl.dsp.exec_cmd("rofi -show window -theme ~/.config/rofi/mac.rasi"), { description = "macOS Mission Control" })
-hl.bind("SUPER + M", hl.dsp.exec_cmd("omarchy-undercover-minimize"), { description = "Minimize window" })
-hl.bind("SUPER + N", hl.dsp.exec_cmd("omarchy-mac-widgets"), { description = "macOS Notification Center & Widgets" })
-hl.bind("SUPER + D", hl.dsp.exec_cmd("omarchy-undercover-show-desktop"), { description = "Show desktop" })
-hl.bind("SUPER + B", hl.dsp.exec_cmd("omarchy-undercover-toggle-bar"), { description = "Toggle Dock/Taskbar Visibility" })
-hl.bind("SUPER + ALT + B", hl.dsp.exec_cmd("omarchy-undercover-autohide --toggle"), { description = "Toggle Edge Auto-Hide Daemon" })
-hl.bind("SUPER + ALT + U", hl.dsp.exec_cmd("omarchy-undercover --toggle"), { description = "Toggle Undercover Mode" })
+hl.bind("SUPER + TAB", exec_cmd("rofi -show window -theme ~/.config/rofi/mac.rasi"), { description = "macOS Mission Control" })
+hl.bind("SUPER + M", exec_cmd("omarchy-undercover-minimize"), { description = "Minimize window" })
+hl.bind("SUPER + N", exec_cmd("omarchy-mac-widgets"), { description = "macOS Notification Center & Widgets" })
+hl.bind("SUPER + D", exec_cmd("omarchy-undercover-show-desktop"), { description = "Show desktop" })
+hl.bind("SUPER + B", exec_cmd("omarchy-undercover-toggle-bar"), { description = "Toggle Dock/Taskbar Visibility" })
+hl.bind("SUPER + ALT + B", exec_cmd("omarchy-undercover-autohide --toggle"), { description = "Toggle Edge Auto-Hide Daemon" })
+hl.bind("SUPER + ALT + U", exec_cmd("omarchy-undercover --toggle"), { description = "Toggle Undercover Mode" })
 
 -- macOS Sequoia Native Window Tiling Shortcuts (Fn / Ctrl + Super + Arrows)
-hl.bind("SUPER + CTRL + LEFT", hl.dsp.exec_cmd("omarchy-undercover-snap left"), { description = "macOS Tile Left Half" })
-hl.bind("SUPER + CTRL + RIGHT", hl.dsp.exec_cmd("omarchy-undercover-snap right"), { description = "macOS Tile Right Half" })
-hl.bind("SUPER + CTRL + UP", hl.dsp.exec_cmd("omarchy-undercover-snap up"), { description = "macOS Maximize / Zoom Window" })
-hl.bind("SUPER + CTRL + DOWN", hl.dsp.exec_cmd("omarchy-undercover-snap down"), { description = "macOS Restore Window" })
-hl.bind("SUPER + CTRL + RETURN", hl.dsp.exec_cmd("omarchy-undercover-snap fullscreen"), { description = "macOS Full Screen Toggle" })
-hl.bind("SUPER + CTRL + C", hl.dsp.exec_cmd("omarchy-undercover-snap center"), { description = "macOS Center Window" })
-hl.bind("SUPER + CTRL + 1", hl.dsp.exec_cmd("omarchy-undercover-snap top-left"), { description = "macOS Tile Top-Left" })
-hl.bind("SUPER + CTRL + 2", hl.dsp.exec_cmd("omarchy-undercover-snap top-right"), { description = "macOS Tile Top-Right" })
-hl.bind("SUPER + CTRL + 3", hl.dsp.exec_cmd("omarchy-undercover-snap bottom-left"), { description = "macOS Tile Bottom-Left" })
-hl.bind("SUPER + CTRL + 4", hl.dsp.exec_cmd("omarchy-undercover-snap bottom-right"), { description = "macOS Tile Bottom-Right" })
-hl.bind("SUPER + CTRL + SPACE", hl.dsp.exec_cmd("omarchy-undercover-snap menu"), { description = "macOS Window Tiling Menu" })
+hl.bind("SUPER + CTRL + LEFT", exec_cmd("omarchy-undercover-snap left"), { description = "macOS Tile Left Half" })
+hl.bind("SUPER + CTRL + RIGHT", exec_cmd("omarchy-undercover-snap right"), { description = "macOS Tile Right Half" })
+hl.bind("SUPER + CTRL + UP", exec_cmd("omarchy-undercover-snap up"), { description = "macOS Maximize / Zoom Window" })
+hl.bind("SUPER + CTRL + DOWN", exec_cmd("omarchy-undercover-snap down"), { description = "macOS Restore Window" })
+hl.bind("SUPER + CTRL + RETURN", exec_cmd("omarchy-undercover-snap fullscreen"), { description = "macOS Full Screen Toggle" })
+hl.bind("SUPER + CTRL + C", exec_cmd("omarchy-undercover-snap center"), { description = "macOS Center Window" })
+hl.bind("SUPER + CTRL + 1", exec_cmd("omarchy-undercover-snap top-left"), { description = "macOS Tile Top-Left" })
+hl.bind("SUPER + CTRL + 2", exec_cmd("omarchy-undercover-snap top-right"), { description = "macOS Tile Top-Right" })
+hl.bind("SUPER + CTRL + 3", exec_cmd("omarchy-undercover-snap bottom-left"), { description = "macOS Tile Bottom-Left" })
+hl.bind("SUPER + CTRL + 4", exec_cmd("omarchy-undercover-snap bottom-right"), { description = "macOS Tile Bottom-Right" })
+hl.bind("SUPER + CTRL + SPACE", exec_cmd("omarchy-undercover-snap menu"), { description = "macOS Window Tiling Menu" })
 
 -- Smooth Mouse Window Interactions
-hl.bind("SUPER + mouse:272", "Move window", hl.dsp.window.drag(), { mouse = true })
-hl.bind("SUPER + mouse:273", "Resize window", hl.dsp.window.resize(), { mouse = true })
+hl.bind("SUPER + mouse:272", hl.dsp.window.drag(), { description = "Move window", mouse = true })
+hl.bind("SUPER + mouse:273", hl.dsp.window.resize(), { description = "Resize window", mouse = true })
 
 -- Compositor frosted glass blur layer rules for Quickshell & legacy surfaces
 hl.layer_rule({ match = { namespace = "omarchy-bar" }, blur = true, ignore_alpha = true })

@@ -46,9 +46,47 @@ local is_trans      = get_setting("WIN11_TRANSPARENCY", "true") == "true"
 local cursor_size   = tonumber(get_setting("CURSOR_SIZE", "24")) or 24
 local mode          = get_setting("MODE", "windows")
 
+-- Check state file first (highest precedence)
+local state_path = home .. "/.config/omarchy/plugins/omarchy-undercover/state"
+local state_file = io.open(state_path, "r") or io.open(home .. "/.config/omarchy/plugins/undercover/state", "r") or io.open(home .. "/.config/omarchy-undercover/state", "r")
+if state_file then
+  local s = state_file:read("*l")
+  state_file:close()
+  if s and (s:find("win") or s:find("windows")) then mode = "windows" end
+  if s and (s:find("mac") or s:find("ios") or s:find("omarchy")) then mode = s end
+end
+
 -- Bail out gracefully if the user turned windows mode off but left the file.
-if mode ~= "windows" then
+if mode ~= "windows" and mode ~= "w11" and mode ~= "win11" then
   return
+end
+
+-- ---------------------------------------------------------------------------
+-- Script resolver: ensures commands resolve to plugin scripts if not in PATH
+-- ---------------------------------------------------------------------------
+local function find_script(name)
+  local dirs = {
+    home .. "/.config/omarchy/plugins/omarchy-undercover/scripts",
+    home .. "/.config/omarchy/plugins/undercover/scripts",
+    home .. "/.config/omarchy-undercover/scripts",
+    "/usr/share/omarchy-undercover/scripts",
+  }
+  for _, dir in ipairs(dirs) do
+    local path = dir .. "/" .. name
+    local f = io.open(path, "r")
+    if f then
+      f:close()
+      return path
+    end
+  end
+  return name
+end
+
+local function exec_cmd(cmd)
+  local resolved = cmd:gsub("([%w_-]*omarchy%-[%w_-]+)", function(name)
+    return find_script(name)
+  end)
+  return hl.dsp.exec_cmd(resolved)
 end
 
 -- ---------------------------------------------------------------------------
@@ -65,7 +103,7 @@ hl.env("QT_STYLE_OVERRIDE", "kvantum")
 -- ---------------------------------------------------------------------------
 -- Windows 11 wallpaper persistence (survives login/relog)
 -- ---------------------------------------------------------------------------
-o.exec_on_start("omarchy-undercover-wallpaper")
+o.exec_on_start(find_script("omarchy-undercover-wallpaper"))
 
 -- ---------------------------------------------------------------------------
 -- Fluent visuals
@@ -197,88 +235,88 @@ hl.window_rule({
 -- ---------------------------------------------------------------------------
 
 -- Start menu (press-and-release the Win key opens the Start menu)
-hl.bind("SUPER + SUPER_L", hl.dsp.exec_cmd("omarchy-undercover-launcher"), { release = true, description = "Start menu" })
+hl.bind("SUPER + SUPER_L", exec_cmd("omarchy-undercover-launcher"), { release = true, description = "Start menu" })
 
 -- Win + Space: also open the Start menu (used to be the Omarchy launcher)
 hl.unbind("SUPER + SPACE")
-hl.bind("SUPER + SPACE", hl.dsp.exec_cmd("omarchy-undercover-launcher"), { description = "Start menu" })
+hl.bind("SUPER + SPACE", exec_cmd("omarchy-undercover-launcher"), { description = "Start menu" })
 
 -- Win + Tab: Task View (window switcher)
 hl.unbind("SUPER + TAB")
-hl.bind("SUPER + TAB", hl.dsp.exec_cmd("rofi -show window -theme ~/.config/rofi/windows11.rasi"), { description = "Task view" })
+hl.bind("SUPER + TAB", exec_cmd("rofi -show window -theme ~/.config/rofi/windows11.rasi"), { description = "Task view" })
 
 -- Win + D: Show desktop
-hl.bind("SUPER + D", hl.dsp.exec_cmd("omarchy-undercover-show-desktop"), { description = "Show desktop" })
+hl.bind("SUPER + D", exec_cmd("omarchy-undercover-show-desktop"), { description = "Show desktop" })
 
 -- Win + E: File Explorer - opens Flea File Manager with Windows 11 preset
-hl.bind("SUPER + E", hl.dsp.exec_cmd("omarchy-undercover-filemanager"), { description = "File explorer" })
+hl.bind("SUPER + E", exec_cmd("omarchy-undercover-filemanager"), { description = "File explorer" })
 
 -- Win + I: Settings
-hl.bind("SUPER + I", hl.dsp.exec_cmd("uwsm-app -- omarchy-undercover-settings"), { description = "Settings" })
+hl.bind("SUPER + I", exec_cmd("uwsm-app -- omarchy-undercover-settings"), { description = "Settings" })
 
 -- Win + W: Windows 11 Widgets Board
-hl.bind("SUPER + W", hl.dsp.exec_cmd("omarchy-win11-widgets"), { description = "Windows 11 Widgets Board" })
+hl.bind("SUPER + W", exec_cmd("omarchy-win11-widgets"), { description = "Windows 11 Widgets Board" })
 
 -- Win + A: Windows 11 Quick Settings & Action Center
-hl.bind("SUPER + A", hl.dsp.exec_cmd("omarchy-win11-notifications"), { description = "Quick Settings & Action Center" })
+hl.bind("SUPER + A", exec_cmd("omarchy-win11-notifications"), { description = "Quick Settings & Action Center" })
 
 -- Win + N: Windows 11 Notification Center & Calendar Flyout
-hl.bind("SUPER + N", hl.dsp.exec_cmd("omarchy-win11-notifications"), { description = "Notification Center & Calendar" })
+hl.bind("SUPER + N", exec_cmd("omarchy-win11-notifications"), { description = "Notification Center & Calendar" })
 
 -- Win + C: Copilot AI Assistant
-hl.bind("SUPER + C", hl.dsp.exec_cmd("xdg-terminal-exec"), { description = "Copilot AI Assistant" })
+hl.bind("SUPER + C", exec_cmd("xdg-terminal-exec"), { description = "Copilot AI Assistant" })
 
 -- Win + R: Run dialog
-hl.bind("SUPER + R", hl.dsp.exec_cmd("rofi -show run -theme ~/.config/rofi/windows11.rasi"), { description = "Run dialog" })
+hl.bind("SUPER + R", exec_cmd("rofi -show run -theme ~/.config/rofi/windows11.rasi"), { description = "Run dialog" })
 
 -- Win + M: Minimize active window
-hl.bind("SUPER + M", hl.dsp.exec_cmd("omarchy-undercover-minimize"), { description = "Minimize window" })
+hl.bind("SUPER + M", exec_cmd("omarchy-undercover-minimize"), { description = "Minimize window" })
 
 -- Win + L: Lock screen (was "toggle workspace layout")
 hl.unbind("SUPER + L")
-hl.bind("SUPER + L", hl.dsp.exec_cmd("hyprlock || swaylock || loginctl lock-session"), { description = "Lock screen", locked = true })
+hl.bind("SUPER + L", exec_cmd("hyprlock || swaylock || loginctl lock-session"), { description = "Lock screen", locked = true })
 
 -- Win + V: Clipboard history
 hl.unbind("SUPER + V")
-hl.bind("SUPER + V", hl.dsp.exec_cmd("omarchy-launch-walker -m clipboard"), { description = "Clipboard history" })
+hl.bind("SUPER + V", exec_cmd("omarchy-launch-walker -m clipboard"), { description = "Clipboard history" })
 
 -- Win + . : Emoji / symbols picker
-hl.bind("SUPER + PERIOD", hl.dsp.exec_cmd("omarchy-launch-walker -m symbols"), { description = "Emoji picker" })
+hl.bind("SUPER + PERIOD", exec_cmd("omarchy-launch-walker -m symbols"), { description = "Emoji picker" })
 
 -- Win + Shift + S: Region screenshot (copied to clipboard)
-hl.bind("SUPER + SHIFT + S", hl.dsp.exec_cmd("omarchy capture screenshot region copy"), { description = "Region screenshot" })
+hl.bind("SUPER + SHIFT + S", exec_cmd("omarchy capture screenshot region copy"), { description = "Region screenshot" })
 
 -- Alt + F4: Close window
 hl.bind("ALT + F4", hl.dsp.window.close(), { description = "Close window" })
 
 -- Win + Q: Quick assist (terminal)
-hl.bind("SUPER + Q", hl.dsp.exec_cmd("xdg-terminal-exec"), { description = "Terminal (quick)" })
+hl.bind("SUPER + Q", exec_cmd("xdg-terminal-exec"), { description = "Terminal (quick)" })
 
 -- Win + B: Toggle Taskbar Visibility (Instant hide / reveal for Quickshell & Waybar)
-hl.bind("SUPER + B", hl.dsp.exec_cmd("omarchy-undercover-toggle-bar"), { description = "Toggle taskbar visibility" })
+hl.bind("SUPER + B", exec_cmd("omarchy-undercover-toggle-bar"), { description = "Toggle taskbar visibility" })
 
 -- Win + Alt + B: Toggle Intelligent Edge Auto-Hide Daemon
-hl.bind("SUPER + ALT + B", hl.dsp.exec_cmd("omarchy-undercover-autohide --toggle"), { description = "Toggle edge auto-hide" })
+hl.bind("SUPER + ALT + B", exec_cmd("omarchy-undercover-autohide --toggle"), { description = "Toggle edge auto-hide" })
 
 -- Super + Alt + U: Toggle Undercover Mode
-hl.bind("SUPER + ALT + U", hl.dsp.exec_cmd("omarchy-undercover --toggle"), { description = "Toggle undercover mode" })
+hl.bind("SUPER + ALT + U", exec_cmd("omarchy-undercover --toggle"), { description = "Toggle undercover mode" })
 
 -- Windows 11 Snap Assist & Snap Layouts Keybindings
-hl.bind("SUPER + LEFT", hl.dsp.exec_cmd("omarchy-undercover-snap left"), { description = "Snap Window Left (50%)" })
-hl.bind("SUPER + RIGHT", hl.dsp.exec_cmd("omarchy-undercover-snap right"), { description = "Snap Window Right (50%)" })
-hl.bind("SUPER + UP", hl.dsp.exec_cmd("omarchy-undercover-snap up"), { description = "Maximize / Zoom Active Window" })
-hl.bind("SUPER + DOWN", hl.dsp.exec_cmd("omarchy-undercover-snap down"), { description = "Restore / Minimize Active Window" })
-hl.bind("SUPER + Z", hl.dsp.exec_cmd("omarchy-undercover-snap menu"), { description = "Windows 11 Snap Layouts Menu" })
-hl.bind("SUPER + ALT + LEFT", hl.dsp.exec_cmd("omarchy-undercover-snap top-left"), { description = "Snap Top-Left Quadrant" })
-hl.bind("SUPER + ALT + RIGHT", hl.dsp.exec_cmd("omarchy-undercover-snap top-right"), { description = "Snap Top-Right Quadrant" })
-hl.bind("SUPER + ALT + DOWN", hl.dsp.exec_cmd("omarchy-undercover-snap bottom-left"), { description = "Snap Bottom-Left Quadrant" })
-hl.bind("SUPER + ALT + UP", hl.dsp.exec_cmd("omarchy-undercover-snap bottom-right"), { description = "Snap Bottom-Right Quadrant" })
+hl.bind("SUPER + LEFT", exec_cmd("omarchy-undercover-snap left"), { description = "Snap Window Left (50%)" })
+hl.bind("SUPER + RIGHT", exec_cmd("omarchy-undercover-snap right"), { description = "Snap Window Right (50%)" })
+hl.bind("SUPER + UP", exec_cmd("omarchy-undercover-snap up"), { description = "Maximize / Zoom Active Window" })
+hl.bind("SUPER + DOWN", exec_cmd("omarchy-undercover-snap down"), { description = "Restore / Minimize Active Window" })
+hl.bind("SUPER + Z", exec_cmd("omarchy-undercover-snap menu"), { description = "Windows 11 Snap Layouts Menu" })
+hl.bind("SUPER + ALT + LEFT", exec_cmd("omarchy-undercover-snap top-left"), { description = "Snap Top-Left Quadrant" })
+hl.bind("SUPER + ALT + RIGHT", exec_cmd("omarchy-undercover-snap top-right"), { description = "Snap Top-Right Quadrant" })
+hl.bind("SUPER + ALT + DOWN", exec_cmd("omarchy-undercover-snap bottom-left"), { description = "Snap Bottom-Left Quadrant" })
+hl.bind("SUPER + ALT + UP", exec_cmd("omarchy-undercover-snap bottom-right"), { description = "Snap Bottom-Right Quadrant" })
 hl.bind("SUPER + SHIFT + LEFT", hl.dsp.workspace.move({ monitor = "l" }), { description = "Move Window to Left Monitor" })
 hl.bind("SUPER + SHIFT + RIGHT", hl.dsp.workspace.move({ monitor = "r" }), { description = "Move Window to Right Monitor" })
 
 -- Smooth Mouse Window Interactions
-hl.bind("SUPER + mouse:272", "Move window", hl.dsp.window.drag(), { mouse = true })
-hl.bind("SUPER + mouse:273", "Resize window", hl.dsp.window.resize(), { mouse = true })
+hl.bind("SUPER + mouse:272", hl.dsp.window.drag(), { description = "Move window", mouse = true })
+hl.bind("SUPER + mouse:273", hl.dsp.window.resize(), { description = "Resize window", mouse = true })
 
 -- Compositor blur & mica styling for Quickshell surfaces and legacy components
 hl.layer_rule({ match = { namespace = "omarchy-bar" }, blur = true, ignore_alpha = true })

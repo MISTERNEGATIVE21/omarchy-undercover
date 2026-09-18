@@ -11,7 +11,15 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Resolve symlinks so SCRIPT_DIR points to the actual scripts directory
+_SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$_SOURCE" ]; do
+    _DIR="$(cd -P "$(dirname "$_SOURCE")" && pwd)"
+    _SOURCE="$(readlink "$_SOURCE")"
+    [[ $_SOURCE != /* ]] && _SOURCE="$_DIR/$_SOURCE"
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$_SOURCE")" && pwd)"
+unset _SOURCE _DIR
 
 # Official Omarchy plugin directory
 if [[ -f "${SCRIPT_DIR}/../manifest.json" ]]; then
@@ -40,6 +48,10 @@ mkdir -p "$BACKUP_DIR"
 # Source common.sh
 if [[ -f "$SCRIPT_DIR/common.sh" ]]; then
     source "$SCRIPT_DIR/common.sh"
+elif [[ -f "$PLUGIN_DIR/scripts/common.sh" ]]; then
+    source "$PLUGIN_DIR/scripts/common.sh"
+elif [[ -f "$HOME/.config/omarchy/plugins/omarchy-undercover/scripts/common.sh" ]]; then
+    source "$HOME/.config/omarchy/plugins/omarchy-undercover/scripts/common.sh"
 elif [[ -f "$HOME/.local/share/omarchy/bin/common.sh" ]]; then
     source "$HOME/.local/share/omarchy/bin/common.sh"
 elif [[ -f "$HOME/.local/bin/common.sh" ]]; then
@@ -440,7 +452,6 @@ backup_original_configs() {
     fi
 
     backup_config_dir "waybar" "$cur_backup"
-    backup_config_dir "omarchy" "$cur_backup"
     if [[ -f "$HOME/.config/omarchy/shell.json" ]]; then
         if ! grep -q "undercover\." "$HOME/.config/omarchy/shell.json"; then
             mkdir -p "$cur_backup/omarchy"
@@ -658,6 +669,7 @@ EOF
     fi
 
     omarchy_reload_bar
+    enable_undercover_hyprland "mac" 2>/dev/null || true
     omarchy_reload_hyprland
 
     local enable_dock
@@ -799,6 +811,7 @@ EOF
     fi
 
     omarchy_reload_bar
+    enable_undercover_hyprland "windows" 2>/dev/null || true
     omarchy_reload_hyprland
     msg "Switched to Windows 11 ($variant) — done!"
 }
@@ -822,7 +835,7 @@ switch_to_omarchy() {
     pkill -f "quickshell.*win11-start" 2>/dev/null || true
     killall swaybg 2>/dev/null || true
     pkill -x swaybg 2>/dev/null || true
-    disable_windows_hyprland 2>/dev/null || true
+    disable_undercover_hyprland 2>/dev/null || true
     rm -f "$HOME/.config/gtk-4.0/gtk.css" "$HOME/.config/gtk-3.0/gtk.css" 2>/dev/null || true
 
     # Clear bar-off toggle to ensure Quickshell is not hidden globally
@@ -892,7 +905,7 @@ restore_baseline() {
     pkill -f "quickshell.*win11-start" 2>/dev/null || true
     killall swaybg 2>/dev/null || true
     pkill -x swaybg 2>/dev/null || true
-    disable_windows_hyprland
+    disable_undercover_hyprland 2>/dev/null || true
 
     # Clear bar-off toggle
     rm -f "$HOME/.local/state/omarchy/toggles/bar-off" 2>/dev/null || true
@@ -1179,6 +1192,10 @@ case "$1" in
         ;;
     --restore)
         restore_baseline
+        ;;
+    --sync-hyprland)
+        cur_mode=$(read_setting "MODE" "windows")
+        enable_undercover_hyprland "$cur_mode"
         ;;
     --verify)
         verify_integrity

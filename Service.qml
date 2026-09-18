@@ -31,6 +31,15 @@ Item {
     Quickshell.execDetached([soundScript, soundFile])
   }
 
+  function ensureHyprlandToggle() {
+    var undercoverScript = root.pluginDir + "/scripts/omarchy-undercover";
+    Quickshell.execDetached([undercoverScript, "--sync-hyprland"]);
+  }
+
+  Component.onCompleted: {
+    root.ensureHyprlandToggle()
+  }
+
   FileView {
     id: stateFile
     path: root.statePath
@@ -40,6 +49,7 @@ Item {
       if (s) {
         root.previousState = root.currentState
         root.currentState = s
+        root.ensureHyprlandToggle()
       }
     }
     onFileChanged: {
@@ -49,6 +59,7 @@ Item {
         root.previousState = root.currentState
         root.currentState = s
         root.playSwitchSound(s)
+        root.ensureHyprlandToggle()
       }
     }
   }
