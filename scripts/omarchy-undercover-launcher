@@ -17,10 +17,26 @@ if pkill -x rofi 2>/dev/null; then
 fi
 
 # 2. Check current mode
-STATE_FILE="$HOME/.config/omarchy-undercover/state"
-MODE="mac-dark"
+STATE_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/undercover/state"
+[[ ! -f "$STATE_FILE" && -f "$HOME/.config/omarchy-undercover/state" ]] && STATE_FILE="$HOME/.config/omarchy-undercover/state"
+
+MODE="omarchy"
 if [[ -f "$STATE_FILE" ]]; then
-    MODE=$(cat "$STATE_FILE")
+    MODE=$(cat "$STATE_FILE" 2>/dev/null | tr -d '[:space:]' || echo "omarchy")
+fi
+
+if [[ "$MODE" == "omarchy" || "$MODE" == "default" ]]; then
+    if command -v omarchy-menu &>/dev/null; then
+        exec omarchy-menu
+    elif command -v omarchy-launch &>/dev/null; then
+        exec omarchy-launch
+    elif command -v walker &>/dev/null; then
+        exec walker
+    elif command -v rofi &>/dev/null; then
+        exec rofi -show drun
+    else
+        exit 0
+    fi
 fi
 
 if [[ "$MODE" == *"win11"* ]] || [[ "$MODE" == *"windows"* ]]; then

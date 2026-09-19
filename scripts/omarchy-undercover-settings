@@ -228,10 +228,56 @@ def detect_installed_browsers():
 def read_state():
     if STATE_FILE.exists():
         try:
-            return STATE_FILE.read_text().strip()
+            val = STATE_FILE.read_text().strip()
+            if val:
+                return val
         except OSError:
             pass
-    return "mac-dark"
+    cfg_state = CONFIG_DIR / "state"
+    if cfg_state.exists():
+        try:
+            val = cfg_state.read_text().strip()
+            if val:
+                return val
+        except OSError:
+            pass
+    mode = read_setting("MODE", "omarchy")
+    return mode if mode else "omarchy"
+
+def get_previous_theme_name():
+    # 1. State or config previous_theme
+    for p in [STATE_DIR / "previous_theme", CONFIG_DIR / "previous_theme"]:
+        if p.exists():
+            try:
+                val = p.read_text().strip()
+                if val and "windows" not in val.lower() and "win11" not in val.lower() and "mac" not in val.lower() and "undercover" not in val.lower():
+                    return val
+            except OSError:
+                pass
+    st_val = read_setting("PREVIOUS_THEME", "")
+    if st_val and "windows" not in st_val.lower() and "win11" not in st_val.lower() and "mac" not in st_val.lower() and "undercover" not in st_val.lower():
+        return st_val
+    # 2. Check baseline
+    baseline_file = STATE_DIR / "baseline"
+    if baseline_file.exists():
+        try:
+            base_dir = Path(baseline_file.read_text().strip())
+            t_file = base_dir / "theme.name"
+            if t_file.exists():
+                val = t_file.read_text().strip()
+                if val and "windows" not in val.lower() and "win11" not in val.lower() and "mac" not in val.lower() and "undercover" not in val.lower():
+                    return val
+        except OSError:
+            pass
+    # 3. Omarchy active or default
+    try:
+        res = subprocess.run(["omarchy", "theme", "current"], capture_output=True, text=True, timeout=2)
+        cur = res.stdout.strip()
+        if cur and "Unknown" not in cur and "windows" not in cur.lower() and "win11" not in cur.lower() and "mac" not in cur.lower() and "undercover" not in cur.lower():
+            return cur
+    except Exception:
+        pass
+    return "Default Omarchy"
 
 def read_setting(key, default=""):
     if SETTINGS_FILE.exists():
@@ -523,7 +569,10 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         cli = find_cli()
         try:
             subprocess.run([cli, flag], check=True)
-            self.show_toast(f"Switched to {name} successfully!")
+            if flag in ["--disable", "--omarchy", "--restore"]:
+                self.show_toast(f"Restored original Omarchy desktop ({get_previous_theme_name()}) successfully!")
+            else:
+                self.show_toast(f"Switched to {name} successfully!")
             self.refresh_all_states()
         except Exception as e:
             self.show_toast(f"Error applying preset: {e}")
@@ -540,12 +589,13 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
             description="Select an environment to transform taskbars, window decorations, icons, and fonts."
         )
 
+        prev_theme = get_previous_theme_name()
         presets = [
             ("mac-dark", "-mac", "🍏 Apple macOS Sequoia (Dark)", "Frosted dark menu bar, dynamic auto-sizing dock, traffic lights & SF Pro fonts."),
             ("mac-light", "-mac-light", "☀️ Apple macOS Sequoia (Light)", "Solar light frosted glass theme with high-vibrancy dock."),
             ("win11-dark", "-w11", "🪟 Windows 11 Fluent (Dark)", "Centered Mica acrylic taskbar, Start menu, Action Center & Segoe UI fonts."),
             ("win11-light", "-w11-light", "🌅 Windows 11 Fluent (Light)", "Fluent Light taskbar, Bloom light background & bright Mica accents."),
-            ("omarchy", "--disable", "🐧 Original Omarchy Desktop", "Restore default Omarchy status bar layout, GTK styling, and original desktop configs."),
+            ("omarchy", "--disable", "🐧 Original Omarchy Desktop", f"Restore default Omarchy status bar layout, GTK styling, and desktop theme (Theme: {prev_theme})."),
         ]
 
         curr_state = read_state()

@@ -131,6 +131,88 @@ detect_launcher() {
     fi
 }
 
+set_state() {
+    local val="$1"
+    mkdir -p "$STATE_DIR" "$CONFIG_DIR"
+    echo "$val" > "$STATE_FILE"
+    echo "$val" > "$CONFIG_DIR/state"
+}
+
+clear_state() {
+    rm -f "$STATE_FILE" "$CONFIG_DIR/state" 2>/dev/null || true
+}
+
+save_previous_desktop_state() {
+    mkdir -p "$STATE_DIR" "$CONFIG_DIR"
+
+    # 1. Query active Omarchy theme
+    local cur_theme=""
+    if command_exists omarchy; then
+        cur_theme=$(omarchy theme current 2>/dev/null || true)
+    fi
+    if [[ -z "$cur_theme" || "$cur_theme" == "Unknown" ]] && [[ -f "$HOME/.local/state/omarchy/current/theme.name" ]]; then
+        cur_theme=$(cat "$HOME/.local/state/omarchy/current/theme.name" 2>/dev/null | tr -d '\r\n')
+    fi
+    local cur_theme_lower
+    cur_theme_lower=$(echo "$cur_theme" | tr '[:upper:]' '[:lower:]')
+
+    # Only record if the active theme is a genuine user theme, NOT an undercover disguise
+    if [[ -n "$cur_theme" && "$cur_theme" != "Unknown" && \
+          "$cur_theme_lower" != *"windows"* && "$cur_theme_lower" != *"win11"* && \
+          "$cur_theme_lower" != *"macos"* && "$cur_theme_lower" != *"mac-"* && \
+          "$cur_theme_lower" != *"mac "* && "$cur_theme_lower" != *"undercover"* ]]; then
+        echo "$cur_theme" > "$STATE_DIR/previous_theme"
+        echo "$cur_theme" > "$CONFIG_DIR/previous_theme"
+        write_setting "PREVIOUS_THEME" "$cur_theme"
+    fi
+
+    # 2. GTK & Desktop Interface settings
+    if command_exists gsettings; then
+        local cur_gtk cur_icon cur_cursor cur_font cur_scheme cur_layout
+        cur_gtk=$(gsettings get org.gnome.desktop.interface gtk-theme 2>/dev/null | tr -d "'" || true)
+        cur_icon=$(gsettings get org.gnome.desktop.interface icon-theme 2>/dev/null | tr -d "'" || true)
+        cur_cursor=$(gsettings get org.gnome.desktop.interface cursor-theme 2>/dev/null | tr -d "'" || true)
+        cur_font=$(gsettings get org.gnome.desktop.interface font-name 2>/dev/null | tr -d "'" || true)
+        cur_scheme=$(gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null | tr -d "'" || true)
+        cur_layout=$(gsettings get org.gnome.desktop.wm.preferences button-layout 2>/dev/null | tr -d "'" || true)
+
+        if [[ -n "$cur_gtk" && "$cur_gtk" != *"Win11"* && "$cur_gtk" != *"WhiteSur"* ]]; then
+            echo "$cur_gtk" > "$STATE_DIR/previous_gtk_theme"
+            echo "$cur_gtk" > "$CONFIG_DIR/previous_gtk_theme"
+        fi
+        if [[ -n "$cur_icon" && "$cur_icon" != *"Fluent"* && "$cur_icon" != *"WhiteSur"* ]]; then
+            echo "$cur_icon" > "$STATE_DIR/previous_icon_theme"
+            echo "$cur_icon" > "$CONFIG_DIR/previous_icon_theme"
+        fi
+        if [[ -n "$cur_cursor" && "$cur_cursor" != *"Fluent"* && "$cur_cursor" != *"WhiteSur"* ]]; then
+            echo "$cur_cursor" > "$STATE_DIR/previous_cursor_theme"
+            echo "$cur_cursor" > "$CONFIG_DIR/previous_cursor_theme"
+        fi
+        if [[ -n "$cur_font" && "$cur_font" != *"Segoe UI"* && "$cur_font" != *"SF Pro"* ]]; then
+            echo "$cur_font" > "$STATE_DIR/previous_font"
+            echo "$cur_font" > "$CONFIG_DIR/previous_font"
+        fi
+        if [[ -n "$cur_scheme" ]]; then
+            echo "$cur_scheme" > "$STATE_DIR/previous_color_scheme"
+            echo "$cur_scheme" > "$CONFIG_DIR/previous_color_scheme"
+        fi
+        if [[ -n "$cur_layout" && "$cur_layout" != ":minimize,maximize,close" && "$cur_layout" != "close,minimize,maximize:" ]]; then
+            echo "$cur_layout" > "$STATE_DIR/previous_button_layout"
+            echo "$cur_layout" > "$CONFIG_DIR/previous_button_layout"
+        fi
+    fi
+
+    # 3. Active wallpaper symlink
+    if [[ -L "$HOME/.local/state/omarchy/current/background" ]]; then
+        local bg
+        bg=$(readlink -f "$HOME/.local/state/omarchy/current/background" 2>/dev/null || true)
+        if [[ -n "$bg" && -f "$bg" ]]; then
+            echo "$bg" > "$STATE_DIR/previous_background"
+            echo "$bg" > "$CONFIG_DIR/previous_background"
+        fi
+    fi
+}
+
 # Ensure a setting exists in settings.conf without overwriting user values
 ensure_setting() {
     local key="$1" default="$2"
@@ -478,8 +560,16 @@ backup_original_configs() {
     if command_exists omarchy; then
         local cur_theme
         cur_theme=$(omarchy theme current 2>/dev/null || true)
-        if [[ -n "$cur_theme" && "$cur_theme" != *"Undercover"* && "$cur_theme" != *"Windows"* && "$cur_theme" != *"windows"* && "$cur_theme" != *"Mac"* && "$cur_theme" != *"mac"* ]]; then
+        local cur_lower
+        cur_lower=$(echo "$cur_theme" | tr '[:upper:]' '[:lower:]')
+        if [[ -n "$cur_theme" && "$cur_theme" != "Unknown" && \
+              "$cur_lower" != *"undercover"* && "$cur_lower" != *"windows"* && \
+              "$cur_lower" != *"win11"* && "$cur_lower" != *"mac"* ]]; then
             echo "$cur_theme" > "$cur_backup/theme.name"
+        else
+            local fallback_t
+            fallback_t=$(omarchy theme list 2>/dev/null | grep -vEi 'windows|win11|macos|mac |mac-|undercover' | head -n 1 || true)
+            [[ -n "$fallback_t" ]] && echo "$fallback_t" > "$cur_backup/theme.name"
         fi
     fi
     backup_config_dir "rofi" "$cur_backup"
@@ -493,12 +583,25 @@ backup_original_configs() {
     # Capture gtk settings
     local gtk_file="$cur_backup/gtk_settings.conf"
     if command_exists gsettings; then
-        echo "GTK_THEME=$(gsettings get org.gnome.desktop.interface gtk-theme 2>/dev/null || echo '')" > "$gtk_file"
-        echo "ICON_THEME=$(gsettings get org.gnome.desktop.interface icon-theme 2>/dev/null || echo '')" >> "$gtk_file"
-        echo "CURSOR_THEME=$(gsettings get org.gnome.desktop.interface cursor-theme 2>/dev/null || echo '')" >> "$gtk_file"
-        echo "FONT_NAME=$(gsettings get org.gnome.desktop.interface font-name 2>/dev/null || echo '')" >> "$gtk_file"
-        echo "COLOR_SCHEME=$(gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null || echo '')" >> "$gtk_file"
-        echo "CURSOR_SIZE=$(gsettings get org.gnome.desktop.interface cursor-size 2>/dev/null || echo '')" >> "$gtk_file"
+        local b_gtk b_icon b_cur b_font b_scheme b_size
+        b_gtk=$(gsettings get org.gnome.desktop.interface gtk-theme 2>/dev/null | tr -d "'" || echo '')
+        b_icon=$(gsettings get org.gnome.desktop.interface icon-theme 2>/dev/null | tr -d "'" || echo '')
+        b_cur=$(gsettings get org.gnome.desktop.interface cursor-theme 2>/dev/null | tr -d "'" || echo '')
+        b_font=$(gsettings get org.gnome.desktop.interface font-name 2>/dev/null | tr -d "'" || echo '')
+        b_scheme=$(gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null | tr -d "'" || echo '')
+        b_size=$(gsettings get org.gnome.desktop.interface cursor-size 2>/dev/null | tr -d "'" || echo '24')
+
+        [[ "$b_gtk" == *"Win11"* || "$b_gtk" == *"WhiteSur"* ]] && b_gtk="Adwaita-dark"
+        [[ "$b_icon" == *"Fluent"* || "$b_icon" == *"WhiteSur"* ]] && b_icon="Papirus-Dark"
+        [[ "$b_cur" == *"Fluent"* || "$b_cur" == *"WhiteSur"* ]] && b_cur="Bibata-Modern-Classic"
+        [[ "$b_font" == *"Segoe UI"* || "$b_font" == *"SF Pro"* ]] && b_font="Sans 10"
+
+        echo "GTK_THEME='$b_gtk'" > "$gtk_file"
+        echo "ICON_THEME='$b_icon'" >> "$gtk_file"
+        echo "CURSOR_THEME='$b_cur'" >> "$gtk_file"
+        echo "FONT_NAME='$b_font'" >> "$gtk_file"
+        echo "COLOR_SCHEME='$b_scheme'" >> "$gtk_file"
+        echo "CURSOR_SIZE='$b_size'" >> "$gtk_file"
     fi
 
     if type create_manifest >/dev/null 2>&1; then
@@ -574,10 +677,11 @@ switch_to_mac() {
     fi
 
     msg "Switching to Apple macOS Sequoia ($variant)..."
+    save_previous_desktop_state
     if [[ ! -f "$BASELINE_FILE" ]]; then
         backup_original_configs
     fi
-    echo "mac-$variant" > "$STATE_FILE"
+    set_state "mac-$variant"
     write_setting "MODE" "mac"
     write_setting "THEME_VARIANT" "$variant"
     write_setting "LAST_UNDERCOVER_MODE" "mac-$variant"
@@ -713,10 +817,11 @@ switch_to_win11() {
     msg "Switching to Windows 11 ($variant)..."
     pkill -9 -f "mac-dock" 2>/dev/null || true
     pkill -9 -f "omarchy-mac-dock" 2>/dev/null || true
+    save_previous_desktop_state
     if [[ ! -f "$BASELINE_FILE" ]]; then
         backup_original_configs
     fi
-    echo "win11-$variant" > "$STATE_FILE"
+    set_state "win11-$variant"
     write_setting "MODE" "windows"
     write_setting "THEME_VARIANT" "$variant"
     write_setting "LAST_UNDERCOVER_MODE" "win11-$variant"
@@ -839,71 +944,177 @@ switch_to_ios() {
     switch_to_mac "$@"
 }
 
-switch_to_omarchy() {
-    msg "Restoring original Omarchy desktop..."
-    echo "omarchy" > "$STATE_FILE"
-    write_setting "MODE" "omarchy"
+restore_desktop_state() {
+    local baseline="${1:-}"
+
+    # 1. Terminate all disguise flyouts, popups, and dock processes
     pkill -9 -f "mac-dock" 2>/dev/null || true
     pkill -9 -f "omarchy-mac-dock" 2>/dev/null || true
-    pkill -f "quickshell.*mac-settings" 2>/dev/null || true
-    pkill -f "quickshell.*win11-settings" 2>/dev/null || true
-    pkill -f "quickshell.*win11-start" 2>/dev/null || true
+    pkill -f "quickshell.*mac-" 2>/dev/null || true
+    pkill -f "quickshell.*win11-" 2>/dev/null || true
+    pkill -f "omarchy-win11-startmenu" 2>/dev/null || true
     killall swaybg 2>/dev/null || true
     pkill -x swaybg 2>/dev/null || true
     disable_undercover_hyprland 2>/dev/null || true
-    rm -f "$HOME/.config/gtk-4.0/gtk.css" "$HOME/.config/gtk-3.0/gtk.css" 2>/dev/null || true
 
-    # Clear bar-off toggle to ensure Quickshell is not hidden globally
+    # Clear bar-off toggle to ensure default bar is visible
     rm -f "$HOME/.local/state/omarchy/toggles/bar-off" 2>/dev/null || true
 
-    # Stop autohide daemon so it does not hide bar in global/default mode
+    # Stop autohide daemon so default bar remains docked
     if command_exists omarchy-undercover-autohide; then
         omarchy-undercover-autohide --stop 2>/dev/null || true
     fi
 
-    local baseline=""
-    local theme_restored=false
-    if [[ -f "$BASELINE_FILE" ]]; then
-        baseline=$(cat "$BASELINE_FILE")
-        if [[ -d "$baseline" ]]; then
-            restore_config_dir "waybar" "$baseline"
-            restore_config_dir "rofi" "$baseline"
-            restore_config_dir "wofi" "$baseline"
-            restore_config_dir "gtk-3.0" "$baseline"
-            restore_config_dir "gtk-4.0" "$baseline"
-            restore_config_dir "mako" "$baseline"
-            restore_config_dir "alacritty" "$baseline"
-            restore_config_dir "fontconfig" "$baseline"
-            restore_gtk_from_baseline "$baseline"
+    # 2. Restore baseline configuration directories if baseline exists
+    if [[ -n "$baseline" && -d "$baseline" ]]; then
+        restore_config_dir "waybar" "$baseline"
+        restore_config_dir "rofi" "$baseline"
+        restore_config_dir "wofi" "$baseline"
+        restore_config_dir "mako" "$baseline"
+        restore_config_dir "alacritty" "$baseline"
+        restore_config_dir "fontconfig" "$baseline"
+    fi
 
-            if [[ -f "$baseline/theme.name" ]]; then
-                local saved_theme
-                saved_theme=$(cat "$baseline/theme.name" 2>/dev/null | tr -d '\r\n')
-                if [[ -n "$saved_theme" ]] && command_exists omarchy; then
-                    omarchy theme set "$saved_theme" 2>/dev/null || true
-                    theme_restored=true
-                fi
-            fi
+    # 3. Resolve target theme (never hardcode Krishna or Aether!)
+    local target_theme=""
+    if [[ -f "$STATE_DIR/previous_theme" ]]; then
+        target_theme=$(cat "$STATE_DIR/previous_theme" 2>/dev/null | tr -d '\r\n')
+    fi
+    if [[ -z "$target_theme" && -f "$CONFIG_DIR/previous_theme" ]]; then
+        target_theme=$(cat "$CONFIG_DIR/previous_theme" 2>/dev/null | tr -d '\r\n')
+    fi
+    if [[ -z "$target_theme" ]]; then
+        target_theme=$(read_setting "PREVIOUS_THEME" "")
+    fi
+    if [[ -z "$target_theme" && -n "$baseline" && -f "$baseline/theme.name" ]]; then
+        target_theme=$(cat "$baseline/theme.name" 2>/dev/null | tr -d '\r\n')
+    fi
+
+    local target_lower
+    target_lower=$(echo "$target_theme" | tr '[:upper:]' '[:lower:]')
+    if [[ -z "$target_theme" || "$target_lower" == *"windows"* || "$target_lower" == *"win11"* || \
+          "$target_lower" == *"macos"* || "$target_lower" == *"mac-"* || "$target_lower" == *"mac "* || \
+          "$target_lower" == *"undercover"* ]]; then
+        if command_exists omarchy; then
+            target_theme=$(omarchy theme list 2>/dev/null | grep -vEi 'windows|win11|macos|mac |mac-|undercover' | head -n 1 || true)
         fi
     fi
 
-    if [[ "$theme_restored" == "false" ]] && command_exists omarchy; then
-        local cur_theme
-        cur_theme=$(omarchy theme current 2>/dev/null || true)
-        if [[ "$cur_theme" == *"Windows"* || "$cur_theme" == *"windows"* || "$cur_theme" == *"Mac"* || "$cur_theme" == *"mac"* || "$cur_theme" == *"Undercover"* ]]; then
-            omarchy theme set "Krishna" 2>/dev/null || omarchy theme set "Aether" 2>/dev/null || true
-        fi
+    if [[ -n "$target_theme" ]] && command_exists omarchy; then
+        msg "Restoring Omarchy theme: $target_theme"
+        omarchy theme set "$target_theme" 2>/dev/null || true
     fi
 
-    # Crucial: restore shell.json AFTER theme set so omarchy-theme-set IPC doesn't overwrite it
+    # 4. Restore GTK / GNOME interface
+    local gtk_theme="" icon_theme="" cursor_theme="" font_name="" color_scheme="" button_layout=""
+    [[ -f "$STATE_DIR/previous_gtk_theme" ]] && gtk_theme=$(cat "$STATE_DIR/previous_gtk_theme" 2>/dev/null | tr -d '\r\n')
+    [[ -z "$gtk_theme" && -f "$CONFIG_DIR/previous_gtk_theme" ]] && gtk_theme=$(cat "$CONFIG_DIR/previous_gtk_theme" 2>/dev/null | tr -d '\r\n')
+    [[ -f "$STATE_DIR/previous_icon_theme" ]] && icon_theme=$(cat "$STATE_DIR/previous_icon_theme" 2>/dev/null | tr -d '\r\n')
+    [[ -z "$icon_theme" && -f "$CONFIG_DIR/previous_icon_theme" ]] && icon_theme=$(cat "$CONFIG_DIR/previous_icon_theme" 2>/dev/null | tr -d '\r\n')
+    [[ -f "$STATE_DIR/previous_cursor_theme" ]] && cursor_theme=$(cat "$STATE_DIR/previous_cursor_theme" 2>/dev/null | tr -d '\r\n')
+    [[ -z "$cursor_theme" && -f "$CONFIG_DIR/previous_cursor_theme" ]] && cursor_theme=$(cat "$CONFIG_DIR/previous_cursor_theme" 2>/dev/null | tr -d '\r\n')
+    [[ -f "$STATE_DIR/previous_font" ]] && font_name=$(cat "$STATE_DIR/previous_font" 2>/dev/null | tr -d '\r\n')
+    [[ -z "$font_name" && -f "$CONFIG_DIR/previous_font" ]] && font_name=$(cat "$CONFIG_DIR/previous_font" 2>/dev/null | tr -d '\r\n')
+    [[ -f "$STATE_DIR/previous_color_scheme" ]] && color_scheme=$(cat "$STATE_DIR/previous_color_scheme" 2>/dev/null | tr -d '\r\n')
+    [[ -z "$color_scheme" && -f "$CONFIG_DIR/previous_color_scheme" ]] && color_scheme=$(cat "$CONFIG_DIR/previous_color_scheme" 2>/dev/null | tr -d '\r\n')
+    [[ -f "$STATE_DIR/previous_button_layout" ]] && button_layout=$(cat "$STATE_DIR/previous_button_layout" 2>/dev/null | tr -d '\r\n')
+    [[ -z "$button_layout" && -f "$CONFIG_DIR/previous_button_layout" ]] && button_layout=$(cat "$CONFIG_DIR/previous_button_layout" 2>/dev/null | tr -d '\r\n')
+
+    # Defaults if missing or tainted by undercover
+    [[ -z "$gtk_theme" || "$gtk_theme" == *"Win11"* || "$gtk_theme" == *"WhiteSur"* ]] && gtk_theme="Adwaita-dark"
+    [[ -z "$icon_theme" || "$icon_theme" == *"Fluent"* || "$icon_theme" == *"WhiteSur"* ]] && icon_theme="Papirus-Dark"
+    [[ -z "$cursor_theme" || "$cursor_theme" == *"Fluent"* || "$cursor_theme" == *"WhiteSur"* ]] && cursor_theme="Bibata-Modern-Classic"
+    [[ -z "$font_name" || "$font_name" == *"Segoe UI"* || "$font_name" == *"SF Pro"* ]] && font_name="Sans 10"
+    [[ -z "$color_scheme" ]] && color_scheme="prefer-dark"
+    [[ -z "$button_layout" ]] && button_layout="close:minimize,maximize"
+
+    if command_exists gsettings; then
+        gsettings set org.gnome.desktop.interface gtk-theme "$gtk_theme" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface icon-theme "$icon_theme" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface cursor-theme "$cursor_theme" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface font-name "$font_name" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface color-scheme "$color_scheme" 2>/dev/null || true
+        gsettings set org.gnome.desktop.wm.preferences button-layout "$button_layout" 2>/dev/null || true
+    fi
+
+    # Reset GTK 3.0 & 4.0 settings.ini
+    for gtk_dir in "gtk-3.0" "gtk-4.0"; do
+        mkdir -p "$HOME/.config/$gtk_dir"
+        cat > "$HOME/.config/$gtk_dir/settings.ini" << EOF
+[Settings]
+gtk-theme-name=$gtk_theme
+gtk-icon-theme-name=$icon_theme
+gtk-cursor-theme-name=$cursor_theme
+gtk-cursor-theme-size=24
+gtk-font-name=$font_name
+gtk-application-prefer-dark-theme=$([ "$color_scheme" = "prefer-dark" ] && echo 1 || echo 0)
+gtk-decoration-layout=$button_layout
+EOF
+    done
+
+    # Reset GTK 2.0
+    cat > "$HOME/.gtkrc-2.0" << EOF
+gtk-theme-name="$gtk_theme"
+gtk-icon-theme-name="$icon_theme"
+gtk-font-name="$font_name"
+gtk-cursor-theme-name="$cursor_theme"
+gtk-cursor-theme-size=24
+EOF
+
+    # Reset xsettingsd
+    mkdir -p "$HOME/.config/xsettingsd"
+    cat > "$HOME/.config/xsettingsd/xsettingsd.conf" << EOF
+Net/ThemeName "$gtk_theme"
+Net/IconThemeName "$icon_theme"
+Gtk/FontName "$font_name"
+Gtk/CursorThemeName "$cursor_theme"
+Gtk/CursorThemeSize 24
+Gtk/DecorationLayout "$button_layout"
+EOF
+    killall -HUP xsettingsd 2>/dev/null || true
+
+    # Clean up custom Undercover GTK overrides
+    rm -f "$HOME/.config/gtk-4.0/gtk.css" "$HOME/.config/gtk-3.0/gtk.css" 2>/dev/null || true
+
+    # Clean up custom Undercover file manager icon so it restores to native icon
+    rm -f "$HOME/.local/share/icons/hicolor/scalable/apps/system-file-manager.svg" 2>/dev/null || true
+    gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
+
+    # Clean up sound overrides
+    rm -f "$CONFIG_DIR/sounds/current-notify.wav" 2>/dev/null || true
+
+    # 5. Restore background if a custom background was recorded
+    local prev_bg=""
+    [[ -f "$STATE_DIR/previous_background" ]] && prev_bg=$(cat "$STATE_DIR/previous_background" 2>/dev/null | tr -d '\r\n')
+    [[ -z "$prev_bg" && -f "$CONFIG_DIR/previous_background" ]] && prev_bg=$(cat "$CONFIG_DIR/previous_background" 2>/dev/null | tr -d '\r\n')
+    if [[ -n "$prev_bg" && -f "$prev_bg" ]] && command_exists omarchy; then
+        omarchy theme bg set "$prev_bg" 2>/dev/null || true
+    fi
+
+    # 6. Restore shell.json and flea defaults
     restore_shell_from_baseline "$baseline"
     restore_flea_defaults
 
-    if command_exists gsettings; then
-        gsettings set org.gnome.desktop.wm.preferences button-layout "close:minimize,maximize" 2>/dev/null || true
-    fi
+    # 7. Reload bar and hyprland
     omarchy_reload_bar
     omarchy_reload_hyprland
+
+    if command_exists omarchy-notification-send; then
+        omarchy-notification-send "Omarchy" "Restored original desktop (Theme: ${target_theme:-Default})" -t 3000 2>/dev/null || true
+    fi
+}
+
+switch_to_omarchy() {
+    msg "Restoring original Omarchy desktop..."
+    set_state "omarchy"
+    write_setting "MODE" "omarchy"
+
+    local baseline=""
+    if [[ -f "$BASELINE_FILE" ]]; then
+        baseline=$(cat "$BASELINE_FILE" 2>/dev/null | tr -d '\r\n')
+    fi
+
+    restore_desktop_state "$baseline"
     msg "Restored original Omarchy desktop!"
 }
 
@@ -913,26 +1124,12 @@ switch_to_hyprland() {
 
 restore_baseline() {
     msg "Restoring system from baseline backup..."
-    pkill -9 -f "mac-dock" 2>/dev/null || true
-    pkill -9 -f "omarchy-mac-dock" 2>/dev/null || true
-    pkill -f "quickshell.*mac-settings" 2>/dev/null || true
-    pkill -f "quickshell.*win11-settings" 2>/dev/null || true
-    pkill -f "quickshell.*win11-start" 2>/dev/null || true
-    killall swaybg 2>/dev/null || true
-    pkill -x swaybg 2>/dev/null || true
-    disable_undercover_hyprland 2>/dev/null || true
-
-    # Clear bar-off toggle
-    rm -f "$HOME/.local/state/omarchy/toggles/bar-off" 2>/dev/null || true
-
-    if command_exists omarchy-undercover-autohide; then
-        omarchy-undercover-autohide --stop 2>/dev/null || true
-    fi
+    set_state "omarchy"
+    write_setting "MODE" "omarchy"
 
     local baseline=""
-    local theme_restored=false
     if [[ -f "$BASELINE_FILE" ]]; then
-        baseline=$(cat "$BASELINE_FILE")
+        baseline=$(cat "$BASELINE_FILE" 2>/dev/null | tr -d '\r\n')
         if [[ -d "$baseline" ]]; then
             if [[ -f "$baseline/hypr/hyprland.lua" ]]; then
                 mkdir -p "$HOME/.config/hypr"
@@ -942,43 +1139,12 @@ restore_baseline() {
                 mkdir -p "$HOME/.config/hypr"
                 cp "$baseline/hypr/hyprland.conf" "$HOME/.config/hypr/"
             fi
-            restore_config_dir "waybar" "$baseline"
-            restore_config_dir "rofi" "$baseline"
-            restore_config_dir "wofi" "$baseline"
-            restore_config_dir "gtk-3.0" "$baseline"
-            restore_config_dir "gtk-4.0" "$baseline"
-            restore_config_dir "mako" "$baseline"
-            restore_config_dir "alacritty" "$baseline"
-            restore_config_dir "fontconfig" "$baseline"
-            restore_gtk_from_baseline "$baseline"
-
-            if [[ -f "$baseline/theme.name" ]]; then
-                local saved_theme
-                saved_theme=$(cat "$baseline/theme.name" 2>/dev/null | tr -d '\r\n')
-                if [[ -n "$saved_theme" ]] && command_exists omarchy; then
-                    omarchy theme set "$saved_theme" 2>/dev/null || true
-                    theme_restored=true
-                fi
-            fi
         fi
     fi
 
-    if [[ "$theme_restored" == "false" ]] && command_exists omarchy; then
-        local cur_theme
-        cur_theme=$(omarchy theme current 2>/dev/null || true)
-        if [[ "$cur_theme" == *"Windows"* || "$cur_theme" == *"windows"* || "$cur_theme" == *"Mac"* || "$cur_theme" == *"mac"* || "$cur_theme" == *"Undercover"* ]]; then
-            omarchy theme set "Krishna" 2>/dev/null || omarchy theme set "Aether" 2>/dev/null || true
-        fi
-    fi
+    restore_desktop_state "$baseline"
 
-    # Crucial: restore shell.json AFTER theme set so omarchy-theme-set IPC doesn't overwrite it
-    restore_shell_from_baseline "$baseline"
-    restore_flea_defaults
-
-    omarchy_reload_bar
-    omarchy_reload_hyprland
-
-    rm -f "$STATE_FILE"
+    clear_state
     msg "Baseline restored successfully."
 }
 
