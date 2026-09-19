@@ -342,7 +342,7 @@ ShellRoot {
                 onClicked: {
                   var target = !btWindow.btEnabled
                   btWindow.btEnabled = target
-                  btWindow.runCmd("omarchy-bluetooth-dbus " + (target ? "on" : "off"))
+                  Quickshell.execDetached(["omarchy-bluetooth-dbus", target ? "on" : "off"])
                   btWindow.triggerQuery()
                 }
               }
@@ -612,9 +612,9 @@ ShellRoot {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
                       if (modelData.connected) {
-btWindow.runCmd("omarchy-bluetooth-dbus disconnect " + modelData.mac)
+                        Quickshell.execDetached(["omarchy-bluetooth-dbus", "disconnect", modelData.mac])
                       } else {
-                        btWindow.runCmd("omarchy-bluetooth-dbus connect " + modelData.mac)
+                        Quickshell.execDetached(["omarchy-bluetooth-dbus", "connect", modelData.mac])
                       }
                       btWindow.triggerQuery()
                     }
@@ -630,7 +630,7 @@ btWindow.runCmd("omarchy-bluetooth-dbus disconnect " + modelData.mac)
                 acceptedButtons: Qt.RightButton
                 onClicked: {
                   if (modelData.connected) {
-                    btWindow.runCmd("omarchy-bluetooth-dbus disconnect " + modelData.mac)
+                    Quickshell.execDetached(["omarchy-bluetooth-dbus", "disconnect", modelData.mac])
                     btWindow.triggerQuery()
                   }
                 }

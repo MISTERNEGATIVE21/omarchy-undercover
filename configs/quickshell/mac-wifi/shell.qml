@@ -67,6 +67,31 @@ ShellRoot {
       Quickshell.execDetached(["bash", "-c", cmd])
     }
 
+    Process {
+      id: wifiConnectProc
+      property string secret: ""
+      stdinEnabled: true
+      onStarted: {
+        if (secret) {
+          write(secret + "\n")
+          secret = ""
+        }
+      }
+      onExited: {
+        macWifiWindow.triggerScan()
+      }
+    }
+
+    function connectWifi(ssid, password) {
+      if (typeof ssid !== "string" || ssid.length === 0 || ssid.length > 32 || /[\x00-\x1f]/.test(ssid)) {
+        return
+      }
+      if (wifiConnectProc.running) wifiConnectProc.running = false
+      wifiConnectProc.secret = (typeof password === "string") ? password : ""
+      wifiConnectProc.command = ["omarchy-wifi-dbus", "connect", ssid]
+      wifiConnectProc.running = true
+    }
+
     // Theme state poller
     Process {
       id: statePoller
@@ -218,7 +243,7 @@ ShellRoot {
               onClicked: {
                 var target = !macWifiWindow.wifiEnabled
                 macWifiWindow.wifiEnabled = target
-                macWifiWindow.runCmd("omarchy-wifi-dbus " + (target ? "on" : "off"))
+                Quickshell.execDetached(["omarchy-wifi-dbus", target ? "on" : "off"])
                 if (!scanPoller.running) scanPoller.running = true
               }
             }
@@ -386,7 +411,7 @@ ShellRoot {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
                   if (modelData.inUse) return
-                  macWifiWindow.runCmd("omarchy-wifi-dbus connect \"" + modelData.ssid + "\"")
+                  macWifiWindow.connectWifi(modelData.ssid, "")
                   if (!scanPoller.running) scanPoller.running = true
                 }
               }

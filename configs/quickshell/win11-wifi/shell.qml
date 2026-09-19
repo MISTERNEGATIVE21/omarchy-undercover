@@ -79,6 +79,31 @@ ShellRoot {
       Quickshell.execDetached(["bash", "-c", cmd])
     }
 
+    Process {
+      id: wifiConnectProc
+      property string secret: ""
+      stdinEnabled: true
+      onStarted: {
+        if (secret) {
+          write(secret + "\n")
+          secret = ""
+        }
+      }
+      onExited: {
+        wifiWindow.triggerScan()
+      }
+    }
+
+    function connectWifi(ssid, password) {
+      if (typeof ssid !== "string" || ssid.length === 0 || ssid.length > 32 || /[\x00-\x1f]/.test(ssid)) {
+        return
+      }
+      if (wifiConnectProc.running) wifiConnectProc.running = false
+      wifiConnectProc.secret = (typeof password === "string") ? password : ""
+      wifiConnectProc.command = ["omarchy-wifi-dbus", "connect", ssid]
+      wifiConnectProc.running = true
+    }
+
     // Theme state poller
     Process {
       id: statePoller
@@ -302,7 +327,7 @@ ShellRoot {
                 onClicked: {
                   var target = !wifiWindow.wifiEnabled
                   wifiWindow.wifiEnabled = target
-                  wifiWindow.runCmd("omarchy-wifi-dbus " + (target ? "on" : "off"))
+                  Quickshell.execDetached(["omarchy-wifi-dbus", target ? "on" : "off"])
                   wifiWindow.triggerScan()
                 }
               }
@@ -442,7 +467,7 @@ ShellRoot {
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
-                  wifiWindow.runCmd("omarchy-wifi-dbus disconnect")
+                  Quickshell.execDetached(["omarchy-wifi-dbus", "disconnect"])
                   wifiWindow.activeSsid = ""
                   wifiWindow.triggerScan()
                 }
@@ -621,7 +646,7 @@ ShellRoot {
                       wifiWindow.connectingSsid = (wifiWindow.connectingSsid === modelData.ssid ? "" : modelData.ssid)
                       wifiWindow.passwordInput = ""
                     } else {
-                      wifiWindow.runCmd("omarchy-wifi-dbus connect \"" + modelData.ssid + "\"")
+                      wifiWindow.connectWifi(modelData.ssid, "")
                       wifiWindow.triggerScan()
                     }
                   }
@@ -666,7 +691,8 @@ ShellRoot {
                         selectByMouse: true
                         onTextChanged: wifiWindow.passwordInput = text
                         onAccepted: {
-                          wifiWindow.runCmd("omarchy-wifi-dbus connect \"" + modelData.ssid + "\" \"" + pwInput.text + "\"")
+                          wifiWindow.connectWifi(modelData.ssid, pwInput.text)
+                          pwInput.text = ""
                           wifiWindow.connectingSsid = ""
                           wifiWindow.triggerScan()
                         }
@@ -690,7 +716,8 @@ ShellRoot {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                          wifiWindow.runCmd("omarchy-wifi-dbus connect \"" + modelData.ssid + "\" \"" + pwInput.text + "\"")
+                          wifiWindow.connectWifi(modelData.ssid, pwInput.text)
+                          pwInput.text = ""
                           wifiWindow.connectingSsid = ""
                           wifiWindow.triggerScan()
                         }

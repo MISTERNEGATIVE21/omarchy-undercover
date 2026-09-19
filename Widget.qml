@@ -137,35 +137,35 @@ BarWidget {
   IpcHandler {
     target: "omarchy-undercover"
 
-    function open(): void { root.open() }
-    function close(): void { root.close() }
-    function show(): void { root.open() }
-    function hide(): void { root.close() }
-    function toggle(): void { root.togglePanel() }
-    function mac(): void { root.switchMode("mac-dark") }
-    function macLight(): void { root.switchMode("mac-light") }
-    function win11(): void { root.switchMode("win11-dark") }
-    function win11Light(): void { root.switchMode("win11-light") }
-    function omarchy(): void { root.switchMode("omarchy") }
-    function next(): void { root.switchMode("next") }
-    function toggleMode(): void { root.switchMode("toggle") }
+    function open() { root.open() }
+    function close() { root.close() }
+    function show() { root.open() }
+    function hide() { root.close() }
+    function toggle() { root.togglePanel() }
+    function mac() { root.switchMode("mac-dark") }
+    function macLight() { root.switchMode("mac-light") }
+    function win11() { root.switchMode("win11-dark") }
+    function win11Light() { root.switchMode("win11-light") }
+    function omarchy() { root.switchMode("omarchy") }
+    function next() { root.switchMode("next") }
+    function toggleMode() { root.switchMode("toggle") }
   }
 
   IpcHandler {
     target: "undercover"
 
-    function open(): void { root.open() }
-    function close(): void { root.close() }
-    function show(): void { root.open() }
-    function hide(): void { root.close() }
-    function toggle(): void { root.togglePanel() }
-    function mac(): void { root.switchMode("mac-dark") }
-    function macLight(): void { root.switchMode("mac-light") }
-    function win11(): void { root.switchMode("win11-dark") }
-    function win11Light(): void { root.switchMode("win11-light") }
-    function omarchy(): void { root.switchMode("omarchy") }
-    function next(): void { root.switchMode("next") }
-    function toggleMode(): void { root.switchMode("toggle") }
+    function open() { root.open() }
+    function close() { root.close() }
+    function show() { root.open() }
+    function hide() { root.close() }
+    function toggle() { root.togglePanel() }
+    function mac() { root.switchMode("mac-dark") }
+    function macLight() { root.switchMode("mac-light") }
+    function win11() { root.switchMode("win11-dark") }
+    function win11Light() { root.switchMode("win11-light") }
+    function omarchy() { root.switchMode("omarchy") }
+    function next() { root.switchMode("next") }
+    function toggleMode() { root.switchMode("toggle") }
   }
 
   implicitWidth: button.implicitWidth

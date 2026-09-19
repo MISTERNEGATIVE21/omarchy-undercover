@@ -205,38 +205,72 @@ def cmd_disconnect():
     print("disconnected")
 
 
+def is_valid_ssid(ssid):
+    if not isinstance(ssid, str):
+        return False
+    try:
+        raw = ssid.encode("utf-8")
+    except UnicodeEncodeError:
+        return False
+    return 1 <= len(raw) <= 32 and b"\x00" not in raw
+
+
 def cmd_connect(ssid, password=""):
-    if not ssid:
-        print("no ssid provided")
+    if not is_valid_ssid(ssid):
+        print("invalid ssid")
         return
 
-    # If connection profile already exists, try activating it
-    res = subprocess.run(
-        ["nmcli", "connection", "up", "id", ssid],
-        capture_output=True,
-        text=True,
-    )
-    if res.returncode == 0:
-        print("connecting %s" % ssid)
-        return
-
-    # If password is provided or not, use nmcli dev wifi connect
-    cmd = ["nmcli", "dev", "wifi", "connect", ssid]
-    if password:
-        cmd.extend(["password", password])
-
-    res = subprocess.run(cmd, capture_output=True, text=True)
-    if res.returncode == 0:
-        print("connecting %s" % ssid)
-    else:
-        # DBus fallback
-        wireless = get_wireless_devices()
-        if not wireless:
-            print("failed: %s" % res.stderr.strip())
-            return
-        dev_path = wireless[0]
+    raw_ssid = ssid.encode("utf-8")
+    try:
         bus = get_bus()
         nm = get_nm()
+        wireless = get_wireless_devices()
+        if not wireless:
+            print("failed: no wireless device")
+            return
+        dev_path = wireless[0]
+
+        # Search for existing connection profile in NetworkManager Settings
+        settings_obj = bus.get_object(NM_BUS, "/org/freedesktop/NetworkManager/Settings")
+        settings_iface = dbus.Interface(settings_obj, NM_SETTINGS_IFACE)
+        existing_conn_path = None
+
+        for path in settings_iface.ListConnections():
+            try:
+                c_obj = bus.get_object(NM_BUS, path)
+                c_iface = dbus.Interface(c_obj, "org.freedesktop.NetworkManager.Settings.Connection")
+                s = c_iface.GetSettings()
+                wifi_s = s.get("802-11-wireless", {})
+                conn_s = s.get("connection", {})
+                c_ssid = bytes(wifi_s.get("ssid", b""))
+                if c_ssid == raw_ssid or conn_s.get("id") == ssid:
+                    existing_conn_path = path
+                    break
+            except Exception:
+                continue
+
+        if existing_conn_path:
+            if password:
+                try:
+                    c_obj = bus.get_object(NM_BUS, existing_conn_path)
+                    c_iface = dbus.Interface(c_obj, "org.freedesktop.NetworkManager.Settings.Connection")
+                    s = c_iface.GetSettings()
+                    sec = s.setdefault("802-11-wireless-security", {})
+                    sec["key-mgmt"] = "wpa-psk"
+                    sec["psk"] = password
+                    c_iface.Update(s)
+                except Exception:
+                    pass
+            try:
+                dbus.Interface(nm, NM_IFACE).ActivateConnection(
+                    existing_conn_path, dbus.ObjectPath(dev_path), dbus.ObjectPath("/")
+                )
+                print("connecting %s" % ssid)
+                return
+            except Exception:
+                pass
+
+        # No existing connection or activation failed: add and activate via D-Bus
         connection = {
             "connection": {
                 "type": "802-11-wireless",
@@ -244,7 +278,7 @@ def cmd_connect(ssid, password=""):
                 "id": ssid,
             },
             "802-11-wireless": {
-                "ssid": dbus.ByteArray(ssid.encode("utf-8")),
+                "ssid": dbus.ByteArray(raw_ssid),
                 "mode": "infrastructure",
             },
         }
@@ -253,13 +287,20 @@ def cmd_connect(ssid, password=""):
                 "key-mgmt": "wpa-psk",
                 "psk": password,
             }
-        try:
-            dbus.Interface(nm, NM_IFACE).AddAndActivateConnection(
-                connection, dbus.ObjectPath(dev_path), dbus.ObjectPath("/")
-            )
-            print("connecting %s" % ssid)
-        except Exception as e:
-            print("failed: %s" % str(e))
+
+        dbus.Interface(nm, NM_IFACE).AddAndActivateConnection(
+            connection, dbus.ObjectPath(dev_path), dbus.ObjectPath("/")
+        )
+        print("connecting %s" % ssid)
+        return
+    except Exception as e:
+        # Secure fallback: never place password in argv
+        if not password:
+            res = subprocess.run(["nmcli", "connection", "up", "id", ssid], capture_output=True, text=True, check=False)
+            if res.returncode == 0:
+                print("connecting %s" % ssid)
+                return
+        print("failed: %s" % str(e))
 
 
 def main():
@@ -277,8 +318,16 @@ def main():
     elif cmd == "disconnect":
         cmd_disconnect()
     elif cmd == "connect":
-        ssid = args[1] if len(args) > 1 else ""
-        password = args[2] if len(args) > 2 else ""
+        if len(args) != 2:
+            print("Usage: omarchy-wifi-dbus connect <ssid>", file=sys.stderr)
+            sys.exit(1)
+        ssid = args[1]
+        password = ""
+        if not sys.stdin.isatty():
+            try:
+                password = sys.stdin.readline().rstrip("\r\n")
+            except Exception:
+                password = ""
         cmd_connect(ssid, password)
     else:
         cmd_radio()

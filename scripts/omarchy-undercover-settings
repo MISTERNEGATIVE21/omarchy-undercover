@@ -495,6 +495,7 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         # Build Tabs
         self.build_presets_page()
         self.build_dock_taskbar_page()
+        self.build_shortcuts_page()
         self.build_wallpapers_page()
         self.build_effects_page()
         self.build_hardware_page()
@@ -944,6 +945,209 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         d["mac_pins"][pid] = active
         write_defaults_json(d)
         self.show_toast(f"Dock pin '{name}': {'Enabled' if active else 'Disabled'}")
+
+    # ==================== PAGE: KEYBOARD SHORTCUTS ====================
+    def build_shortcuts_page(self):
+        page = Adw.PreferencesPage()
+        page.set_title("Shortcuts")
+        page.set_icon_name("input-keyboard-symbolic")
+
+        # Master toggle group
+        group_master = Adw.PreferencesGroup(
+            title="Desktop Shortcut Controls",
+            description="Enable or customize platform-native keyboard shortcuts for Windows 11 and macOS Sequoia modes."
+        )
+
+        row_enable = Adw.SwitchRow(
+            title="Enable Mode Shortcuts",
+            subtitle="Registers camouflage keybindings in Hyprland according to your active undercover mode"
+        )
+        row_enable.set_active(read_setting("ENABLE_KEYBINDINGS", "true").lower() == "true")
+        def on_enable_toggled(row, param):
+            val = "true" if row.get_active() else "false"
+            write_setting("ENABLE_KEYBINDINGS", val)
+            subprocess.run(["hyprctl", "reload"], check=False)
+            self.show_toast(f"Mode shortcuts {'enabled' if row.get_active() else 'disabled'}")
+        row_enable.connect("notify::active", on_enable_toggled)
+        group_master.add(row_enable)
+        page.add(group_master)
+
+        # Windows 11 Shortcuts Group
+        group_win = Adw.PreferencesGroup(
+            title="🪟 Windows 11 Shortcuts",
+            description="Customize shortcuts for Windows 11 mode. (Note: Widgets Board uses Super+Alt+W to avoid conflicting with Omarchy's Super+W Close Window)."
+        )
+
+        row_win_tap = Adw.SwitchRow(
+            title="Tap Super (Win) Key for Start Menu",
+            subtitle="Pressing and releasing the Super key alone opens the Windows 11 Start Menu"
+        )
+        row_win_tap.set_active(read_setting("BIND_WIN_START_TAP", "true").lower() == "true")
+        def on_win_tap_toggled(row, param):
+            write_setting("BIND_WIN_START_TAP", "true" if row.get_active() else "false")
+            subprocess.run(["hyprctl", "reload"], check=False)
+            self.show_toast("Start menu key tap toggle updated")
+        row_win_tap.connect("notify::active", on_win_tap_toggled)
+        group_win.add(row_win_tap)
+
+        win_bindings = [
+            ("BIND_WIN_START", "SUPER + SPACE", "Start Menu (Fallback/Combo)", "Open Windows 11 Start Menu"),
+            ("BIND_WIN_EXPLORER", "SUPER + E", "File Explorer", "Open Flea file manager in Windows 11 preset"),
+            ("BIND_WIN_TASKVIEW", "SUPER + TAB", "Task View", "Open window switcher and virtual desktops"),
+            ("BIND_WIN_ACTIONCENTER", "SUPER + A", "Quick Settings / Action Center", "Open volume, brightness, Wi-Fi, and Bluetooth"),
+            ("BIND_WIN_NOTIFICATIONS", "SUPER + N", "Notification Center & Calendar", "Open notification center and calendar flyout"),
+            ("BIND_WIN_WIDGETS", "SUPER + ALT + W", "Widgets Board", "Open live weather, news, and hardware widgets"),
+            ("BIND_WIN_SETTINGS", "SUPER + I", "Windows Settings", "Open Undercover Settings & Control Center"),
+            ("BIND_WIN_DESKTOP", "SUPER + D", "Show Desktop", "Minimize or restore all active desktop windows"),
+            ("BIND_WIN_SNAP", "SUPER + Z", "Snap Layouts Menu", "Display Windows 11 multi-window snap assist menu"),
+            ("BIND_WIN_SCREENSHOT", "SUPER + SHIFT + S", "Snipping Tool", "Capture region screenshot to clipboard"),
+            ("BIND_WIN_CLIPBOARD", "SUPER + V", "Clipboard History", "Open Walker clipboard history manager"),
+            ("BIND_WIN_CLOSE", "ALT + F4", "Close Window", "Close the active window"),
+            ("BIND_WIN_LOCK", "SUPER + L", "Lock Screen", "Lock screen immediately"),
+            ("BIND_WIN_SNAP_LEFT", "SUPER + LEFT", "Snap Left (50%)", "Tile active window to left half"),
+            ("BIND_WIN_SNAP_RIGHT", "SUPER + RIGHT", "Snap Right (50%)", "Tile active window to right half"),
+            ("BIND_WIN_SNAP_UP", "SUPER + UP", "Maximize / Zoom Window", "Maximize active window"),
+            ("BIND_WIN_SNAP_DOWN", "SUPER + DOWN", "Restore / Minimize Window", "Restore or minimize active window"),
+        ]
+
+        win_rows = {}
+        for key_name, default_val, title, desc in win_bindings:
+            row = Adw.EntryRow(title=f"{title}")
+            row.set_text(read_setting(key_name, default_val))
+            row.set_show_apply_button(True)
+
+            btn_reset = Gtk.Button.new_from_icon_name("edit-undo-symbolic")
+            btn_reset.set_valign(Gtk.Align.CENTER)
+            btn_reset.set_tooltip_text(f"Reset to default ({default_val})")
+
+            def make_apply_handler(k, def_v, t, r):
+                def on_apply(entry):
+                    val = entry.get_text().strip()
+                    if not val:
+                        val = def_v
+                        entry.set_text(val)
+                    if val.upper() == "SUPER + W" or val.upper() == "SUPER+W":
+                        self.show_toast("⚠️ SUPER + W is reserved for Omarchy Close Window! Using default.")
+                        val = def_v
+                        entry.set_text(val)
+                    write_setting(k, val)
+                    subprocess.run(["hyprctl", "reload"], check=False)
+                    self.show_toast(f"{t}: {val}")
+                return on_apply
+
+            def make_reset_handler(k, def_v, t, r):
+                def on_reset(btn):
+                    r.set_text(def_v)
+                    write_setting(k, def_v)
+                    subprocess.run(["hyprctl", "reload"], check=False)
+                    self.show_toast(f"{t} reset to {def_v}")
+                return on_reset
+
+            row.connect("apply", make_apply_handler(key_name, default_val, title, row))
+            btn_reset.connect("clicked", make_reset_handler(key_name, default_val, title, row))
+            row.add_suffix(btn_reset)
+            group_win.add(row)
+            win_rows[key_name] = (row, default_val)
+
+        # Reset All Windows Shortcuts Row
+        row_reset_win = Adw.ActionRow(
+            title="Reset All Windows 11 Shortcuts",
+            subtitle="Restore all Windows 11 keybindings to factory defaults"
+        )
+        btn_reset_all_win = Gtk.Button(label="Reset Windows Shortcuts")
+        def on_reset_all_win(b):
+            for k, (r, def_v) in win_rows.items():
+                r.set_text(def_v)
+                write_setting(k, def_v)
+            write_setting("BIND_WIN_START_TAP", "true")
+            row_win_tap.set_active(True)
+            subprocess.run(["hyprctl", "reload"], check=False)
+            self.show_toast("All Windows 11 shortcuts reset to default.")
+        btn_reset_all_win.connect("clicked", on_reset_all_win)
+        row_reset_win.add_suffix(btn_reset_all_win)
+        group_win.add(row_reset_win)
+        page.add(group_win)
+
+        # macOS Sequoia Shortcuts Group
+        group_mac = Adw.PreferencesGroup(
+            title="🍏 Apple macOS Sequoia Shortcuts",
+            description="Customize shortcuts for macOS mode. (Cmd key corresponds to Super on standard PC keyboards)."
+        )
+
+        mac_bindings = [
+            ("BIND_MAC_SPOTLIGHT", "SUPER + SPACE", "Spotlight Search (Cmd+Space)", "Global application, files, and math search"),
+            ("BIND_MAC_MISSIONCONTROL", "SUPER + TAB", "Mission Control (Cmd+Tab)", "macOS window switcher and overview"),
+            ("BIND_MAC_WIDGETS", "SUPER + N", "Notification Center & Widgets", "Open macOS slide-out widgets and notifications"),
+            ("BIND_MAC_SETTINGS", "SUPER + COMMA", "System Settings (Cmd+,)", "Open macOS System Settings"),
+            ("BIND_MAC_FINDER", "SUPER + E", "Finder (File Manager)", "Open Flea file manager in macOS preset"),
+            ("BIND_MAC_MINIMIZE", "SUPER + M", "Minimize Window (Cmd+M)", "Minimize active application to dock"),
+            ("BIND_MAC_DESKTOP", "SUPER + D", "Show Desktop", "Reveal desktop by pushing active windows aside"),
+            ("BIND_MAC_CLOSE", "SUPER + Q", "Quit Window (Cmd+Q)", "Quit or close the active window"),
+            ("BIND_MAC_LOCK", "SUPER + CTRL + Q", "Lock Screen (Ctrl+Cmd+Q)", "Lock session immediately"),
+            ("BIND_MAC_SNAP_LEFT", "SUPER + CTRL + LEFT", "Tile Window Left", "macOS Sequoia tile window to left half"),
+            ("BIND_MAC_SNAP_RIGHT", "SUPER + CTRL + RIGHT", "Tile Window Right", "macOS Sequoia tile window to right half"),
+            ("BIND_MAC_SNAP_UP", "SUPER + CTRL + UP", "Zoom / Maximize Window", "macOS Sequoia maximize window"),
+            ("BIND_MAC_SNAP_DOWN", "SUPER + CTRL + DOWN", "Restore Window", "macOS Sequoia restore window to original size"),
+            ("BIND_MAC_SNAP_MENU", "SUPER + CTRL + SPACE", "Tiling & Snap Menu", "Open macOS Sequoia window tiling presets menu"),
+        ]
+
+        mac_rows = {}
+        for key_name, default_val, title, desc in mac_bindings:
+            row = Adw.EntryRow(title=f"{title}")
+            row.set_text(read_setting(key_name, default_val))
+            row.set_show_apply_button(True)
+
+            btn_reset = Gtk.Button.new_from_icon_name("edit-undo-symbolic")
+            btn_reset.set_valign(Gtk.Align.CENTER)
+            btn_reset.set_tooltip_text(f"Reset to default ({default_val})")
+
+            def make_mac_apply_handler(k, def_v, t, r):
+                def on_apply(entry):
+                    val = entry.get_text().strip()
+                    if not val:
+                        val = def_v
+                        entry.set_text(val)
+                    if val.upper() == "SUPER + W" or val.upper() == "SUPER+W":
+                        self.show_toast("⚠️ SUPER + W is reserved for Omarchy Close Window! Using default.")
+                        val = def_v
+                        entry.set_text(val)
+                    write_setting(k, val)
+                    subprocess.run(["hyprctl", "reload"], check=False)
+                    self.show_toast(f"{t}: {val}")
+                return on_apply
+
+            def make_mac_reset_handler(k, def_v, t, r):
+                def on_reset(btn):
+                    r.set_text(def_v)
+                    write_setting(k, def_v)
+                    subprocess.run(["hyprctl", "reload"], check=False)
+                    self.show_toast(f"{t} reset to {def_v}")
+                return on_reset
+
+            row.connect("apply", make_mac_apply_handler(key_name, default_val, title, row))
+            btn_reset.connect("clicked", make_mac_reset_handler(key_name, default_val, title, row))
+            row.add_suffix(btn_reset)
+            group_mac.add(row)
+            mac_rows[key_name] = (row, default_val)
+
+        # Reset All Mac Shortcuts Row
+        row_reset_mac = Adw.ActionRow(
+            title="Reset All macOS Sequoia Shortcuts",
+            subtitle="Restore all macOS keybindings to factory defaults"
+        )
+        btn_reset_all_mac = Gtk.Button(label="Reset macOS Shortcuts")
+        def on_reset_all_mac(b):
+            for k, (r, def_v) in mac_rows.items():
+                r.set_text(def_v)
+                write_setting(k, def_v)
+            subprocess.run(["hyprctl", "reload"], check=False)
+            self.show_toast("All macOS shortcuts reset to default.")
+        btn_reset_all_mac.connect("clicked", on_reset_all_mac)
+        row_reset_mac.add_suffix(btn_reset_all_mac)
+        group_mac.add(row_reset_mac)
+        page.add(group_mac)
+
+        self.stack.add_titled(page, "shortcuts", "Shortcuts")
 
     # ==================== PAGE 2: WALLPAPERS GALLERY ====================
     def build_wallpapers_page(self):

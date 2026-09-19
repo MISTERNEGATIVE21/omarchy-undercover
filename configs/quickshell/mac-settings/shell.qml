@@ -1125,6 +1125,34 @@ ShellRoot {
                         onClicked: settingsWin.runCmd("pkill -f 'quickshell.*mac-dock' && nohup quickshell -p ~/.config/omarchy-undercover/quickshell/mac-dock >/dev/null 2>&1 &")
                       }
                     }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    // Keyboard Shortcuts
+                    RowLayout {
+                      Layout.fillWidth: true
+                      ColumnLayout {
+                        spacing: 2
+                        Text {
+                          text: "macOS Sequoia Keyboard Shortcuts"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 12
+                          font.weight: Font.DemiBold
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: "Configure Spotlight (Cmd+Space), Mission Control, and tiling keys"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+                      Item { Layout.fillWidth: true }
+                      Button {
+                        text: "Customize Shortcuts"
+                        onClicked: settingsWin.runCmd("omarchy-undercover-settings")
+                      }
+                    }
                   }
                 }
               }

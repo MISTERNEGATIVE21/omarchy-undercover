@@ -14,6 +14,7 @@ Subcommands (used by Quickshell flyouts & menus):
   pair <mac>     -> pairs a device
 """
 
+import re
 import subprocess
 import sys
 import time
@@ -164,7 +165,17 @@ def cmd_listwin():
                 print("%s|0|%s" % (mac, name))
 
 
+MAC_REGEX = re.compile(r"^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$")
+
+
+def is_valid_mac(mac):
+    return bool(isinstance(mac, str) and MAC_REGEX.match(mac))
+
+
 def _device_call(mac, method, fallback_cmd=None):
+    if not is_valid_mac(mac):
+        print("invalid mac")
+        return
     bus = get_bus()
     managed = get_managed()
     target = None

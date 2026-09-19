@@ -1544,6 +1544,45 @@ ShellRoot {
                     }
                   }
                 }
+
+                // Keyboard Shortcuts & Keybindings
+                Rectangle {
+                  Layout.fillWidth: true
+                  implicitHeight: 76
+                  radius: 8
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+                  RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 14
+                    Image {
+                      Layout.preferredWidth: 22
+                      Layout.preferredHeight: 22
+                      width: 22; height: 22
+                      source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11-settings/tools.svg"
+                      fillMode: Image.PreserveAspectFit
+                    }
+                    ColumnLayout {
+                      Layout.fillWidth: true
+                      Text { text: "Keyboard Shortcuts & Keybindings"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                      Text { text: "Customize Windows 11 & macOS keybindings with built-in Omarchy conflict protection"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                    }
+                    Rectangle {
+                      implicitWidth: 115
+                      implicitHeight: 30
+                      radius: 4
+                      color: settingsWin.accentColor
+                      Text { anchors.centerIn: parent; text: "Configure Keys"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; font.weight: Font.DemiBold; color: settingsWin.accentTextColor }
+                      MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: settingsWin.runCmd("omarchy-undercover-settings")
+                      }
+                    }
+                  }
+                }
               }
 
               // ==========================================

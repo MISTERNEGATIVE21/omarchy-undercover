@@ -5,9 +5,31 @@
 [![Engine](https://img.shields.io/badge/engine-Quickshell%20%7C%20Waybar-ff2d55?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover)
 [![License](https://img.shields.io/badge/license-GPL--3.0--or--later-green?style=flat-square)](LICENSE)
 
+![Omarchy Undercover Preview](preview.png)
+
 Omarchy Undercover is a desktop transformation plugin for Omarchy Hyprland. It allows users to switch between a native macOS Sequoia interface, a Windows 11 Fluent environment, and the baseline Omarchy desktop on demand.
 
 The suite configures status bars, docks, application launchers, window rules, compositor animations, and typography to deliver an authentic look and feel across both Quickshell (Omarchy 4.0+) and Waybar environments.
+
+---
+
+## Screenshots
+
+### Apple macOS Sequoia Mode
+
+| Dark Mode | Light Mode |
+| :---: | :---: |
+| ![macOS Sequoia Dark](assets/screenshots/MacOS_Dark.png) | ![macOS Sequoia Light](assets/screenshots/MacOS_Light.png) |
+
+### Windows 11 Fluent Mode
+
+| Dark Mode | Light Mode |
+| :---: | :---: |
+| ![Windows 11 Dark](assets/screenshots/Windows11_Dark.png) | ![Windows 11 Light](assets/screenshots/Windows11_Light.png) |
+
+| Transparent Taskbar |
+| :---: |
+| ![Windows 11 Transparent Taskbar](assets/screenshots/Windows11_Transparent.png) |
 
 ---
 
@@ -16,16 +38,15 @@ The suite configures status bars, docks, application launchers, window rules, co
 ### Apple macOS Sequoia Mode
 * Frosted glass top menu bar with Apple menu, global application menu, and Control Center.
 * Auto-sizing macOS dock with responsive scaling, magnification, and running app indicators.
-* Spotlight application and file search (<kbd>Super</kbd> + <kbd>Space</kbd>).
-* Mission Control window switcher (<kbd>Super</kbd> + <kbd>Tab</kbd>).
-* macOS-style window tiling and snap hotkeys.
+* Spotlight application and file search magnifier widget.
+* Mission Control window switcher.
 * SF Pro typography, authentic traffic-light window controls, and spring physics animations.
 
 ### Windows 11 Fluent Mode
 * Centered taskbar with Start menu, search, live weather flyout, and system tray.
 * Windows 11 Start menu with pinned application grid and search integration.
 * Quick Settings and Action Center flyouts with volume, brightness, Wi-Fi, and Bluetooth controls.
-* Task View window switcher (<kbd>Super</kbd> + <kbd>Tab</kbd>) and Snap Assist layouts.
+* Task View window switcher and Snap Assist layouts.
 * Segoe UI typography, flat window styling, and cubic bezier animation curves.
 
 ### Plugin Integration & Tray Switcher
@@ -94,19 +115,48 @@ When placed on the bar, the Undercover widget displays the active mode emblem an
 
 ## Keyboard Shortcuts
 
+Undercover provides configurable, platform-authentic shortcuts for both Windows 11 and macOS Sequoia modes. All shortcuts can be customized or toggled on/off in **Settings → Shortcuts**.
+
+> [!NOTE]
+> Core Omarchy keybindings (such as <kbd>Super</kbd> + <kbd>W</kbd> for **Close Window**) are strictly protected from collisions. The Windows 11 Widgets Board uses <kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>W</kbd> by default.
+
+### Default Global Shortcuts
 | Shortcut | Action | Description |
 | :--- | :--- | :--- |
-| <kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>U</kbd> | Toggle Undercover Mode | Cycles between active disguise and default Omarchy desktop |
-| <kbd>Super</kbd> + <kbd>Space</kbd> | Spotlight / Start Menu | Opens macOS Spotlight or Windows 11 Start menu |
-| <kbd>Super</kbd> + <kbd>Tab</kbd> | Mission Control / Task View | Opens interactive window switcher |
-| <kbd>Super</kbd> + <kbd>E</kbd> | File Manager | Launches Flea file manager configured with active mode layout |
-| <kbd>Super</kbd> + <kbd>B</kbd> | Toggle Taskbar / Bar | Toggles status bar or dock visibility |
+| <kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>U</kbd> | Toggle Undercover Mode | Cycles between active disguise preset and default Omarchy desktop |
 | <kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>B</kbd> | Toggle Auto-Hide | Enables or disables edge-sensing auto-hide daemon |
+
+### Windows 11 Fluent Shortcuts
+| Shortcut | Action | Description |
+| :--- | :--- | :--- |
+| <kbd>Super</kbd> (tap) / <kbd>Super</kbd> + <kbd>Space</kbd> | Start Menu | Opens Windows 11 Start Menu |
+| <kbd>Super</kbd> + <kbd>E</kbd> | File Explorer | Opens File Manager in Windows 11 layout |
+| <kbd>Super</kbd> + <kbd>Tab</kbd> | Task View | Opens window switcher and desktop overview |
+| <kbd>Super</kbd> + <kbd>A</kbd> | Action Center | Opens Quick Settings & Action Center flyout |
+| <kbd>Super</kbd> + <kbd>N</kbd> | Notifications | Opens Notification Center and Calendar |
+| <kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>W</kbd> | Widgets Board | Opens live weather, news, and hardware widgets |
+| <kbd>Super</kbd> + <kbd>I</kbd> | Settings | Opens Undercover Settings / Control Center |
 | <kbd>Super</kbd> + <kbd>D</kbd> | Show Desktop | Minimizes or restores all visible windows |
-| <kbd>Super</kbd> + <kbd>N</kbd> | Notifications / Widgets | Opens Notification Center or Action Center |
-| <kbd>Super</kbd> + <kbd>Ctrl</kbd> + Arrows | macOS Tiling | Tiles active window to left/right halves or corners (Mac mode) |
-| <kbd>Super</kbd> + Arrows | Windows Snap | Snaps active window to left/right halves or maximizes (Windows mode) |
-| <kbd>Alt</kbd> + <kbd>F4</kbd> | Close Window | Closes active application window |
+| <kbd>Super</kbd> + <kbd>Z</kbd> | Snap Assist | Opens Windows 11 Snap Layouts menu |
+| <kbd>Super</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> | Snipping Tool | Captures region screenshot to clipboard |
+| <kbd>Super</kbd> + <kbd>V</kbd> | Clipboard History | Opens clipboard manager |
+| <kbd>Alt</kbd> + <kbd>F4</kbd> | Close Window | Closes the active application window |
+| <kbd>Super</kbd> + Arrows | Snap Assist Tiling | Snaps window to left/right halves or maximizes |
+
+### Apple macOS Sequoia Shortcuts
+| Shortcut | Action | Description |
+| :--- | :--- | :--- |
+| <kbd>Super</kbd> + <kbd>Space</kbd> | Spotlight Search | Opens macOS Spotlight application/file search |
+| <kbd>Super</kbd> + <kbd>Tab</kbd> | Mission Control | Opens window switcher |
+| <kbd>Super</kbd> + <kbd>N</kbd> | Notifications & Widgets | Opens slide-out Notification Center & Widgets |
+| <kbd>Super</kbd> + <kbd>,</kbd> | System Settings | Opens macOS System Settings |
+| <kbd>Super</kbd> + <kbd>E</kbd> | Finder | Opens File Manager in macOS layout |
+| <kbd>Super</kbd> + <kbd>M</kbd> | Minimize | Minimizes active application window |
+| <kbd>Super</kbd> + <kbd>D</kbd> | Show Desktop | Pushes windows aside to reveal desktop |
+| <kbd>Super</kbd> + <kbd>Q</kbd> | Quit Window | Closes active application window |
+| <kbd>Super</kbd> + <kbd>Ctrl</kbd> + <kbd>Q</kbd> | Lock Screen | Locks screen session |
+| <kbd>Super</kbd> + <kbd>Ctrl</kbd> + Arrows | macOS Window Tiling | Tiles window to left/right halves or zooms window |
+
 
 ---
 

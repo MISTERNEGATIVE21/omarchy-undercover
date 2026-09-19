@@ -4,6 +4,7 @@ Interactive Wi-Fi Network Scanner & Connector for Omarchy Hyprland
 Scans live nearby SSIDs, shows signal bars & security, and provides password connect dialog.
 """
 
+import os
 import sys
 import subprocess
 import threading
@@ -216,17 +217,40 @@ class WifiManagerWindow(Adw.Window):
             self.connect_wifi(ssid, pwd)
 
     def connect_wifi(self, ssid, password):
-        cmd = ["nmcli", "--wait", "15", "dev", "wifi", "connect", ssid]
-        if password:
-            cmd.extend(["password", password])
+        if not (isinstance(ssid, str) and 1 <= len(ssid.encode("utf-8")) <= 32 and "\x00" not in ssid):
+            return
+
+        helper = "omarchy-wifi-dbus"
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        local_helper = os.path.join(script_dir, "omarchy-wifi-dbus")
+        if os.path.isfile(local_helper) and os.access(local_helper, os.X_OK):
+            helper = local_helper
+
         try:
-            out = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
-            self.scan_networks()
-        except subprocess.CalledProcessError as e:
+            proc = subprocess.Popen(
+                [helper, "connect", ssid],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            out, err = proc.communicate(input=(password + "\n") if password else "")
+            if "failed" in out.lower() or proc.returncode != 0:
+                err_msg = out.strip() or err.strip() or "Connection failed"
+                err_dlg = Adw.MessageDialog(
+                    transient_for=self,
+                    heading="Connection Failed",
+                    body=err_msg
+                )
+                err_dlg.add_response("ok", "OK")
+                err_dlg.present()
+            else:
+                self.scan_networks()
+        except Exception as e:
             err_dlg = Adw.MessageDialog(
                 transient_for=self,
                 heading="Connection Failed",
-                body=f"{e.output}"
+                body=str(e)
             )
             err_dlg.add_response("ok", "OK")
             err_dlg.present()

@@ -6,6 +6,10 @@
 # omarchy:summary=Core transactional engine and utility functions for Omarchy Undercover
 # omarchy:args=[internal-library]
 
+# ponytail: simple include guard prevents re-sourcing 500+ lines
+[[ -n "${_UNDERCOVER_COMMON_SH_LOADED:-}" ]] && return 0
+_UNDERCOVER_COMMON_SH_LOADED=1
+
 if [[ -z "${SCRIPT_DIR:-}" || ! -f "${SCRIPT_DIR}/common.sh" ]]; then
     _C_SRC="${BASH_SOURCE[0]}"
     while [ -h "$_C_SRC" ]; do
@@ -455,20 +459,8 @@ enable_undercover_hyprland() {
     } > "$undercover_conf"
     chmod 644 "$undercover_conf"
 
-    # Deploy windows-mode.lua and mac-mode.lua to ~/.config/hypr/ for compatibility
-    local src_win="${plugin_root}/configs/hypr/windows-mode.lua"
-    [[ ! -f "$src_win" ]] && src_win="${SCRIPT_DIR:-.}/../configs/hypr/windows-mode.lua"
-    if [[ -f "$src_win" ]]; then
-        cp -f "$src_win" "$HOME/.config/hypr/windows-mode.lua"
-        chmod 644 "$HOME/.config/hypr/windows-mode.lua"
-    fi
-
-    local src_mac="${plugin_root}/configs/hypr/mac-mode.lua"
-    [[ ! -f "$src_mac" ]] && src_mac="${SCRIPT_DIR:-.}/../configs/hypr/mac-mode.lua"
-    if [[ -f "$src_mac" ]]; then
-        cp -f "$src_mac" "$HOME/.config/hypr/mac-mode.lua"
-        chmod 644 "$HOME/.config/hypr/mac-mode.lua"
-    fi
+    # Clean up any misplaced mode files in ~/.config/hypr/ so original user configs are never touched
+    rm -f "$HOME/.config/hypr/windows-mode.lua" "$HOME/.config/hypr/mac-mode.lua" 2>/dev/null || true
 
     # Ensure scripts directory is symlinked to ~/.local/bin if not in PATH
     local scripts_dir="${plugin_root}/scripts"
@@ -538,13 +530,8 @@ enable_undercover_hyprland() {
     # Clean up any duplicate legacy plugin symlinks inside ~/.config/omarchy/plugins/
     rm -f "$HOME/.config/omarchy/plugins/undercover" "$HOME/.config/omarchy/plugins/undercover."* 2>/dev/null || true
 
-    # Immediately activate bindings via hyprctl eval and reload
+    # Reload hyprland cleanly so dynamic toggles take effect
     if command_exists hyprctl; then
-        if [[ "$mode" == "windows" || "$mode" == "win11" ]] && [[ -f "$HOME/.config/hypr/windows-mode.lua" ]]; then
-            hyprctl eval "dofile(\"$HOME/.config/hypr/windows-mode.lua\")" >/dev/null 2>&1 || true
-        elif [[ "$mode" == "mac" || "$mode" == "ios" ]] && [[ -f "$HOME/.config/hypr/mac-mode.lua" ]]; then
-            hyprctl eval "dofile(\"$HOME/.config/hypr/mac-mode.lua\")" >/dev/null 2>&1 || true
-        fi
         hyprctl reload >/dev/null 2>&1 || true
     fi
 }

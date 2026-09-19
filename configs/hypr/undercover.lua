@@ -103,8 +103,6 @@ if mode == "windows" then
   if f then
     f:close()
     dofile(win_lua)
-  elseif io.open(home .. "/.config/hypr/windows-mode.lua", "r") then
-    dofile(home .. "/.config/hypr/windows-mode.lua")
   end
 elseif mode == "mac" then
   local mac_lua = plugin_dir .. "/configs/hypr/mac-mode.lua"
@@ -112,8 +110,6 @@ elseif mode == "mac" then
   if f then
     f:close()
     dofile(mac_lua)
-  elseif io.open(home .. "/.config/hypr/mac-mode.lua", "r") then
-    dofile(home .. "/.config/hypr/mac-mode.lua")
   end
 end
 

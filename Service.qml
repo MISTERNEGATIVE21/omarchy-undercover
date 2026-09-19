@@ -62,39 +62,39 @@ Item {
   IpcHandler {
     target: "omarchy-undercover-service"
 
-    function toggle(): void {
+    function toggle() {
       root.runCmd("omarchy-undercover --toggle")
     }
 
-    function mac(): void {
+    function mac() {
       root.runCmd("omarchy-undercover -mac")
     }
 
-    function macLight(): void {
+    function macLight() {
       root.runCmd("omarchy-undercover -mac-light")
     }
 
-    function win11(): void {
+    function win11() {
       root.runCmd("omarchy-undercover -w11")
     }
 
-    function win11Light(): void {
+    function win11Light() {
       root.runCmd("omarchy-undercover -w11-light")
     }
 
-    function restore(): void {
+    function restore() {
       root.runCmd("omarchy-undercover --disable")
     }
 
-    function autohide(val: string): void {
+    function autohide(val) {
       root.runCmd("omarchy-undercover --autohide " + (val === "on" || val === "true" ? "1" : "0"))
     }
 
-    function transparency(val: string): void {
+    function transparency(val) {
       root.runCmd("omarchy-undercover --transparency " + (val === "off" || val === "false" ? "off" : "on"))
     }
 
-    function status(): string {
+    function status() {
       return root.currentState
     }
   }
@@ -102,39 +102,39 @@ Item {
   IpcHandler {
     target: "undercover-service"
 
-    function toggle(): void {
+    function toggle() {
       root.runCmd("omarchy-undercover --toggle")
     }
 
-    function mac(): void {
+    function mac() {
       root.runCmd("omarchy-undercover -mac")
     }
 
-    function macLight(): void {
+    function macLight() {
       root.runCmd("omarchy-undercover -mac-light")
     }
 
-    function win11(): void {
+    function win11() {
       root.runCmd("omarchy-undercover -w11")
     }
 
-    function win11Light(): void {
+    function win11Light() {
       root.runCmd("omarchy-undercover -w11-light")
     }
 
-    function restore(): void {
+    function restore() {
       root.runCmd("omarchy-undercover --disable")
     }
 
-    function autohide(val: string): void {
+    function autohide(val) {
       root.runCmd("omarchy-undercover --autohide " + (val === "on" || val === "true" ? "1" : "0"))
     }
 
-    function transparency(val: string): void {
+    function transparency(val) {
       root.runCmd("omarchy-undercover --transparency " + (val === "off" || val === "false" ? "off" : "on"))
     }
 
-    function status(): string {
+    function status() {
       return root.currentState
     }
   }

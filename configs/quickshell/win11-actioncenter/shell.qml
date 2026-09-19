@@ -143,6 +143,31 @@ ShellRoot {
       Quickshell.execDetached(["bash", "-c", cmd])
     }
 
+    Process {
+      id: wifiConnectProc
+      property string secret: ""
+      stdinEnabled: true
+      onStarted: {
+        if (secret) {
+          write(secret + "\n")
+          secret = ""
+        }
+      }
+      onExited: {
+        actionCenterWindow.triggerWifiScan()
+      }
+    }
+
+    function connectWifi(ssid, password) {
+      if (typeof ssid !== "string" || ssid.length === 0 || ssid.length > 32 || /[\x00-\x1f]/.test(ssid)) {
+        return
+      }
+      if (wifiConnectProc.running) wifiConnectProc.running = false
+      wifiConnectProc.secret = (typeof password === "string") ? password : ""
+      wifiConnectProc.command = ["omarchy-wifi-dbus", "connect", ssid]
+      wifiConnectProc.running = true
+    }
+
     // Reactive Theme Poller
     FileView {
       id: stateWatcher
@@ -390,7 +415,7 @@ ShellRoot {
                       actionCenterWindow.triggerWifiScan()
                     } else {
                       actionCenterWindow.wifiEnabled = !actionCenterWindow.wifiEnabled
-                      actionCenterWindow.runCmd("omarchy-wifi-dbus " + (actionCenterWindow.wifiEnabled ? "on" : "off"))
+                      Quickshell.execDetached(["omarchy-wifi-dbus", actionCenterWindow.wifiEnabled ? "on" : "off"])
                     }
                   }
                 }
@@ -492,7 +517,7 @@ ShellRoot {
                       actionCenterWindow.triggerBtScan()
                     } else {
                       actionCenterWindow.btEnabled = !actionCenterWindow.btEnabled
-                      actionCenterWindow.runCmd("omarchy-bluetooth-dbus " + (actionCenterWindow.btEnabled ? "on" : "off"))
+                      Quickshell.execDetached(["omarchy-bluetooth-dbus", actionCenterWindow.btEnabled ? "on" : "off"])
                     }
                   }
                 }
@@ -1060,7 +1085,7 @@ ShellRoot {
                 onClicked: {
                   var target = !actionCenterWindow.wifiEnabled
                   actionCenterWindow.wifiEnabled = target
-                  actionCenterWindow.runCmd("omarchy-wifi-dbus " + (target ? "on" : "off"))
+                  Quickshell.execDetached(["omarchy-wifi-dbus", target ? "on" : "off"])
                   actionCenterWindow.triggerWifiScan()
                 }
               }
@@ -1181,7 +1206,7 @@ ShellRoot {
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
-                  actionCenterWindow.runCmd("omarchy-wifi-dbus disconnect")
+                  Quickshell.execDetached(["omarchy-wifi-dbus", "disconnect"])
                   actionCenterWindow.wifiSsid = "Disconnected"
                   actionCenterWindow.triggerWifiScan()
                 }
@@ -1297,7 +1322,7 @@ ShellRoot {
                       actionCenterWindow.connectingSsid = (actionCenterWindow.connectingSsid === modelData.ssid ? "" : modelData.ssid)
                       actionCenterWindow.wifiPasswordInput = ""
                     } else {
-                      actionCenterWindow.runCmd("omarchy-wifi-dbus connect \"" + modelData.ssid + "\"")
+                      actionCenterWindow.connectWifi(modelData.ssid, "")
                       actionCenterWindow.triggerWifiScan()
                     }
                   }
@@ -1338,7 +1363,8 @@ ShellRoot {
                       selectByMouse: true
                       onTextChanged: actionCenterWindow.wifiPasswordInput = text
                       onAccepted: {
-                        actionCenterWindow.runCmd("omarchy-wifi-dbus connect \"" + modelData.ssid + "\" \"" + acPwInput.text + "\"")
+                        actionCenterWindow.connectWifi(modelData.ssid, acPwInput.text)
+                        acPwInput.text = ""
                         actionCenterWindow.connectingSsid = ""
                         actionCenterWindow.triggerWifiScan()
                       }
@@ -1362,7 +1388,8 @@ ShellRoot {
                       anchors.fill: parent
                       cursorShape: Qt.PointingHandCursor
                       onClicked: {
-                        actionCenterWindow.runCmd("omarchy-wifi-dbus connect \"" + modelData.ssid + "\" \"" + acPwInput.text + "\"")
+                        actionCenterWindow.connectWifi(modelData.ssid, acPwInput.text)
+                        acPwInput.text = ""
                         actionCenterWindow.connectingSsid = ""
                         actionCenterWindow.triggerWifiScan()
                       }
@@ -1547,7 +1574,7 @@ ShellRoot {
                 onClicked: {
                   var target = !actionCenterWindow.btEnabled
                   actionCenterWindow.btEnabled = target
-                  actionCenterWindow.runCmd("omarchy-bluetooth-dbus " + (target ? "on" : "off"))
+                  Quickshell.execDetached(["omarchy-bluetooth-dbus", target ? "on" : "off"])
                   actionCenterWindow.triggerBtScan()
                 }
               }
@@ -1727,9 +1754,9 @@ ShellRoot {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
                       if (modelData.connected) {
-                        actionCenterWindow.runCmd("omarchy-bluetooth-dbus disconnect " + modelData.mac)
+                        Quickshell.execDetached(["omarchy-bluetooth-dbus", "disconnect", modelData.mac])
                       } else {
-                        actionCenterWindow.runCmd("omarchy-bluetooth-dbus connect " + modelData.mac)
+                        Quickshell.execDetached(["omarchy-bluetooth-dbus", "connect", modelData.mac])
                       }
                       actionCenterWindow.triggerBtScan()
                     }
@@ -1745,7 +1772,7 @@ ShellRoot {
                 acceptedButtons: Qt.RightButton
                 onClicked: {
                   if (modelData.connected) {
-                    actionCenterWindow.runCmd("omarchy-bluetooth-dbus disconnect " + modelData.mac)
+                    Quickshell.execDetached(["omarchy-bluetooth-dbus", "disconnect", modelData.mac])
                     actionCenterWindow.triggerBtScan()
                   }
                 }

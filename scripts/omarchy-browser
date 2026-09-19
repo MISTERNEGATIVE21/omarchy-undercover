@@ -28,6 +28,9 @@ if [[ -z "$BROWSER_SETTING" && -f "$SETTINGS_FILE" ]]; then
 fi
 
 TARGET_URL="${1:-https://www.google.com}"
+if [[ "$TARGET_URL" =~ ^- ]]; then
+    TARGET_URL="https://${TARGET_URL}"
+fi
 
 if [[ -n "$BROWSER_SETTING" && "$BROWSER_SETTING" != "auto" ]]; then
     if command -v "$BROWSER_SETTING" >/dev/null 2>&1; then

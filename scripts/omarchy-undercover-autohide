@@ -187,21 +187,15 @@ def run_daemon():
         bar_visible = False
 
     while True:
-        time.sleep(0.04)
+        # ponytail: 80ms sleep gives 12.5Hz response time while cutting wakeups by 50%
+        time.sleep(0.08)
         if not is_bar_running():
+            time.sleep(0.5)
             continue
 
         now = time.time()
         pos = get_cursor_pos()
         y = pos[1]
-
-        # If any start menu or flyout is open, lock the taskbar visible & reset activity
-        if is_flyout_open():
-            last_activity = now
-            if not bar_visible:
-                set_bar_visible(True)
-                bar_visible = True
-            continue
 
         # Detect cursor movement
         if pos != last_pos:
@@ -209,21 +203,22 @@ def run_daemon():
             if y >= taskbar_region_y:
                 last_activity = now
 
-        # 1. When cursor is down at bottom edge: Reappear immediately
+        # 1. When cursor hits bottom edge: Reappear immediately
         if y >= trigger_y:
             last_activity = now
             if not bar_visible:
                 set_bar_visible(True)
                 bar_visible = True
 
-        # 2. When bar is visible: Hide after 30 seconds of inactivity
+        # 2. When bar is visible: Hide after inactivity, checking flyout only before hiding
         if bar_visible:
-            if y >= taskbar_region_y and pos != last_pos:
-                last_activity = now
-
             if (now - last_activity) >= INACTIVITY_TIMEOUT:
-                set_bar_visible(False)
-                bar_visible = False
+                # ponytail: only check flyout/layer processes when considering hiding
+                if is_flyout_open():
+                    last_activity = now
+                else:
+                    set_bar_visible(False)
+                    bar_visible = False
 
 def update_settings_autohide(enabled):
     if not os.path.exists(SETTINGS_FILE):

@@ -83,6 +83,9 @@ if command -v flea >/dev/null 2>&1; then
             ;;
     esac
 
+    # Prevent Flea from auto-relaunching via handleSceneGraphError fallback on compositor close
+    export FLEA_RENDERER_AUTOMATIC="${FLEA_RENDERER_AUTOMATIC:-0}"
+
     if [[ ${#ARGS[@]} -eq 0 ]]; then
         exec flea "$HOME"
     else

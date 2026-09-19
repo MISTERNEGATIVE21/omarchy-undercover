@@ -228,95 +228,68 @@ hl.window_rule({
 })
 
 -- ---------------------------------------------------------------------------
--- Windows 11 keybindings
---
--- Conflicts with existing Omarchy binds are explicitly unbound first so these
--- behave exactly like Windows. Case matters for hl.unbind().
+-- Dedicated Undercover toggle shortcuts (non-conflicting with base bindings)
 -- ---------------------------------------------------------------------------
+if hl and hl.bind then
+  hl.bind("SUPER + ALT + U", exec_cmd("omarchy-undercover --toggle"), { description = "Toggle undercover mode" })
+  hl.bind("SUPER + ALT + B", exec_cmd("omarchy-undercover-autohide --toggle"), { description = "Toggle edge auto-hide" })
+end
 
--- Start menu (press-and-release the Win key opens the Start menu)
-hl.bind("SUPER + SUPER_L", exec_cmd("omarchy-undercover-launcher"), { release = true, description = "Start menu" })
+-- ---------------------------------------------------------------------------
+-- Configurable Windows 11 Keybindings
+-- ---------------------------------------------------------------------------
+local keybindings_enabled = get_setting("ENABLE_KEYBINDINGS", "true") == "true"
 
--- Win + Space: also open the Start menu (used to be the Omarchy launcher)
-hl.unbind("SUPER + SPACE")
-hl.bind("SUPER + SPACE", exec_cmd("omarchy-undercover-launcher"), { description = "Start menu" })
+if keybindings_enabled and hl and hl.bind then
+  local function bind_key(setting_key, default_key, action, desc, extra_opts)
+    local key = get_setting(setting_key, default_key)
+    if key and key ~= "" and key:lower() ~= "none" and key:lower() ~= "disabled" then
+      local opts = { description = desc }
+      if extra_opts then
+        for k, v in pairs(extra_opts) do opts[k] = v end
+      end
+      -- Strictly protect Omarchy's core Close Window shortcuts from being rebound
+      if key ~= "SUPER + W" and key ~= "SUPER + Q" then
+        pcall(function() hl.unbind(key) end)
+      end
+      hl.bind(key, action, opts)
+    end
+  end
 
--- Win + Tab: Task View (window switcher)
-hl.unbind("SUPER + TAB")
-hl.bind("SUPER + TAB", exec_cmd("rofi -show window -theme ~/.config/rofi/windows11.rasi"), { description = "Task view" })
+  -- Windows Start menu (Win key tap release)
+  local tap_start = get_setting("BIND_WIN_START_TAP", "true") == "true"
+  if tap_start then
+    pcall(function()
+      hl.bind("SUPER + SUPER_L", exec_cmd("omarchy-undercover-launcher"), { release = true, description = "Start menu" })
+    end)
+  end
 
--- Win + D: Show desktop
-hl.bind("SUPER + D", exec_cmd("omarchy-undercover-show-desktop"), { description = "Show desktop" })
+  bind_key("BIND_WIN_START", "SUPER + SPACE", exec_cmd("omarchy-undercover-launcher"), "Start menu")
+  bind_key("BIND_WIN_EXPLORER", "SUPER + E", exec_cmd("omarchy-undercover-filemanager"), "File explorer")
+  bind_key("BIND_WIN_TASKVIEW", "SUPER + TAB", exec_cmd("rofi -show window -theme ~/.config/rofi/windows11.rasi"), "Task view")
+  bind_key("BIND_WIN_ACTIONCENTER", "SUPER + A", exec_cmd("omarchy-win11-actioncenter"), "Quick Settings & Action Center")
+  bind_key("BIND_WIN_NOTIFICATIONS", "SUPER + N", exec_cmd("omarchy-win11-notifications"), "Notification Center & Calendar")
 
--- Win + E: File Explorer - opens Flea File Manager with Windows 11 preset
-hl.bind("SUPER + E", exec_cmd("omarchy-undercover-filemanager"), { description = "File explorer" })
+  -- Widgets Board uses SUPER + ALT + W by default to avoid conflicting with Omarchy's SUPER + W (Close window)
+  bind_key("BIND_WIN_WIDGETS", "SUPER + ALT + W", exec_cmd("omarchy-win11-widgets"), "Windows 11 Widgets Board")
 
--- Win + I: Settings
-hl.bind("SUPER + I", exec_cmd("uwsm-app -- omarchy-undercover-settings"), { description = "Settings" })
+  bind_key("BIND_WIN_SETTINGS", "SUPER + I", exec_cmd("uwsm-app -- omarchy-undercover-settings"), "Settings")
+  bind_key("BIND_WIN_DESKTOP", "SUPER + D", exec_cmd("omarchy-undercover-show-desktop"), "Show desktop")
+  bind_key("BIND_WIN_SNAP", "SUPER + Z", exec_cmd("omarchy-undercover-snap menu"), "Windows 11 Snap Layouts Menu")
+  bind_key("BIND_WIN_SCREENSHOT", "SUPER + SHIFT + S", exec_cmd("omarchy capture screenshot region copy"), "Region screenshot")
+  bind_key("BIND_WIN_CLIPBOARD", "SUPER + V", exec_cmd("omarchy-launch-walker -m clipboard"), "Clipboard history")
+  bind_key("BIND_WIN_LOCK", "SUPER + L", exec_cmd("hyprlock || swaylock || loginctl lock-session"), "Lock screen", { locked = true })
+  bind_key("BIND_WIN_RUN", "SUPER + R", exec_cmd("rofi -show run -theme ~/.config/rofi/windows11.rasi"), "Run dialog")
+  bind_key("BIND_WIN_MINIMIZE", "SUPER + M", exec_cmd("omarchy-undercover-minimize"), "Minimize window")
+  bind_key("BIND_WIN_CLOSE", "ALT + F4", hl.dsp.window.close(), "Close window")
 
--- Win + W: Windows 11 Widgets Board
-hl.bind("SUPER + W", exec_cmd("omarchy-win11-widgets"), { description = "Windows 11 Widgets Board" })
+  -- Windows 11 Snap Assist & Tiling Shortcuts
+  bind_key("BIND_WIN_SNAP_LEFT", "SUPER + LEFT", exec_cmd("omarchy-undercover-snap left"), "Snap Window Left (50%)")
+  bind_key("BIND_WIN_SNAP_RIGHT", "SUPER + RIGHT", exec_cmd("omarchy-undercover-snap right"), "Snap Window Right (50%)")
+  bind_key("BIND_WIN_SNAP_UP", "SUPER + UP", exec_cmd("omarchy-undercover-snap up"), "Maximize / Zoom Window")
+  bind_key("BIND_WIN_SNAP_DOWN", "SUPER + DOWN", exec_cmd("omarchy-undercover-snap down"), "Restore / Minimize Window")
+end
 
--- Win + A: Windows 11 Quick Settings & Action Center
-hl.bind("SUPER + A", exec_cmd("omarchy-win11-notifications"), { description = "Quick Settings & Action Center" })
-
--- Win + N: Windows 11 Notification Center & Calendar Flyout
-hl.bind("SUPER + N", exec_cmd("omarchy-win11-notifications"), { description = "Notification Center & Calendar" })
-
--- Win + C: Copilot AI Assistant
-hl.bind("SUPER + C", exec_cmd("xdg-terminal-exec"), { description = "Copilot AI Assistant" })
-
--- Win + R: Run dialog
-hl.bind("SUPER + R", exec_cmd("rofi -show run -theme ~/.config/rofi/windows11.rasi"), { description = "Run dialog" })
-
--- Win + M: Minimize active window
-hl.bind("SUPER + M", exec_cmd("omarchy-undercover-minimize"), { description = "Minimize window" })
-
--- Win + L: Lock screen (was "toggle workspace layout")
-hl.unbind("SUPER + L")
-hl.bind("SUPER + L", exec_cmd("hyprlock || swaylock || loginctl lock-session"), { description = "Lock screen", locked = true })
-
--- Win + V: Clipboard history
-hl.unbind("SUPER + V")
-hl.bind("SUPER + V", exec_cmd("omarchy-launch-walker -m clipboard"), { description = "Clipboard history" })
-
--- Win + . : Emoji / symbols picker
-hl.bind("SUPER + PERIOD", exec_cmd("omarchy-launch-walker -m symbols"), { description = "Emoji picker" })
-
--- Win + Shift + S: Region screenshot (copied to clipboard)
-hl.bind("SUPER + SHIFT + S", exec_cmd("omarchy capture screenshot region copy"), { description = "Region screenshot" })
-
--- Alt + F4: Close window
-hl.bind("ALT + F4", hl.dsp.window.close(), { description = "Close window" })
-
--- Win + Q: Quick assist (terminal)
-hl.bind("SUPER + Q", exec_cmd("xdg-terminal-exec"), { description = "Terminal (quick)" })
-
--- Win + B: Toggle Taskbar Visibility (Instant hide / reveal for Quickshell & Waybar)
-hl.bind("SUPER + B", exec_cmd("omarchy-undercover-toggle-bar"), { description = "Toggle taskbar visibility" })
-
--- Win + Alt + B: Toggle Intelligent Edge Auto-Hide Daemon
-hl.bind("SUPER + ALT + B", exec_cmd("omarchy-undercover-autohide --toggle"), { description = "Toggle edge auto-hide" })
-
--- Super + Alt + U: Toggle Undercover Mode
-hl.bind("SUPER + ALT + U", exec_cmd("omarchy-undercover --toggle"), { description = "Toggle undercover mode" })
-
--- Windows 11 Snap Assist & Snap Layouts Keybindings
-hl.bind("SUPER + LEFT", exec_cmd("omarchy-undercover-snap left"), { description = "Snap Window Left (50%)" })
-hl.bind("SUPER + RIGHT", exec_cmd("omarchy-undercover-snap right"), { description = "Snap Window Right (50%)" })
-hl.bind("SUPER + UP", exec_cmd("omarchy-undercover-snap up"), { description = "Maximize / Zoom Active Window" })
-hl.bind("SUPER + DOWN", exec_cmd("omarchy-undercover-snap down"), { description = "Restore / Minimize Active Window" })
-hl.bind("SUPER + Z", exec_cmd("omarchy-undercover-snap menu"), { description = "Windows 11 Snap Layouts Menu" })
-hl.bind("SUPER + ALT + LEFT", exec_cmd("omarchy-undercover-snap top-left"), { description = "Snap Top-Left Quadrant" })
-hl.bind("SUPER + ALT + RIGHT", exec_cmd("omarchy-undercover-snap top-right"), { description = "Snap Top-Right Quadrant" })
-hl.bind("SUPER + ALT + DOWN", exec_cmd("omarchy-undercover-snap bottom-left"), { description = "Snap Bottom-Left Quadrant" })
-hl.bind("SUPER + ALT + UP", exec_cmd("omarchy-undercover-snap bottom-right"), { description = "Snap Bottom-Right Quadrant" })
-hl.bind("SUPER + SHIFT + LEFT", hl.dsp.workspace.move({ monitor = "l" }), { description = "Move Window to Left Monitor" })
-hl.bind("SUPER + SHIFT + RIGHT", hl.dsp.workspace.move({ monitor = "r" }), { description = "Move Window to Right Monitor" })
-
--- Smooth Mouse Window Interactions
-hl.bind("SUPER + mouse:272", hl.dsp.window.drag(), { description = "Move window", mouse = true })
-hl.bind("SUPER + mouse:273", hl.dsp.window.resize(), { description = "Resize window", mouse = true })
 
 -- Compositor blur & mica styling for Quickshell surfaces and legacy components
 hl.layer_rule({ match = { namespace = "omarchy-bar" }, blur = true, ignore_alpha = true })

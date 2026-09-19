@@ -131,34 +131,54 @@ hl.animation({ leaf = "specialWorkspaceOut", enabled = true, speed = 4, bezier =
 hl.animation({ leaf = "layersIn", enabled = true, speed = 4, bezier = "macSpring", style = "fade" })
 hl.animation({ leaf = "layersOut", enabled = true, speed = 3, bezier = "macEase", style = "fade" })
 
--- System & Spotlight Keybindings
-hl.unbind("SUPER + SPACE")
-hl.bind("SUPER + SPACE", exec_cmd("rofi -show drun -theme ~/.config/rofi/mac.rasi"), { description = "macOS Spotlight Search" })
-hl.unbind("SUPER + TAB")
-hl.bind("SUPER + TAB", exec_cmd("rofi -show window -theme ~/.config/rofi/mac.rasi"), { description = "macOS Mission Control" })
-hl.bind("SUPER + M", exec_cmd("omarchy-undercover-minimize"), { description = "Minimize window" })
-hl.bind("SUPER + N", exec_cmd("omarchy-mac-widgets"), { description = "macOS Notification Center & Widgets" })
-hl.bind("SUPER + D", exec_cmd("omarchy-undercover-show-desktop"), { description = "Show desktop" })
-hl.bind("SUPER + B", exec_cmd("omarchy-undercover-toggle-bar"), { description = "Toggle Dock/Taskbar Visibility" })
-hl.bind("SUPER + ALT + B", exec_cmd("omarchy-undercover-autohide --toggle"), { description = "Toggle Edge Auto-Hide Daemon" })
-hl.bind("SUPER + ALT + U", exec_cmd("omarchy-undercover --toggle"), { description = "Toggle Undercover Mode" })
+-- ---------------------------------------------------------------------------
+-- Dedicated Undercover toggle shortcuts (non-conflicting with base bindings)
+-- ---------------------------------------------------------------------------
+if hl and hl.bind then
+  hl.bind("SUPER + ALT + U", exec_cmd("omarchy-undercover --toggle"), { description = "Toggle Undercover Mode" })
+  hl.bind("SUPER + ALT + B", exec_cmd("omarchy-undercover-autohide --toggle"), { description = "Toggle Edge Auto-Hide Daemon" })
+end
 
--- macOS Sequoia Native Window Tiling Shortcuts (Fn / Ctrl + Super + Arrows)
-hl.bind("SUPER + CTRL + LEFT", exec_cmd("omarchy-undercover-snap left"), { description = "macOS Tile Left Half" })
-hl.bind("SUPER + CTRL + RIGHT", exec_cmd("omarchy-undercover-snap right"), { description = "macOS Tile Right Half" })
-hl.bind("SUPER + CTRL + UP", exec_cmd("omarchy-undercover-snap up"), { description = "macOS Maximize / Zoom Window" })
-hl.bind("SUPER + CTRL + DOWN", exec_cmd("omarchy-undercover-snap down"), { description = "macOS Restore Window" })
-hl.bind("SUPER + CTRL + RETURN", exec_cmd("omarchy-undercover-snap fullscreen"), { description = "macOS Full Screen Toggle" })
-hl.bind("SUPER + CTRL + C", exec_cmd("omarchy-undercover-snap center"), { description = "macOS Center Window" })
-hl.bind("SUPER + CTRL + 1", exec_cmd("omarchy-undercover-snap top-left"), { description = "macOS Tile Top-Left" })
-hl.bind("SUPER + CTRL + 2", exec_cmd("omarchy-undercover-snap top-right"), { description = "macOS Tile Top-Right" })
-hl.bind("SUPER + CTRL + 3", exec_cmd("omarchy-undercover-snap bottom-left"), { description = "macOS Tile Bottom-Left" })
-hl.bind("SUPER + CTRL + 4", exec_cmd("omarchy-undercover-snap bottom-right"), { description = "macOS Tile Bottom-Right" })
-hl.bind("SUPER + CTRL + SPACE", exec_cmd("omarchy-undercover-snap menu"), { description = "macOS Window Tiling Menu" })
+-- ---------------------------------------------------------------------------
+-- Configurable macOS Sequoia Keybindings
+-- ---------------------------------------------------------------------------
+local keybindings_enabled = get_setting("ENABLE_KEYBINDINGS", "true") == "true"
 
--- Smooth Mouse Window Interactions
-hl.bind("SUPER + mouse:272", hl.dsp.window.drag(), { description = "Move window", mouse = true })
-hl.bind("SUPER + mouse:273", hl.dsp.window.resize(), { description = "Resize window", mouse = true })
+if keybindings_enabled and hl and hl.bind then
+  local function bind_key(setting_key, default_key, action, desc, extra_opts)
+    local key = get_setting(setting_key, default_key)
+    if key and key ~= "" and key:lower() ~= "none" and key:lower() ~= "disabled" then
+      local opts = { description = desc }
+      if extra_opts then
+        for k, v in pairs(extra_opts) do opts[k] = v end
+      end
+      -- Strictly protect Omarchy's core Close Window shortcuts from being rebound
+      if key ~= "SUPER + W" and key ~= "SUPER + Q" then
+        pcall(function() hl.unbind(key) end)
+      end
+      hl.bind(key, action, opts)
+    end
+  end
+
+  -- macOS Spotlight Search (Cmd + Space)
+  bind_key("BIND_MAC_SPOTLIGHT", "SUPER + SPACE", exec_cmd("rofi -show drun -theme ~/.config/rofi/mac.rasi"), "macOS Spotlight Search")
+  bind_key("BIND_MAC_MISSIONCONTROL", "SUPER + TAB", exec_cmd("rofi -show window -theme ~/.config/rofi/mac.rasi"), "macOS Mission Control")
+  bind_key("BIND_MAC_WIDGETS", "SUPER + N", exec_cmd("omarchy-mac-widgets"), "macOS Notification Center & Widgets")
+  bind_key("BIND_MAC_SETTINGS", "SUPER + COMMA", exec_cmd("uwsm-app -- omarchy-undercover-settings"), "macOS System Settings")
+  bind_key("BIND_MAC_FINDER", "SUPER + E", exec_cmd("omarchy-undercover-filemanager"), "macOS Finder")
+  bind_key("BIND_MAC_MINIMIZE", "SUPER + M", exec_cmd("omarchy-undercover-minimize"), "Minimize window")
+  bind_key("BIND_MAC_DESKTOP", "SUPER + D", exec_cmd("omarchy-undercover-show-desktop"), "Show desktop")
+  bind_key("BIND_MAC_LOCK", "SUPER + CTRL + Q", exec_cmd("hyprlock || swaylock || loginctl lock-session"), "Lock screen", { locked = true })
+  bind_key("BIND_MAC_CLOSE", "SUPER + Q", hl.dsp.window.close(), "Quit / Close window")
+
+  -- macOS Sequoia Native Window Tiling Shortcuts (Ctrl + Super + Arrows)
+  bind_key("BIND_MAC_SNAP_LEFT", "SUPER + CTRL + LEFT", exec_cmd("omarchy-undercover-snap left"), "macOS Tile Left Half")
+  bind_key("BIND_MAC_SNAP_RIGHT", "SUPER + CTRL + RIGHT", exec_cmd("omarchy-undercover-snap right"), "macOS Tile Right Half")
+  bind_key("BIND_MAC_SNAP_UP", "SUPER + CTRL + UP", exec_cmd("omarchy-undercover-snap up"), "macOS Maximize / Zoom Window")
+  bind_key("BIND_MAC_SNAP_DOWN", "SUPER + CTRL + DOWN", exec_cmd("omarchy-undercover-snap down"), "macOS Restore Window")
+  bind_key("BIND_MAC_SNAP_MENU", "SUPER + CTRL + SPACE", exec_cmd("omarchy-undercover-snap menu"), "macOS Window Tiling Menu")
+end
+
 
 -- Compositor frosted glass blur layer rules for Quickshell & legacy surfaces
 hl.layer_rule({ match = { namespace = "omarchy-bar" }, blur = true, ignore_alpha = true })

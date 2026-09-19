@@ -123,6 +123,31 @@ ShellRoot {
       Quickshell.execDetached(["bash", "-c", cmd])
     }
 
+    Process {
+      id: wifiConnectProc
+      property string secret: ""
+      stdinEnabled: true
+      onStarted: {
+        if (secret) {
+          write(secret + "\n")
+          secret = ""
+        }
+      }
+      onExited: {
+        controlCenterWindow.triggerWifiScan()
+      }
+    }
+
+    function connectWifi(ssid, password) {
+      if (typeof ssid !== "string" || ssid.length === 0 || ssid.length > 32 || /[\x00-\x1f]/.test(ssid)) {
+        return
+      }
+      if (wifiConnectProc.running) wifiConnectProc.running = false
+      wifiConnectProc.secret = (typeof password === "string") ? password : ""
+      wifiConnectProc.command = ["omarchy-wifi-dbus", "connect", ssid]
+      wifiConnectProc.running = true
+    }
+
     // Reactive Theme Poller
     FileView {
       id: stateWatcher
@@ -357,7 +382,7 @@ ShellRoot {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
                       controlCenterWindow.wifiOn = !controlCenterWindow.wifiOn
-                      controlCenterWindow.runCmd("omarchy-wifi-dbus " + (controlCenterWindow.wifiOn ? "on" : "off"))
+                      Quickshell.execDetached(["omarchy-wifi-dbus", controlCenterWindow.wifiOn ? "on" : "off"])
                     }
                   }
                 }
@@ -443,7 +468,7 @@ ShellRoot {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
                       controlCenterWindow.btOn = !controlCenterWindow.btOn
-                      controlCenterWindow.runCmd("omarchy-bluetooth-dbus " + (controlCenterWindow.btOn ? "on" : "off"))
+                      Quickshell.execDetached(["omarchy-bluetooth-dbus", controlCenterWindow.btOn ? "on" : "off"])
                     }
                   }
                 }
@@ -973,7 +998,7 @@ ShellRoot {
               onClicked: {
                 var target = !controlCenterWindow.wifiOn
                 controlCenterWindow.wifiOn = target
-                controlCenterWindow.runCmd("omarchy-wifi-dbus " + (target ? "on" : "off"))
+                Quickshell.execDetached(["omarchy-wifi-dbus", target ? "on" : "off"])
                 controlCenterWindow.triggerWifiScan()
               }
             }
@@ -1150,7 +1175,7 @@ ShellRoot {
                       controlCenterWindow.connectingSsid = (controlCenterWindow.connectingSsid === modelData.ssid ? "" : modelData.ssid)
                       controlCenterWindow.wifiPasswordInput = ""
                     } else {
-                      controlCenterWindow.runCmd("omarchy-wifi-dbus connect \"" + modelData.ssid + "\"")
+                      controlCenterWindow.connectWifi(modelData.ssid, "")
                       controlCenterWindow.triggerWifiScan()
                     }
                   }
@@ -1179,7 +1204,8 @@ ShellRoot {
                     clip: true
                     onTextChanged: controlCenterWindow.wifiPasswordInput = text
                     onAccepted: {
-                      controlCenterWindow.runCmd("omarchy-wifi-dbus connect \"" + modelData.ssid + "\" \"" + macPwInput.text + "\"")
+                      controlCenterWindow.connectWifi(modelData.ssid, macPwInput.text)
+                      macPwInput.text = ""
                       controlCenterWindow.connectingSsid = ""
                       controlCenterWindow.triggerWifiScan()
                     }
@@ -1195,7 +1221,8 @@ ShellRoot {
                       anchors.fill: parent
                       cursorShape: Qt.PointingHandCursor
                       onClicked: {
-                        controlCenterWindow.runCmd("omarchy-wifi-dbus connect \"" + modelData.ssid + "\" \"" + macPwInput.text + "\"")
+                        controlCenterWindow.connectWifi(modelData.ssid, macPwInput.text)
+                        macPwInput.text = ""
                         controlCenterWindow.connectingSsid = ""
                         controlCenterWindow.triggerWifiScan()
                       }
@@ -1329,7 +1356,7 @@ ShellRoot {
               onClicked: {
                 var target = !controlCenterWindow.btOn
                 controlCenterWindow.btOn = target
-                controlCenterWindow.runCmd("omarchy-bluetooth-dbus " + (target ? "on" : "off"))
+                Quickshell.execDetached(["omarchy-bluetooth-dbus", target ? "on" : "off"])
                 controlCenterWindow.triggerBtScan()
               }
             }
@@ -1482,9 +1509,9 @@ ShellRoot {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
                       if (modelData.connected) {
-                        controlCenterWindow.runCmd("omarchy-bluetooth-dbus disconnect " + modelData.mac)
+                        Quickshell.execDetached(["omarchy-bluetooth-dbus", "disconnect", modelData.mac])
                       } else {
-                        controlCenterWindow.runCmd("omarchy-bluetooth-dbus connect " + modelData.mac)
+                        Quickshell.execDetached(["omarchy-bluetooth-dbus", "connect", modelData.mac])
                       }
                       controlCenterWindow.triggerBtScan()
                     }
@@ -1500,7 +1527,7 @@ ShellRoot {
                 acceptedButtons: Qt.RightButton
                 onClicked: {
                   if (modelData.connected) {
-                    controlCenterWindow.runCmd("omarchy-bluetooth-dbus disconnect " + modelData.mac)
+                    Quickshell.execDetached(["omarchy-bluetooth-dbus", "disconnect", modelData.mac])
                     controlCenterWindow.triggerBtScan()
                   }
                 }
