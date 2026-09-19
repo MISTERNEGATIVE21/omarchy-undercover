@@ -2,10 +2,12 @@
   "schemaVersion": 1,
   "id": "omarchy-undercover.win11-taskbar",
   "name": "Windows 11 Centered Taskbar",
-  "version": "1.0.0",
+  "version": "5.5.0",
   "author": "misternegative21",
   "description": "Centered Windows 11 Fluent Taskbar with Start, Search, Task View, and pinned app icons",
-  "kinds": ["bar-widget"],
+  "kinds": [
+    "bar-widget"
+  ],
   "entryPoints": {
     "barWidget": "Widget.qml"
   },

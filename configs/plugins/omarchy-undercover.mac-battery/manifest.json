@@ -2,10 +2,12 @@
   "schemaVersion": 1,
   "id": "omarchy-undercover.mac-battery",
   "name": "macOS Battery Indicator",
-  "version": "1.0.0",
+  "version": "5.5.0",
   "author": "misternegative21",
   "description": "macOS Sequoia Battery Status Indicator with percentage",
-  "kinds": ["bar-widget"],
+  "kinds": [
+    "bar-widget"
+  ],
   "entryPoints": {
     "barWidget": "Widget.qml"
   },

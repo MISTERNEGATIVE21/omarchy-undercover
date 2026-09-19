@@ -1,0 +1,167 @@
+#!/usr/bin/env bash
+# =============================================================================
+# 🚀 Omarchy Undercover Universal Version Bumper
+# Upgrades version strings across all manifest, package, spec, and code files
+# =============================================================================
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+# Colors for terminal output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+# Read current version from manifest.json
+CURRENT_VERSION=$(jq -r '.version' "${REPO_DIR}/manifest.json" 2>/dev/null || grep -m1 'Version:' "${REPO_DIR}/omarchy-undercover.spec" | awk '{print $2}')
+
+show_usage() {
+    echo -e "${BOLD}Omarchy Undercover Version Bumper${NC}"
+    echo -e "Current version: ${GREEN}${CURRENT_VERSION}${NC}\n"
+    echo -e "Usage:"
+    echo -e "  $0 <version>              Set explicit version (e.g. 5.5.0)"
+    echo -e "  $0 --patch                Bump patch version (e.g. 5.3.2 -> 5.3.3)"
+    echo -e "  $0 --minor                Bump minor version (e.g. 5.3.2 -> 5.4.0)"
+    echo -e "  $0 --major                Bump major version (e.g. 5.3.2 -> 6.0.0)"
+    echo -e "  $0 --current              Print current version and exit"
+    echo -e "  $0 --help                 Show this help message\n"
+}
+
+if [[ $# -eq 0 ]]; then
+    show_usage
+    exit 1
+fi
+
+case "$1" in
+    --help|-h)
+        show_usage
+        exit 0
+        ;;
+    --current|-c)
+        echo "$CURRENT_VERSION"
+        exit 0
+        ;;
+    --patch)
+        IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
+        TARGET_VERSION="${major}.${minor}.$((patch + 1))"
+        ;;
+    --minor)
+        IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
+        TARGET_VERSION="${major}.$((minor + 1)).0"
+        ;;
+    --major)
+        IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
+        TARGET_VERSION="$((major + 1)).0.0"
+        ;;
+    *)
+        TARGET_VERSION="$1"
+        ;;
+esac
+
+# Validate semver format (X.Y.Z or X.Y.Z-tag)
+if [[ ! "$TARGET_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
+    echo -e "${RED}Error:${NC} Invalid semantic version format: '${TARGET_VERSION}'"
+    echo -e "Expected format: X.Y.Z (e.g. 5.5.0)"
+    exit 1
+fi
+
+echo -e "\n${BOLD}${CYAN}=== Bumping Omarchy Undercover Version ===${NC}"
+echo -e "  Current: ${YELLOW}${CURRENT_VERSION}${NC}"
+echo -e "  Target:  ${GREEN}${TARGET_VERSION}${NC}\n"
+
+MODIFIED_FILES=()
+
+# 1. Update manifest.json
+if [[ -f "${REPO_DIR}/manifest.json" ]]; then
+    tmp=$(mktemp)
+    jq --arg v "$TARGET_VERSION" '.version = $v' "${REPO_DIR}/manifest.json" > "$tmp" && mv "$tmp" "${REPO_DIR}/manifest.json"
+    MODIFIED_FILES+=("manifest.json")
+    echo -e "  ${GREEN}✓${NC} Updated manifest.json -> ${BOLD}${TARGET_VERSION}${NC}"
+fi
+
+# 2. Update omarchy-undercover.spec
+if [[ -f "${REPO_DIR}/omarchy-undercover.spec" ]]; then
+    sed -i -E "s/^(Version:[[:space:]]+)[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]*)?/\1${TARGET_VERSION}/" "${REPO_DIR}/omarchy-undercover.spec"
+    sed -i -E "s/^(Release:[[:space:]]+)[0-9]+/\11/" "${REPO_DIR}/omarchy-undercover.spec"
+    MODIFIED_FILES+=("omarchy-undercover.spec")
+    echo -e "  ${GREEN}✓${NC} Updated omarchy-undercover.spec -> ${BOLD}${TARGET_VERSION}${NC} (Release 1)"
+fi
+
+# 3. Update PKGBUILD
+if [[ -f "${REPO_DIR}/PKGBUILD" ]]; then
+    sed -i -E "s/^(pkgver=)[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]*)?/\1${TARGET_VERSION}/" "${REPO_DIR}/PKGBUILD"
+    sed -i -E "s/^(pkgrel=)[0-9]+/\11/" "${REPO_DIR}/PKGBUILD"
+    MODIFIED_FILES+=("PKGBUILD")
+    echo -e "  ${GREEN}✓${NC} Updated PKGBUILD -> ${BOLD}${TARGET_VERSION}${NC} (pkgrel=1)"
+fi
+
+# 4. Update scripts/omarchy-undercover-settings
+if [[ -f "${REPO_DIR}/scripts/omarchy-undercover-settings" ]]; then
+    sed -i -E "s/^(VERSION = \")[^\"]+(\")/\1${TARGET_VERSION}\2/" "${REPO_DIR}/scripts/omarchy-undercover-settings"
+    MODIFIED_FILES+=("scripts/omarchy-undercover-settings")
+    echo -e "  ${GREEN}✓${NC} Updated scripts/omarchy-undercover-settings -> ${BOLD}${TARGET_VERSION}${NC}"
+fi
+
+shopt -s nullglob
+
+# 5. Update all configs/plugins/*/manifest.json
+configs_manifests=("${REPO_DIR}"/configs/plugins/*/manifest.json)
+if [[ ${#configs_manifests[@]} -gt 0 ]]; then
+    count=0
+    for p_man in "${configs_manifests[@]}"; do
+        tmp=$(mktemp)
+        jq --arg v "$TARGET_VERSION" '.version = $v' "$p_man" > "$tmp" && mv "$tmp" "$p_man"
+        count=$((count + 1))
+    done
+    echo -e "  ${GREEN}✓${NC} Updated ${count} plugin manifests in configs/plugins/ -> ${BOLD}${TARGET_VERSION}${NC}"
+fi
+
+# 6. Update all plugins/*/manifest.json if present
+extra_manifests=("${REPO_DIR}"/plugins/*/manifest.json)
+if [[ ${#extra_manifests[@]} -gt 0 ]]; then
+    count=0
+    for p_man in "${extra_manifests[@]}"; do
+        tmp=$(mktemp)
+        jq --arg v "$TARGET_VERSION" '.version = $v' "$p_man" > "$tmp" && mv "$tmp" "$p_man"
+        count=$((count + 1))
+    done
+    echo -e "  ${GREEN}✓${NC} Updated ${count} plugin manifests in plugins/ -> ${BOLD}${TARGET_VERSION}${NC}"
+fi
+
+# 7. Synchronize to installed plugin if exists
+INSTALLED_PLUGIN="${HOME}/.config/omarchy/plugins/omarchy-undercover"
+if [[ -d "$INSTALLED_PLUGIN" ]]; then
+    echo -e "\n${BOLD}${BLUE}Syncing changes to installed plugin:${NC} ${INSTALLED_PLUGIN}"
+    cp -f "${REPO_DIR}/manifest.json" "${INSTALLED_PLUGIN}/manifest.json" 2>/dev/null || true
+    cp -f "${REPO_DIR}/omarchy-undercover.spec" "${INSTALLED_PLUGIN}/omarchy-undercover.spec" 2>/dev/null || true
+    cp -f "${REPO_DIR}/PKGBUILD" "${INSTALLED_PLUGIN}/PKGBUILD" 2>/dev/null || true
+    cp -f "${REPO_DIR}/scripts/omarchy-undercover-settings" "${INSTALLED_PLUGIN}/scripts/omarchy-undercover-settings" 2>/dev/null || true
+    if [[ -f "${INSTALLED_PLUGIN}/omarchy-undercover-settings" ]]; then
+        cp -f "${REPO_DIR}/scripts/omarchy-undercover-settings" "${INSTALLED_PLUGIN}/omarchy-undercover-settings" 2>/dev/null || true
+    fi
+    if [[ ${#configs_manifests[@]} -gt 0 ]] && [[ -d "${INSTALLED_PLUGIN}/configs/plugins" ]]; then
+        cp -rf "${REPO_DIR}/configs/plugins"/* "${INSTALLED_PLUGIN}/configs/plugins/" 2>/dev/null || true
+    fi
+    echo -e "  ${GREEN}✓${NC} Synced to installed plugin directory"
+fi
+
+# 8. Run plugin schema validation
+if command -v omarchy >/dev/null 2>&1; then
+    echo -e "\n${BOLD}${BLUE}Validating plugin manifests...${NC}"
+    if omarchy plugin validate "${REPO_DIR}" >/dev/null 2>&1; then
+        echo -e "  ${GREEN}✓${NC} Repository plugin manifest valid"
+    else
+        echo -e "  ${YELLOW}!${NC} Repository plugin validation returned warnings"
+    fi
+    if [[ -d "$INSTALLED_PLUGIN" ]] && omarchy plugin validate "${INSTALLED_PLUGIN}" >/dev/null 2>&1; then
+        echo -e "  ${GREEN}✓${NC} Installed plugin manifest valid"
+    fi
+fi
+
+echo -e "\n${BOLD}${GREEN}Successfully upgraded version to ${TARGET_VERSION}!${NC}\n"

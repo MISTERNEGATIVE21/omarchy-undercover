@@ -2,10 +2,12 @@
   "schemaVersion": 1,
   "id": "omarchy-undercover.mac-spotlight",
   "name": "macOS Spotlight Search",
-  "version": "1.0.0",
+  "version": "5.5.0",
   "author": "misternegative21",
   "description": "macOS Spotlight Magnifier Menu Bar Widget",
-  "kinds": ["bar-widget"],
+  "kinds": [
+    "bar-widget"
+  ],
   "entryPoints": {
     "barWidget": "Widget.qml"
   },

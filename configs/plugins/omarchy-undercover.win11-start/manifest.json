@@ -2,10 +2,12 @@
   "schemaVersion": 1,
   "id": "omarchy-undercover.win11-start",
   "name": "Windows 11 Start Button",
-  "version": "1.0.0",
+  "version": "5.5.0",
   "author": "misternegative21",
   "description": "Windows 11 Fluent 4-Square Start Menu Button for Quickshell",
-  "kinds": ["bar-widget"],
+  "kinds": [
+    "bar-widget"
+  ],
   "entryPoints": {
     "barWidget": "Widget.qml"
   },
