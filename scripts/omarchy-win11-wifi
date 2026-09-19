@@ -6,10 +6,19 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_DIR="$HOME/.config/omarchy-undercover"
 
-QS_SRC="$CONFIG_DIR/quickshell/win11-wifi"
-if [[ ! -d "$QS_SRC" && -d "${SCRIPT_DIR}/../configs/quickshell/win11-wifi" ]]; then
-    QS_SRC="${SCRIPT_DIR}/../configs/quickshell/win11-wifi"
-fi
+QS_SRC=""
+for cand in \
+    "$CONFIG_DIR/quickshell/win11-wifi" \
+    "$CONFIG_DIR/configs/quickshell/win11-wifi" \
+    "${SCRIPT_DIR}/../quickshell/win11-wifi" \
+    "${SCRIPT_DIR}/../configs/quickshell/win11-wifi" \
+    "${SCRIPT_DIR}/quickshell/win11-wifi" \
+    "${SCRIPT_DIR}/configs/quickshell/win11-wifi"; do
+    if [[ -d "$cand" ]]; then
+        QS_SRC="$cand"
+        break
+    fi
+done
 
 if pgrep -f "quickshell.*win11-wifi" >/dev/null; then
     pkill -f "quickshell.*win11-wifi"

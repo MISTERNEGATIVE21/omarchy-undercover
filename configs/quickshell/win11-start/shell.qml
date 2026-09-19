@@ -15,7 +15,7 @@ ShellRoot {
       bottom: true
     }
     margins {
-      bottom: 52
+      bottom: 10
     }
 
     WlrLayershell.layer: WlrLayer.Overlay
@@ -24,8 +24,8 @@ ShellRoot {
     exclusiveZone: 0
     color: "transparent"
 
-    implicitWidth: 620
-    implicitHeight: 640
+    implicitWidth: Math.min(620, (screen ? screen.width : 1280) - 24)
+    implicitHeight: Math.min(600, (screen ? screen.height : 720) - 70)
 
     property bool isDark: true
     property bool isTransparent: true

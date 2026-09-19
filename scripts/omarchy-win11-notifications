@@ -164,7 +164,7 @@ window.win11-notif {
 class Win11NotificationsWindow(Gtk.Window):
     def __init__(self, app):
         super().__init__(application=app, title="Action Center")
-        self.set_default_size(380, 740)
+        self.set_default_size(380, 600)
         self.set_resizable(False)
         self.add_css_class("win11-notif")
 

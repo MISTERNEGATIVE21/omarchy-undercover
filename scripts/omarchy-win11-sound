@@ -6,10 +6,19 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_DIR="$HOME/.config/omarchy-undercover"
 
-QS_SRC="$CONFIG_DIR/quickshell/win11-sound"
-if [[ ! -d "$QS_SRC" && -d "${SCRIPT_DIR}/../configs/quickshell/win11-sound" ]]; then
-    QS_SRC="${SCRIPT_DIR}/../configs/quickshell/win11-sound"
-fi
+QS_SRC=""
+for cand in \
+    "$CONFIG_DIR/quickshell/win11-sound" \
+    "$CONFIG_DIR/configs/quickshell/win11-sound" \
+    "${SCRIPT_DIR}/../quickshell/win11-sound" \
+    "${SCRIPT_DIR}/../configs/quickshell/win11-sound" \
+    "${SCRIPT_DIR}/quickshell/win11-sound" \
+    "${SCRIPT_DIR}/configs/quickshell/win11-sound"; do
+    if [[ -d "$cand" ]]; then
+        QS_SRC="$cand"
+        break
+    fi
+done
 
 if pgrep -f "quickshell.*win11-sound" >/dev/null; then
     pkill -f "quickshell.*win11-sound"

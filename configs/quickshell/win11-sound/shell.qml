@@ -16,7 +16,7 @@ ShellRoot {
       right: true
     }
     margins {
-      bottom: 54
+      bottom: 10
       right: 12
     }
 
@@ -24,8 +24,8 @@ ShellRoot {
     WlrLayershell.namespace: "omarchy-menu"
     color: "transparent"
 
-    implicitWidth: 360
-    implicitHeight: 380
+    implicitWidth: Math.min(360, (screen ? screen.width : 1280) - 24)
+    implicitHeight: Math.min(380, (screen ? screen.height : 720) - 70)
 
     property bool isDark: true
     property real volumeLevel: 0.65

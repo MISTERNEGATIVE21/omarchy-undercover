@@ -6,10 +6,19 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_DIR="$HOME/.config/omarchy-undercover"
 
-QS_SRC="$CONFIG_DIR/quickshell/mac-controlcenter"
-if [[ ! -d "$QS_SRC" && -d "${SCRIPT_DIR}/../configs/quickshell/mac-controlcenter" ]]; then
-    QS_SRC="${SCRIPT_DIR}/../configs/quickshell/mac-controlcenter"
-fi
+QS_SRC=""
+for cand in \
+    "$CONFIG_DIR/quickshell/mac-controlcenter" \
+    "$CONFIG_DIR/configs/quickshell/mac-controlcenter" \
+    "${SCRIPT_DIR}/../quickshell/mac-controlcenter" \
+    "${SCRIPT_DIR}/../configs/quickshell/mac-controlcenter" \
+    "${SCRIPT_DIR}/quickshell/mac-controlcenter" \
+    "${SCRIPT_DIR}/configs/quickshell/mac-controlcenter"; do
+    if [[ -d "$cand" ]]; then
+        QS_SRC="$cand"
+        break
+    fi
+done
 
 if pgrep -f "quickshell.*mac-controlcenter" >/dev/null; then
     pkill -f "quickshell.*mac-controlcenter"

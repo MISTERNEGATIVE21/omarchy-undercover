@@ -16,7 +16,7 @@ ShellRoot {
       right: true
     }
     margins {
-      bottom: 34
+      bottom: 10
       right: 12
     }
 
@@ -24,8 +24,8 @@ ShellRoot {
     WlrLayershell.namespace: "omarchy-menu"
     color: "transparent"
 
-    implicitWidth: 380
-    implicitHeight: 460
+    implicitWidth: Math.min(380, (screen ? screen.width : 1280) - 24)
+    implicitHeight: Math.min(460, (screen ? screen.height : 720) - 70)
 
     property bool isDark: true
     property bool wifiEnabled: true

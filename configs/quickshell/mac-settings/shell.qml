@@ -11,9 +11,9 @@ ShellRoot {
     id: settingsWin
     title: "System Settings"
 
-    implicitWidth: 980
-    implicitHeight: 640
-    minimumSize: Qt.size(820, 520)
+    implicitWidth: Math.min(960, (Quickshell.screens[0] ? Quickshell.screens[0].width - 40 : 960))
+    implicitHeight: Math.min(620, (Quickshell.screens[0] ? Quickshell.screens[0].height - 60 : 620))
+    minimumSize: Qt.size(Math.min(760, (Quickshell.screens[0] ? Quickshell.screens[0].width - 40 : 760)), Math.min(480, (Quickshell.screens[0] ? Quickshell.screens[0].height - 60 : 480)))
     color: "transparent"
 
     property string homeDir: Quickshell.env("HOME")

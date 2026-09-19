@@ -16,7 +16,7 @@ ShellRoot {
       right: true
     }
     margins {
-      bottom: 52
+      bottom: 10
       right: 12
     }
 
@@ -26,8 +26,8 @@ ShellRoot {
     exclusiveZone: 0
     color: "transparent"
 
-    implicitWidth: 380
-    implicitHeight: 500
+    implicitWidth: Math.min(380, (screen ? screen.width : 1280) - 24)
+    implicitHeight: Math.min(500, (screen ? screen.height : 720) - 70)
 
     property string homeDir: Quickshell.env("HOME")
     property bool isDark: true

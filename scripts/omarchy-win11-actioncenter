@@ -6,10 +6,19 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_DIR="$HOME/.config/omarchy-undercover"
 
-QS_SRC="$CONFIG_DIR/quickshell/win11-actioncenter"
-if [[ ! -d "$QS_SRC" && -d "${SCRIPT_DIR}/../configs/quickshell/win11-actioncenter" ]]; then
-    QS_SRC="${SCRIPT_DIR}/../configs/quickshell/win11-actioncenter"
-fi
+QS_SRC=""
+for cand in \
+    "$CONFIG_DIR/quickshell/win11-actioncenter" \
+    "$CONFIG_DIR/configs/quickshell/win11-actioncenter" \
+    "${SCRIPT_DIR}/../quickshell/win11-actioncenter" \
+    "${SCRIPT_DIR}/../configs/quickshell/win11-actioncenter" \
+    "${SCRIPT_DIR}/quickshell/win11-actioncenter" \
+    "${SCRIPT_DIR}/configs/quickshell/win11-actioncenter"; do
+    if [[ -d "$cand" ]]; then
+        QS_SRC="$cand"
+        break
+    fi
+done
 
 if pgrep -f "quickshell.*win11-actioncenter" >/dev/null; then
     pkill -f "quickshell.*win11-actioncenter"

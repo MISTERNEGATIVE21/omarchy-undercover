@@ -16,9 +16,9 @@ ShellRoot {
       bottom: true
     }
     margins {
-      top: 36
+      top: 8
       right: 12
-      bottom: 12
+      bottom: 10
     }
 
     WlrLayershell.layer: WlrLayer.Overlay
@@ -27,7 +27,7 @@ ShellRoot {
     exclusiveZone: 0
     color: "transparent"
 
-    implicitWidth: 440
+    implicitWidth: Math.min(440, (screen ? screen.width : 1280) - 24)
 
     property bool wifiOn: true
     property bool btOn: true

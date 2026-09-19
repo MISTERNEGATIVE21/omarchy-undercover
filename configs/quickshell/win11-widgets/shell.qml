@@ -16,7 +16,7 @@ ShellRoot {
     }
     margins {
       left: 12
-      bottom: 54
+      bottom: 10
     }
 
     WlrLayershell.layer: WlrLayer.Overlay
@@ -25,8 +25,8 @@ ShellRoot {
     exclusiveZone: 0
     color: "transparent"
 
-    implicitWidth: 520
-    implicitHeight: Math.min(740, (screen ? screen.height : 768) - 68)
+    implicitWidth: Math.min(500, (screen ? screen.width : 1280) - 24)
+    implicitHeight: Math.min(620, (screen ? screen.height : 720) - 70)
 
     property bool wifiEnabled: true
     property bool btEnabled: true
@@ -138,6 +138,14 @@ ShellRoot {
           clip: true
           boundsBehavior: Flickable.StopAtBounds
 
+          WheelHandler {
+            target: flick
+            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+            onWheel: function(event) {
+              flick.contentY = Math.max(0, Math.min(flick.contentHeight - flick.height, flick.contentY - event.angleDelta.y))
+            }
+          }
+
           ColumnLayout {
             id: cardsColumn
             width: flick.width
@@ -171,7 +179,8 @@ ShellRoot {
                     color: widgetsWindow.wifiEnabled ? "#0078d4" : Qt.rgba(1, 1, 1, 0.08)
                     clip: true
                     RowLayout {
-                      anchors.centerIn: parent
+                      anchors.fill: parent
+                      anchors.margins: 8
                       spacing: 6
                       Text { text: "󰤨"; font.pixelSize: 15; color: "#ffffff" }
                       Text {
@@ -181,6 +190,7 @@ ShellRoot {
                         font.weight: Font.DemiBold
                         color: "#ffffff"
                         elide: Text.ElideRight
+                        Layout.fillWidth: true
                       }
                     }
                     MouseArea {
@@ -202,7 +212,8 @@ ShellRoot {
                     color: widgetsWindow.btEnabled ? "#0078d4" : Qt.rgba(1, 1, 1, 0.08)
                     clip: true
                     RowLayout {
-                      anchors.centerIn: parent
+                      anchors.fill: parent
+                      anchors.margins: 8
                       spacing: 6
                       Text { text: "󰂯"; font.pixelSize: 15; color: "#ffffff" }
                       Text {
@@ -212,6 +223,7 @@ ShellRoot {
                         font.weight: Font.DemiBold
                         color: "#ffffff"
                         elide: Text.ElideRight
+                        Layout.fillWidth: true
                       }
                     }
                     MouseArea {

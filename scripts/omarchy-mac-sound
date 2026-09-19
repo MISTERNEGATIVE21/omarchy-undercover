@@ -6,10 +6,19 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_DIR="$HOME/.config/omarchy-undercover"
 
-QS_SRC="$CONFIG_DIR/quickshell/mac-sound"
-if [[ ! -d "$QS_SRC" && -d "${SCRIPT_DIR}/../configs/quickshell/mac-sound" ]]; then
-    QS_SRC="${SCRIPT_DIR}/../configs/quickshell/mac-sound"
-fi
+QS_SRC=""
+for cand in \
+    "$CONFIG_DIR/quickshell/mac-sound" \
+    "$CONFIG_DIR/configs/quickshell/mac-sound" \
+    "${SCRIPT_DIR}/../quickshell/mac-sound" \
+    "${SCRIPT_DIR}/../configs/quickshell/mac-sound" \
+    "${SCRIPT_DIR}/quickshell/mac-sound" \
+    "${SCRIPT_DIR}/configs/quickshell/mac-sound"; do
+    if [[ -d "$cand" ]]; then
+        QS_SRC="$cand"
+        break
+    fi
+done
 
 if pgrep -f "quickshell.*mac-sound" >/dev/null; then
     pkill -f "quickshell.*mac-sound"

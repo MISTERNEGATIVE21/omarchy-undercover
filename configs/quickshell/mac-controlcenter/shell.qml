@@ -16,8 +16,8 @@ ShellRoot {
       right: true
     }
     margins {
-      top: 36
-      right: 14
+      top: 8
+      right: 12
     }
 
     WlrLayershell.layer: WlrLayer.Overlay
@@ -26,8 +26,8 @@ ShellRoot {
     exclusiveZone: 0
     color: "transparent"
 
-    implicitWidth: 360
-    implicitHeight: 600
+    implicitWidth: Math.min(360, (screen ? screen.width : 1280) - 24)
+    implicitHeight: Math.min(600, (screen ? screen.height : 720) - 50)
 
     property string homeDir: Quickshell.env("HOME")
     property bool isLight: false
