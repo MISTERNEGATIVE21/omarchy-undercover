@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "omarchy-undercover.win11-weather",
   "name": "Windows 11 Weather Ticker",
-  "version": "5.5.0",
+  "version": "5.6.0",
   "author": "misternegative21",
   "description": "Windows 11 Fluent Weather Taskbar Widget & Board Summoner",
   "kinds": [

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "omarchy-undercover.mac-bluetooth",
   "name": "macOS Bluetooth Indicator",
-  "version": "5.5.0",
+  "version": "5.6.0",
   "author": "misternegative21",
   "description": "macOS Sequoia top bar Bluetooth indicator",
   "kinds": [
