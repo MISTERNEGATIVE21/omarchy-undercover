@@ -108,6 +108,15 @@ if [[ -f "${REPO_DIR}/scripts/omarchy-undercover-settings" ]]; then
     echo -e "  ${GREEN}✓${NC} Updated scripts/omarchy-undercover-settings -> ${BOLD}${TARGET_VERSION}${NC}"
 fi
 
+# 5. Update README.md
+if [[ -f "${REPO_DIR}/README.md" ]]; then
+    sed -i -E "s/^(# Omarchy Undercover)( \(v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]*)?\))?/\1 (v${TARGET_VERSION})/" "${REPO_DIR}/README.md"
+    sed -i -E "s/(badge\/version-v?)[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]*)?/\1${TARGET_VERSION}/" "${REPO_DIR}/README.md"
+    sed -i -E "s/(releases\/tag\/v)[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]*)?/\1${TARGET_VERSION}/" "${REPO_DIR}/README.md"
+    MODIFIED_FILES+=("README.md")
+    echo -e "  ${GREEN}✓${NC} Updated README.md -> ${BOLD}${TARGET_VERSION}${NC}"
+fi
+
 shopt -s nullglob
 
 # 5. Update all configs/plugins/*/manifest.json
