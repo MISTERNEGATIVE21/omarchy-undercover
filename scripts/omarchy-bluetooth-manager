@@ -24,6 +24,9 @@ window.bt-manager {
     padding: 10px 14px;
     margin-bottom: 6px;
 }
+.bt-name {
+    font-weight: bold;
+}
 """
 
 class BluetoothManagerWindow(Adw.Window):
@@ -122,8 +125,9 @@ class BluetoothManagerWindow(Adw.Window):
             lbl_icon.set_markup('<span size="large">󰂯</span>')
 
             info_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-            lbl_name = Gtk.Label(label=name)
-            lbl_name.set_markup(f"<b>{name}</b>")
+            lbl_name = Gtk.Label()
+            lbl_name.set_text(name)
+            lbl_name.add_css_class("bt-name")
             lbl_name.set_halign(Gtk.Align.START)
             
             lbl_mac = Gtk.Label(label=mac)
