@@ -335,6 +335,7 @@ ShellRoot {
             Text { text: "✓"; color: "#007aff"; font.weight: Font.Bold }
             Text {
               text: macWifiWindow.activeSsid
+              textFormat: Text.PlainText
               font.family: "SF Pro Text"
               font.pixelSize: 12
               font.weight: Font.DemiBold
@@ -394,6 +395,7 @@ ShellRoot {
                 Text { text: modelData.inUse ? "󰤨" : (modelData.signal > 60 ? "󰤨" : (modelData.signal > 30 ? "󰤥" : "󰤟")); font.pixelSize: 13; color: modelData.inUse ? "#007aff" : (macWifiWindow.isDark ? "#ffffff" : "#1a1a1a") }
                 Text {
                   text: modelData.ssid
+                  textFormat: Text.PlainText
                   font.family: "SF Pro Text"
                   font.pixelSize: 12
                   font.weight: modelData.inUse ? Font.DemiBold : Font.Normal

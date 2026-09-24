@@ -404,6 +404,7 @@ ShellRoot {
                     }
                     Text {
                       text: controlCenterWindow.wifiOn ? controlCenterWindow.wifiSsid : "Off"
+                      textFormat: Text.PlainText
                       font.family: "SF Pro Text, -apple-system, sans-serif"
                       font.pixelSize: 10
                       color: controlCenterWindow.isLight ? "#515154" : Qt.rgba(1, 1, 1, 0.72)
@@ -1084,6 +1085,7 @@ ShellRoot {
             Text { text: "✓"; color: "#007aff"; font.bold: true }
             Text {
               text: controlCenterWindow.wifiSsid
+              textFormat: Text.PlainText
               font.family: "SF Pro Text"
               font.pixelSize: 12
               font.bold: true
@@ -1154,6 +1156,7 @@ ShellRoot {
                   }
                   Text {
                     text: modelData.ssid
+                    textFormat: Text.PlainText
                     font.family: "SF Pro Text"
                     font.pixelSize: 11
                     font.bold: modelData.inUse

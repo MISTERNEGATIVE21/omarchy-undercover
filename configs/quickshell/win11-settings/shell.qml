@@ -935,7 +935,7 @@ ShellRoot {
                     ColumnLayout {
                       Layout.fillWidth: true
                       Text { text: "Wi-Fi Connection"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
-                      Text { text: settingsWin.wifiEnabled ? settingsWin.wifiSsid : "Wi-Fi is turned off"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                      Text { text: settingsWin.wifiEnabled ? settingsWin.wifiSsid : "Wi-Fi is turned off"; textFormat: Text.PlainText; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
                     }
                     Switch {
                       checked: settingsWin.wifiEnabled

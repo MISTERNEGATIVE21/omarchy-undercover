@@ -26,6 +26,9 @@ window.wifi-manager {
     padding: 10px 14px;
     margin-bottom: 6px;
 }
+.wifi-name {
+    font-weight: bold;
+}
 """
 
 class WifiManagerWindow(Adw.Window):
@@ -162,8 +165,9 @@ class WifiManagerWindow(Adw.Window):
             lbl_icon.set_markup(f'<span size="large" color="#00f2fe">{icon}</span>')
 
             info_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-            lbl_name = Gtk.Label(label=ssid)
-            lbl_name.set_markup(f"<b>{ssid}</b>")
+            lbl_name = Gtk.Label()
+            lbl_name.set_text(ssid)
+            lbl_name.add_css_class("wifi-name")
             lbl_name.set_halign(Gtk.Align.START)
             
             lbl_sec = Gtk.Label(label=f"Signal: {sig}% • {sec}")

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "omarchy-undercover.win11-clock",
   "name": "Windows 11 Clock & Notification Center",
-  "version": "5.6.0",
+  "version": "5.6.1",
   "author": "misternegative21",
   "license": "GPL-3.0-or-later",
   "description": "Authentic 2-line Windows 11 system clock and calendar widget with Segoe UI typography",

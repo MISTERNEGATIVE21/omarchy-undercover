@@ -425,6 +425,7 @@ ShellRoot {
               Layout.fillWidth: true
               Text {
                 text: wifiWindow.activeSsid
+                textFormat: Text.PlainText
                 font.family: "Segoe UI, sans-serif"
                 font.pixelSize: 12
                 font.weight: Font.DemiBold
@@ -603,6 +604,7 @@ ShellRoot {
 
                   Text {
                     text: modelData.ssid
+                    textFormat: Text.PlainText
                     font.family: "Segoe UI, sans-serif"
                     font.pixelSize: 12
                     font.weight: modelData.inUse ? Font.DemiBold : Font.Normal

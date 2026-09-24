@@ -185,6 +185,7 @@ ShellRoot {
                       Text { text: "󰤨"; font.pixelSize: 15; color: "#ffffff" }
                       Text {
                         text: widgetsWindow.wifiEnabled ? widgetsWindow.wifiSsid : "Wi-Fi Off"
+                        textFormat: Text.PlainText
                         font.family: "Segoe UI"
                         font.pixelSize: 11
                         font.weight: Font.DemiBold

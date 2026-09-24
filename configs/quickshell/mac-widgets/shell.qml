@@ -157,6 +157,7 @@ ShellRoot {
                   Text { text: "󰤨"; font.pixelSize: 14; color: "#ffffff" }
                   Text {
                     text: macWidgetsWindow.wifiOn ? macWidgetsWindow.wifiSsid : "Wi-Fi Off"
+                    textFormat: Text.PlainText
                     font.pixelSize: 11
                     font.weight: Font.DemiBold
                     color: "#ffffff"

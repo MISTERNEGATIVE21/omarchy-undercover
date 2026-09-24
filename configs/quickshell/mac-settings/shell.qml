@@ -1281,6 +1281,7 @@ ShellRoot {
                       }
                       Text {
                         text: settingsWin.wifiEnabled ? "Connected to: " + settingsWin.wifiSsid : "Wi-Fi is Off"
+                        textFormat: Text.PlainText
                         font.family: "SF Pro Text, -apple-system, sans-serif"
                         font.pixelSize: 11
                         color: settingsWin.textSecondary

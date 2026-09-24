@@ -396,6 +396,7 @@ ShellRoot {
                     }
                     Text {
                       text: actionCenterWindow.wifiEnabled ? actionCenterWindow.wifiSsid : "Disconnected"
+                      textFormat: Text.PlainText
                       font.family: "Segoe UI"
                       font.pixelSize: 9
                       color: actionCenterWindow.wifiEnabled ? Qt.rgba(1, 1, 1, 0.85) : actionCenterWindow.textSecondary
@@ -1170,6 +1171,7 @@ ShellRoot {
               Layout.fillWidth: true
               Text {
                 text: actionCenterWindow.wifiSsid
+                textFormat: Text.PlainText
                 font.family: "Segoe UI, sans-serif"
                 font.pixelSize: 11
                 font.bold: true
@@ -1279,6 +1281,7 @@ ShellRoot {
 
                   Text {
                     text: modelData.ssid
+                    textFormat: Text.PlainText
                     font.family: "Segoe UI, sans-serif"
                     font.pixelSize: 11
                     font.bold: modelData.inUse

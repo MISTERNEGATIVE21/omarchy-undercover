@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "omarchy-undercover.win11-showdesktop",
   "name": "Windows 11 Show Desktop Sliver",
-  "version": "5.6.0",
+  "version": "5.6.1",
   "author": "misternegative21",
   "description": "Authentic Windows 11 far-right taskbar sliver to reveal desktop",
   "kinds": [
