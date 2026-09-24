@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "omarchy-undercover.win11-actioncenter",
   "name": "Windows 11 Action Center Pill",
-  "version": "5.7.0",
+  "version": "5.7.1",
   "author": "misternegative21",
   "description": "Windows 11 Fluent unified status indicators and Quick Settings toggle",
   "kinds": [

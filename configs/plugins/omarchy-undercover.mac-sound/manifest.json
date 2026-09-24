@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "omarchy-undercover.mac-sound",
   "name": "macOS Sound Indicator",
-  "version": "5.7.0",
+  "version": "5.7.1",
   "author": "misternegative21",
   "description": "macOS Sequoia top bar Sound and Volume indicator",
   "kinds": [

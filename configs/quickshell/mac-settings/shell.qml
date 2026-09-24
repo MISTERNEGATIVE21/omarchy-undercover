@@ -16,6 +16,25 @@ ShellRoot {
     minimumSize: Qt.size(Math.min(760, (Quickshell.screens[0] ? Quickshell.screens[0].width - 40 : 760)), Math.min(480, (Quickshell.screens[0] ? Quickshell.screens[0].height - 60 : 480)))
     color: "transparent"
 
+    Component.onCompleted: {
+      raiseTimer.start()
+    }
+
+    Timer {
+      id: raiseTimer
+      interval: 60
+      running: true
+      repeat: false
+      onTriggered: {
+        Quickshell.execDetached([
+          "bash", "-c",
+          "hyprctl dispatch 'hl.dsp.focus({ window = \"title:^System Settings$\" })' 2>/dev/null || hyprctl dispatch focuswindow 'title:^System Settings$' 2>/dev/null || true; " +
+          "hyprctl dispatch 'hl.dsp.window.alter_zorder({ mode = \"top\" })' 2>/dev/null || hyprctl dispatch alterzorder top 2>/dev/null || true; " +
+          "hyprctl dispatch 'hl.dsp.window.bring_to_top()' 2>/dev/null || hyprctl dispatch bringactivetotop 2>/dev/null || true"
+        ])
+      }
+    }
+
     property string homeDir: Quickshell.env("HOME")
     property string userName: Quickshell.env("USER") || "User"
     property bool isDark: true
@@ -1150,7 +1169,7 @@ ShellRoot {
                       Item { Layout.fillWidth: true }
                       Button {
                         text: "Customize Shortcuts"
-                        onClicked: settingsWin.runCmd("omarchy-undercover-settings")
+                        onClicked: settingsWin.runCmd("omarchy-undercover-settings --legacy -s")
                       }
                     }
                   }

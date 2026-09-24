@@ -1,6 +1,6 @@
-# Omarchy Undercover (v5.7.0)
+# Omarchy Undercover (v5.7.1)
 
-[![Version](https://img.shields.io/badge/version-v5.7.0?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases/tag/v5.7.0)
+[![Version](https://img.shields.io/badge/version-v5.7.1?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases/tag/v5.7.1)
 [![Release](https://img.shields.io/github/v/release/MISTERNEGATIVE21/omarchy-undercover?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases)
 [![Compositor](https://img.shields.io/badge/compositor-Hyprland-00f2fe?style=flat-square)](https://hyprland.org)
 [![Engine](https://img.shields.io/badge/engine-Quickshell%20%7C%20Waybar-ff2d55?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover)

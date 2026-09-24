@@ -58,6 +58,8 @@ ShellRoot {
     }
 
     function runCmd(cmd) {
+      macBtWindow.visible = false
+      Qt.quit()
       Quickshell.execDetached(["bash", "-c", cmd])
     }
 

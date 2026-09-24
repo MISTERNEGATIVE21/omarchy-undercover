@@ -123,6 +123,12 @@ ShellRoot {
       Quickshell.execDetached(["bash", "-c", cmd])
     }
 
+    function launchApp(cmd) {
+      controlCenterWindow.visible = false
+      Qt.quit()
+      Quickshell.execDetached(["bash", "-c", cmd])
+    }
+
     Process {
       id: wifiConnectProc
       property string secret: ""
@@ -600,7 +606,7 @@ ShellRoot {
               MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
-                onClicked: controlCenterWindow.runCmd("omarchy-undercover-settings -a")
+                onClicked: controlCenterWindow.launchApp("omarchy-undercover-settings -a")
               }
             }
 
@@ -1305,8 +1311,7 @@ ShellRoot {
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onClicked: {
-              Qt.quit()
-              controlCenterWindow.runCmd("nm-connection-editor || omarchy-undercover-settings")
+              controlCenterWindow.launchApp("nm-connection-editor || omarchy-undercover-settings")
             }
           }
         }
@@ -1613,8 +1618,7 @@ ShellRoot {
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onClicked: {
-              Qt.quit()
-              controlCenterWindow.runCmd("blueman-manager || omarchy-undercover-settings")
+              controlCenterWindow.launchApp("blueman-manager || omarchy-undercover-settings")
             }
           }
         }

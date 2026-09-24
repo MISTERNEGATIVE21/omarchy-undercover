@@ -28,7 +28,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio, GLib, Gdk
 
 APP_ID = "org.omarchy.undercover.settings"
-VERSION = "5.7.0"
+VERSION = "5.7.1"
 
 _script_parent = Path(__file__).resolve().parent.parent
 if (_script_parent / "manifest.json").exists():
@@ -559,6 +559,18 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         vbox.append(header)
         vbox.append(self.stack)
         self.toast_overlay.set_child(vbox)
+
+        if shutil.which("hyprctl"):
+            subprocess.run(["hyprctl", "eval", f'if hl and hl.window_rule then hl.window_rule({{ match = {{ class = "^{APP_ID}$" }}, float = true, center = true, size = {{ 920, 620 }}, focus_on_activate = true }}) end'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(["hyprctl", "eval", f'if o and o.window then o.window({{ class = "^{APP_ID}$" }}, {{ float = true, center = true, size = {{ 920, 620 }}, focus_on_activate = true }}) end'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            GLib.timeout_add(100, self._ensure_raised)
+
+    def _ensure_raised(self):
+        if shutil.which("hyprctl"):
+            subprocess.run(["hyprctl", "dispatch", f'hl.dsp.focus({{ window = "class:^{APP_ID}$" }})'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(["hyprctl", "dispatch", 'hl.dsp.window.alter_zorder({ mode = "top" })'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(["hyprctl", "dispatch", 'hl.dsp.window.bring_to_top()'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return False
 
     def show_toast(self, message):
         toast = Adw.Toast.new(message)
@@ -1550,6 +1562,23 @@ class UndercoverSettingsApp(Adw.Application):
             splash.present()
 
 if __name__ == "__main__":
+    if shutil.which("hyprctl"):
+        try:
+            proc = subprocess.run(["hyprctl", "clients", "-j"], capture_output=True, text=True, check=False)
+            if proc.returncode == 0:
+                clients = json.loads(proc.stdout)
+                for c in clients:
+                    cls = c.get("class", "")
+                    title = c.get("title", "")
+                    addr = c.get("address", "")
+                    if (cls == "org.quickshell" and title in ("Settings", "System Settings")) or cls == APP_ID:
+                        subprocess.run(["hyprctl", "dispatch", f'hl.dsp.focus({{ window = "address:{addr}" }})'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        subprocess.run(["hyprctl", "dispatch", f'hl.dsp.window.alter_zorder({{ mode = "top", window = "address:{addr}" }})'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        subprocess.run(["hyprctl", "dispatch", f'hl.dsp.window.bring_to_top({{ window = "address:{addr}" }})'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        sys.exit(0)
+        except Exception:
+            pass
+
     if "--legacy" not in sys.argv and shutil.which("quickshell"):
         # Check active mode from state or arguments
         state = read_state()
@@ -1566,7 +1595,8 @@ if __name__ == "__main__":
 
         if is_mac:
             if shutil.which("hyprctl"):
-                subprocess.run(["hyprctl", "eval", 'if o and o.window then o.window({ class = "^org.quickshell$", title = "^System Settings$" }, { float = true, center = true, size = { 980, 640 } }) end'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.run(["hyprctl", "eval", 'if hl and hl.window_rule then hl.window_rule({ match = { class = "^org.quickshell$", title = "^System Settings$" }, float = true, center = true, size = { 980, 640 }, focus_on_activate = true }) end'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.run(["hyprctl", "eval", 'if o and o.window then o.window({ class = "^org.quickshell$", title = "^System Settings$" }, { float = true, center = true, size = { 980, 640 }, focus_on_activate = true }) end'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             mac_paths = [
                 Path.home() / ".config/quickshell/mac-settings",
                 Path(__file__).resolve().parent.parent / "configs/quickshell/mac-settings",
@@ -1577,7 +1607,8 @@ if __name__ == "__main__":
                     sys.exit(subprocess.call(["quickshell", "-p", str(p)]))
 
         if shutil.which("hyprctl"):
-            subprocess.run(["hyprctl", "eval", 'if o and o.window then o.window({ class = "^org.quickshell$", title = "^Settings$" }, { float = true, center = true, size = { 980, 640 } }) end'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(["hyprctl", "eval", 'if hl and hl.window_rule then hl.window_rule({ match = { class = "^org.quickshell$", title = "^Settings$" }, float = true, center = true, size = { 980, 640 }, focus_on_activate = true }) end'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(["hyprctl", "eval", 'if o and o.window then o.window({ class = "^org.quickshell$", title = "^Settings$" }, { float = true, center = true, size = { 980, 640 }, focus_on_activate = true }) end'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         qs_paths = [
             Path.home() / ".config/quickshell/win11-settings",
             Path(__file__).resolve().parent.parent / "configs/quickshell/win11-settings",

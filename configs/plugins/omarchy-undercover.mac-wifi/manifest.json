@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "omarchy-undercover.mac-wifi",
   "name": "macOS Wi-Fi Indicator",
-  "version": "5.7.0",
+  "version": "5.7.1",
   "author": "misternegative21",
   "description": "macOS Sequoia Wi-Fi Status Indicator and Menu",
   "kinds": [

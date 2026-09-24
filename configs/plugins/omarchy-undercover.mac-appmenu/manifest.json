@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "omarchy-undercover.mac-appmenu",
   "name": "macOS Application Menu",
-  "version": "5.7.0",
+  "version": "5.7.1",
   "author": "misternegative21",
   "description": "Authentic macOS Sequoia App Menu with Active Application Title and File, Edit, View, Go, Window, Help menus",
   "kinds": [

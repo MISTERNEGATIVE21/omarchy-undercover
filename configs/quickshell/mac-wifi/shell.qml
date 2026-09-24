@@ -64,6 +64,8 @@ ShellRoot {
     }
 
     function runCmd(cmd) {
+      macWifiWindow.visible = false
+      Qt.quit()
       Quickshell.execDetached(["bash", "-c", cmd])
     }
 

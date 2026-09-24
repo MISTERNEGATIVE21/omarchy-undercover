@@ -304,11 +304,35 @@ hl.layer_rule({ match = { namespace = "waybar" }, blur = true, ignore_alpha = tr
 hl.layer_rule({ match = { namespace = "rofi" }, blur = true, ignore_alpha = true })
 
 -- Windows 11 Settings Window Rules
+hl.window_rule({
+  match = { class = "^org.quickshell$", title = "^Settings$" },
+  float = true,
+  center = true,
+  size = { 980, 640 },
+  focus_on_activate = true,
+})
+hl.window_rule({
+  match = { class = "^org.omarchy.undercover.settings$" },
+  float = true,
+  center = true,
+  size = { 1020, 700 },
+  focus_on_activate = true,
+})
+
 if o and o.window then
   o.window({ class = "^org.quickshell$", title = "^Settings$" }, {
     float = true,
     center = true,
     size = { 980, 640 },
+    focus_on_activate = true,
+    tag = "-default-opacity",
+    opacity = "1 1",
+  })
+  o.window({ class = "^org.omarchy.undercover.settings$" }, {
+    float = true,
+    center = true,
+    size = { 1020, 700 },
+    focus_on_activate = true,
     tag = "-default-opacity",
     opacity = "1 1",
   })

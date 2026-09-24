@@ -298,6 +298,7 @@ ShellRoot {
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onClicked: {
+              macSoundWindow.visible = false
               Qt.quit()
               macSoundWindow.runCmd("pavucontrol || omarchy-undercover-settings")
             }

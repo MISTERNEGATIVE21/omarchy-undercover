@@ -22,10 +22,21 @@ if [[ ! -d "$DIR" && -d "$PLUGIN_DIR/quickshell/win11-settings" ]]; then
 fi
 
 if command -v hyprctl >/dev/null 2>&1; then
-    hyprctl eval 'if o and o.window then o.window({ class = "^org.quickshell$", title = "^Settings$" }, { float = true, center = true, size = { 980, 640 } }) end' >/dev/null 2>&1 || true
+    # If Settings window is already open, focus it and bring it to top immediately
+    TARGET_ADDR=$(hyprctl clients -j 2>/dev/null | jq -r '.[] | select((.class == "org.quickshell" and (.title == "Settings" or .title == "System Settings")) or .class == "org.omarchy.undercover.settings") | .address' 2>/dev/null | head -n1)
+    if [[ -n "$TARGET_ADDR" && "$TARGET_ADDR" != "null" ]]; then
+        hyprctl dispatch "hl.dsp.focus({ window = \"address:${TARGET_ADDR}\" })" >/dev/null 2>&1 || hyprctl dispatch focuswindow "address:${TARGET_ADDR}" >/dev/null 2>&1 || true
+        hyprctl dispatch "hl.dsp.window.alter_zorder({ mode = \"top\", window = \"address:${TARGET_ADDR}\" })" >/dev/null 2>&1 || true
+        hyprctl dispatch "hl.dsp.window.bring_to_top({ window = \"address:${TARGET_ADDR}\" })" >/dev/null 2>&1 || hyprctl dispatch bringactivetotop >/dev/null 2>&1 || true
+        exit 0
+    fi
+
+    hyprctl eval 'if hl and hl.window_rule then hl.window_rule({ match = { class = "^org.quickshell$", title = "^Settings$" }, float = true, center = true, size = { 980, 640 }, focus_on_activate = true }) end' >/dev/null 2>&1 || true
+    hyprctl eval 'if o and o.window then o.window({ class = "^org.quickshell$", title = "^Settings$" }, { float = true, center = true, size = { 980, 640 }, focus_on_activate = true }) end' >/dev/null 2>&1 || true
     hyprctl keyword windowrulev2 "float,class:^(org.quickshell)$,title:^(Settings)$" >/dev/null 2>&1 || true
     hyprctl keyword windowrulev2 "center,class:^(org.quickshell)$,title:^(Settings)$" >/dev/null 2>&1 || true
     hyprctl keyword windowrulev2 "size 980 640,class:^(org.quickshell)$,title:^(Settings)$" >/dev/null 2>&1 || true
+    hyprctl keyword windowrulev2 "focusonactivate,class:^(org.quickshell)$,title:^(Settings)$" >/dev/null 2>&1 || true
 fi
 
 if command -v quickshell >/dev/null 2>&1 && [[ -d "$DIR" ]]; then

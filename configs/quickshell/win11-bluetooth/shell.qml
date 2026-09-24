@@ -63,6 +63,8 @@ ShellRoot {
     }
 
     function runCmd(cmd) {
+      btWindow.visible = false
+      Qt.quit()
       Quickshell.execDetached(["bash", "-c", cmd])
     }
 
