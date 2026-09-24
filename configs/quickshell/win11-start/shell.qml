@@ -172,6 +172,16 @@ ShellRoot {
              : (startWindow.isTransparent ? Qt.rgba(0.96, 0.96, 0.98, 0.96) : "#f0f2f5")
       border.color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.12)
       border.width: 1
+      opacity: 0
+      y: 14
+
+      Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+      Behavior on y { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+
+      Component.onCompleted: {
+        opacity = 1.0
+        y = 0
+      }
 
       ColumnLayout {
         anchors.fill: parent

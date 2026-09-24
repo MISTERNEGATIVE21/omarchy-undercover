@@ -22,6 +22,7 @@
     "modules-center": ["clock"],
     "modules-right": [
       "custom/undercover",
+      "custom/hiddenbar",
       "custom/siri",
       "network",
       "bluetooth",
@@ -101,6 +102,12 @@
       "tooltip": "Omarchy Undercover Camouflage Switcher\n• Click: Toggle Undercover Mode\n• Right-Click: Switch to Windows 11",
       "on-click": "omarchy-undercover --toggle",
       "on-click-right": "omarchy-undercover -w11"
+    },
+    "custom/hiddenbar": {
+      "format": "",
+      "tooltip": "macOS Hidden Bar Toggle\n• Click: Hide / Unhide Menu Bar Items\n• Right-Click: Toggle Show Desktop",
+      "on-click": "omarchy-undercover-hiddenbar --toggle",
+      "on-click-right": "omarchy-undercover-show-desktop"
     }
   },
   {

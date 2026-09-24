@@ -300,7 +300,34 @@ ShellRoot {
     }
 
     Timer {
-      interval: 2500
+      id: briThrottleTimer
+      interval: 40
+      repeat: false
+      onTriggered: {
+        controlCenterWindow.runCmd("brightnessctl set " + controlCenterWindow.displayBrightness + "% >/dev/null 2>&1")
+      }
+    }
+
+    Timer {
+      id: volThrottleTimer
+      interval: 40
+      repeat: false
+      onTriggered: {
+        controlCenterWindow.runCmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ " + (controlCenterWindow.masterVolume / 100.0) + " >/dev/null 2>&1")
+      }
+    }
+
+    Timer {
+      id: micThrottleTimer
+      interval: 40
+      repeat: false
+      onTriggered: {
+        controlCenterWindow.runCmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0 && wpctl set-volume @DEFAULT_AUDIO_SOURCE@ " + (controlCenterWindow.micLevel / 100.0) + " >/dev/null 2>&1")
+      }
+    }
+
+    Timer {
+      interval: 5000
       running: true
       repeat: true
       triggeredOnStart: true
@@ -318,6 +345,16 @@ ShellRoot {
       border.color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.10) : Qt.rgba(1, 1, 1, 0.18)
       border.width: 1
       clip: true
+      opacity: 0
+      scale: 0.97
+
+      Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+      Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+
+      Component.onCompleted: {
+        opacity = 1.0
+        scale = 1.0
+      }
 
       // Top Specular Highlight
       Rectangle {
@@ -657,13 +694,15 @@ ShellRoot {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 onPositionChanged: function(mouse) {
+                  if (!(mouse.buttons & Qt.LeftButton)) return
                   var p = Math.max(5, Math.min(100, Math.round((mouse.x / width) * 100)))
                   controlCenterWindow.displayBrightness = p
-                  controlCenterWindow.runCmd("brightnessctl set " + p + "% >/dev/null 2>&1")
+                  briThrottleTimer.restart()
                 }
                 onClicked: function(mouse) {
                   var p = Math.max(5, Math.min(100, Math.round((mouse.x / width) * 100)))
                   controlCenterWindow.displayBrightness = p
+                  briThrottleTimer.stop()
                   controlCenterWindow.runCmd("brightnessctl set " + p + "% >/dev/null 2>&1")
                 }
               }
@@ -719,13 +758,15 @@ ShellRoot {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 onPositionChanged: function(mouse) {
+                  if (!(mouse.buttons & Qt.LeftButton)) return
                   var p = Math.max(0, Math.min(100, Math.round((mouse.x / width) * 100)))
                   controlCenterWindow.masterVolume = p
-                  controlCenterWindow.runCmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ " + (p / 100.0) + " >/dev/null 2>&1")
+                  volThrottleTimer.restart()
                 }
                 onClicked: function(mouse) {
                   var p = Math.max(0, Math.min(100, Math.round((mouse.x / width) * 100)))
                   controlCenterWindow.masterVolume = p
+                  volThrottleTimer.stop()
                   controlCenterWindow.runCmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ " + (p / 100.0) + " >/dev/null 2>&1")
                 }
               }
@@ -781,16 +822,18 @@ ShellRoot {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 onPositionChanged: function(mouse) {
+                  if (!(mouse.buttons & Qt.LeftButton)) return
                   var p = Math.max(0, Math.min(100, Math.round((mouse.x / width) * 100)))
                   controlCenterWindow.micLevel = p
-                  controlCenterWindow.runCmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0 && wpctl set-volume @DEFAULT_AUDIO_SOURCE@ " + (p / 100.0) + " >/dev/null 2>&1")
                   controlCenterWindow.micMuted = false
+                  micThrottleTimer.restart()
                 }
                 onClicked: function(mouse) {
                   var p = Math.max(0, Math.min(100, Math.round((mouse.x / width) * 100)))
                   controlCenterWindow.micLevel = p
-                  controlCenterWindow.runCmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0 && wpctl set-volume @DEFAULT_AUDIO_SOURCE@ " + (p / 100.0) + " >/dev/null 2>&1")
                   controlCenterWindow.micMuted = false
+                  micThrottleTimer.stop()
+                  controlCenterWindow.runCmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0 && wpctl set-volume @DEFAULT_AUDIO_SOURCE@ " + (p / 100.0) + " >/dev/null 2>&1")
                 }
               }
             }
@@ -963,8 +1006,9 @@ ShellRoot {
             color: macWifiRefreshM.containsMouse ? (controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.12)) : "transparent"
             Text {
               anchors.centerIn: parent
-              text: "🔄"
-              font.pixelSize: 11
+              text: "󰑐"
+              font.pixelSize: 13
+              color: controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff"
               opacity: controlCenterWindow.isScanningWifi ? 0.4 : 1.0
             }
             MouseArea {
@@ -1030,7 +1074,12 @@ ShellRoot {
             anchors.rightMargin: 8
             spacing: 6
 
-            Text { text: "🔍"; font.pixelSize: 11; opacity: 0.6 }
+            Text {
+              text: "󰍉"
+              font.pixelSize: 13
+              color: controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff"
+              opacity: 0.65
+            }
 
             TextInput {
               id: macWifiSearchBox
@@ -1113,7 +1162,7 @@ ShellRoot {
           }
           Text {
             visible: controlCenterWindow.isScanningWifi
-            text: "Scanning..."
+            text: "󰤩 Scanning..."
             font.family: "SF Pro Text"
             font.pixelSize: 10
             color: "#007aff"
@@ -1323,8 +1372,9 @@ ShellRoot {
             color: macBtRefreshM.containsMouse ? (controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.08) : Qt.rgba(1, 1, 1, 0.12)) : "transparent"
             Text {
               anchors.centerIn: parent
-              text: "🔄"
-              font.pixelSize: 11
+              text: "󰑐"
+              font.pixelSize: 13
+              color: controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff"
               opacity: controlCenterWindow.isScanningBt ? 0.4 : 1.0
             }
             MouseArea {
@@ -1390,7 +1440,12 @@ ShellRoot {
             anchors.rightMargin: 8
             spacing: 6
 
-            Text { text: "🔍"; font.pixelSize: 11; opacity: 0.6 }
+            Text {
+              text: "󰍉"
+              font.pixelSize: 13
+              color: controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff"
+              opacity: 0.65
+            }
 
             TextInput {
               id: macBtSearchBox
@@ -1444,7 +1499,7 @@ ShellRoot {
           }
           Text {
             visible: controlCenterWindow.isScanningBt
-            text: "Scanning..."
+            text: "󰂰 Scanning..."
             font.family: "SF Pro Text"
             font.pixelSize: 10
             color: "#007aff"

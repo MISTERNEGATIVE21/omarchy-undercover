@@ -108,7 +108,16 @@ ShellRoot {
     }
 
     Timer {
-      interval: 4000
+      id: volThrottleTimer
+      interval: 40
+      repeat: false
+      onTriggered: {
+        soundWindow.runCmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ " + soundWindow.volumeLevel.toFixed(2))
+      }
+    }
+
+    Timer {
+      interval: 6000
       running: true
       repeat: true
       triggeredOnStart: true
@@ -124,6 +133,16 @@ ShellRoot {
       color: soundWindow.isDark ? Qt.rgba(0.12, 0.12, 0.16, 0.96) : Qt.rgba(0.96, 0.96, 0.98, 0.96)
       border.color: soundWindow.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.12)
       border.width: 1
+      opacity: 0
+      y: 12
+
+      Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+      Behavior on y { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+
+      Component.onCompleted: {
+        opacity = 1.0
+        y = 0
+      }
 
       ColumnLayout {
         anchors.fill: parent
@@ -239,7 +258,7 @@ ShellRoot {
                 value: soundWindow.volumeLevel
                 onMoved: {
                   soundWindow.volumeLevel = value
-                  soundWindow.runCmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ " + value.toFixed(2))
+                  volThrottleTimer.restart()
                 }
               }
             }

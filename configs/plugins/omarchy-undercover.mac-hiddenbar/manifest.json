@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "id": "omarchy-undercover.mac-sound",
-  "name": "macOS Sound Indicator",
+  "id": "omarchy-undercover.mac-hiddenbar",
+  "name": "macOS Hidden Bar Toggle",
   "version": "5.7.0",
   "author": "misternegative21",
-  "description": "macOS Sequoia top bar Sound and Volume indicator",
+  "description": "macOS Menu Bar Collapse & Hide/Unhide Items Toggle",
   "kinds": [
     "bar-widget"
   ],
@@ -12,8 +12,8 @@
     "barWidget": "Widget.qml"
   },
   "barWidget": {
-    "displayName": "Sound",
-    "category": "Hardware",
+    "displayName": "Hidden Bar",
+    "category": "Utilities",
     "allowMultiple": false,
     "defaultSection": "right"
   }

@@ -318,7 +318,34 @@ ShellRoot {
     }
 
     Timer {
-      interval: 2500
+      id: briThrottleTimer
+      interval: 40
+      repeat: false
+      onTriggered: {
+        actionCenterWindow.runCmd("brightnessctl set " + actionCenterWindow.brightnessVal + "% >/dev/null 2>&1")
+      }
+    }
+
+    Timer {
+      id: volThrottleTimer
+      interval: 40
+      repeat: false
+      onTriggered: {
+        actionCenterWindow.runCmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ " + (actionCenterWindow.volumeVal / 100.0) + " >/dev/null 2>&1")
+      }
+    }
+
+    Timer {
+      id: micThrottleTimer
+      interval: 40
+      repeat: false
+      onTriggered: {
+        actionCenterWindow.runCmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0 && wpctl set-volume @DEFAULT_AUDIO_SOURCE@ " + (actionCenterWindow.micVal / 100.0) + " >/dev/null 2>&1")
+      }
+    }
+
+    Timer {
+      interval: 5000
       running: true
       repeat: true
       triggeredOnStart: true
@@ -336,6 +363,16 @@ ShellRoot {
       border.color: actionCenterWindow.cardBorder
       border.width: 1
       clip: true
+      opacity: 0
+      y: 12
+
+      Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+      Behavior on y { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+
+      Component.onCompleted: {
+        opacity = 1.0
+        y = 0
+      }
 
       // ==========================================
       // VIEW 1: MAIN ACTION CENTER VIEW
@@ -774,13 +811,15 @@ ShellRoot {
               anchors.fill: parent
               cursorShape: Qt.PointingHandCursor
               onPositionChanged: function(mouse) {
+                if (!(mouse.buttons & Qt.LeftButton)) return
                 var p = Math.max(5, Math.min(100, Math.round((mouse.x / width) * 100)))
                 actionCenterWindow.brightnessVal = p
-                actionCenterWindow.runCmd("brightnessctl set " + p + "% >/dev/null 2>&1")
+                briThrottleTimer.restart()
               }
               onClicked: function(mouse) {
                 var p = Math.max(5, Math.min(100, Math.round((mouse.x / width) * 100)))
                 actionCenterWindow.brightnessVal = p
+                briThrottleTimer.stop()
                 actionCenterWindow.runCmd("brightnessctl set " + p + "% >/dev/null 2>&1")
               }
             }
@@ -819,13 +858,15 @@ ShellRoot {
               anchors.fill: parent
               cursorShape: Qt.PointingHandCursor
               onPositionChanged: function(mouse) {
+                if (!(mouse.buttons & Qt.LeftButton)) return
                 var p = Math.max(0, Math.min(100, Math.round((mouse.x / width) * 100)))
                 actionCenterWindow.volumeVal = p
-                actionCenterWindow.runCmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ " + (p / 100.0) + " >/dev/null 2>&1")
+                volThrottleTimer.restart()
               }
               onClicked: function(mouse) {
                 var p = Math.max(0, Math.min(100, Math.round((mouse.x / width) * 100)))
                 actionCenterWindow.volumeVal = p
+                volThrottleTimer.stop()
                 actionCenterWindow.runCmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ " + (p / 100.0) + " >/dev/null 2>&1")
               }
             }
@@ -866,15 +907,17 @@ ShellRoot {
               anchors.fill: parent
               cursorShape: Qt.PointingHandCursor
               onPositionChanged: function(mouse) {
+                if (!(mouse.buttons & Qt.LeftButton)) return
                 var p = Math.max(0, Math.min(100, Math.round((mouse.x / width) * 100)))
                 actionCenterWindow.micVal = p
                 actionCenterWindow.micMuted = false
-                actionCenterWindow.runCmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0 && wpctl set-volume @DEFAULT_AUDIO_SOURCE@ " + (p / 100.0) + " >/dev/null 2>&1")
+                micThrottleTimer.restart()
               }
               onClicked: function(mouse) {
                 var p = Math.max(0, Math.min(100, Math.round((mouse.x / width) * 100)))
                 actionCenterWindow.micVal = p
                 actionCenterWindow.micMuted = false
+                micThrottleTimer.stop()
                 actionCenterWindow.runCmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0 && wpctl set-volume @DEFAULT_AUDIO_SOURCE@ " + (p / 100.0) + " >/dev/null 2>&1")
               }
             }
@@ -997,8 +1040,8 @@ ShellRoot {
             color: wifiScanMouse.containsMouse ? actionCenterWindow.hoverBg : "transparent"
             Text {
               anchors.centerIn: parent
-              text: "🔄"
-              font.pixelSize: 12
+              text: "󰑐"
+              font.pixelSize: 13
               color: actionCenterWindow.textPrimary
               opacity: actionCenterWindow.isScanningWifi ? 0.4 : 1.0
             }
@@ -1110,7 +1153,7 @@ ShellRoot {
             anchors.rightMargin: 8
             spacing: 6
 
-            Text { text: "🔍"; font.pixelSize: 10; color: actionCenterWindow.textMuted }
+            Text { text: "󰍉"; font.pixelSize: 13; color: actionCenterWindow.textMuted }
 
             TextInput {
               id: acWifiSearch
@@ -1233,7 +1276,7 @@ ShellRoot {
           }
           Text {
             visible: actionCenterWindow.isScanningWifi
-            text: "Scanning..."
+            text: "󰤩 Scanning..."
             font.family: "Segoe UI, sans-serif"
             font.pixelSize: 10
             color: actionCenterWindow.accentColor
@@ -1488,8 +1531,8 @@ ShellRoot {
             color: btScanMouse.containsMouse ? actionCenterWindow.hoverBg : "transparent"
             Text {
               anchors.centerIn: parent
-              text: "🔄"
-              font.pixelSize: 12
+              text: "󰑐"
+              font.pixelSize: 13
               color: actionCenterWindow.textPrimary
               opacity: actionCenterWindow.isScanningBt ? 0.4 : 1.0
             }
@@ -1601,7 +1644,7 @@ ShellRoot {
             anchors.rightMargin: 8
             spacing: 6
 
-            Text { text: "🔍"; font.pixelSize: 10; color: actionCenterWindow.textMuted }
+            Text { text: "󰍉"; font.pixelSize: 13; color: actionCenterWindow.textMuted }
 
             TextInput {
               id: acBtSearch
@@ -1655,7 +1698,7 @@ ShellRoot {
           }
           Text {
             visible: actionCenterWindow.isScanningBt
-            text: "Scanning..."
+            text: "󰂰 Scanning..."
             font.family: "Segoe UI, sans-serif"
             font.pixelSize: 10
             color: actionCenterWindow.accentColor

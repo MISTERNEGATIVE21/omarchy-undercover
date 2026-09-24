@@ -203,6 +203,16 @@ ShellRoot {
       border.color: wifiWindow.cardBorder
       border.width: 1
       clip: true
+      opacity: 0
+      y: 12
+
+      Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+      Behavior on y { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+
+      Component.onCompleted: {
+        opacity = 1.0
+        y = 0
+      }
 
       ColumnLayout {
         anchors.fill: parent
@@ -238,8 +248,8 @@ ShellRoot {
             color: scanMouse.containsMouse ? (wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
             Text {
               anchors.centerIn: parent
-              text: "🔄"
-              font.pixelSize: 12
+              text: "󰑐"
+              font.pixelSize: 14
               color: wifiWindow.textPrimary
             }
             MouseArea {
@@ -352,8 +362,8 @@ ShellRoot {
             spacing: 8
 
             Text {
-              text: "🔍"
-              font.pixelSize: 11
+              text: "󰍉"
+              font.pixelSize: 13
               color: wifiWindow.textMuted
             }
 
@@ -493,7 +503,7 @@ ShellRoot {
           }
           Text {
             visible: wifiWindow.isScanning
-            text: "Scanning..."
+            text: "󰤩 Scanning..."
             font.family: "Segoe UI, sans-serif"
             font.pixelSize: 11
             color: wifiWindow.accentColor

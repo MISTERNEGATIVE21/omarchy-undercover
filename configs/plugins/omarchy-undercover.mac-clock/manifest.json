@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "omarchy-undercover.mac-clock",
   "name": "macOS Menu Bar Clock",
-  "version": "5.6.1",
+  "version": "5.7.0",
   "author": "misternegative21",
   "description": "Authentic macOS Sequoia Date and Time Status Widget",
   "kinds": [

@@ -1,6 +1,6 @@
-# Omarchy Undercover (v5.6.1)
+# Omarchy Undercover (v5.7.0)
 
-[![Version](https://img.shields.io/badge/version-v5.6.1-blue?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases/tag/v5.6.1)
+[![Version](https://img.shields.io/badge/version-v5.7.0?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases/tag/v5.7.0)
 [![Release](https://img.shields.io/github/v/release/MISTERNEGATIVE21/omarchy-undercover?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases)
 [![Compositor](https://img.shields.io/badge/compositor-Hyprland-00f2fe?style=flat-square)](https://hyprland.org)
 [![Engine](https://img.shields.io/badge/engine-Quickshell%20%7C%20Waybar-ff2d55?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover)
@@ -38,6 +38,7 @@ The suite configures status bars, docks, application launchers, window rules, co
 
 ### Apple macOS Sequoia Mode
 * Frosted glass top menu bar with Apple menu, global application menu, and Control Center.
+* Hidden Bar menu bar collapse and hide/unhide items toggle button.
 * Auto-sizing macOS dock with responsive scaling, magnification, and running app indicators.
 * Spotlight application and file search magnifier widget.
 * Mission Control window switcher.
@@ -52,6 +53,7 @@ The suite configures status bars, docks, application launchers, window rules, co
 
 ### Plugin Integration & Tray Switcher
 * Self-contained plugin architecture adhering to the Omarchy Plugin Manifest Schema (v1).
+* Ultra-responsive 60fps animations, throttled low-latency hardware controls, and reduced memory footprint.
 * Modular status bar widget with a multi-state tray icon for cycling or toggling modes.
 * Non-destructive configuration management with automated baseline backup and restore.
 * Seamless fallback to Waybar for legacy installations.

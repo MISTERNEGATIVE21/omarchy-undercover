@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Copyright (C) 2026 misternegative21
+# Omarchy Undercover - macOS Hidden Bar Toggle
+# License: GPL-3.0-or-later
+#
+# omarchy:summary=Toggle hidden menu bar items in macOS mode (Hidden Bar)
+# omarchy:args=[--toggle|--hide|--show|--status]
+# omarchy:examples=omarchy-undercover-hiddenbar --toggle
+# ==============================================================================
+
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/undercover"
+STATE_FILE="$STATE_DIR/hiddenbar_state"
+
+mkdir -p "$STATE_DIR"
+
+get_state() {
+    if [[ -f "$STATE_FILE" ]]; then
+        cat "$STATE_FILE" 2>/dev/null
+    else
+        echo "expanded"
+    fi
+}
+
+set_state() {
+    local val="$1"
+    echo "$val" > "$STATE_FILE"
+}
+
+action="${1:---toggle}"
+
+case "$action" in
+    --status)
+        get_state
+        ;;
+    --hide)
+        set_state "collapsed"
+        echo "collapsed"
+        ;;
+    --show)
+        set_state "expanded"
+        echo "expanded"
+        ;;
+    --toggle)
+        curr=$(get_state)
+        if [[ "$curr" == "collapsed" ]]; then
+            set_state "expanded"
+            echo "expanded"
+        else
+            set_state "collapsed"
+            echo "collapsed"
+        fi
+        ;;
+    *)
+        echo "Usage: omarchy-undercover-hiddenbar [--toggle | --hide | --show | --status]"
+        exit 1
+        ;;
+esac

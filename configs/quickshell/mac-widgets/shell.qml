@@ -73,7 +73,25 @@ ShellRoot {
     }
 
     Timer {
-      interval: 2000
+      id: macBriThrottleTimer
+      interval: 40
+      repeat: false
+      onTriggered: {
+        macWidgetsWindow.runCmd("brightnessctl set " + macWidgetsWindow.displayBrightness + "% >/dev/null 2>&1 || true")
+      }
+    }
+
+    Timer {
+      id: macVolThrottleTimer
+      interval: 40
+      repeat: false
+      onTriggered: {
+        macWidgetsWindow.runCmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ " + (macWidgetsWindow.masterVolume / 100.0) + " >/dev/null 2>&1 || true")
+      }
+    }
+
+    Timer {
+      interval: 6000
       running: true
       repeat: true
       triggeredOnStart: true
@@ -89,6 +107,16 @@ ShellRoot {
       color: Qt.rgba(0.08, 0.08, 0.12, 0.95)
       border.color: Qt.rgba(1, 1, 1, 0.18)
       border.width: 1
+      opacity: 0
+      x: 20
+
+      Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+      Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+
+      Component.onCompleted: {
+        opacity = 1.0
+        x = 0
+      }
 
       ColumnLayout {
         anchors.fill: parent
@@ -223,9 +251,16 @@ ShellRoot {
                 MouseArea {
                   anchors.fill: parent
                   cursorShape: Qt.PointingHandCursor
+                  onPositionChanged: function(mouse) {
+                    if (!(mouse.buttons & Qt.LeftButton)) return
+                    var pct = Math.max(0, Math.min(100, Math.round((mouse.x / width) * 100)))
+                    macWidgetsWindow.masterVolume = pct
+                    macVolThrottleTimer.restart()
+                  }
                   onClicked: function(mouse) {
                     var pct = Math.max(0, Math.min(100, Math.round((mouse.x / width) * 100)))
                     macWidgetsWindow.masterVolume = pct
+                    macVolThrottleTimer.stop()
                     macWidgetsWindow.runCmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ " + (pct / 100.0) + " || pactl set-sink-volume @DEFAULT_SINK@ " + pct + "% || true")
                   }
                 }
@@ -254,9 +289,16 @@ ShellRoot {
                 MouseArea {
                   anchors.fill: parent
                   cursorShape: Qt.PointingHandCursor
+                  onPositionChanged: function(mouse) {
+                    if (!(mouse.buttons & Qt.LeftButton)) return
+                    var pct = Math.max(5, Math.min(100, Math.round((mouse.x / width) * 100)))
+                    macWidgetsWindow.displayBrightness = pct
+                    macBriThrottleTimer.restart()
+                  }
                   onClicked: function(mouse) {
                     var pct = Math.max(5, Math.min(100, Math.round((mouse.x / width) * 100)))
                     macWidgetsWindow.displayBrightness = pct
+                    macBriThrottleTimer.stop()
                     macWidgetsWindow.runCmd("brightnessctl set " + pct + "% || true")
                   }
                 }

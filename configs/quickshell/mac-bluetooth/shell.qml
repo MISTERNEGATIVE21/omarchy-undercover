@@ -205,6 +205,16 @@ ShellRoot {
       color: macBtWindow.isDark ? Qt.rgba(0.12, 0.12, 0.17, 0.90) : Qt.rgba(0.96, 0.96, 0.98, 0.92)
       border.color: macBtWindow.isDark ? Qt.rgba(1, 1, 1, 0.18) : Qt.rgba(0, 0, 0, 0.12)
       border.width: 1
+      opacity: 0
+      scale: 0.97
+
+      Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+      Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+
+      Component.onCompleted: {
+        opacity = 1.0
+        scale = 1.0
+      }
 
       ColumnLayout {
         anchors.fill: parent
@@ -231,8 +241,9 @@ ShellRoot {
             color: scanM.containsMouse ? (macBtWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
             Text {
               anchors.centerIn: parent
-              text: "🔄"
-              font.pixelSize: 11
+              text: "󰑐"
+              font.pixelSize: 13
+              color: macBtWindow.isDark ? "#ffffff" : "#1a1a1a"
               opacity: macBtWindow.isScanning ? 0.4 : 1.0
             }
             MouseArea {
@@ -303,7 +314,12 @@ ShellRoot {
             anchors.rightMargin: 8
             spacing: 6
 
-            Text { text: "🔍"; font.pixelSize: 11; opacity: 0.6 }
+            Text {
+              text: "󰍉"
+              font.pixelSize: 13
+              color: macBtWindow.isDark ? "#ffffff" : "#1a1a1a"
+              opacity: 0.65
+            }
 
             TextInput {
               id: macBtSearchBox
@@ -355,7 +371,7 @@ ShellRoot {
           }
           Text {
             visible: macBtWindow.isScanning
-            text: "Scanning..."
+            text: "󰂰 Scanning..."
             font.family: "SF Pro Text"
             font.pixelSize: 10
             color: "#007aff"

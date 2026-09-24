@@ -92,13 +92,20 @@ BarWidget {
     if ("widget" in target) target.widget = root
   }
 
+  property bool panelRequested: false
+
   function togglePanel() {
-    if (panelLoader.item && panelLoader.item.toggle) panelLoader.item.toggle()
+    if (!panelRequested) {
+      panelRequested = true
+    } else if (panelLoader.item && panelLoader.item.toggle) {
+      panelLoader.item.toggle()
+    }
   }
 
   readonly property bool opened: panelLoader.item ? panelLoader.item.opened === true : false
 
   function open() {
+    panelRequested = true
     if (panelLoader.item && panelLoader.item.open) panelLoader.item.open()
   }
 
@@ -274,9 +281,12 @@ BarWidget {
 
   Loader {
     id: panelLoader
-    active: true
+    active: root.panelRequested
     source: Qt.resolvedUrl("Panel.qml")
     visible: false
-    onLoaded: root.injectPanel()
+    onLoaded: {
+      root.injectPanel()
+      if (panelLoader.item && panelLoader.item.open) panelLoader.item.open()
+    }
   }
 }

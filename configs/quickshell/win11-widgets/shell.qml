@@ -72,7 +72,25 @@ ShellRoot {
     }
 
     Timer {
-      interval: 2000
+      id: winBriThrottleTimer
+      interval: 40
+      repeat: false
+      onTriggered: {
+        widgetsWindow.runCmd("brightnessctl set " + widgetsWindow.brightnessVal + "% >/dev/null 2>&1 || true")
+      }
+    }
+
+    Timer {
+      id: winVolThrottleTimer
+      interval: 40
+      repeat: false
+      onTriggered: {
+        widgetsWindow.runCmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ " + (widgetsWindow.volumeVal / 100.0) + " >/dev/null 2>&1 || true")
+      }
+    }
+
+    Timer {
+      interval: 6000
       running: true
       repeat: true
       triggeredOnStart: true
@@ -89,6 +107,16 @@ ShellRoot {
       border.color: Qt.rgba(1, 1, 1, 0.14)
       border.width: 1
       clip: true
+      opacity: 0
+      x: -20
+
+      Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+      Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+
+      Component.onCompleted: {
+        opacity = 1.0
+        x = 0
+      }
 
       ColumnLayout {
         anchors.fill: parent
@@ -275,9 +303,16 @@ ShellRoot {
                     MouseArea {
                       anchors.fill: parent
                       cursorShape: Qt.PointingHandCursor
+                      onPositionChanged: function(mouse) {
+                        if (!(mouse.buttons & Qt.LeftButton)) return
+                        var pct = Math.max(0, Math.min(100, Math.round((mouse.x / width) * 100)))
+                        widgetsWindow.volumeVal = pct
+                        winVolThrottleTimer.restart()
+                      }
                       onClicked: function(mouse) {
                         var pct = Math.max(0, Math.min(100, Math.round((mouse.x / width) * 100)))
                         widgetsWindow.volumeVal = pct
+                        winVolThrottleTimer.stop()
                         widgetsWindow.runCmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ " + (pct / 100.0) + " || pactl set-sink-volume @DEFAULT_SINK@ " + pct + "% || true")
                       }
                     }
@@ -307,9 +342,16 @@ ShellRoot {
                     MouseArea {
                       anchors.fill: parent
                       cursorShape: Qt.PointingHandCursor
+                      onPositionChanged: function(mouse) {
+                        if (!(mouse.buttons & Qt.LeftButton)) return
+                        var pct = Math.max(5, Math.min(100, Math.round((mouse.x / width) * 100)))
+                        widgetsWindow.brightnessVal = pct
+                        winBriThrottleTimer.restart()
+                      }
                       onClicked: function(mouse) {
                         var pct = Math.max(5, Math.min(100, Math.round((mouse.x / width) * 100)))
                         widgetsWindow.brightnessVal = pct
+                        winBriThrottleTimer.stop()
                         widgetsWindow.runCmd("brightnessctl set " + pct + "% || true")
                       }
                     }

@@ -76,7 +76,7 @@ class BluetoothManagerWindow(Adw.Window):
         vbox.append(self.scroll)
 
         # Refresh button at bottom
-        btn_refresh = Gtk.Button(label="🔄 Scan Devices")
+        btn_refresh = Gtk.Button(label="󰑐 Scan Devices")
         btn_refresh.set_margin_bottom(12)
         btn_refresh.set_margin_start(14)
         btn_refresh.set_margin_end(14)

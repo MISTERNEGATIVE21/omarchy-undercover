@@ -218,6 +218,16 @@ ShellRoot {
       border.color: btWindow.cardBorder
       border.width: 1
       clip: true
+      opacity: 0
+      y: 12
+
+      Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+      Behavior on y { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+
+      Component.onCompleted: {
+        opacity = 1.0
+        y = 0
+      }
 
       ColumnLayout {
         anchors.fill: parent
@@ -253,8 +263,8 @@ ShellRoot {
             color: scanMouse.containsMouse ? (btWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
             Text {
               anchors.centerIn: parent
-              text: "🔄"
-              font.pixelSize: 12
+              text: "󰑐"
+              font.pixelSize: 13
               color: btWindow.textPrimary
             }
             MouseArea {
@@ -367,8 +377,8 @@ ShellRoot {
             spacing: 8
 
             Text {
-              text: "🔍"
-              font.pixelSize: 11
+              text: "󰍉"
+              font.pixelSize: 13
               color: btWindow.textMuted
             }
 
@@ -429,7 +439,7 @@ ShellRoot {
           }
           Text {
             visible: btWindow.isScanning
-            text: "Scanning..."
+            text: "󰂰 Scanning..."
             font.family: "Segoe UI, sans-serif"
             font.pixelSize: 11
             color: btWindow.accentColor
@@ -452,7 +462,7 @@ ShellRoot {
 
             Text {
               Layout.alignment: Qt.AlignHCenter
-              text: "󰂯"
+              text: btWindow.isScanning ? "󰂰" : "󰂲"
               font.pixelSize: 28
               color: btWindow.accentColor
             }
