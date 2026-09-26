@@ -40,12 +40,12 @@ if [[ "$MODE" == "omarchy" || "$MODE" == "default" ]]; then
 fi
 
 if [[ "$MODE" == *"win11"* ]] || [[ "$MODE" == *"windows"* ]]; then
-    if command -v omarchy-win11-start &>/dev/null; then
+    if [[ -x "$(dirname "$0")/omarchy-win11-start" ]]; then
+        exec "$(dirname "$0")/omarchy-win11-start"
+    elif command -v omarchy-win11-start &>/dev/null; then
         exec omarchy-win11-start
     elif [[ -f "$HOME/.local/bin/omarchy-win11-start" ]]; then
         exec "$HOME/.local/bin/omarchy-win11-start"
-    elif [[ -f "$(dirname "$0")/omarchy-win11-start" ]]; then
-        exec "$(dirname "$0")/omarchy-win11-start"
     fi
 fi
 

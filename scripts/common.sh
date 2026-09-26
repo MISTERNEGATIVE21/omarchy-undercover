@@ -21,6 +21,12 @@ if [[ -z "${SCRIPT_DIR:-}" || ! -f "${SCRIPT_DIR}/common.sh" ]]; then
     unset _C_SRC _C_DIR
 fi
 
+if [[ -n "${SCRIPT_DIR:-}" && -d "${SCRIPT_DIR}" ]]; then
+    if [[ ":$PATH:" != *":${SCRIPT_DIR}:"* ]]; then
+        PATH="${SCRIPT_DIR}:${PATH}"
+    fi
+fi
+
 # Standard output helpers
 msg() {
     echo -e "\e[32m✔\e[0m  $1"
@@ -428,7 +434,7 @@ enable_undercover_hyprland() {
         plugin_root="$HOME/.config/omarchy-undercover"
     fi
 
-    mkdir -p "$toggles_dir" "$HOME/.config/hypr" "$HOME/.local/bin"
+    mkdir -p "$toggles_dir"
 
     # Deploy undercover.lua to Omarchy dynamic toggles
     local src_toggle=""
@@ -458,25 +464,6 @@ enable_undercover_hyprland() {
         fi
     } > "$undercover_conf"
     chmod 644 "$undercover_conf"
-
-    # Clean up any misplaced mode files in ~/.config/hypr/ so original user configs are never touched
-    rm -f "$HOME/.config/hypr/windows-mode.lua" "$HOME/.config/hypr/mac-mode.lua" 2>/dev/null || true
-
-    # Ensure scripts directory is symlinked to ~/.local/bin if not in PATH
-    local scripts_dir="${plugin_root}/scripts"
-    [[ ! -d "$scripts_dir" ]] && scripts_dir="${SCRIPT_DIR}"
-    if [[ -d "$scripts_dir" ]]; then
-        for s in "$scripts_dir"/omarchy-*; do
-            if [[ -f "$s" ]]; then
-                local b
-                b="$(basename "$s")"
-                ln -sf "$s" "$HOME/.local/bin/$b" 2>/dev/null || true
-            fi
-        done
-        if [[ -f "$scripts_dir/common.sh" ]]; then
-            ln -sf "$scripts_dir/common.sh" "$HOME/.local/bin/common.sh" 2>/dev/null || true
-        fi
-    fi
 
     # Ensure modular sub-plugins are accessible to omarchy-shell (only create if missing)
     local subplugins_dir="${plugin_root}/configs/plugins"
@@ -537,16 +524,12 @@ enable_undercover_hyprland() {
 }
 
 disable_undercover_hyprland() {
-    rm -f "$HOME/.config/hypr/windows-mode.lua" \
-          "$HOME/.config/hypr/mac-mode.lua" 2>/dev/null || true
     enable_undercover_hyprland "omarchy"
 }
 
 uninstall_undercover_hyprland() {
     rm -f "$HOME/.local/state/omarchy/toggles/hypr/undercover.lua" \
-          "$HOME/.local/state/omarchy/toggles/hypr/undercover.conf" \
-          "$HOME/.config/hypr/windows-mode.lua" \
-          "$HOME/.config/hypr/mac-mode.lua" 2>/dev/null || true
+          "$HOME/.local/state/omarchy/toggles/hypr/undercover.conf" 2>/dev/null || true
     if command_exists hyprctl; then
         hyprctl reload >/dev/null 2>&1 || true
     fi

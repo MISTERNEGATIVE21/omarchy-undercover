@@ -70,8 +70,6 @@ elif [[ -f "$HOME/.config/omarchy/plugins/omarchy-undercover/scripts/common.sh" 
     source "$HOME/.config/omarchy/plugins/omarchy-undercover/scripts/common.sh"
 elif [[ -f "$HOME/.local/share/omarchy/bin/common.sh" ]]; then
     source "$HOME/.local/share/omarchy/bin/common.sh"
-elif [[ -f "$HOME/.local/bin/common.sh" ]]; then
-    source "$HOME/.local/bin/common.sh"
 elif [[ -f "/usr/share/omarchy-undercover/scripts/common.sh" ]]; then
     source "/usr/share/omarchy-undercover/scripts/common.sh"
 else

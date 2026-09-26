@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "omarchy-undercover.mac-hiddenbar",
   "name": "macOS Hidden Bar Toggle",
-  "version": "5.7.1",
+  "version": "5.7.2",
   "author": "misternegative21",
   "description": "macOS Menu Bar Collapse & Hide/Unhide Items Toggle",
   "kinds": [
