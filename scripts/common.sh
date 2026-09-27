@@ -465,21 +465,6 @@ enable_undercover_hyprland() {
     } > "$undercover_conf"
     chmod 644 "$undercover_conf"
 
-    # Ensure modular sub-plugins are accessible to omarchy-shell (only create if missing)
-    local subplugins_dir="${plugin_root}/configs/plugins"
-    if [[ -d "$subplugins_dir" ]]; then
-        mkdir -p "$HOME/.config/omarchy/plugins"
-        for p in "$subplugins_dir"/*; do
-            if [[ -d "$p" ]]; then
-                local pb
-                pb="$(basename "$p")"
-                local target_p="$HOME/.config/omarchy/plugins/$pb"
-                if [[ ! -e "$target_p" ]]; then
-                    ln -sfn "$p" "$target_p" 2>/dev/null || true
-                fi
-            fi
-        done
-    fi
 
     # Ensure icons and asset themes are accessible (only create if missing)
     local assets_icons="${plugin_root}/assets/icons"
@@ -514,8 +499,19 @@ enable_undercover_hyprland() {
         cp "$plugin_root/settings.conf" "$user_cfg/settings.conf" 2>/dev/null || true
     fi
 
-    # Clean up any duplicate legacy plugin symlinks inside ~/.config/omarchy/plugins/
-    rm -f "$HOME/.config/omarchy/plugins/undercover" "$HOME/.config/omarchy/plugins/undercover."* 2>/dev/null || true
+    # Clean up any legacy sub-plugin symlinks that point specifically into our plugin
+    local p_entry
+    for p_entry in "$HOME/.config/omarchy/plugins/omarchy-undercover."*; do
+        if [[ -L "$p_entry" ]]; then
+            local p_target
+            p_target="$(readlink "$p_entry" 2>/dev/null || true)"
+            local p_real
+            p_real="$(readlink -f "$p_entry" 2>/dev/null || true)"
+            if [[ "$p_target" == *"/omarchy-undercover/"* || "$p_real" == "$plugin_root"* ]]; then
+                rm -f "$p_entry" 2>/dev/null || true
+            fi
+        fi
+    done
 
     # Reload hyprland cleanly so dynamic toggles take effect
     if command_exists hyprctl; then

@@ -1,6 +1,6 @@
 # Maintainer: MISTERNEGATIVE21 <MISTERNEGATIVE21@gmail.com>
 pkgname=omarchy-undercover
-pkgver=5.7.2
+pkgver=5.7.3
 pkgrel=1
 pkgdesc="Windows 11 desktop transformation tool for Omarchy Hyprland"
 arch=('any')
@@ -34,6 +34,12 @@ package() {
 
     # Install configuration files
     cp -r "$srcdir/configs/"* "$pkgdir/usr/share/omarchy-undercover/configs/"
+
+    # Install widgets
+    if [ -d "$srcdir/widgets" ]; then
+        install -d "$pkgdir/usr/share/omarchy-undercover/widgets"
+        cp -r "$srcdir/widgets/"* "$pkgdir/usr/share/omarchy-undercover/widgets/"
+    fi
 
     # Install wallpapers
     if [ -d "$srcdir/assets/wallpapers" ]; then

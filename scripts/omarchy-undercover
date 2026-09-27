@@ -403,19 +403,30 @@ apply_shell_windows() {
             mkdir -p "$HOME/.config/omarchy"
             local align
             align=$(read_setting "TASKBAR_ALIGNMENT" "center")
+            local widgets_src="~/.config/omarchy/plugins/omarchy-undercover/widgets"
+            if [[ ! -d "$HOME/.config/omarchy/plugins/omarchy-undercover/widgets" && -d "${SCRIPT_DIR}/../widgets" ]]; then
+                widgets_src="$(cd "${SCRIPT_DIR}/../widgets" && pwd)"
+            fi
+            local weather_entry="{\"id\": \"win11-weather\", \"type\": \"qml\", \"source\": \"$widgets_src/win11-weather.qml\"}"
+            local taskbar_entry="{\"id\": \"win11-taskbar\", \"type\": \"qml\", \"source\": \"$widgets_src/win11-taskbar.qml\"}"
             if [[ "$align" == "center" ]]; then
                 if command_exists jq; then
-                    jq '.bar.centerAnchor = "" | .bar.layout.left = [{"id": "omarchy-undercover.win11-weather"}] | .bar.layout.center = [{"id": "omarchy-undercover.win11-taskbar"}]' "$src" > "$HOME/.config/omarchy/shell.json" 2>/dev/null || cp -f "$src" "$HOME/.config/omarchy/shell.json"
+                    jq --argjson w "$weather_entry" --argjson t "$taskbar_entry" \
+                       '.bar.centerAnchor = "" | .bar.layout.left = [$w] | .bar.layout.center = [$t]' "$src" > "$HOME/.config/omarchy/shell.json" 2>/dev/null || cp -f "$src" "$HOME/.config/omarchy/shell.json"
                 else
                     cp -f "$src" "$HOME/.config/omarchy/shell.json"
                 fi
             else
                 # Left-aligned classic Windows layout
                 if command_exists jq; then
-                    jq '.bar.centerAnchor = "" | .bar.layout.left = [{"id": "omarchy-undercover.win11-taskbar"}] | .bar.layout.center = [{"id": "omarchy-undercover.win11-weather"}]' "$src" > "$HOME/.config/omarchy/shell.json" 2>/dev/null || cp -f "$src" "$HOME/.config/omarchy/shell.json"
+                    jq --argjson w "$weather_entry" --argjson t "$taskbar_entry" \
+                       '.bar.centerAnchor = "" | .bar.layout.left = [$t] | .bar.layout.center = [$w]' "$src" > "$HOME/.config/omarchy/shell.json" 2>/dev/null || cp -f "$src" "$HOME/.config/omarchy/shell.json"
                 else
                     cp -f "$src" "$HOME/.config/omarchy/shell.json"
                 fi
+            fi
+            if [[ "$widgets_src" != "~/.config/omarchy/plugins/omarchy-undercover/widgets" ]]; then
+                sed -i "s|~/.config/omarchy/plugins/omarchy-undercover/widgets|$widgets_src|g" "$HOME/.config/omarchy/shell.json" 2>/dev/null || true
             fi
             msg "Windows 11 Quickshell taskbar applied (alignment: $align)."
         fi
@@ -437,7 +448,13 @@ apply_shell_mac() {
         fi
         if [[ -f "$src" ]]; then
             mkdir -p "$HOME/.config/omarchy" "$CONFIG_DIR/shell"
-            cp -f "$src" "$HOME/.config/omarchy/shell.json"
+            if [[ ! -d "$HOME/.config/omarchy/plugins/omarchy-undercover/widgets" && -d "${SCRIPT_DIR}/../widgets" ]]; then
+                local real_widgets
+                real_widgets="$(cd "${SCRIPT_DIR}/../widgets" && pwd)"
+                sed "s|~/.config/omarchy/plugins/omarchy-undercover/widgets|$real_widgets|g" "$src" > "$HOME/.config/omarchy/shell.json"
+            else
+                cp -f "$src" "$HOME/.config/omarchy/shell.json"
+            fi
             cp -f "$src" "$CONFIG_DIR/shell/shell-mac.json"
             msg "Apple macOS Sequoia Quickshell menu bar applied (Omarchy 4.0 top bar)."
         fi

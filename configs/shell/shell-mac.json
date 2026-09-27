@@ -11,10 +11,14 @@
     "layout": {
       "left": [
         {
-          "id": "omarchy-undercover.mac-apple"
+          "id": "mac-apple",
+          "type": "qml",
+          "source": "~/.config/omarchy/plugins/omarchy-undercover/widgets/mac-apple.qml"
         },
         {
-          "id": "omarchy-undercover.mac-appmenu"
+          "id": "mac-appmenu",
+          "type": "qml",
+          "source": "~/.config/omarchy/plugins/omarchy-undercover/widgets/mac-appmenu.qml"
         }
       ],
       "center": [
@@ -27,34 +31,52 @@
           "id": "omarchy-undercover"
         },
         {
-          "id": "omarchy-undercover.mac-hiddenbar"
+          "id": "mac-hiddenbar",
+          "type": "qml",
+          "source": "~/.config/omarchy/plugins/omarchy-undercover/widgets/mac-hiddenbar.qml"
         },
         {
           "id": "omarchy.tray"
         },
         {
-          "id": "omarchy-undercover.mac-battery"
+          "id": "mac-battery",
+          "type": "qml",
+          "source": "~/.config/omarchy/plugins/omarchy-undercover/widgets/mac-battery.qml"
         },
         {
-          "id": "omarchy-undercover.mac-sound"
+          "id": "mac-sound",
+          "type": "qml",
+          "source": "~/.config/omarchy/plugins/omarchy-undercover/widgets/mac-sound.qml"
         },
         {
-          "id": "omarchy-undercover.mac-bluetooth"
+          "id": "mac-bluetooth",
+          "type": "qml",
+          "source": "~/.config/omarchy/plugins/omarchy-undercover/widgets/mac-bluetooth.qml"
         },
         {
-          "id": "omarchy-undercover.mac-wifi"
+          "id": "mac-wifi",
+          "type": "qml",
+          "source": "~/.config/omarchy/plugins/omarchy-undercover/widgets/mac-wifi.qml"
         },
         {
-          "id": "omarchy-undercover.mac-spotlight"
+          "id": "mac-spotlight",
+          "type": "qml",
+          "source": "~/.config/omarchy/plugins/omarchy-undercover/widgets/mac-spotlight.qml"
         },
         {
-          "id": "omarchy-undercover.mac-siri"
+          "id": "mac-siri",
+          "type": "qml",
+          "source": "~/.config/omarchy/plugins/omarchy-undercover/widgets/mac-siri.qml"
         },
         {
-          "id": "omarchy-undercover.mac-controlcenter"
+          "id": "mac-controlcenter",
+          "type": "qml",
+          "source": "~/.config/omarchy/plugins/omarchy-undercover/widgets/mac-controlcenter.qml"
         },
         {
-          "id": "omarchy-undercover.mac-clock"
+          "id": "mac-clock",
+          "type": "qml",
+          "source": "~/.config/omarchy/plugins/omarchy-undercover/widgets/mac-clock.qml"
         }
       ]
     }

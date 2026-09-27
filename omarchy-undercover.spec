@@ -1,5 +1,5 @@
 Name:           omarchy-undercover
-Version:        5.7.2
+Version:        5.7.3
 Release:        1%{?dist}
 Summary:        Camouflage & desktop transformation suite (macOS Sequoia & Windows 11 Fluent) for Omarchy Hyprland
 
@@ -45,6 +45,7 @@ install -m 0755 uninstall.sh %{buildroot}%{_bindir}/omarchy-undercover-uninstall
 
 install -m 0644 scripts/common.sh %{buildroot}%{_datadir}/omarchy-undercover/scripts/common.sh
 cp -pr configs/* %{buildroot}%{_datadir}/omarchy-undercover/configs/
+cp -pr widgets/* %{buildroot}%{_datadir}/omarchy-undercover/widgets/
 cp -pr assets/wallpapers/* %{buildroot}%{_datadir}/omarchy-undercover/wallpapers/
 cp -pr assets/themes/* %{buildroot}%{_datadir}/omarchy-undercover/assets/themes/
 cp -pr assets/icons/* %{buildroot}%{_datadir}/omarchy-undercover/assets/icons/

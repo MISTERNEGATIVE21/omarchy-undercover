@@ -119,31 +119,7 @@ fi
 
 shopt -s nullglob
 
-# 5. Update all configs/plugins/*/manifest.json
-configs_manifests=("${REPO_DIR}"/configs/plugins/*/manifest.json)
-if [[ ${#configs_manifests[@]} -gt 0 ]]; then
-    count=0
-    for p_man in "${configs_manifests[@]}"; do
-        tmp=$(mktemp)
-        jq --arg v "$TARGET_VERSION" '.version = $v' "$p_man" > "$tmp" && mv "$tmp" "$p_man"
-        count=$((count + 1))
-    done
-    echo -e "  ${GREEN}✓${NC} Updated ${count} plugin manifests in configs/plugins/ -> ${BOLD}${TARGET_VERSION}${NC}"
-fi
-
-# 6. Update all plugins/*/manifest.json if present
-extra_manifests=("${REPO_DIR}"/plugins/*/manifest.json)
-if [[ ${#extra_manifests[@]} -gt 0 ]]; then
-    count=0
-    for p_man in "${extra_manifests[@]}"; do
-        tmp=$(mktemp)
-        jq --arg v "$TARGET_VERSION" '.version = $v' "$p_man" > "$tmp" && mv "$tmp" "$p_man"
-        count=$((count + 1))
-    done
-    echo -e "  ${GREEN}✓${NC} Updated ${count} plugin manifests in plugins/ -> ${BOLD}${TARGET_VERSION}${NC}"
-fi
-
-# 7. Synchronize to installed plugin if exists
+# 5. Synchronize to installed plugin if exists
 INSTALLED_PLUGIN="${HOME}/.config/omarchy/plugins/omarchy-undercover"
 if [[ -d "$INSTALLED_PLUGIN" ]]; then
     echo -e "\n${BOLD}${BLUE}Syncing changes to installed plugin:${NC} ${INSTALLED_PLUGIN}"
@@ -154,8 +130,9 @@ if [[ -d "$INSTALLED_PLUGIN" ]]; then
     if [[ -f "${INSTALLED_PLUGIN}/omarchy-undercover-settings" ]]; then
         cp -f "${REPO_DIR}/scripts/omarchy-undercover-settings" "${INSTALLED_PLUGIN}/omarchy-undercover-settings" 2>/dev/null || true
     fi
-    if [[ ${#configs_manifests[@]} -gt 0 ]] && [[ -d "${INSTALLED_PLUGIN}/configs/plugins" ]]; then
-        cp -rf "${REPO_DIR}/configs/plugins"/* "${INSTALLED_PLUGIN}/configs/plugins/" 2>/dev/null || true
+    if [[ -d "${REPO_DIR}/widgets" ]]; then
+        mkdir -p "${INSTALLED_PLUGIN}/widgets"
+        cp -rf "${REPO_DIR}/widgets"/* "${INSTALLED_PLUGIN}/widgets/" 2>/dev/null || true
     fi
     echo -e "  ${GREEN}✓${NC} Synced to installed plugin directory"
 fi

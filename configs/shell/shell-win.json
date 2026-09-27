@@ -12,12 +12,16 @@
     "layout": {
       "left": [
         {
-          "id": "omarchy-undercover.win11-weather"
+          "id": "win11-weather",
+          "type": "qml",
+          "source": "~/.config/omarchy/plugins/omarchy-undercover/widgets/win11-weather.qml"
         }
       ],
       "center": [
         {
-          "id": "omarchy-undercover.win11-taskbar"
+          "id": "win11-taskbar",
+          "type": "qml",
+          "source": "~/.config/omarchy/plugins/omarchy-undercover/widgets/win11-taskbar.qml"
         }
       ],
       "right": [
@@ -28,13 +32,19 @@
           "id": "omarchy.tray"
         },
         {
-          "id": "omarchy-undercover.win11-actioncenter"
+          "id": "win11-actioncenter",
+          "type": "qml",
+          "source": "~/.config/omarchy/plugins/omarchy-undercover/widgets/win11-actioncenter.qml"
         },
         {
-          "id": "omarchy-undercover.win11-clock"
+          "id": "win11-clock",
+          "type": "qml",
+          "source": "~/.config/omarchy/plugins/omarchy-undercover/widgets/win11-clock.qml"
         },
         {
-          "id": "omarchy-undercover.win11-showdesktop"
+          "id": "win11-showdesktop",
+          "type": "qml",
+          "source": "~/.config/omarchy/plugins/omarchy-undercover/widgets/win11-showdesktop.qml"
         }
       ]
     }
