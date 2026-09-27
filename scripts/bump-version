@@ -126,7 +126,10 @@ if [[ -d "$INSTALLED_PLUGIN" ]]; then
     cp -f "${REPO_DIR}/manifest.json" "${INSTALLED_PLUGIN}/manifest.json" 2>/dev/null || true
     cp -f "${REPO_DIR}/omarchy-undercover.spec" "${INSTALLED_PLUGIN}/omarchy-undercover.spec" 2>/dev/null || true
     cp -f "${REPO_DIR}/PKGBUILD" "${INSTALLED_PLUGIN}/PKGBUILD" 2>/dev/null || true
-    cp -f "${REPO_DIR}/scripts/omarchy-undercover-settings" "${INSTALLED_PLUGIN}/scripts/omarchy-undercover-settings" 2>/dev/null || true
+    if [[ -d "${REPO_DIR}/scripts" ]]; then
+        mkdir -p "${INSTALLED_PLUGIN}/scripts"
+        cp -rf "${REPO_DIR}/scripts"/* "${INSTALLED_PLUGIN}/scripts/" 2>/dev/null || true
+    fi
     if [[ -f "${INSTALLED_PLUGIN}/omarchy-undercover-settings" ]]; then
         cp -f "${REPO_DIR}/scripts/omarchy-undercover-settings" "${INSTALLED_PLUGIN}/omarchy-undercover-settings" 2>/dev/null || true
     fi

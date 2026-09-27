@@ -491,27 +491,10 @@ enable_undercover_hyprland() {
 
     # User configuration directory
     local user_cfg="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy-undercover"
-    if [[ -L "$user_cfg" ]]; then
-        rm -f "$user_cfg"
-    fi
     mkdir -p "$user_cfg"
     if [[ ! -f "$user_cfg/settings.conf" && -f "$plugin_root/settings.conf" ]]; then
         cp "$plugin_root/settings.conf" "$user_cfg/settings.conf" 2>/dev/null || true
     fi
-
-    # Clean up any legacy sub-plugin symlinks that point specifically into our plugin
-    local p_entry
-    for p_entry in "$HOME/.config/omarchy/plugins/omarchy-undercover."*; do
-        if [[ -L "$p_entry" ]]; then
-            local p_target
-            p_target="$(readlink "$p_entry" 2>/dev/null || true)"
-            local p_real
-            p_real="$(readlink -f "$p_entry" 2>/dev/null || true)"
-            if [[ "$p_target" == *"/omarchy-undercover/"* || "$p_real" == "$plugin_root"* ]]; then
-                rm -f "$p_entry" 2>/dev/null || true
-            fi
-        fi
-    done
 
     # Reload hyprland cleanly so dynamic toggles take effect
     if command_exists hyprctl; then
