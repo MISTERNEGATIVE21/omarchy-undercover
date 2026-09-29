@@ -4,29 +4,33 @@
 # =============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_DIR="$HOME/.config/omarchy-undercover"
+REAL_SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
+# 1. Instant toggle if already running
+if pgrep -f "quickshell.*mac-controlcenter" >/dev/null 2>&1; then
+    pkill -f "quickshell.*mac-controlcenter" 2>/dev/null || true
+    exit 0
+fi
+
+# 2. Locate native Quickshell Control Center dashboard
 QS_SRC=""
 for cand in \
-    "$CONFIG_DIR/quickshell/mac-controlcenter" \
-    "$CONFIG_DIR/configs/quickshell/mac-controlcenter" \
-    "${SCRIPT_DIR}/../quickshell/mac-controlcenter" \
+    "${REAL_SCRIPT_DIR}/../configs/quickshell/mac-controlcenter" \
     "${SCRIPT_DIR}/../configs/quickshell/mac-controlcenter" \
-    "${SCRIPT_DIR}/quickshell/mac-controlcenter" \
-    "${SCRIPT_DIR}/configs/quickshell/mac-controlcenter"; do
-    if [[ -d "$cand" ]]; then
+    "$HOME/.config/omarchy/plugins/omarchy-undercover/configs/quickshell/mac-controlcenter" \
+    "$HOME/omarchy-undercover/configs/quickshell/mac-controlcenter" \
+    "$HOME/.config/omarchy-undercover/quickshell/mac-controlcenter" \
+    "/usr/share/omarchy-undercover/configs/quickshell/mac-controlcenter"; do
+    if [[ -d "$cand" && -f "$cand/shell.qml" ]]; then
         QS_SRC="$cand"
         break
     fi
 done
 
-if pgrep -f "quickshell.*mac-controlcenter" >/dev/null; then
-    pkill -f "quickshell.*mac-controlcenter"
-    exit 0
-fi
-
-if command -v quickshell >/dev/null 2>&1 && [[ -d "$QS_SRC" ]]; then
+# 3. Launch native dashboard (NEVER open settings)
+if [[ -n "$QS_SRC" ]] && command -v quickshell >/dev/null 2>&1; then
     exec quickshell -p "$QS_SRC"
 else
-    exec python3 "${SCRIPT_DIR}/omarchy-undercover-settings" --page hardware
+    notify-send "macOS Control Center" "Could not locate Quickshell dashboard at $QS_SRC" -u low 2>/dev/null || true
+    exit 1
 fi

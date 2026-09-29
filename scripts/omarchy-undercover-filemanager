@@ -71,6 +71,8 @@ fi
 
 # Primary: Flea QuickShell file manager with active disguise preset
 if command -v flea >/dev/null 2>&1; then
+    # Force OpenGL RHI backend: Vulkan produces a black screen on hybrid GPU setups (Intel + NVIDIA)
+    export QSG_RHI_BACKEND="${QSG_RHI_BACKEND:-opengl}"
     case "$MODE" in
         mac)
             flea --ui-state '{"view":"columns","density":"comfortable","keys":"mac","addressBar":"breadcrumb","places":{"sidebarWidth":200,"showHome":true,"showNetwork":true,"showDevices":true,"showTrash":true,"driveSize":true,"trashCount":false,"rail":"shown"},"preview":{"column":true,"loadOn":"automatic","thumbnails":"media","thumbSize":"medium","ctrlZoom":true},"columns":["name","date","kind","size"],"foldersFirst":true,"hidden":false}' >/dev/null 2>&1 || true
@@ -79,12 +81,8 @@ if command -v flea >/dev/null 2>&1; then
             flea --ui-state '{"view":"list","density":"normal","keys":"windows","addressBar":"path","places":{"sidebarWidth":224,"showHome":true,"showNetwork":true,"showDevices":true,"showTrash":true,"driveSize":true,"trashCount":false,"rail":"shown"},"preview":{"column":false},"columns":["name","date","kind","size"],"foldersFirst":true,"hidden":false}' >/dev/null 2>&1 || true
             ;;
         *)
-            flea --ui-state '{"view":"columns","density":"normal","keys":"default","addressBar":"breadcrumb","preview":{"column":true}}' >/dev/null 2>&1 || true
             ;;
     esac
-
-    # Prevent Flea from auto-relaunching via handleSceneGraphError fallback on compositor close
-    export FLEA_RENDERER_AUTOMATIC="${FLEA_RENDERER_AUTOMATIC:-0}"
 
     if [[ ${#ARGS[@]} -eq 0 ]]; then
         exec flea --gui "$HOME"

@@ -20,13 +20,13 @@ BarWidget {
     text: " "
     labelVisible: false
     fixedWidth: root.contentWidth
-    tooltipText: "Spotlight (Super + Space)"
+    tooltipText: "Spotlight (Super + Alt + Space)"
 
     onPressed: function() {
       if (root.bar) {
-        root.bar.run("rofi -show drun -theme ~/.config/rofi/mac.rasi")
+        root.bar.run("omarchy-undercover-launcher")
       } else {
-        Quickshell.execDetached(["rofi", "-show", "drun", "-theme", Quickshell.env("HOME") + "/.config/rofi/mac.rasi"])
+        Quickshell.execDetached(["omarchy-undercover-launcher"])
       }
     }
 

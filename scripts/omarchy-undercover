@@ -652,21 +652,21 @@ restore_gtk_from_baseline() {
 
 apply_flea_mac() {
     if command_exists flea; then
-        flea --ui-state '{"view":"columns","density":"comfortable","keys":"mac","places":{"sidebarWidth":192,"showHome":true,"showNetwork":true,"showDevices":true,"showTrash":true,"driveSize":true,"trashCount":false,"rail":"shown"},"preview":{"column":true,"loadOn":"automatic","thumbnails":"media","thumbSize":"medium","ctrlZoom":true},"columns":["name","date","kind","size"],"foldersFirst":true,"hidden":false}' >/dev/null 2>&1 || true
-        msg "Configured Flea for Apple macOS Finder (column view, Mac keymap, preview column)."
+        flea --ui-state '{"view":"columns","density":"comfortable","keys":"mac","addressBar":"breadcrumb","places":{"sidebarWidth":200,"showHome":true,"showNetwork":true,"showDevices":true,"showTrash":true,"driveSize":true,"trashCount":false,"rail":"shown"},"preview":{"column":true,"loadOn":"automatic","thumbnails":"media","thumbSize":"medium","ctrlZoom":true},"columns":["name","date","kind","size"],"foldersFirst":true,"hidden":false}' >/dev/null 2>&1 || true
+        msg "Configured Flea for Apple macOS Finder (Miller columns, comfortable density, Mac keymap, preview column)."
     fi
 }
 
 apply_flea_windows() {
     if command_exists flea; then
-        flea --ui-state '{"view":"list","density":"normal","keys":"windows","places":{"sidebarWidth":224,"showHome":true,"showNetwork":true,"showDevices":true,"showTrash":true,"driveSize":true,"trashCount":false,"rail":"shown"},"preview":{"column":false},"columns":["name","date","kind","size"],"foldersFirst":true,"hidden":false}' >/dev/null 2>&1 || true
-        msg "Configured Flea for Windows 11 File Explorer (Details list view, Windows keymap, full width)."
+        flea --ui-state '{"view":"list","density":"normal","keys":"windows","addressBar":"path","places":{"sidebarWidth":224,"showHome":true,"showNetwork":true,"showDevices":true,"showTrash":true,"driveSize":true,"trashCount":false,"rail":"shown"},"preview":{"column":false},"columns":["name","date","kind","size"],"foldersFirst":true,"hidden":false}' >/dev/null 2>&1 || true
+        msg "Configured Flea for Windows 11 File Explorer (Details list view, Windows keymap, path bar)."
     fi
 }
 
 restore_flea_defaults() {
     if command_exists flea; then
-        flea --ui-state '{"view":"columns","density":"normal","keys":"default","preview":{"column":true}}' >/dev/null 2>&1 || true
+        flea --ui-state '{"view":"columns","density":"normal","keys":"default","addressBar":"breadcrumb","preview":{"column":true}}' >/dev/null 2>&1 || true
         msg "Restored Flea default UI configuration."
     fi
 }
@@ -784,9 +784,19 @@ EOF
     apply_shell_mac
 
     # Deploy mac Rofi theme
-    if [[ -f "$CONFIG_DIR/rofi/mac.rasi" ]]; then
-        cp -f "$CONFIG_DIR/rofi/mac.rasi" "$HOME/.config/rofi/windows11.rasi" 2>/dev/null || true
-        cp -f "$CONFIG_DIR/rofi/mac.rasi" "$HOME/.config/rofi/mac.rasi" 2>/dev/null || true
+    mkdir -p "$HOME/.config/rofi"
+    local mac_rofi_src=""
+    for rsrc in \
+        "$PLUGIN_DIR/configs/rofi/mac.rasi" \
+        "${SCRIPT_DIR}/../configs/rofi/mac.rasi" \
+        "$CONFIG_DIR/rofi/mac.rasi"; do
+        if [[ -f "$rsrc" ]]; then
+            mac_rofi_src="$rsrc"
+            break
+        fi
+    done
+    if [[ -n "$mac_rofi_src" ]]; then
+        cp -f "$mac_rofi_src" "$HOME/.config/rofi/mac.rasi" 2>/dev/null || true
     fi
 
     # Apply wallpaper
@@ -923,11 +933,23 @@ EOF
     apply_shell_windows
 
     # Deploy win11 Rofi theme
-    local rofi_src="$CONFIG_DIR/rofi/win11.rasi"
-    if [[ "$variant" == "light" && -f "$CONFIG_DIR/rofi/win11-light.rasi" ]]; then
-        rofi_src="$CONFIG_DIR/rofi/win11-light.rasi"
+    mkdir -p "$HOME/.config/rofi"
+    local win_rofi_name="win11.rasi"
+    if [[ "$variant" == "light" ]]; then
+        win_rofi_name="win11-light.rasi"
     fi
-    if [[ -f "$rofi_src" ]]; then
+    local rofi_src=""
+    for rsrc in \
+        "$PLUGIN_DIR/configs/rofi/$win_rofi_name" \
+        "${SCRIPT_DIR}/../configs/rofi/$win_rofi_name" \
+        "$CONFIG_DIR/rofi/$win_rofi_name" \
+        "$PLUGIN_DIR/configs/rofi/win11.rasi"; do
+        if [[ -f "$rsrc" ]]; then
+            rofi_src="$rsrc"
+            break
+        fi
+    done
+    if [[ -n "$rofi_src" ]]; then
         cp -f "$rofi_src" "$HOME/.config/rofi/windows11.rasi" 2>/dev/null || true
         cp -f "$rofi_src" "$HOME/.config/rofi/win11.rasi" 2>/dev/null || true
     fi

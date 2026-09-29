@@ -366,7 +366,7 @@ Panel {
 
   property var primaryDockApps: [
     { id: "finder", name: "Finder", icon: "finder.svg", exec: "omarchy-undercover-filemanager ~ || flea", matchers: ["flea", "nautilus", "thunar", "dolphin", "nemo", "pcmanfm", "files", "org.gnome.nautilus"] },
-    { id: "launchpad", name: "Launchpad", icon: "launchpad.svg", exec: "rofi -show drun -theme ~/.config/rofi/mac.rasi", matchers: [] },
+    { id: "launchpad", name: "Launchpad", icon: "launchpad.svg", exec: "omarchy-undercover-launcher", matchers: [] },
     { id: "safari", name: "Safari", icon: "safari.svg", exec: "omarchy-browser", matchers: ["safari", "chrome", "chromium", "firefox", "vivaldi", "brave", "zen", "browser", "epiphany"] },
     { id: "messages", name: "Messages", icon: "messages.svg", exec: "telegram-desktop || discord || signal-desktop || vesktop", matchers: ["telegram", "discord", "signal", "vesktop"] },
     { id: "mail", name: "Mail", icon: "mail.svg", exec: "thunderbird || geary || evolution || omarchy-browser https://mail.google.com", matchers: ["thunderbird", "geary", "evolution"] },

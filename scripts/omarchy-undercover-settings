@@ -28,7 +28,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio, GLib, Gdk
 
 APP_ID = "org.omarchy.undercover.settings"
-VERSION = "5.7.4"
+VERSION = "5.7.5"
 
 _script_parent = Path(__file__).resolve().parent.parent
 if (_script_parent / "manifest.json").exists():
@@ -1032,6 +1032,42 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
             self.show_toast(f"Mode shortcuts {'enabled' if row.get_active() else 'disabled'}")
         row_enable.connect("notify::active", on_enable_toggled)
         group_master.add(row_enable)
+
+        # Setting to alter Omarchy default shortcuts with explicit user confirmation
+        row_override = Adw.SwitchRow(
+            title="Override Omarchy Default Shortcuts",
+            subtitle="When disabled (recommended), default Omarchy shortcuts like Super+W (Close window) and Super+Space (Menu) are strictly untouched"
+        )
+        row_override.set_active(read_setting("OVERRIDE_DEFAULT_KEYBINDINGS", "false").lower() == "true")
+        def on_override_toggled(row, param):
+            if row.get_active():
+                dialog = Adw.MessageDialog(
+                    transient_for=self,
+                    heading="Alter Omarchy System Shortcuts?",
+                    body="Enabling this will override Omarchy's system-wide shortcuts (such as Super+W for close window and Super+Space for Omarchy menu) with platform-native shortcuts.\n\nAre you sure you want to alter Omarchy defaults?"
+                )
+                dialog.add_response("cancel", "Keep Omarchy Defaults")
+                dialog.add_response("override", "Alter Shortcuts")
+                dialog.set_response_appearance("override", Adw.ResponseAppearance.DESTRUCTIVE)
+                dialog.set_default_response("cancel")
+
+                def on_dialog_response(dlg, response):
+                    if response == "override":
+                        write_setting("OVERRIDE_DEFAULT_KEYBINDINGS", "true")
+                        subprocess.run(["hyprctl", "reload"], check=False)
+                        self.show_toast("Omarchy shortcuts altered to platform native")
+                    else:
+                        row.set_active(False)
+                        write_setting("OVERRIDE_DEFAULT_KEYBINDINGS", "false")
+                        self.show_toast("Omarchy default shortcuts preserved")
+                dialog.connect("response", on_dialog_response)
+                dialog.present()
+            else:
+                write_setting("OVERRIDE_DEFAULT_KEYBINDINGS", "false")
+                subprocess.run(["hyprctl", "reload"], check=False)
+                self.show_toast("Omarchy default shortcuts preserved")
+        row_override.connect("notify::active", on_override_toggled)
+        group_master.add(row_override)
         page.add(group_master)
 
         # Windows 11 Shortcuts Group
@@ -1053,7 +1089,7 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         group_win.add(row_win_tap)
 
         win_bindings = [
-            ("BIND_WIN_START", "SUPER + SPACE", "Start Menu (Fallback/Combo)", "Open Windows 11 Start Menu"),
+            ("BIND_WIN_START", "SUPER + ALT + SPACE", "Start Menu (Combo)", "Open Windows 11 Start Menu (Super+Alt+Space preserves Omarchy Super+Space)"),
             ("BIND_WIN_EXPLORER", "SUPER + E", "File Explorer", "Open Flea file manager in Windows 11 preset"),
             ("BIND_WIN_TASKVIEW", "SUPER + TAB", "Task View", "Open window switcher and virtual desktops"),
             ("BIND_WIN_ACTIONCENTER", "SUPER + A", "Quick Settings / Action Center", "Open volume, brightness, Wi-Fi, and Bluetooth"),
@@ -1137,7 +1173,7 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         )
 
         mac_bindings = [
-            ("BIND_MAC_SPOTLIGHT", "SUPER + SPACE", "Spotlight Search (Cmd+Space)", "Global application, files, and math search"),
+            ("BIND_MAC_SPOTLIGHT", "SUPER + ALT + SPACE", "Spotlight Search (Combo)", "Global application, files, and math search (Super+Alt+Space preserves Omarchy Super+Space)"),
             ("BIND_MAC_MISSIONCONTROL", "SUPER + TAB", "Mission Control (Cmd+Tab)", "macOS window switcher and overview"),
             ("BIND_MAC_WIDGETS", "SUPER + N", "Notification Center & Widgets", "Open macOS slide-out widgets and notifications"),
             ("BIND_MAC_SETTINGS", "SUPER + COMMA", "System Settings (Cmd+,)", "Open macOS System Settings"),

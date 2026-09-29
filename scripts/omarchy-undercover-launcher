@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Copyright (C) 2026 misternegative21
-# Omarchy Hyprland Undercover Launcher
+# Omarchy Hyprland Undercover Launcher Dispatcher
 # License: GPL-3.0-or-later
 # ==============================================================================
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REAL_SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
 # 1. Instant toggle if already running
 if pkill -f "quickshell.*win11-start" 2>/dev/null; then
@@ -25,6 +28,7 @@ if [[ -f "$STATE_FILE" ]]; then
     MODE=$(cat "$STATE_FILE" 2>/dev/null | tr -d '[:space:]' || echo "omarchy")
 fi
 
+# Omarchy baseline: launch standard Omarchy launcher
 if [[ "$MODE" == "omarchy" || "$MODE" == "default" ]]; then
     if command -v omarchy-menu &>/dev/null; then
         exec omarchy-menu
@@ -39,9 +43,12 @@ if [[ "$MODE" == "omarchy" || "$MODE" == "default" ]]; then
     fi
 fi
 
+# Windows 11 mode: trigger Start menu
 if [[ "$MODE" == *"win11"* ]] || [[ "$MODE" == *"windows"* ]]; then
-    if [[ -x "$(dirname "$0")/omarchy-win11-start" ]]; then
-        exec "$(dirname "$0")/omarchy-win11-start"
+    if [[ -x "${SCRIPT_DIR}/omarchy-win11-start" ]]; then
+        exec "${SCRIPT_DIR}/omarchy-win11-start"
+    elif [[ -x "${REAL_SCRIPT_DIR}/omarchy-win11-start" ]]; then
+        exec "${REAL_SCRIPT_DIR}/omarchy-win11-start"
     elif command -v omarchy-win11-start &>/dev/null; then
         exec omarchy-win11-start
     elif [[ -f "$HOME/.local/bin/omarchy-win11-start" ]]; then
@@ -49,14 +56,43 @@ if [[ "$MODE" == *"win11"* ]] || [[ "$MODE" == *"windows"* ]]; then
     fi
 fi
 
-# Default to Spotlight macOS Rofi
-ROFI_THEME="$HOME/.config/rofi/mac.rasi"
-if [[ "$MODE" == *"win11"* ]] && [[ -f "$HOME/.config/rofi/win11.rasi" ]]; then
-    ROFI_THEME="$HOME/.config/rofi/win11.rasi"
+# macOS mode: Spotlight search
+ROFI_THEME=""
+THEME_CANDIDATES=(
+    "$HOME/.config/rofi/mac.rasi"
+    "${REAL_SCRIPT_DIR}/../configs/rofi/mac.rasi"
+    "${SCRIPT_DIR}/../configs/rofi/mac.rasi"
+    "$HOME/.config/omarchy/plugins/omarchy-undercover/configs/rofi/mac.rasi"
+    "$HOME/omarchy-undercover/configs/rofi/mac.rasi"
+    "/usr/share/omarchy-undercover/configs/rofi/mac.rasi"
+)
+
+if [[ "$MODE" == *"win11"* ]]; then
+    THEME_CANDIDATES=(
+        "$HOME/.config/rofi/win11.rasi"
+        "$HOME/.config/rofi/windows11.rasi"
+        "${REAL_SCRIPT_DIR}/../configs/rofi/win11.rasi"
+        "${SCRIPT_DIR}/../configs/rofi/win11.rasi"
+        "$HOME/.config/omarchy/plugins/omarchy-undercover/configs/rofi/win11.rasi"
+        "$HOME/omarchy-undercover/configs/rofi/win11.rasi"
+    )
 fi
 
-if command -v rofi &>/dev/null && [[ -f "$ROFI_THEME" ]]; then
-    exec rofi -show drun -theme "$ROFI_THEME"
-else
-    exec rofi -show drun
+for cand in "${THEME_CANDIDATES[@]}"; do
+    if [[ -f "$cand" ]]; then
+        ROFI_THEME="$cand"
+        break
+    fi
+done
+
+if command -v rofi &>/dev/null; then
+    if [[ -n "$ROFI_THEME" && -f "$ROFI_THEME" ]]; then
+        exec rofi -show drun -theme "$ROFI_THEME"
+    else
+        exec rofi -show drun
+    fi
+elif command -v omarchy-menu &>/dev/null; then
+    exec omarchy-menu
+elif command -v walker &>/dev/null; then
+    exec walker
 fi

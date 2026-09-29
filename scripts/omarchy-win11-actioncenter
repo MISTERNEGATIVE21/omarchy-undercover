@@ -4,29 +4,33 @@
 # =============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_DIR="$HOME/.config/omarchy-undercover"
+REAL_SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
+# 1. Instant toggle if already running
+if pgrep -f "quickshell.*win11-actioncenter" >/dev/null 2>&1; then
+    pkill -f "quickshell.*win11-actioncenter" 2>/dev/null || true
+    exit 0
+fi
+
+# 2. Locate native Quickshell Action Center dashboard
 QS_SRC=""
 for cand in \
-    "$CONFIG_DIR/quickshell/win11-actioncenter" \
-    "$CONFIG_DIR/configs/quickshell/win11-actioncenter" \
-    "${SCRIPT_DIR}/../quickshell/win11-actioncenter" \
+    "${REAL_SCRIPT_DIR}/../configs/quickshell/win11-actioncenter" \
     "${SCRIPT_DIR}/../configs/quickshell/win11-actioncenter" \
-    "${SCRIPT_DIR}/quickshell/win11-actioncenter" \
-    "${SCRIPT_DIR}/configs/quickshell/win11-actioncenter"; do
-    if [[ -d "$cand" ]]; then
+    "$HOME/.config/omarchy/plugins/omarchy-undercover/configs/quickshell/win11-actioncenter" \
+    "$HOME/omarchy-undercover/configs/quickshell/win11-actioncenter" \
+    "$HOME/.config/omarchy-undercover/quickshell/win11-actioncenter" \
+    "/usr/share/omarchy-undercover/configs/quickshell/win11-actioncenter"; do
+    if [[ -d "$cand" && -f "$cand/shell.qml" ]]; then
         QS_SRC="$cand"
         break
     fi
 done
 
-if pgrep -f "quickshell.*win11-actioncenter" >/dev/null; then
-    pkill -f "quickshell.*win11-actioncenter"
-    exit 0
-fi
-
-if command -v quickshell >/dev/null 2>&1 && [[ -d "$QS_SRC" ]]; then
+# 3. Launch native dashboard (NEVER open settings)
+if [[ -n "$QS_SRC" ]] && command -v quickshell >/dev/null 2>&1; then
     exec quickshell -p "$QS_SRC"
 else
-    exec python3 "${SCRIPT_DIR}/omarchy-undercover-settings" --page hardware
+    notify-send "Windows 11 Action Center" "Could not locate Quickshell dashboard at $QS_SRC" -u low 2>/dev/null || true
+    exit 1
 fi

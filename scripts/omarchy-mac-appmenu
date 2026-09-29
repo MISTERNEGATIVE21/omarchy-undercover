@@ -41,7 +41,7 @@ MENU_DEFINITIONS = {
         ("Documents", f"{FM_CMD} ~/Documents"),
         ("Downloads", f"{FM_CMD} ~/Downloads"),
         ("Pictures", f"{FM_CMD} ~/Pictures"),
-        ("Applications", "rofi -show drun -theme ~/.config/rofi/mac.rasi"),
+        ("Applications", "omarchy-undercover-launcher"),
         ("Computer", f"{FM_CMD} /"),
     ],
     "window": [

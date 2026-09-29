@@ -10,6 +10,7 @@ local function get_plugin_dir()
   local dirs = {
     home .. "/.config/omarchy/plugins/omarchy-undercover",
     home .. "/.config/omarchy/plugins/undercover",
+    home .. "/omarchy-undercover",
     home .. "/.config/omarchy-undercover",
     "/usr/share/omarchy-undercover",
   }

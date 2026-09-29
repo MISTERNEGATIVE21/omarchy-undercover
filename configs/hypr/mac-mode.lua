@@ -4,11 +4,17 @@
 
 local home = os.getenv("HOME")
 local settings_path = home .. "/.config/omarchy/plugins/omarchy-undercover/settings.conf"
-if not io.open(settings_path, "r") then
+local _f = io.open(settings_path, "r")
+if _f then
+  _f:close()
+else
   settings_path = home .. "/.config/omarchy/plugins/undercover/settings.conf"
-end
-if not io.open(settings_path, "r") then
-  settings_path = home .. "/.config/omarchy-undercover/settings.conf"
+  _f = io.open(settings_path, "r")
+  if _f then
+    _f:close()
+  else
+    settings_path = home .. "/.config/omarchy-undercover/settings.conf"
+  end
 end
 
 local function get_setting(key, default)
@@ -41,6 +47,7 @@ local function find_script(name)
   local dirs = {
     home .. "/.config/omarchy/plugins/omarchy-undercover/scripts",
     home .. "/.config/omarchy/plugins/undercover/scripts",
+    home .. "/omarchy-undercover/scripts",
     home .. "/.config/omarchy-undercover/scripts",
     "/usr/share/omarchy-undercover/scripts",
   }
@@ -142,7 +149,7 @@ end
 -- Rebind Omarchy's native file manager shortcut to use the disguised undercover variant
 if o and o.rebind then
   o.rebind("SUPER + SHIFT + F", "File manager", exec_cmd("omarchy-undercover-filemanager"))
-  o.rebind("SUPER + ALT + SHIFT + F", "File manager (cwd)", exec_cmd("omarchy-undercover-filemanager") .. " " .. home)
+  o.rebind("SUPER + ALT + SHIFT + F", "File manager (cwd)", exec_cmd("omarchy-undercover-filemanager " .. home))
 end
 
 -- ---------------------------------------------------------------------------

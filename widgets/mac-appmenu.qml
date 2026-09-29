@@ -209,7 +209,7 @@ BarWidget {
                 { text: "Documents", shortcut: "⇧⌘O", cmd: "omarchy-undercover-filemanager ~/Documents" },
                 { text: "Downloads", shortcut: "⌥⌘L", cmd: "omarchy-undercover-filemanager ~/Downloads" },
                 { text: "Pictures", shortcut: "", cmd: "omarchy-undercover-filemanager ~/Pictures" },
-                { text: "Applications", shortcut: "⇧⌘A", cmd: "rofi -show drun -theme ~/.config/rofi/mac.rasi" },
+                { text: "Applications", shortcut: "⇧⌘A", cmd: "omarchy-undercover-launcher" },
                 { text: "Computer", shortcut: "⇧⌘C", cmd: "omarchy-undercover-filemanager /" }
               ]
             } else if (root.openMenu === "window") {

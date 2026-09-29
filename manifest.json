@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "omarchy-undercover",
   "name": "Omarchy Undercover",
-  "version": "5.7.4",
+  "version": "5.7.5",
   "author": "misternegative21",
   "license": "GPL-3.0-or-later",
-  "description": "Desktop camouflage & transformation suite replicating Apple macOS Sequoia and Windows 11 Fluent for Omarchy Hyprland",
+  "description": "Verified Omarchy desktop camouflage & transformation suite replicating Apple macOS Sequoia and Windows 11 Fluent for Omarchy Hyprland",
   "kinds": [
     "bar-widget",
     "panel",
@@ -18,6 +18,7 @@
   },
   "barWidget": {
     "displayName": "Undercover Camouflage Switcher",
+    "description": "Single bar icon and popup panel to view, configure, and switch camouflage presets instantly.",
     "category": "System",
     "allowMultiple": false,
     "defaultSection": "right"

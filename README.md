@@ -1,6 +1,7 @@
-# Omarchy Undercover (v5.7.4)
+# Omarchy Undercover (v5.7.5)
 
-[![Version](https://img.shields.io/badge/version-v5.7.4?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases/tag/v5.7.4)
+[![Omarchy Verified](https://img.shields.io/badge/omarchy-verified_plugin-00c853?style=flat-square&logo=archlinux)](https://github.com/MISTERNEGATIVE21/omarchy-undercover)
+[![Version](https://img.shields.io/badge/version-v5.7.5?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases/tag/v5.7.5)
 [![Release](https://img.shields.io/github/v/release/MISTERNEGATIVE21/omarchy-undercover?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases)
 [![Compositor](https://img.shields.io/badge/compositor-Hyprland-00f2fe?style=flat-square)](https://hyprland.org)
 [![Engine](https://img.shields.io/badge/engine-Quickshell%20%7C%20Waybar-ff2d55?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover)
@@ -8,9 +9,43 @@
 
 ![Omarchy Undercover Preview](preview.png)
 
-Omarchy Undercover is a desktop transformation plugin for Omarchy Hyprland. It allows users to switch between a native macOS Sequoia interface, a Windows 11 Fluent environment, and the baseline Omarchy desktop on demand.
+An official **verified Omarchy plugin** that brings a complete desktop camouflage and transformation suite to [Omarchy](https://omarchy.org) Hyprland. Switch between an authentic Apple macOS Sequoia interface, a Windows 11 Fluent environment, and your baseline Omarchy desktop on demand with zero configuration conflicts.
 
-The suite configures status bars, docks, application launchers, window rules, compositor animations, and typography to deliver an authentic look and feel across both Quickshell (Omarchy 4.0+) and Waybar environments.
+Designed for presentations, shared screen privacy, or personal preference, Omarchy Undercover dynamically reconfigures status bars, docks, application launchers, window rules, compositor animations, and typography across both Quickshell (Omarchy 4.0+) and Waybar environments.
+
+---
+
+## What it does
+
+- **Single bar icon & popup panel**: Multi-state status bar tray widget (`Widget.qml`) that displays the active disguise emblem and opens the native Quickshell Undercover Control Center (`Panel.qml`).
+  - **Left-Click**: Opens the Undercover Control Center flyout.
+  - **Right-Click**: Fast-cycles between macOS, Windows 11, and baseline Omarchy.
+  - **Middle-Click**: Toggles between the active disguise and baseline Omarchy.
+  - **Scroll Wheel**: Steps forward or backward through available presets.
+- **One-touch camouflage toggle**: Switch between your chosen disguise and baseline Omarchy instantly via <kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>U</kbd> or CLI.
+- **Apple macOS Sequoia Mode**: Frosted glass top menu bar with Apple menu, global application menu, polygraph monitor, Control Center, auto-magnifying dock with active app running indicators, Spotlight search (<kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>Space</kbd> or Top Bar / Dock icon), Mission Control window switcher (<kbd>Super</kbd> + <kbd>Tab</kbd>), and authentic SF Pro typography.
+- **Windows 11 Fluent Mode**: Centered taskbar with Start menu, search integration, live weather widget flyout, Quick Settings & Action Center (<kbd>Super</kbd> + <kbd>A</kbd>), Task View overview (<kbd>Super</kbd> + <kbd>Tab</kbd>), Snap Assist tiling (<kbd>Super</kbd> + <kbd>Z</kbd>), and authentic Segoe UI typography.
+- **Transparent Taskbar Preset**: Zero-border acrylic glass taskbar mode seamlessly blending desktop wallpaper with floating centered icons.
+- **Zero configuration conflicts**: Completely non-destructive configuration management. Backs up user baseline upon initial activation and restores cleanly without deleting custom dotfiles or polluting global paths.
+- **Dual engine support**: Built natively for Quickshell (`omarchy-shell`, standard on Omarchy 4.0+) with automatic fallback to Waybar for legacy installations.
+
+---
+
+## What ships today
+
+| Piece | What it is |
+|---|---|
+| `manifest.json` | Plugin definition adhering to the official Omarchy Plugin Schema (v1) |
+| `Widget.qml` | Status bar presence and multi-state camouflage switcher icon |
+| `Panel.qml` | Native Quickshell popup control center, mode cards, and quick settings |
+| `Service.qml` | Background service synchronizing Hyprland state files and dynamic layer rules |
+| `settings.conf` | User configuration file (`~/.config/omarchy/plugins/omarchy-undercover/settings.conf`) |
+| `scripts/omarchy-undercover` | Primary CLI switcher, hotkey handler, and IPC controller |
+| `scripts/backup-baseline` | Automated non-destructive backup of baseline compositor settings |
+| `scripts/restore-baseline` | Clean restoration of user's original desktop environment |
+| `scripts/generate_preview.py` | Automated high-resolution showcase preview generator |
+| `configs/` | Hyprland window rules, rofi themes, and Waybar fallback configurations |
+| `assets/` | Authentic SF Pro & Segoe UI fonts, wallpapers, and SVG icon sets |
 
 ---
 
@@ -18,19 +53,22 @@ The suite configures status bars, docks, application launchers, window rules, co
 
 ### Apple macOS Sequoia Mode
 
-| Dark Mode | Light Mode |
+| macOS Sequoia Dark | macOS Sequoia Light |
 | :---: | :---: |
-| ![macOS Sequoia Dark](assets/screenshots/MacOS_Dark.png) | ![macOS Sequoia Light](assets/screenshots/MacOS_Light.png) |
+| [![macOS Sequoia Dark](assets/screenshots/MacOS_Dark.png)](assets/screenshots/MacOS_Dark.png) | [![macOS Sequoia Light](assets/screenshots/MacOS_Light.png)](assets/screenshots/MacOS_Light.png) |
+| *Night-mode frosted menu bar with polygraph monitor, Control Center, and dynamic floating dock* | *Daylight aesthetic with high-vibrancy frosted menu bar, authentic light-mode dock, and Sequoia day wallpaper* |
 
 ### Windows 11 Fluent Mode
 
-| Dark Mode | Light Mode |
+| Windows 11 Dark | Windows 11 Light |
 | :---: | :---: |
-| ![Windows 11 Dark](assets/screenshots/Windows11_Dark.png) | ![Windows 11 Light](assets/screenshots/Windows11_Light.png) |
+| [![Windows 11 Dark](assets/screenshots/Windows11_Dark.png)](assets/screenshots/Windows11_Dark.png) | [![Windows 11 Light](assets/screenshots/Windows11_Light.png)](assets/screenshots/Windows11_Light.png) |
+| *Centered taskbar with Start button, live weather feed, dark Bloom wallpaper, and system tray* | *Daylight acrylic taskbar with centered launcher, light Bloom wallpaper, and clean Segoe UI styling* |
 
-| Transparent Taskbar |
+| Windows 11 Transparent Taskbar |
 | :---: |
-| ![Windows 11 Transparent Taskbar](assets/screenshots/Windows11_Transparent.png) |
+| [![Windows 11 Transparent Taskbar](assets/screenshots/Windows11_Transparent.png)](assets/screenshots/Windows11_Transparent.png) |
+| *Zero-border glass taskbar mode seamlessly blending desktop wallpaper with floating centered icons* |
 
 ---
 
