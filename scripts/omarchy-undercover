@@ -276,7 +276,6 @@ apply_wallpaper() {
 }
 
 apply_gtk_windows_theme() {
-    rm -rf "$HOME/.config/gtk-3.0" "$HOME/.config/gtk-4.0"
     mkdir -p "$HOME/.config/gtk-3.0" "$HOME/.config/gtk-4.0"
 
     local win11_gtk4="$HOME/.themes/Win11-Dark/gtk-4.0"
@@ -508,8 +507,8 @@ apply_rofi_windows() {
     src=$(project_file "rofi")
 
     if [[ "$launcher" == "rofi" && -n "$src" && -d "$src" ]]; then
-        rm -rf "$HOME/.config/rofi"
-        cp -r "$src" "$HOME/.config/rofi"
+        mkdir -p "$HOME/.config/rofi"
+        cp -r "$src"/* "$HOME/.config/rofi/" 2>/dev/null || true
         msg "Windows 11 Start menu (rofi) applied."
     fi
 }
@@ -1185,6 +1184,46 @@ restore_baseline() {
     msg "Baseline restored successfully."
 }
 
+uninstall_undercover() {
+    msg "Uninstalling Omarchy Undercover and returning system to pristine normal settings..."
+
+    # 1. Restore baseline desktop state (theme, background, GTK, icons, shell.json, etc.)
+    local baseline=""
+    if [[ -f "$BASELINE_FILE" ]]; then
+        baseline=$(cat "$BASELINE_FILE" 2>/dev/null | tr -d '\r\n')
+    fi
+    restore_desktop_state "$baseline"
+
+    # 2. Uninstall Hyprland toggle files completely
+    uninstall_undercover_hyprland
+
+    # 3. Clean up icons and symlinks created by undercover in ~/.local/share/icons
+    rm -rf "$HOME/.local/share/icons/mac-dock" 2>/dev/null || true
+    rm -rf "$HOME/.local/share/icons/Fluent-dark" "$HOME/.local/share/icons/Fluent-light" 2>/dev/null || true
+    rm -rf "$HOME/.local/share/icons/WhiteSur" "$HOME/.local/share/icons/WhiteSur-dark" 2>/dev/null || true
+    rm -rf "$HOME/.local/share/icons/Fluent-dark-cursors" 2>/dev/null || true
+    rm -rf "$HOME/.local/share/icons/WhiteSur-cursors" 2>/dev/null || true
+    rm -f "$HOME/.local/share/icons/hicolor/scalable/apps/system-file-manager.svg" 2>/dev/null || true
+    gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
+
+    # 4. Remove custom flea wrapper if created by undercover
+    if [[ -f "$HOME/.local/bin/flea" ]]; then
+        if grep -q "QSG_RHI_BACKEND" "$HOME/.local/bin/flea" 2>/dev/null; then
+            rm -f "$HOME/.local/bin/flea" 2>/dev/null || true
+        fi
+    fi
+
+    # 5. Clear state, backup, and undercover config directories
+    clear_state
+    rm -rf "$STATE_DIR" "$CONFIG_DIR" "${XDG_CACHE_HOME:-$HOME/.cache}/omarchy-undercover" 2>/dev/null || true
+
+    # 6. Final reload of Omarchy bar and Hyprland
+    omarchy_reload_bar
+    omarchy_reload_hyprland
+
+    msg "Omarchy Undercover completely uninstalled. All settings returned to normal Omarchy defaults."
+}
+
 verify_integrity() {
     msg "Verifying integrity..."
     echo "Omarchy Version: $(detect_omarchy_version)"
@@ -1255,6 +1294,7 @@ show_help() {
     echo "  --toggle                                Toggle between Undercover mode and Default Omarchy"
     echo "  --disable, --omarchy                    Switch to original Omarchy mode & theming"
     echo "  --restore                               Restore from baseline backup"
+    echo "  --uninstall                             Completely uninstall and restore original settings"
     echo "  --verify                                Verify integrity of config and state"
     echo "  --status                                Show current status"
     echo "  --help, -h                              Show this help message"
@@ -1410,6 +1450,9 @@ case "$1" in
         ;;
     --restore)
         restore_baseline
+        ;;
+    --uninstall)
+        uninstall_undercover
         ;;
     --sync-hyprland)
         cur_mode=$(read_setting "MODE" "windows")

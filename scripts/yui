@@ -28,6 +28,7 @@ show_help() {
     echo "Usage:"
     echo "  yui             Toggle between Windows 11 mode and baseline Hyprland"
     echo "  yui restore     Restore baseline desktop snapshot"
+    echo "  yui uninstall   Completely remove undercover settings and restore normal desktop"
     echo "  yui status      Show current undercover state"
     echo "  yui help        Show this help message"
 }
@@ -38,6 +39,9 @@ case "${1:-toggle}" in
         ;;
     restore|--restore|-r)
         "$CLI_TOOL" --restore
+        ;;
+    uninstall|--uninstall)
+        "$CLI_TOOL" --uninstall
         ;;
     status|--status|-s)
         "$CLI_TOOL" --status

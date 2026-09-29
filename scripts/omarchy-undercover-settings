@@ -28,7 +28,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio, GLib, Gdk
 
 APP_ID = "org.omarchy.undercover.settings"
-VERSION = "5.7.5"
+VERSION = "5.7.6"
 
 _script_parent = Path(__file__).resolve().parent.parent
 if (_script_parent / "manifest.json").exists():
@@ -638,6 +638,15 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         btn_toggle.connect("clicked", lambda b: self.apply_preset("--toggle", "Toggle Mode"))
         row_toggle.add_suffix(btn_toggle)
         group_cycle.add(row_toggle)
+
+        row_restore = Adw.ActionRow(
+            title="Restore Original Omarchy Desktop",
+            subtitle="Reverts status bar layout, themes, icons, background, and GTK styling to original state"
+        )
+        btn_restore = Gtk.Button(label="🐧 Restore Baseline")
+        btn_restore.connect("clicked", lambda b: self.apply_preset("--restore", "Restore Baseline"))
+        row_restore.add_suffix(btn_restore)
+        group_cycle.add(row_restore)
 
         row_autohide = Adw.SwitchRow(
             title="Smart Edge Dock/Taskbar Auto-Hide",

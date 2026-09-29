@@ -21,15 +21,24 @@ local function get_plugin_dir()
       return d
     end
   end
-  return home .. "/.config/omarchy/plugins/omarchy-undercover"
+  return nil
 end
 
 local plugin_dir = get_plugin_dir()
+if not plugin_dir then
+  -- Plugin was removed or uninstalled: self-cleanup toggle files so Hyprland stays clean
+  pcall(function()
+    os.remove(home .. "/.local/state/omarchy/toggles/hypr/undercover.lua")
+    os.remove(home .. "/.local/state/omarchy/toggles/hypr/undercover.conf")
+  end)
+  return
+end
 
 -- Detect active undercover mode
 local function get_active_mode()
   -- Check state file first (highest precedence)
   local state_paths = {
+    home .. "/.local/state/omarchy/undercover/state",
     plugin_dir .. "/state",
     home .. "/.config/omarchy/plugins/undercover/state",
     home .. "/.config/omarchy-undercover/state",

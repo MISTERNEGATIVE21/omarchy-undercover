@@ -1,7 +1,7 @@
-# Omarchy Undercover (v5.7.5)
+# Omarchy Undercover (v5.7.6)
 
 [![Omarchy Verified](https://img.shields.io/badge/omarchy-verified_plugin-00c853?style=flat-square&logo=archlinux)](https://github.com/MISTERNEGATIVE21/omarchy-undercover)
-[![Version](https://img.shields.io/badge/version-v5.7.5?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases/tag/v5.7.5)
+[![Version](https://img.shields.io/badge/version-v5.7.6?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases/tag/v5.7.6)
 [![Release](https://img.shields.io/github/v/release/MISTERNEGATIVE21/omarchy-undercover?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases)
 [![Compositor](https://img.shields.io/badge/compositor-Hyprland-00f2fe?style=flat-square)](https://hyprland.org)
 [![Engine](https://img.shields.io/badge/engine-Quickshell%20%7C%20Waybar-ff2d55?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover)
@@ -260,19 +260,23 @@ Custom dock and taskbar pinned applications can be configured in `defaults.json`
 
 ## Uninstallation
 
-To remove the plugin and restore default settings:
+To completely remove the plugin and restore your system to pristine normal settings:
 
 ```bash
-# Disable and remove the plugin
+# 1. Cleanly restore baseline desktop state and remove toggles/caches
+omarchy-undercover --uninstall
+# or with yui helper:
+yui uninstall
+
+# 2. Disable and remove the plugin directory (if installed via omarchy plugin)
 omarchy plugin disable omarchy-undercover
 omarchy plugin remove omarchy-undercover
-
-# Restore baseline configuration
-omarchy-undercover --restore
 ```
 
 ---
 
 ## License
 
-GNU General Public License v3.0 or later (GPL-3.0-or-later). See [LICENSE](LICENSE) for details.
+Copyright (C) 2026 misternegative21 <supergogetavegito21@gmail.com>
+
+Licensed under the GNU General Public License v3.0 or later (GPL-3.0-or-later). See [LICENSE](LICENSE) for details.
