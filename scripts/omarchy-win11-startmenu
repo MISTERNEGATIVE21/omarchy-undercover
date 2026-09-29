@@ -397,6 +397,18 @@ class Win11StartMenuWindow(Gtk.Window):
         focus_controller.connect("leave", self.on_focus_leave)
         self.add_controller(focus_controller)
 
+        # Mouse leave controller
+        motion_ctrl = Gtk.EventControllerMotion()
+        self._has_entered = False
+        def on_mouse_enter(ctrl, x, y):
+            self._has_entered = True
+        def on_mouse_leave(ctrl):
+            if self._has_entered:
+                GLib.timeout_add(300, lambda: self.close())
+        motion_ctrl.connect("enter", on_mouse_enter)
+        motion_ctrl.connect("leave", on_mouse_leave)
+        self.add_controller(motion_ctrl)
+
         # Main Layout Box
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         self.set_child(main_box)

@@ -6,9 +6,22 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REAL_SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
+PID_FILE="${XDG_RUNTIME_DIR:-/tmp}/omarchy-win11-actioncenter.pid"
+
 # 1. Instant toggle if already running
+if [[ -f "$PID_FILE" ]]; then
+    PID=$(cat "$PID_FILE" 2>/dev/null)
+    if [[ -n "$PID" ]] && kill -0 "$PID" 2>/dev/null; then
+        kill "$PID" 2>/dev/null || true
+        rm -f "$PID_FILE"
+        exit 0
+    fi
+    rm -f "$PID_FILE"
+fi
+
 if pgrep -f "quickshell.*win11-actioncenter" >/dev/null 2>&1; then
     pkill -f "quickshell.*win11-actioncenter" 2>/dev/null || true
+    rm -f "$PID_FILE"
     exit 0
 fi
 
@@ -29,6 +42,7 @@ done
 
 # 3. Launch native dashboard (NEVER open settings)
 if [[ -n "$QS_SRC" ]] && command -v quickshell >/dev/null 2>&1; then
+    echo $$ > "$PID_FILE"
     exec quickshell -p "$QS_SRC"
 else
     notify-send "Windows 11 Action Center" "Could not locate Quickshell dashboard at $QS_SRC" -u low 2>/dev/null || true

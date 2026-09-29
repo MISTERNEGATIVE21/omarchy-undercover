@@ -15,6 +15,7 @@ Features:
 import sys
 import os
 import subprocess
+import signal
 import time
 import json
 import psutil
@@ -28,6 +29,33 @@ from gi.repository import Gtk, Adw, GLib, Gio
 
 CONFIG_DIR = Path.home() / ".config" / "omarchy-undercover"
 WIN_WIDGETS_CONF = CONFIG_DIR / "win_widgets.conf"
+PID_FILE = Path(os.environ.get("XDG_RUNTIME_DIR", "/tmp")) / "omarchy-win11-notifications.pid"
+
+def check_toggle():
+    if PID_FILE.exists():
+        try:
+            pid = int(PID_FILE.read_text().strip())
+            if pid != os.getpid() and psutil.pid_exists(pid):
+                os.kill(pid, signal.SIGTERM)
+                PID_FILE.unlink(missing_ok=True)
+                sys.exit(0)
+        except Exception:
+            pass
+        PID_FILE.unlink(missing_ok=True)
+
+    curr_pid = os.getpid()
+    try:
+        out = subprocess.check_output(["pgrep", "-f", "omarchy-win11-notifications"], text=True)
+        other_pids = [int(p.strip()) for p in out.strip().splitlines() if p.strip() and int(p.strip()) != curr_pid]
+        if other_pids:
+            for p in other_pids:
+                try:
+                    os.kill(p, signal.SIGTERM)
+                except Exception:
+                    pass
+            sys.exit(0)
+    except Exception:
+        pass
 
 DEFAULT_CONFIG = {
     "show_quick_settings": True,
@@ -184,6 +212,33 @@ class Win11NotificationsWindow(Gtk.Window):
         self.box.set_margin_start(12)
         self.box.set_margin_end(12)
         scroll.set_child(self.box)
+
+        # Controllers for dismissal: Escape, mouse leave, focus lost
+        key_ctrl = Gtk.EventControllerKey()
+        def on_key_pressed(ctrl, keyval, keycode, state):
+            if keyval == 0xff1b: # Escape
+                self.close()
+                return True
+            return False
+        key_ctrl.connect("key-pressed", on_key_pressed)
+        self.add_controller(key_ctrl)
+
+        motion_ctrl = Gtk.EventControllerMotion()
+        self._has_entered = False
+        def on_enter(ctrl, x, y):
+            self._has_entered = True
+        def on_leave(ctrl):
+            if self._has_entered:
+                GLib.timeout_add(300, lambda: self.close())
+        motion_ctrl.connect("enter", on_enter)
+        motion_ctrl.connect("leave", on_leave)
+        self.add_controller(motion_ctrl)
+
+        focus_ctrl = Gtk.EventControllerFocus()
+        focus_ctrl.connect("leave", lambda c: self.close())
+        self.add_controller(focus_ctrl)
+
+        self.connect("destroy", lambda w: PID_FILE.unlink(missing_ok=True))
 
         self.build_ui()
         GLib.timeout_add_seconds(2, self.refresh_vitals)
@@ -621,5 +676,12 @@ class Win11NotificationsApp(Adw.Application):
         win.present()
 
 if __name__ == "__main__":
+    check_toggle()
+    try:
+        PID_FILE.write_text(str(os.getpid()))
+    except Exception:
+        pass
     app = Win11NotificationsApp()
-    sys.exit(app.run(sys.argv))
+    ret = app.run(sys.argv)
+    PID_FILE.unlink(missing_ok=True)
+    sys.exit(ret)

@@ -16,7 +16,7 @@ ShellRoot {
       right: true
     }
     margins {
-      bottom: 10
+      bottom: 58
       right: 12
     }
 
@@ -35,6 +35,19 @@ ShellRoot {
     property string passwordInput: ""
     property bool isScanning: false
     property string searchText: ""
+    property bool hasEntered: false
+
+    function closePopup() {
+      wifiWindow.visible = false
+      var pidFile = (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/omarchy-win11-wifi.pid"
+      Quickshell.execDetached(["rm", "-f", pidFile])
+      Quickshell.execDetached(["kill", String(Quickshell.processId)])
+    }
+
+    Shortcut {
+      sequence: "Escape"
+      onActivated: wifiWindow.closePopup()
+    }
 
     // Fluent Design Theme Tokens
     readonly property color cardBg: isDark ? Qt.rgba(0.13, 0.14, 0.17, 0.98) : Qt.rgba(0.97, 0.98, 0.99, 0.98)
@@ -76,8 +89,7 @@ ShellRoot {
     }
 
     function runCmd(cmd) {
-      wifiWindow.visible = false
-      Qt.quit()
+      wifiWindow.closePopup()
       Quickshell.execDetached(["bash", "-c", cmd])
     }
 
@@ -216,6 +228,24 @@ ShellRoot {
         y = 0
       }
 
+      HoverHandler {
+        id: cardHover
+        onHoveredChanged: {
+          if (hovered) {
+            wifiWindow.hasEntered = true
+          }
+        }
+      }
+
+      Timer {
+        id: leaveTimer
+        interval: 300
+        running: wifiWindow.hasEntered && !cardHover.hovered
+        onTriggered: {
+          wifiWindow.closePopup()
+        }
+      }
+
       ColumnLayout {
         anchors.fill: parent
         anchors.margins: 16
@@ -280,7 +310,7 @@ ShellRoot {
               anchors.fill: parent
               hoverEnabled: true
               cursorShape: Qt.PointingHandCursor
-              onClicked: Qt.quit()
+              onClicked: wifiWindow.closePopup()
             }
           }
         }
@@ -771,7 +801,6 @@ ShellRoot {
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onClicked: {
-              Qt.quit()
               wifiWindow.runCmd("nm-connection-editor || omarchy-undercover-settings")
             }
           }

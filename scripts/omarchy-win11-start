@@ -4,7 +4,10 @@
 # =============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [[ -f "${SCRIPT_DIR}/../manifest.json" ]]; then
+REAL_SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+if [[ -f "${REAL_SCRIPT_DIR}/../manifest.json" ]]; then
+    PLUGIN_DIR="$(cd "${REAL_SCRIPT_DIR}/.." && pwd)"
+elif [[ -f "${SCRIPT_DIR}/../manifest.json" ]]; then
     PLUGIN_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 elif [[ -d "$HOME/.config/omarchy/plugins/omarchy-undercover" ]]; then
     PLUGIN_DIR="$HOME/.config/omarchy/plugins/omarchy-undercover"
@@ -15,9 +18,22 @@ else
 fi
 CONFIG_DIR="$PLUGIN_DIR"
 
+PID_FILE="${XDG_RUNTIME_DIR:-/tmp}/omarchy-win11-start.pid"
+
 # 1. Toggle if already running
+if [[ -f "$PID_FILE" ]]; then
+    PID=$(cat "$PID_FILE" 2>/dev/null)
+    if [[ -n "$PID" ]] && kill -0 "$PID" 2>/dev/null; then
+        kill "$PID" 2>/dev/null || true
+        rm -f "$PID_FILE"
+        exit 0
+    fi
+    rm -f "$PID_FILE"
+fi
+
 if pgrep -f "quickshell.*win11-start" >/dev/null; then
     pkill -f "quickshell.*win11-start"
+    rm -f "$PID_FILE"
     exit 0
 fi
 
@@ -56,6 +72,7 @@ if [[ -f "$CONFIG_DIR/settings.conf" ]]; then
 fi
 
 if [[ "$BACKEND" != "waybar" ]] && command -v quickshell >/dev/null 2>&1 && [[ -d "$QS_SRC" ]]; then
+    echo $$ > "$PID_FILE"
     exec quickshell -p "$QS_SRC"
 elif command -v omarchy-win11-startmenu >/dev/null 2>&1; then
     exec omarchy-win11-startmenu

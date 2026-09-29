@@ -15,7 +15,7 @@ ShellRoot {
       bottom: true
     }
     margins {
-      bottom: 10
+      bottom: 58
     }
 
     WlrLayershell.layer: WlrLayer.Overlay
@@ -34,6 +34,14 @@ ShellRoot {
     property bool showPowerPopup: false
     property string homeDir: Quickshell.env("HOME")
     property string userName: Quickshell.env("USER") || "User"
+    property bool hasEntered: false
+
+    function closeMenu() {
+      startWindow.visible = false
+      var pidFile = (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/omarchy-win11-start.pid"
+      Quickshell.execDetached(["rm", "-f", pidFile])
+      Quickshell.execDetached(["kill", String(Quickshell.processId)])
+    }
 
     Shortcut {
       sequence: "Escape"
@@ -44,14 +52,13 @@ ShellRoot {
           startWindow.currentView = 0
           searchInput.text = ""
         } else {
-          Qt.quit()
+          startWindow.closeMenu()
         }
       }
     }
 
     function runCmd(cmd) {
-      startWindow.visible = false
-      Qt.quit()
+      startWindow.closeMenu()
       Quickshell.execDetached(["bash", "-c", cmd])
     }
 
@@ -184,6 +191,24 @@ ShellRoot {
         y = 0
       }
 
+      HoverHandler {
+        id: menuHover
+        onHoveredChanged: {
+          if (hovered) {
+            startWindow.hasEntered = true
+          }
+        }
+      }
+
+      Timer {
+        id: leaveTimer
+        interval: 300
+        running: startWindow.hasEntered && !menuHover.hovered && !startWindow.showPowerPopup
+        onTriggered: {
+          startWindow.closeMenu()
+        }
+      }
+
       ColumnLayout {
         anchors.fill: parent
         anchors.margins: 18
@@ -214,6 +239,7 @@ ShellRoot {
 
             TextInput {
               id: searchInput
+              focus: true
               Layout.fillWidth: true
               font.family: "Segoe UI"
               font.pixelSize: 12

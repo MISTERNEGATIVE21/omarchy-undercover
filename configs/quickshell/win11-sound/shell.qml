@@ -16,7 +16,7 @@ ShellRoot {
       right: true
     }
     margins {
-      bottom: 10
+      bottom: 58
       right: 12
     }
 
@@ -31,6 +31,19 @@ ShellRoot {
     property real volumeLevel: 0.65
     property bool isMuted: false
     property var audioSinks: []
+    property bool hasEntered: false
+
+    function closePopup() {
+      soundWindow.visible = false
+      var pidFile = (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/omarchy-win11-sound.pid"
+      Quickshell.execDetached(["rm", "-f", pidFile])
+      Quickshell.execDetached(["kill", String(Quickshell.processId)])
+    }
+
+    Shortcut {
+      sequence: "Escape"
+      onActivated: soundWindow.closePopup()
+    }
 
     function runCmd(cmd) {
       Quickshell.execDetached(["bash", "-c", cmd])
@@ -144,6 +157,24 @@ ShellRoot {
         y = 0
       }
 
+      HoverHandler {
+        id: cardHover
+        onHoveredChanged: {
+          if (hovered) {
+            soundWindow.hasEntered = true
+          }
+        }
+      }
+
+      Timer {
+        id: leaveTimer
+        interval: 300
+        running: soundWindow.hasEntered && !cardHover.hovered
+        onTriggered: {
+          soundWindow.closePopup()
+        }
+      }
+
       ColumnLayout {
         anchors.fill: parent
         anchors.margins: 16
@@ -185,7 +216,7 @@ ShellRoot {
               anchors.fill: parent
               hoverEnabled: true
               cursorShape: Qt.PointingHandCursor
-              onClicked: Qt.quit()
+              onClicked: soundWindow.closePopup()
             }
           }
         }
@@ -359,8 +390,7 @@ ShellRoot {
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onClicked: {
-              soundWindow.visible = false
-              Qt.quit()
+              soundWindow.closePopup()
               soundWindow.runCmd("pavucontrol || omarchy-undercover-settings")
             }
           }

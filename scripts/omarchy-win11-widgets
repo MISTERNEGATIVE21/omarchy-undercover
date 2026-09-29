@@ -4,31 +4,49 @@
 # =============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_DIR="$HOME/.config/omarchy-undercover"
+REAL_SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
 QS_SRC=""
 for cand in \
-    "$CONFIG_DIR/quickshell/win11-widgets" \
-    "$CONFIG_DIR/configs/quickshell/win11-widgets" \
-    "${SCRIPT_DIR}/../quickshell/win11-widgets" \
+    "${REAL_SCRIPT_DIR}/../configs/quickshell/win11-widgets" \
     "${SCRIPT_DIR}/../configs/quickshell/win11-widgets" \
-    "${SCRIPT_DIR}/quickshell/win11-widgets" \
-    "${SCRIPT_DIR}/configs/quickshell/win11-widgets"; do
-    if [[ -d "$cand" ]]; then
+    "$HOME/.config/omarchy/plugins/omarchy-undercover/configs/quickshell/win11-widgets" \
+    "$HOME/omarchy-undercover/configs/quickshell/win11-widgets" \
+    "$HOME/.config/omarchy-undercover/quickshell/win11-widgets" \
+    "/usr/share/omarchy-undercover/configs/quickshell/win11-widgets"; do
+    if [[ -d "$cand" && -f "$cand/shell.qml" ]]; then
         QS_SRC="$cand"
         break
     fi
 done
 
+PID_FILE="${XDG_RUNTIME_DIR:-/tmp}/omarchy-win11-widgets.pid"
+
 # Toggle logic: if running, kill it; if not, launch it
+if [[ -f "$PID_FILE" ]]; then
+    PID=$(cat "$PID_FILE" 2>/dev/null)
+    if [[ -n "$PID" ]] && kill -0 "$PID" 2>/dev/null; then
+        kill "$PID" 2>/dev/null || true
+        rm -f "$PID_FILE"
+        exit 0
+    fi
+    rm -f "$PID_FILE"
+fi
+
 if pgrep -f "quickshell.*win11-widgets" >/dev/null; then
     pkill -f "quickshell.*win11-widgets"
+    rm -f "$PID_FILE"
     exit 0
 fi
 
 if command -v quickshell >/dev/null 2>&1 && [[ -d "$QS_SRC" ]]; then
+    echo $$ > "$PID_FILE"
     exec quickshell -p "$QS_SRC"
 else
-    # Fallback to python GTK if quickshell isn't installed
-    exec python3 "${SCRIPT_DIR}/omarchy-win11-widgets-gtk" "$@"
+    # Fallback to notifications / calendar widget
+    if [[ -x "${REAL_SCRIPT_DIR}/omarchy-win11-notifications" ]]; then
+        exec "${REAL_SCRIPT_DIR}/omarchy-win11-notifications" "$@"
+    elif command -v omarchy-win11-notifications >/dev/null 2>&1; then
+        exec omarchy-win11-notifications "$@"
+    fi
 fi

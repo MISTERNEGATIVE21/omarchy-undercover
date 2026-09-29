@@ -16,7 +16,7 @@ ShellRoot {
     }
     margins {
       left: 12
-      bottom: 10
+      bottom: 58
     }
 
     WlrLayershell.layer: WlrLayer.Overlay
@@ -34,6 +34,19 @@ ShellRoot {
     property int brightnessVal: 80
     property int batteryPct: 90
     property string wifiSsid: "Connected"
+    property bool hasEntered: false
+
+    function closePopup() {
+      widgetsWindow.visible = false
+      var pidFile = (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/omarchy-win11-widgets.pid"
+      Quickshell.execDetached(["rm", "-f", pidFile])
+      Quickshell.execDetached(["kill", String(Quickshell.processId)])
+    }
+
+    Shortcut {
+      sequence: "Escape"
+      onActivated: widgetsWindow.closePopup()
+    }
 
     function runCmd(cmd) {
       Quickshell.execDetached(["bash", "-c", cmd])
@@ -118,6 +131,24 @@ ShellRoot {
         x = 0
       }
 
+      HoverHandler {
+        id: cardHover
+        onHoveredChanged: {
+          if (hovered) {
+            widgetsWindow.hasEntered = true
+          }
+        }
+      }
+
+      Timer {
+        id: leaveTimer
+        interval: 300
+        running: widgetsWindow.hasEntered && !cardHover.hovered
+        onTriggered: {
+          widgetsWindow.closePopup()
+        }
+      }
+
       ColumnLayout {
         anchors.fill: parent
         anchors.margins: 16
@@ -151,7 +182,7 @@ ShellRoot {
             MouseArea {
               anchors.fill: parent
               cursorShape: Qt.PointingHandCursor
-              onClicked: Qt.quit()
+              onClicked: widgetsWindow.closePopup()
             }
           }
         }

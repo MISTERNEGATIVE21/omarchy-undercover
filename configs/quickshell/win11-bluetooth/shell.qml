@@ -16,7 +16,7 @@ ShellRoot {
       right: true
     }
     margins {
-      bottom: 10
+      bottom: 58
       right: 12
     }
 
@@ -32,6 +32,19 @@ ShellRoot {
     property var pairedDevices: []
     property bool isScanning: false
     property string searchText: ""
+    property bool hasEntered: false
+
+    function closePopup() {
+      btWindow.visible = false
+      var pidFile = (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/omarchy-win11-bluetooth.pid"
+      Quickshell.execDetached(["rm", "-f", pidFile])
+      Quickshell.execDetached(["kill", String(Quickshell.processId)])
+    }
+
+    Shortcut {
+      sequence: "Escape"
+      onActivated: btWindow.closePopup()
+    }
 
     // Fluent Design Theme Tokens
     readonly property color cardBg: isDark ? Qt.rgba(0.13, 0.14, 0.17, 0.98) : Qt.rgba(0.97, 0.98, 0.99, 0.98)
@@ -63,8 +76,7 @@ ShellRoot {
     }
 
     function runCmd(cmd) {
-      btWindow.visible = false
-      Qt.quit()
+      btWindow.closePopup()
       Quickshell.execDetached(["bash", "-c", cmd])
     }
 
@@ -231,6 +243,24 @@ ShellRoot {
         y = 0
       }
 
+      HoverHandler {
+        id: cardHover
+        onHoveredChanged: {
+          if (hovered) {
+            btWindow.hasEntered = true
+          }
+        }
+      }
+
+      Timer {
+        id: leaveTimer
+        interval: 300
+        running: btWindow.hasEntered && !cardHover.hovered
+        onTriggered: {
+          btWindow.closePopup()
+        }
+      }
+
       ColumnLayout {
         anchors.fill: parent
         anchors.margins: 16
@@ -295,7 +325,7 @@ ShellRoot {
               anchors.fill: parent
               hoverEnabled: true
               cursorShape: Qt.PointingHandCursor
-              onClicked: Qt.quit()
+              onClicked: btWindow.closePopup()
             }
           }
         }
@@ -678,7 +708,6 @@ ShellRoot {
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onClicked: {
-              Qt.quit()
               btWindow.runCmd("blueman-manager || omarchy-undercover-settings")
             }
           }

@@ -16,7 +16,7 @@ ShellRoot {
       right: true
     }
     margins {
-      bottom: 10
+      bottom: 58
       right: 12
     }
 
@@ -32,6 +32,14 @@ ShellRoot {
     property string homeDir: Quickshell.env("HOME")
     property bool isDark: true
     property string currentView: "main" // "main" | "wifi" | "bluetooth"
+    property bool hasEntered: false
+
+    function closePopup() {
+      actionCenterWindow.visible = false
+      var pidFile = (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/omarchy-win11-actioncenter.pid"
+      Quickshell.execDetached(["rm", "-f", pidFile])
+      Quickshell.execDetached(["kill", String(Quickshell.processId)])
+    }
 
     // Hardware states
     property bool wifiEnabled: true
@@ -134,7 +142,7 @@ ShellRoot {
         if (actionCenterWindow.currentView !== "main") {
           actionCenterWindow.currentView = "main"
         } else {
-          Qt.quit()
+          actionCenterWindow.closePopup()
         }
       }
     }
@@ -144,8 +152,7 @@ ShellRoot {
     }
 
     function launchApp(cmd) {
-      actionCenterWindow.visible = false
-      Qt.quit()
+      actionCenterWindow.closePopup()
       Quickshell.execDetached(["bash", "-c", cmd])
     }
 
@@ -378,6 +385,24 @@ ShellRoot {
       Component.onCompleted: {
         opacity = 1.0
         y = 0
+      }
+
+      HoverHandler {
+        id: cardHover
+        onHoveredChanged: {
+          if (hovered) {
+            actionCenterWindow.hasEntered = true
+          }
+        }
+      }
+
+      Timer {
+        id: leaveTimer
+        interval: 300
+        running: actionCenterWindow.hasEntered && !cardHover.hovered
+        onTriggered: {
+          actionCenterWindow.closePopup()
+        }
       }
 
       // ==========================================
@@ -1075,7 +1100,7 @@ ShellRoot {
               anchors.fill: parent
               hoverEnabled: true
               cursorShape: Qt.PointingHandCursor
-              onClicked: Qt.quit()
+              onClicked: actionCenterWindow.closePopup()
             }
           }
         }
@@ -1565,7 +1590,7 @@ ShellRoot {
               anchors.fill: parent
               hoverEnabled: true
               cursorShape: Qt.PointingHandCursor
-              onClicked: Qt.quit()
+              onClicked: actionCenterWindow.closePopup()
             }
           }
         }
