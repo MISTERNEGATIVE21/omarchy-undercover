@@ -231,8 +231,8 @@ hl.window_rule({
 -- Dedicated Undercover toggle shortcuts (non-conflicting with base bindings)
 -- ---------------------------------------------------------------------------
 if hl and hl.bind then
-  hl.bind("SUPER + ALT + U", exec_cmd("omarchy-undercover") .. " --toggle", { description = "Toggle undercover mode" })
-  hl.bind("SUPER + ALT + B", exec_cmd("omarchy-undercover-autohide") .. " --toggle", { description = "Toggle edge auto-hide" })
+  hl.bind("SUPER + ALT + U", exec_cmd("omarchy-undercover --toggle"), { description = "Toggle undercover mode" })
+  hl.bind("SUPER + ALT + B", exec_cmd("omarchy-undercover-autohide --toggle"), { description = "Toggle edge auto-hide" })
 end
 
 -- Rebind Omarchy's native file manager shortcut to use the disguised undercover variant

@@ -135,8 +135,8 @@ hl.animation({ leaf = "layersOut", enabled = true, speed = 3, bezier = "macEase"
 -- Dedicated Undercover toggle shortcuts (non-conflicting with base bindings)
 -- ---------------------------------------------------------------------------
 if hl and hl.bind then
-  hl.bind("SUPER + ALT + U", exec_cmd("omarchy-undercover") .. " --toggle", { description = "Toggle Undercover Mode" })
-  hl.bind("SUPER + ALT + B", exec_cmd("omarchy-undercover-autohide") .. " --toggle", { description = "Toggle Edge Auto-Hide Daemon" })
+  hl.bind("SUPER + ALT + U", exec_cmd("omarchy-undercover --toggle"), { description = "Toggle Undercover Mode" })
+  hl.bind("SUPER + ALT + B", exec_cmd("omarchy-undercover-autohide --toggle"), { description = "Toggle Edge Auto-Hide Daemon" })
 end
 
 -- Rebind Omarchy's native file manager shortcut to use the disguised undercover variant
