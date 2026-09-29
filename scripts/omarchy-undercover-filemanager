@@ -73,13 +73,13 @@ fi
 if command -v flea >/dev/null 2>&1; then
     case "$MODE" in
         mac)
-            flea --ui-state '{"view":"columns","density":"comfortable","keys":"mac","places":{"sidebarWidth":192,"showHome":true,"showNetwork":true,"showDevices":true,"showTrash":true,"driveSize":true,"trashCount":false,"rail":"shown"},"preview":{"column":true,"loadOn":"automatic","thumbnails":"media","thumbSize":"medium","ctrlZoom":true},"columns":["name","date","kind","size"],"foldersFirst":true,"hidden":false}' >/dev/null 2>&1 || true
+            flea --ui-state '{"view":"columns","density":"comfortable","keys":"mac","addressBar":"breadcrumb","places":{"sidebarWidth":200,"showHome":true,"showNetwork":true,"showDevices":true,"showTrash":true,"driveSize":true,"trashCount":false,"rail":"shown"},"preview":{"column":true,"loadOn":"automatic","thumbnails":"media","thumbSize":"medium","ctrlZoom":true},"columns":["name","date","kind","size"],"foldersFirst":true,"hidden":false}' >/dev/null 2>&1 || true
             ;;
         windows)
-            flea --ui-state '{"view":"list","density":"normal","keys":"windows","places":{"sidebarWidth":224,"showHome":true,"showNetwork":true,"showDevices":true,"showTrash":true,"driveSize":true,"trashCount":false,"rail":"shown"},"preview":{"column":false},"columns":["name","date","kind","size"],"foldersFirst":true,"hidden":false}' >/dev/null 2>&1 || true
+            flea --ui-state '{"view":"list","density":"normal","keys":"windows","addressBar":"path","places":{"sidebarWidth":224,"showHome":true,"showNetwork":true,"showDevices":true,"showTrash":true,"driveSize":true,"trashCount":false,"rail":"shown"},"preview":{"column":false},"columns":["name","date","kind","size"],"foldersFirst":true,"hidden":false}' >/dev/null 2>&1 || true
             ;;
         *)
-            flea --ui-state '{"view":"columns","density":"normal","keys":"default","preview":{"column":true}}' >/dev/null 2>&1 || true
+            flea --ui-state '{"view":"columns","density":"normal","keys":"default","addressBar":"breadcrumb","preview":{"column":true}}' >/dev/null 2>&1 || true
             ;;
     esac
 
@@ -87,9 +87,9 @@ if command -v flea >/dev/null 2>&1; then
     export FLEA_RENDERER_AUTOMATIC="${FLEA_RENDERER_AUTOMATIC:-0}"
 
     if [[ ${#ARGS[@]} -eq 0 ]]; then
-        exec flea "$HOME"
+        exec flea --gui "$HOME"
     else
-        exec flea "${ARGS[@]}"
+        exec flea --gui "${ARGS[@]}"
     fi
 fi
 

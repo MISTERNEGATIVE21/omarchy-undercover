@@ -231,24 +231,37 @@ hl.window_rule({
 -- Dedicated Undercover toggle shortcuts (non-conflicting with base bindings)
 -- ---------------------------------------------------------------------------
 if hl and hl.bind then
-  hl.bind("SUPER + ALT + U", exec_cmd("omarchy-undercover --toggle"), { description = "Toggle undercover mode" })
-  hl.bind("SUPER + ALT + B", exec_cmd("omarchy-undercover-autohide --toggle"), { description = "Toggle edge auto-hide" })
+  hl.bind("SUPER + ALT + U", exec_cmd("omarchy-undercover") .. " --toggle", { description = "Toggle undercover mode" })
+  hl.bind("SUPER + ALT + B", exec_cmd("omarchy-undercover-autohide") .. " --toggle", { description = "Toggle edge auto-hide" })
+end
+
+-- Rebind Omarchy's native file manager shortcut to use the disguised undercover variant
+if o and o.rebind then
+  o.rebind("SUPER + SHIFT + F", "File manager", exec_cmd("omarchy-undercover-filemanager"))
+  o.rebind("SUPER + ALT + SHIFT + F", "File manager (cwd)", exec_cmd("omarchy-undercover-filemanager") .. " " .. home)
 end
 
 -- ---------------------------------------------------------------------------
 -- Configurable Windows 11 Keybindings
 -- ---------------------------------------------------------------------------
 local keybindings_enabled = get_setting("ENABLE_KEYBINDINGS", "true") == "true"
+local override_omarchy = get_setting("OVERRIDE_DEFAULT_KEYBINDINGS", "false") == "true"
 
 if keybindings_enabled and hl and hl.bind then
   local function bind_key(setting_key, default_key, action, desc, extra_opts)
     local key = get_setting(setting_key, default_key)
     if key and key ~= "" and key:lower() ~= "none" and key:lower() ~= "disabled" then
+      -- Strictly protect Omarchy defaults unless user explicitly opted into overriding them
+      if not override_omarchy then
+        if key == "SUPER + W" or key == "SUPER + SPACE" then
+          return
+        end
+      end
+
       local opts = { description = desc }
       if extra_opts then
         for k, v in pairs(extra_opts) do opts[k] = v end
       end
-      -- Strictly protect Omarchy's core Close Window shortcuts from being rebound
       if key ~= "SUPER + W" and key ~= "SUPER + Q" then
         pcall(function() hl.unbind(key) end)
       end
@@ -264,9 +277,11 @@ if keybindings_enabled and hl and hl.bind then
     end)
   end
 
-  bind_key("BIND_WIN_START", "SUPER + SPACE", exec_cmd("omarchy-undercover-launcher"), "Start menu")
+  local default_start = override_omarchy and "SUPER + SPACE" or "SUPER + ALT + SPACE"
+  bind_key("BIND_WIN_START", default_start, exec_cmd("omarchy-undercover-launcher"), "Start menu")
   bind_key("BIND_WIN_EXPLORER", "SUPER + E", exec_cmd("omarchy-undercover-filemanager"), "File explorer")
-  bind_key("BIND_WIN_TASKVIEW", "SUPER + TAB", exec_cmd("rofi -show window -theme ~/.config/rofi/windows11.rasi"), "Task view")
+  -- Task View: SUPER+CTRL+TAB avoids conflict with Omarchy's SUPER+TAB (next workspace)
+  bind_key("BIND_WIN_TASKVIEW", "SUPER + CTRL + TAB", exec_cmd("rofi -show window -theme ~/.config/rofi/windows11.rasi"), "Task view")
   bind_key("BIND_WIN_ACTIONCENTER", "SUPER + A", exec_cmd("omarchy-win11-actioncenter"), "Quick Settings & Action Center")
   bind_key("BIND_WIN_NOTIFICATIONS", "SUPER + N", exec_cmd("omarchy-win11-notifications"), "Notification Center & Calendar")
 
@@ -277,17 +292,19 @@ if keybindings_enabled and hl and hl.bind then
   bind_key("BIND_WIN_DESKTOP", "SUPER + D", exec_cmd("omarchy-undercover-show-desktop"), "Show desktop")
   bind_key("BIND_WIN_SNAP", "SUPER + Z", exec_cmd("omarchy-undercover-snap menu"), "Windows 11 Snap Layouts Menu")
   bind_key("BIND_WIN_SCREENSHOT", "SUPER + SHIFT + S", exec_cmd("omarchy capture screenshot region copy"), "Region screenshot")
-  bind_key("BIND_WIN_CLIPBOARD", "SUPER + V", exec_cmd("omarchy-launch-walker -m clipboard"), "Clipboard history")
+  -- Clipboard: SUPER+ALT+V avoids conflict with Omarchy's SUPER+V (universal paste)
+  bind_key("BIND_WIN_CLIPBOARD", "SUPER + ALT + V", exec_cmd("omarchy-launch-walker -m clipboard"), "Clipboard history")
   bind_key("BIND_WIN_LOCK", "SUPER + L", exec_cmd("hyprlock || swaylock || loginctl lock-session"), "Lock screen", { locked = true })
   bind_key("BIND_WIN_RUN", "SUPER + R", exec_cmd("rofi -show run -theme ~/.config/rofi/windows11.rasi"), "Run dialog")
   bind_key("BIND_WIN_MINIMIZE", "SUPER + M", exec_cmd("omarchy-undercover-minimize"), "Minimize window")
   bind_key("BIND_WIN_CLOSE", "ALT + F4", hl.dsp.window.close(), "Close window")
 
   -- Windows 11 Snap Assist & Tiling Shortcuts
-  bind_key("BIND_WIN_SNAP_LEFT", "SUPER + LEFT", exec_cmd("omarchy-undercover-snap left"), "Snap Window Left (50%)")
-  bind_key("BIND_WIN_SNAP_RIGHT", "SUPER + RIGHT", exec_cmd("omarchy-undercover-snap right"), "Snap Window Right (50%)")
-  bind_key("BIND_WIN_SNAP_UP", "SUPER + UP", exec_cmd("omarchy-undercover-snap up"), "Maximize / Zoom Window")
-  bind_key("BIND_WIN_SNAP_DOWN", "SUPER + DOWN", exec_cmd("omarchy-undercover-snap down"), "Restore / Minimize Window")
+  -- SUPER+CTRL+arrows avoids conflict with Omarchy's SUPER+arrows (window focus navigation)
+  bind_key("BIND_WIN_SNAP_LEFT", "SUPER + CTRL + LEFT", exec_cmd("omarchy-undercover-snap left"), "Snap Window Left (50%)")
+  bind_key("BIND_WIN_SNAP_RIGHT", "SUPER + CTRL + RIGHT", exec_cmd("omarchy-undercover-snap right"), "Snap Window Right (50%)")
+  bind_key("BIND_WIN_SNAP_UP", "SUPER + CTRL + UP", exec_cmd("omarchy-undercover-snap up"), "Maximize / Zoom Window")
+  bind_key("BIND_WIN_SNAP_DOWN", "SUPER + CTRL + DOWN", exec_cmd("omarchy-undercover-snap down"), "Restore / Minimize Window")
 end
 
 

@@ -135,24 +135,37 @@ hl.animation({ leaf = "layersOut", enabled = true, speed = 3, bezier = "macEase"
 -- Dedicated Undercover toggle shortcuts (non-conflicting with base bindings)
 -- ---------------------------------------------------------------------------
 if hl and hl.bind then
-  hl.bind("SUPER + ALT + U", exec_cmd("omarchy-undercover --toggle"), { description = "Toggle Undercover Mode" })
-  hl.bind("SUPER + ALT + B", exec_cmd("omarchy-undercover-autohide --toggle"), { description = "Toggle Edge Auto-Hide Daemon" })
+  hl.bind("SUPER + ALT + U", exec_cmd("omarchy-undercover") .. " --toggle", { description = "Toggle Undercover Mode" })
+  hl.bind("SUPER + ALT + B", exec_cmd("omarchy-undercover-autohide") .. " --toggle", { description = "Toggle Edge Auto-Hide Daemon" })
+end
+
+-- Rebind Omarchy's native file manager shortcut to use the disguised undercover variant
+if o and o.rebind then
+  o.rebind("SUPER + SHIFT + F", "File manager", exec_cmd("omarchy-undercover-filemanager"))
+  o.rebind("SUPER + ALT + SHIFT + F", "File manager (cwd)", exec_cmd("omarchy-undercover-filemanager") .. " " .. home)
 end
 
 -- ---------------------------------------------------------------------------
 -- Configurable macOS Sequoia Keybindings
 -- ---------------------------------------------------------------------------
 local keybindings_enabled = get_setting("ENABLE_KEYBINDINGS", "true") == "true"
+local override_omarchy = get_setting("OVERRIDE_DEFAULT_KEYBINDINGS", "false") == "true"
 
 if keybindings_enabled and hl and hl.bind then
   local function bind_key(setting_key, default_key, action, desc, extra_opts)
     local key = get_setting(setting_key, default_key)
     if key and key ~= "" and key:lower() ~= "none" and key:lower() ~= "disabled" then
+      -- Strictly protect Omarchy defaults unless user explicitly opted into overriding them
+      if not override_omarchy then
+        if key == "SUPER + W" or key == "SUPER + SPACE" then
+          return
+        end
+      end
+
       local opts = { description = desc }
       if extra_opts then
         for k, v in pairs(extra_opts) do opts[k] = v end
       end
-      -- Strictly protect Omarchy's core Close Window shortcuts from being rebound
       if key ~= "SUPER + W" and key ~= "SUPER + Q" then
         pcall(function() hl.unbind(key) end)
       end
@@ -160,9 +173,11 @@ if keybindings_enabled and hl and hl.bind then
     end
   end
 
-  -- macOS Spotlight Search (Cmd + Space)
-  bind_key("BIND_MAC_SPOTLIGHT", "SUPER + SPACE", exec_cmd("rofi -show drun -theme ~/.config/rofi/mac.rasi"), "macOS Spotlight Search")
-  bind_key("BIND_MAC_MISSIONCONTROL", "SUPER + TAB", exec_cmd("rofi -show window -theme ~/.config/rofi/mac.rasi"), "macOS Mission Control")
+  -- macOS Spotlight Search (Safe combo Super+Alt+Space by default so Omarchy Super+Space is never touched)
+  local default_spotlight = override_omarchy and "SUPER + SPACE" or "SUPER + ALT + SPACE"
+  bind_key("BIND_MAC_SPOTLIGHT", default_spotlight, exec_cmd("omarchy-undercover-launcher"), "macOS Spotlight Search")
+  -- Mission Control: SUPER+ALT+TAB avoids conflict with Omarchy's SUPER+TAB (next workspace)
+  bind_key("BIND_MAC_MISSIONCONTROL", "SUPER + ALT + TAB", exec_cmd("rofi -show window -theme ~/.config/rofi/mac.rasi"), "macOS Mission Control")
   bind_key("BIND_MAC_WIDGETS", "SUPER + N", exec_cmd("omarchy-mac-widgets"), "macOS Notification Center & Widgets")
   bind_key("BIND_MAC_SETTINGS", "SUPER + COMMA", exec_cmd("uwsm-app -- omarchy-undercover-settings"), "macOS System Settings")
   bind_key("BIND_MAC_FINDER", "SUPER + E", exec_cmd("omarchy-undercover-filemanager"), "macOS Finder")
