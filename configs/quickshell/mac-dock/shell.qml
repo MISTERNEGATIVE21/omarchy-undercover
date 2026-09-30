@@ -261,9 +261,9 @@ ShellRoot {
         return
       }
       var wsId = (client.workspace && client.workspace.id) ? parseInt(client.workspace.id) : 0
-      var safeWs = (wsId > 0) ? ("hyprctl dispatch workspace " + wsId + " 2>/dev/null; ") : ""
-      var cmd = "if hyprctl dispatch " + dockWindow.shellQuote("hl.dsp.focus({ window = 'address:" + rawAddr + "' })") + " 2>/dev/null; then :; else " +
-                safeWs +
+      var safeWs = (wsId > 0) ? ("hyprctl dispatch workspace " + wsId + " 2>/dev/null; hyprctl dispatch " + dockWindow.shellQuote("hl.dsp.focus({ workspace = " + wsId + " })") + " 2>/dev/null; ") : ""
+      var cmd = safeWs +
+                "if hyprctl dispatch " + dockWindow.shellQuote("hl.dsp.focus({ window = 'address:" + rawAddr + "' })") + " 2>/dev/null; then :; else " +
                 "hyprctl dispatch focuswindow " + dockWindow.shellQuote("address:" + rawAddr) + " 2>/dev/null; fi"
       Quickshell.execDetached(["bash", "-c", cmd])
       refreshTimer.restart()
@@ -627,7 +627,12 @@ ShellRoot {
                 return
               }
               if (appData && appData.exec) {
-                Quickshell.execDetached(["bash", "-c", appData.exec])
+                if (appData.matchers && appData.matchers.length > 0) {
+                  var activateCmd = "omarchy-undercover-activate " + dockWindow.shellQuote(appData.matchers.join(",")) + " " + dockWindow.shellQuote(appData.exec)
+                  Quickshell.execDetached(["bash", "-c", activateCmd])
+                } else {
+                  Quickshell.execDetached(["bash", "-c", appData.exec])
+                }
               }
             }
 

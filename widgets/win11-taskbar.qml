@@ -40,6 +40,10 @@ BarWidget {
     NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
   }
 
+  function shellQuote(val) {
+    return "'" + String(val || "").replace(/'/g, "'\\''") + "'"
+  }
+
   function runCmd(cmd) {
     if (root.bar) {
       root.bar.run(cmd)
@@ -58,10 +62,10 @@ BarWidget {
       return
     }
     var wsId = (client.workspace && client.workspace.id) ? parseInt(client.workspace.id) : 0
-    var safeWs = (wsId > 0) ? ("hyprctl dispatch workspace " + wsId + " 2>/dev/null; ") : ""
-    var cmd = "if hyprctl dispatch " + Util.shellQuote("hl.dsp.focus({ window = 'address:" + rawAddr + "' })") + " 2>/dev/null; then :; else " +
-              safeWs +
-              "hyprctl dispatch focuswindow " + Util.shellQuote("address:" + rawAddr) + " 2>/dev/null; fi"
+    var safeWs = (wsId > 0) ? ("hyprctl dispatch workspace " + wsId + " 2>/dev/null; hyprctl dispatch " + root.shellQuote("hl.dsp.focus({ workspace = " + wsId + " })") + " 2>/dev/null; ") : ""
+    var cmd = safeWs +
+              "if hyprctl dispatch " + root.shellQuote("hl.dsp.focus({ window = 'address:" + rawAddr + "' })") + " 2>/dev/null; then :; else " +
+              "hyprctl dispatch focuswindow " + root.shellQuote("address:" + rawAddr) + " 2>/dev/null; fi"
     if (root.bar) {
       root.bar.run(cmd)
     } else {
@@ -80,7 +84,7 @@ BarWidget {
     }
     var rawAddr = String(client.address).trim()
     if (!/^0x[0-9a-fA-F]+$/.test(rawAddr)) return
-    var cmd = "if hyprctl dispatch " + Util.shellQuote("hl.dsp.window.close({ window = 'address:" + rawAddr + "' })") + " 2>/dev/null; then :; else hyprctl dispatch closewindow " + Util.shellQuote("address:" + rawAddr) + " 2>/dev/null; fi"
+    var cmd = "if hyprctl dispatch " + root.shellQuote("hl.dsp.window.close({ window = 'address:" + rawAddr + "' })") + " 2>/dev/null; then :; else hyprctl dispatch closewindow " + root.shellQuote("address:" + rawAddr) + " 2>/dev/null; fi"
     if (root.bar) root.bar.run(cmd)
     else Quickshell.execDetached(["bash", "-c", cmd])
     refreshTimer.restart()
@@ -89,7 +93,7 @@ BarWidget {
   function switchToWorkspace(ws) {
     var rawWs = String(ws).trim()
     if (!/^[0-9a-zA-Z_+-]+$/.test(rawWs)) return
-    var cmd = "if hyprctl dispatch " + Util.shellQuote("hl.dsp.focus({ workspace = '" + rawWs + "' })") + " 2>/dev/null; then :; else hyprctl dispatch workspace " + Util.shellQuote(rawWs) + " 2>/dev/null; fi"
+    var cmd = "if hyprctl dispatch " + root.shellQuote("hl.dsp.focus({ workspace = '" + rawWs + "' })") + " 2>/dev/null; then :; else hyprctl dispatch workspace " + root.shellQuote(rawWs) + " 2>/dev/null; fi"
     if (root.bar) root.bar.run(cmd)
     else Quickshell.execDetached(["bash", "-c", cmd])
     refreshTimer.restart()
@@ -97,7 +101,7 @@ BarWidget {
 
   function seekWorkspace(delta) {
     var wsArg = delta > 0 ? "e-1" : "e+1"
-    var cmd = "if hyprctl dispatch " + Util.shellQuote("hl.dsp.focus({ workspace = '" + wsArg + "' })") + " 2>/dev/null; then :; else hyprctl dispatch workspace " + Util.shellQuote(wsArg) + " 2>/dev/null; fi"
+    var cmd = "if hyprctl dispatch " + root.shellQuote("hl.dsp.focus({ workspace = '" + wsArg + "' })") + " 2>/dev/null; then :; else hyprctl dispatch workspace " + root.shellQuote(wsArg) + " 2>/dev/null; fi"
     if (root.bar) root.bar.run(cmd)
     else Quickshell.execDetached(["bash", "-c", cmd])
     refreshTimer.restart()
@@ -252,23 +256,70 @@ BarWidget {
     }
   }
 
+  function applyDefaultsConfig(d) {
+    if (!d) return
+    if (d.win11_pins) root.winPinsConfig = d.win11_pins
+    var term = d.terminal || "kitty"
+    var ed = d.editor || "antigravity-ide"
+    var fm = d.file_manager || "flea"
+    var br = d.browser || "microsoft-edge"
+
+    for (var i = 0; i < root.winApps.length; i++) {
+      var app = root.winApps[i]
+      if (app.id === "browser" && br && br !== "auto") {
+        app.exec = (br === "microsoft-edge") ? "omarchy-browser" : (br + " || omarchy-browser")
+        if (app.matchers.indexOf(br) === -1) app.matchers.unshift(br)
+      } else if (app.id === "terminal" && term && term !== "auto") {
+        app.exec = term + " || xdg-terminal-exec || alacritty"
+        if (app.matchers.indexOf(term) === -1) app.matchers.unshift(term)
+      } else if (app.id === "antigravity" && ed && ed !== "auto") {
+        app.exec = ed + " || antigravity-ide || code"
+        if (app.matchers.indexOf(ed) === -1) app.matchers.unshift(ed)
+      } else if (app.id === "explorer" && fm && fm !== "auto") {
+        app.exec = "omarchy-undercover-filemanager ~ || " + fm
+        if (app.matchers.indexOf(fm) === -1) app.matchers.unshift(fm)
+      }
+    }
+    root.refreshTaskbar()
+  }
+
   // Defaults & pinned apps poller via FileView
   FileView {
     id: defaultsFile
-    path: root.configDir + "/defaults.json"
+    path: root.homeDir + "/.config/omarchy-undercover/defaults.json"
     watchChanges: true
     printErrors: false
     onLoaded: {
       try {
         var d = JSON.parse(text())
-        if (d && d.win11_pins) root.winPinsConfig = d.win11_pins
+        root.applyDefaultsConfig(d)
       } catch(e) {}
     }
     onFileChanged: {
       reload()
       try {
         var d = JSON.parse(text())
-        if (d && d.win11_pins) root.winPinsConfig = d.win11_pins
+        root.applyDefaultsConfig(d)
+      } catch(e) {}
+    }
+  }
+
+  FileView {
+    id: defaultsFileAlt
+    path: root.configDir + "/defaults.json"
+    watchChanges: true
+    printErrors: false
+    onLoaded: {
+      try {
+        var d = JSON.parse(text())
+        root.applyDefaultsConfig(d)
+      } catch(e) {}
+    }
+    onFileChanged: {
+      reload()
+      try {
+        var d = JSON.parse(text())
+        root.applyDefaultsConfig(d)
       } catch(e) {}
     }
   }
@@ -772,7 +823,10 @@ BarWidget {
                 }
                 return
               }
-              if (modelData.exec) {
+              if (modelData.matchers && modelData.matchers.length > 0) {
+                var activateCmd = "omarchy-undercover-activate " + root.shellQuote(modelData.matchers.join(",")) + " " + root.shellQuote(modelData.exec || "")
+                root.runCmd(activateCmd)
+              } else if (modelData.exec) {
                 root.runCmd(modelData.exec)
               }
             }

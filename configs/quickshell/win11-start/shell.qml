@@ -32,6 +32,7 @@ ShellRoot {
     property string searchFilter: ""
     property int currentView: 0 // 0: Pinned + Recommended, 1: All Apps, 2: Search Results
     property bool showPowerPopup: false
+    property bool showUserPopup: false
     property string homeDir: Quickshell.env("HOME")
     property string userName: Quickshell.env("USER") || "User"
     property bool hasEntered: false
@@ -48,6 +49,8 @@ ShellRoot {
       onActivated: {
         if (startWindow.showPowerPopup) {
           startWindow.showPowerPopup = false
+        } else if (startWindow.showUserPopup) {
+          startWindow.showUserPopup = false
         } else if (startWindow.currentView !== 0) {
           startWindow.currentView = 0
           searchInput.text = ""
@@ -657,40 +660,70 @@ ShellRoot {
         // 3. User Profile & Power Hub Footer Bar
         Rectangle {
           Layout.fillWidth: true
-          implicitHeight: 48
+          implicitHeight: 52
           radius: 8
-          color: startWindow.isDark ? Qt.rgba(0, 0, 0, 0.25) : Qt.rgba(0, 0, 0, 0.04)
+          color: startWindow.isDark ? Qt.rgba(0, 0, 0, 0.28) : Qt.rgba(0, 0, 0, 0.05)
 
           RowLayout {
             anchors.fill: parent
             anchors.leftMargin: 12
             anchors.rightMargin: 12
 
-            // User Info
-            RowLayout {
-              spacing: 8
+            // User Info Pill
+            Rectangle {
+              id: userPill
+              implicitHeight: 40
+              implicitWidth: userRow.implicitWidth + 16
+              radius: 6
+              color: userMouse.containsMouse || startWindow.showUserPopup ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.06)) : "transparent"
 
-              Rectangle {
-                width: 28
-                height: 28
-                radius: 14
-                color: "#0078d4"
-                Text {
-                  anchors.centerIn: parent
-                  text: startWindow.userName.charAt(0).toUpperCase()
-                  font.family: "Segoe UI"
-                  font.pixelSize: 12
-                  font.bold: true
-                  color: "#ffffff"
+              RowLayout {
+                id: userRow
+                anchors.centerIn: parent
+                spacing: 10
+
+                Rectangle {
+                  width: 30
+                  height: 30
+                  radius: 15
+                  color: "#0078d4"
+                  Text {
+                    anchors.centerIn: parent
+                    text: startWindow.userName.charAt(0).toUpperCase()
+                    font.family: "Segoe UI"
+                    font.pixelSize: 13
+                    font.bold: true
+                    color: "#ffffff"
+                  }
+                }
+
+                ColumnLayout {
+                  spacing: 1
+                  Text {
+                    text: startWindow.userName
+                    font.family: "Segoe UI"
+                    font.pixelSize: 12
+                    font.bold: true
+                    color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
+                  }
+                  Text {
+                    text: "Local Account"
+                    font.family: "Segoe UI"
+                    font.pixelSize: 10
+                    color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.55) : Qt.rgba(0, 0, 0, 0.55)
+                  }
                 }
               }
 
-              Text {
-                text: startWindow.userName
-                font.family: "Segoe UI"
-                font.pixelSize: 12
-                font.bold: true
-                color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
+              MouseArea {
+                id: userMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                  startWindow.showUserPopup = !startWindow.showUserPopup
+                  if (startWindow.showUserPopup) startWindow.showPowerPopup = false
+                }
               }
             }
 
@@ -698,8 +731,8 @@ ShellRoot {
 
             // Power Button
             Rectangle {
-              implicitWidth: 32
-              implicitHeight: 32
+              implicitWidth: 36
+              implicitHeight: 36
               radius: 6
               color: powerMouse.containsMouse || startWindow.showPowerPopup ? (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
 
@@ -715,25 +748,109 @@ ShellRoot {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: startWindow.showPowerPopup = !startWindow.showPowerPopup
+                onClicked: {
+                  startWindow.showPowerPopup = !startWindow.showPowerPopup
+                  if (startWindow.showPowerPopup) startWindow.showUserPopup = false
+                }
               }
             }
           }
         }
       }
 
-      // Windows 11 Power Flyout Popup
+      // Windows 11 User Account Flyout Popup
+      Rectangle {
+        id: userFlyout
+        visible: startWindow.showUserPopup
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 64
+        anchors.left: parent.left
+        anchors.leftMargin: 18
+        implicitWidth: 200
+        implicitHeight: userCol.implicitHeight + 16
+        radius: 8
+        color: startWindow.isDark ? Qt.rgba(0.16, 0.17, 0.22, 0.98) : Qt.rgba(0.98, 0.98, 1.0, 0.98)
+        border.color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.18) : Qt.rgba(0, 0, 0, 0.12)
+        border.width: 1
+        z: 99
+
+        ColumnLayout {
+          id: userCol
+          anchors.fill: parent
+          anchors.margins: 6
+          spacing: 3
+
+          Rectangle {
+            Layout.fillWidth: true
+            height: 34
+            radius: 4
+            color: u1.containsMouse ? (startWindow.isDark ? "#0078d4" : "#0067c0") : "transparent"
+            RowLayout {
+              anchors.fill: parent
+              anchors.leftMargin: 8; anchors.rightMargin: 8
+              spacing: 8
+              Text { text: "🔒"; font.pixelSize: 13 }
+              ColumnLayout {
+                spacing: 0
+                Text { text: "Lock"; font.family: "Segoe UI"; font.pixelSize: 11; font.bold: true; color: u1.containsMouse ? "#ffffff" : (startWindow.isDark ? "#ffffff" : "#111111") }
+                Text { text: "Locks this PC"; font.family: "Segoe UI"; font.pixelSize: 9; color: u1.containsMouse ? Qt.rgba(1, 1, 1, 0.8) : (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.5)) }
+              }
+            }
+            MouseArea { id: u1; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: startWindow.runCmd("loginctl lock-session") }
+          }
+
+          Rectangle {
+            Layout.fillWidth: true
+            height: 34
+            radius: 4
+            color: u2.containsMouse ? (startWindow.isDark ? "#0078d4" : "#0067c0") : "transparent"
+            RowLayout {
+              anchors.fill: parent
+              anchors.leftMargin: 8; anchors.rightMargin: 8
+              spacing: 8
+              Text { text: "⚙️"; font.pixelSize: 13 }
+              ColumnLayout {
+                spacing: 0
+                Text { text: "Account settings"; font.family: "Segoe UI"; font.pixelSize: 11; font.bold: true; color: u2.containsMouse ? "#ffffff" : (startWindow.isDark ? "#ffffff" : "#111111") }
+                Text { text: "Change account options"; font.family: "Segoe UI"; font.pixelSize: 9; color: u2.containsMouse ? Qt.rgba(1, 1, 1, 0.8) : (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.5)) }
+              }
+            }
+            MouseArea { id: u2; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: startWindow.runCmd("omarchy-undercover-settings") }
+          }
+
+          Rectangle {
+            Layout.fillWidth: true
+            height: 34
+            radius: 4
+            color: u3.containsMouse ? (startWindow.isDark ? "#0078d4" : "#0067c0") : "transparent"
+            RowLayout {
+              anchors.fill: parent
+              anchors.leftMargin: 8; anchors.rightMargin: 8
+              spacing: 8
+              Text { text: "🚪"; font.pixelSize: 13 }
+              ColumnLayout {
+                spacing: 0
+                Text { text: "Sign out"; font.family: "Segoe UI"; font.pixelSize: 11; font.bold: true; color: u3.containsMouse ? "#ffffff" : (startWindow.isDark ? "#ffffff" : "#111111") }
+                Text { text: "Closes session"; font.family: "Segoe UI"; font.pixelSize: 9; color: u3.containsMouse ? Qt.rgba(1, 1, 1, 0.8) : (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.5)) }
+              }
+            }
+            MouseArea { id: u3; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: startWindow.runCmd("hyprctl dispatch exit") }
+          }
+        }
+      }
+
+      // Windows 11 Power Flyout Popup (Redesigned Fluent 2)
       Rectangle {
         id: powerFlyout
         visible: startWindow.showPowerPopup
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 60
+        anchors.bottomMargin: 64
         anchors.right: parent.right
         anchors.rightMargin: 18
-        implicitWidth: 140
+        implicitWidth: 210
         implicitHeight: powerCol.implicitHeight + 16
         radius: 8
-        color: startWindow.isDark ? Qt.rgba(0.16, 0.17, 0.22, 0.96) : Qt.rgba(0.98, 0.98, 1.0, 0.96)
+        color: startWindow.isDark ? Qt.rgba(0.16, 0.17, 0.22, 0.98) : Qt.rgba(0.98, 0.98, 1.0, 0.98)
         border.color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.18) : Qt.rgba(0, 0, 0, 0.12)
         border.width: 1
         z: 99
@@ -742,59 +859,101 @@ ShellRoot {
           id: powerCol
           anchors.fill: parent
           anchors.margins: 6
-          spacing: 2
+          spacing: 3
 
           Rectangle {
             Layout.fillWidth: true
-            height: 28
+            height: 34
             radius: 4
             color: p1.containsMouse ? (startWindow.isDark ? "#0078d4" : "#0067c0") : "transparent"
-            Text {
-              anchors.left: parent.left; anchors.leftMargin: 8; anchors.verticalCenter: parent.verticalCenter
-              text: "󰤄  Sleep"
-              font.family: "Segoe UI"; font.pixelSize: 11
-              color: p1.containsMouse ? "#ffffff" : (startWindow.isDark ? "#ffffff" : "#111111")
+            RowLayout {
+              anchors.fill: parent
+              anchors.leftMargin: 8; anchors.rightMargin: 8
+              spacing: 8
+              Text { text: "🌙"; font.pixelSize: 13 }
+              ColumnLayout {
+                spacing: 0
+                Text { text: "Sleep"; font.family: "Segoe UI"; font.pixelSize: 11; font.bold: true; color: p1.containsMouse ? "#ffffff" : (startWindow.isDark ? "#ffffff" : "#111111") }
+                Text { text: "Saves session & low-power"; font.family: "Segoe UI"; font.pixelSize: 9; color: p1.containsMouse ? Qt.rgba(1, 1, 1, 0.8) : (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.5)) }
+              }
             }
             MouseArea { id: p1; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: startWindow.runCmd("loginctl suspend") }
           }
+
           Rectangle {
             Layout.fillWidth: true
-            height: 28
+            height: 34
             radius: 4
             color: p2.containsMouse ? (startWindow.isDark ? "#0078d4" : "#0067c0") : "transparent"
-            Text {
-              anchors.left: parent.left; anchors.leftMargin: 8; anchors.verticalCenter: parent.verticalCenter
-              text: "󰑐  Restart"
-              font.family: "Segoe UI"; font.pixelSize: 11
-              color: p2.containsMouse ? "#ffffff" : (startWindow.isDark ? "#ffffff" : "#111111")
+            RowLayout {
+              anchors.fill: parent
+              anchors.leftMargin: 8; anchors.rightMargin: 8
+              spacing: 8
+              Text { text: "🔄"; font.pixelSize: 13 }
+              ColumnLayout {
+                spacing: 0
+                Text { text: "Restart"; font.family: "Segoe UI"; font.pixelSize: 11; font.bold: true; color: p2.containsMouse ? "#ffffff" : (startWindow.isDark ? "#ffffff" : "#111111") }
+                Text { text: "Closes apps and restarts PC"; font.family: "Segoe UI"; font.pixelSize: 9; color: p2.containsMouse ? Qt.rgba(1, 1, 1, 0.8) : (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.5)) }
+              }
             }
             MouseArea { id: p2; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: startWindow.runCmd("loginctl reboot") }
           }
+
           Rectangle {
             Layout.fillWidth: true
-            height: 28
+            height: 34
             radius: 4
             color: p3.containsMouse ? (startWindow.isDark ? "#0078d4" : "#0067c0") : "transparent"
-            Text {
-              anchors.left: parent.left; anchors.leftMargin: 8; anchors.verticalCenter: parent.verticalCenter
-              text: "󰐥  Shut down"
-              font.family: "Segoe UI"; font.pixelSize: 11
-              color: p3.containsMouse ? "#ffffff" : (startWindow.isDark ? "#ffffff" : "#111111")
+            RowLayout {
+              anchors.fill: parent
+              anchors.leftMargin: 8; anchors.rightMargin: 8
+              spacing: 8
+              Text { text: "⏻"; font.pixelSize: 13; color: p3.containsMouse ? "#ffffff" : "#ff5555" }
+              ColumnLayout {
+                spacing: 0
+                Text { text: "Shut down"; font.family: "Segoe UI"; font.pixelSize: 11; font.bold: true; color: p3.containsMouse ? "#ffffff" : (startWindow.isDark ? "#ffffff" : "#111111") }
+                Text { text: "Closes apps and powers off"; font.family: "Segoe UI"; font.pixelSize: 9; color: p3.containsMouse ? Qt.rgba(1, 1, 1, 0.8) : (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.5)) }
+              }
             }
             MouseArea { id: p3; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: startWindow.runCmd("loginctl poweroff") }
           }
+
           Rectangle {
             Layout.fillWidth: true
-            height: 28
+            height: 34
             radius: 4
             color: p4.containsMouse ? (startWindow.isDark ? "#0078d4" : "#0067c0") : "transparent"
-            Text {
-              anchors.left: parent.left; anchors.leftMargin: 8; anchors.verticalCenter: parent.verticalCenter
-              text: "󰍃  Sign out"
-              font.family: "Segoe UI"; font.pixelSize: 11
-              color: p4.containsMouse ? "#ffffff" : (startWindow.isDark ? "#ffffff" : "#111111")
+            RowLayout {
+              anchors.fill: parent
+              anchors.leftMargin: 8; anchors.rightMargin: 8
+              spacing: 8
+              Text { text: "🔒"; font.pixelSize: 13 }
+              ColumnLayout {
+                spacing: 0
+                Text { text: "Lock"; font.family: "Segoe UI"; font.pixelSize: 11; font.bold: true; color: p4.containsMouse ? "#ffffff" : (startWindow.isDark ? "#ffffff" : "#111111") }
+                Text { text: "Locks the workstation"; font.family: "Segoe UI"; font.pixelSize: 9; color: p4.containsMouse ? Qt.rgba(1, 1, 1, 0.8) : (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.5)) }
+              }
             }
-            MouseArea { id: p4; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: startWindow.runCmd("hyprctl dispatch exit") }
+            MouseArea { id: p4; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: startWindow.runCmd("loginctl lock-session") }
+          }
+
+          Rectangle {
+            Layout.fillWidth: true
+            height: 34
+            radius: 4
+            color: p5.containsMouse ? (startWindow.isDark ? "#0078d4" : "#0067c0") : "transparent"
+            RowLayout {
+              anchors.fill: parent
+              anchors.leftMargin: 8; anchors.rightMargin: 8
+              spacing: 8
+              Text { text: "🚪"; font.pixelSize: 13 }
+              ColumnLayout {
+                spacing: 0
+                Text { text: "Sign out"; font.family: "Segoe UI"; font.pixelSize: 11; font.bold: true; color: p5.containsMouse ? "#ffffff" : (startWindow.isDark ? "#ffffff" : "#111111") }
+                Text { text: "Closes session"; font.family: "Segoe UI"; font.pixelSize: 9; color: p5.containsMouse ? Qt.rgba(1, 1, 1, 0.8) : (startWindow.isDark ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.5)) }
+              }
+            }
+            MouseArea { id: p5; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: startWindow.runCmd("hyprctl dispatch exit") }
           }
         }
       }

@@ -21,6 +21,9 @@ def main():
             if any(p in fields for p in patterns):
                 addr = c.get("address")
                 ws_id = c.get("workspace", {}).get("id") if isinstance(c.get("workspace"), dict) else None
+                if ws_id is not None and ws_id < 0 and addr:
+                    subprocess.run(["omarchy-undercover-minimize", addr], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+                    return
                 if ws_id and ws_id > 0:
                     subprocess.run(["hyprctl", "dispatch", f"hl.dsp.focus({{ workspace = {ws_id} }})"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
                     subprocess.run(["hyprctl", "dispatch", "workspace", str(ws_id)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)

@@ -137,6 +137,15 @@ def read_defaults_json():
 def write_defaults_json(data):
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     DEFAULTS_FILE.write_text(json.dumps(data, indent=2))
+    for alt in [
+        Path.home() / ".config/omarchy/plugins/omarchy-undercover/defaults.json",
+        Path.home() / ".config/omarchy/plugins/undercover/defaults.json",
+    ]:
+        try:
+            if alt.parent.exists():
+                alt.write_text(json.dumps(data, indent=2))
+        except Exception:
+            pass
 
 def detect_installed_apps(category):
     categories = {

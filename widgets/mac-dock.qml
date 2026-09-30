@@ -240,6 +240,10 @@ Panel {
     return client.address === dockWindow.hyprActiveWindow.address
   }
 
+  function shellQuote(val) {
+    return "'" + String(val || "").replace(/'/g, "'\\''") + "'"
+  }
+
   function shiftToClient(client) {
     if (!client || !client.address) return
     var rawAddr = String(client.address).trim()
@@ -250,10 +254,10 @@ Panel {
       return
     }
     var wsId = (client.workspace && client.workspace.id) ? parseInt(client.workspace.id) : 0
-    var safeWs = (wsId > 0) ? ("hyprctl dispatch workspace " + wsId + " 2>/dev/null; ") : ""
-    var cmd = "if hyprctl dispatch " + Util.shellQuote("hl.dsp.focus({ window = 'address:" + rawAddr + "' })") + " 2>/dev/null; then :; else " +
-              safeWs +
-              "hyprctl dispatch focuswindow " + Util.shellQuote("address:" + rawAddr) + " 2>/dev/null; fi"
+    var safeWs = (wsId > 0) ? ("hyprctl dispatch workspace " + wsId + " 2>/dev/null; hyprctl dispatch " + dockWindow.shellQuote("hl.dsp.focus({ workspace = " + wsId + " })") + " 2>/dev/null; ") : ""
+    var cmd = safeWs +
+              "if hyprctl dispatch " + dockWindow.shellQuote("hl.dsp.focus({ window = 'address:" + rawAddr + "' })") + " 2>/dev/null; then :; else " +
+              "hyprctl dispatch focuswindow " + dockWindow.shellQuote("address:" + rawAddr) + " 2>/dev/null; fi"
     Quickshell.execDetached(["bash", "-c", cmd])
     refreshTimer.restart()
   }
@@ -267,7 +271,7 @@ Panel {
     }
     var rawAddr = String(client.address).trim()
     if (!/^0x[0-9a-fA-F]+$/.test(rawAddr)) return
-    var cmd = "if hyprctl dispatch " + Util.shellQuote("hl.dsp.window.close({ window = 'address:" + rawAddr + "' })") + " 2>/dev/null; then :; else hyprctl dispatch closewindow " + Util.shellQuote("address:" + rawAddr) + " 2>/dev/null; fi"
+    var cmd = "if hyprctl dispatch " + dockWindow.shellQuote("hl.dsp.window.close({ window = 'address:" + rawAddr + "' })") + " 2>/dev/null; then :; else hyprctl dispatch closewindow " + dockWindow.shellQuote("address:" + rawAddr) + " 2>/dev/null; fi"
     Quickshell.execDetached(["bash", "-c", cmd])
     refreshTimer.restart()
   }
@@ -614,7 +618,12 @@ Panel {
               return
             }
             if (appData && appData.exec) {
-              Quickshell.execDetached(["bash", "-c", appData.exec])
+              if (appData.matchers && appData.matchers.length > 0) {
+                var activateCmd = "omarchy-undercover-activate " + dockWindow.shellQuote(appData.matchers.join(",")) + " " + dockWindow.shellQuote(appData.exec)
+                Quickshell.execDetached(["bash", "-c", activateCmd])
+              } else {
+                Quickshell.execDetached(["bash", "-c", appData.exec])
+              }
             }
           }
 
