@@ -213,7 +213,6 @@ hl.layer_rule({ match = { namespace = "omarchy-image-selector" }, blur = true, i
 hl.layer_rule({ match = { namespace = "omarchy-emojis" }, blur = true, ignore_alpha = true })
 hl.layer_rule({ match = { namespace = "mac-topbar" }, blur = true, ignore_alpha = true })
 hl.layer_rule({ match = { namespace = "mac-dock" }, blur = true, ignore_alpha = true })
-hl.layer_rule({ match = { namespace = "mac-dynamic-island" }, blur = true, ignore_alpha = true })
 hl.layer_rule({ match = { namespace = "waybar" }, blur = true, ignore_alpha = true })
 hl.layer_rule({ match = { namespace = "rofi" }, blur = true, ignore_alpha = true })
 hl.layer_rule({ match = { namespace = "gtk-layer-shell" }, blur = true, ignore_alpha = true })

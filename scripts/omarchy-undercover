@@ -829,16 +829,6 @@ EOF
         setsid -f quickshell -p "$dock_dir" >/dev/null 2>&1 || (nohup quickshell -p "$dock_dir" >/dev/null 2>&1 &)
     fi
 
-    local enable_island
-    enable_island=$(read_setting "ENABLE_MAC_ISLAND" "true")
-    if [[ "$enable_island" == "true" ]]; then
-        if [[ -x "${SCRIPT_DIR}/omarchy-mac-island" ]]; then
-            "${SCRIPT_DIR}/omarchy-mac-island" start >/dev/null 2>&1 || true
-        elif [[ -x "$PLUGIN_DIR/scripts/omarchy-mac-island" ]]; then
-            "$PLUGIN_DIR/scripts/omarchy-mac-island" start >/dev/null 2>&1 || true
-        fi
-    fi
-
     msg "Switched to Apple macOS Sequoia ($variant) — done!"
 }
 
