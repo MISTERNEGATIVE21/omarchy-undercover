@@ -448,22 +448,27 @@ enable_undercover_hyprland() {
         chmod 644 "$toggles_dir/undercover.lua"
     fi
 
-    # Deploy undercover.conf to Omarchy dynamic toggles (for conf-based Hyprland setups)
+    # In Omarchy 4.0+, .lua is strictly favored. If hyprland.lua is present, clean up legacy .conf.
     local undercover_conf="$toggles_dir/undercover.conf"
-    local conf_src=""
-    if [[ "$mode" == "windows" || "$mode" == "win11" ]]; then
-        conf_src="${plugin_root}/configs/hypr/windows-mode.conf"
-    elif [[ "$mode" == "mac" || "$mode" == "ios" ]]; then
-        conf_src="${plugin_root}/configs/hypr/mac-mode.conf"
-    fi
-    {
-        echo "# Omarchy Undercover Dynamic Hyprland Toggle"
-        echo "bind = SUPER ALT, u, exec, omarchy-undercover --toggle"
-        if [[ -n "$conf_src" && -f "$conf_src" ]]; then
-            echo "source = $conf_src"
+    if [[ -f "$HOME/.config/hypr/hyprland.lua" ]]; then
+        rm -f "$undercover_conf"
+    else
+        # Legacy fallback only for pre-Omarchy 4.0 conf-based setups
+        local conf_src=""
+        if [[ "$mode" == "windows" || "$mode" == "win11" ]]; then
+            conf_src="${plugin_root}/configs/hypr/windows-mode.conf"
+        elif [[ "$mode" == "mac" || "$mode" == "ios" ]]; then
+            conf_src="${plugin_root}/configs/hypr/mac-mode.conf"
         fi
-    } > "$undercover_conf"
-    chmod 644 "$undercover_conf"
+        {
+            echo "# Omarchy Undercover Dynamic Hyprland Toggle (legacy fallback)"
+            echo "bind = SUPER ALT, u, exec, omarchy-undercover --toggle"
+            if [[ -n "$conf_src" && -f "$conf_src" ]]; then
+                echo "source = $conf_src"
+            fi
+        } > "$undercover_conf"
+        chmod 644 "$undercover_conf"
+    fi
 
 
     # Ensure icons and asset themes are accessible (only create if missing)

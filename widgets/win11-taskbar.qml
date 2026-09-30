@@ -2,6 +2,8 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
+import Quickshell.Wayland
+import Quickshell.Hyprland
 import qs.Commons
 import qs.Ui
 
@@ -14,6 +16,39 @@ BarWidget {
   property bool isDark: true
   property var winPinsConfig: ({})
   onWinPinsConfigChanged: root.refreshTaskbar()
+
+  // Live Wayland Toplevel handles mapping for ScreencopyView
+  property var handleByAddress: ({})
+
+  function buildHandles() {
+    var map = {}
+    var tls = (ToplevelManager && ToplevelManager.toplevels) ? ToplevelManager.toplevels.values : []
+    for (var i = 0; i < tls.length; i++) {
+      var t = tls[i]
+      var h = t.HyprlandToplevel
+      if (h) {
+        if (!t._boundAddress) {
+          t._boundAddress = true
+          h.addressChanged.connect(root.buildHandles)
+        }
+        var addr = String(h.address || "").toLowerCase().trim()
+        if (addr && addr !== "0") {
+          map["0x" + addr] = t
+          map[addr] = t
+        }
+      }
+    }
+    root.handleByAddress = map
+  }
+
+  Connections {
+    target: (ToplevelManager && ToplevelManager.toplevels) ? ToplevelManager.toplevels : null
+    function onValuesChanged() { root.buildHandles() }
+  }
+
+  Component.onCompleted: {
+    root.buildHandles()
+  }
 
   // Dynamic Bar-Aware Contrast Detection
   readonly property bool isBarLight: !root.isDark
@@ -213,6 +248,23 @@ BarWidget {
       }
     }
     return firstMatch
+  }
+
+  function findAllRunningClients(matchers) {
+    if (!matchers || matchers.length === 0) return []
+    var list = []
+    for (var i = 0; i < root.hyprClients.length; i++) {
+      var c = root.hyprClients[i]
+      if (!c || !c.address) continue
+      var target = ((c.class || "") + " " + (c.initialClass || "") + " " + (c.title || "")).toLowerCase()
+      for (var j = 0; j < matchers.length; j++) {
+        if (target.indexOf(matchers[j].toLowerCase()) !== -1) {
+          list.push(c)
+          break
+        }
+      }
+    }
+    return list
   }
 
   function isClientFocused(client) {
@@ -415,22 +467,27 @@ BarWidget {
         Layout.alignment: Qt.AlignVCenter
         radius: 4
 
-        property var activeClient: {
+        property var activeClients: {
           if (modelData.isDynamic) {
-            if (root.hyprActiveWindow && root.hyprActiveWindow.address) {
-              var act = root.hyprActiveWindow
-              var actKey = ((act.initialClass || "") + " " + (act.class || "")).toLowerCase()
-              var myKey = (modelData.appId || "").toLowerCase()
-              if (myKey && actKey.indexOf(myKey) !== -1) {
-                return act
-              }
-            }
-            return modelData.hyprClient
+            return modelData.hyprClient ? [modelData.hyprClient] : []
           }
-          return root.findRunningClient(modelData.matchers)
+          if (modelData.matchers) {
+            return root.findAllRunningClients(modelData.matchers)
+          }
+          return []
         }
-        property bool appRunning: activeClient !== null && activeClient !== undefined
+        property var activeClient: {
+          if (activeClients && activeClients.length > 0) {
+            for (var i = 0; i < activeClients.length; i++) {
+              if (root.isClientFocused(activeClients[i])) return activeClients[i];
+            }
+            return activeClients[0];
+          }
+          return null
+        }
+        property bool appRunning: activeClients && activeClients.length > 0
         property bool appFocused: root.isClientFocused(activeClient)
+        property bool previewActive: false
 
         color: itemMouse.pressed
                ? (root.isBarLight ? Qt.rgba(0, 0, 0, 0.16) : Qt.rgba(1, 1, 1, 0.18))
@@ -565,101 +622,470 @@ BarWidget {
           }
         }
 
-        // 6. Windows 11 Preview Card with Close (✕) and Minimize (—) Controls
+        // Hide timer to keep preview open while moving mouse between icon and preview card
+        Timer {
+          id: previewHideTimer
+          interval: 240
+          repeat: false
+          onTriggered: {
+            if (!itemMouse.containsMouse && !previewCard.hovered && !taskViewCard.hovered) {
+              itemBox.previewActive = false
+            }
+          }
+        }
+
+        // 6a. Windows 11 Unlaunched Application Tooltip
         Rectangle {
-          id: previewCard
-          visible: itemMouse.containsMouse && !modelData.isStart && !modelData.isTaskView
+          id: unlaunchedTooltip
+          visible: itemBox.previewActive && !modelData.isStart && !modelData.isTaskView && !itemBox.appRunning
           anchors.bottom: parent.top
           anchors.bottomMargin: 8
           anchors.horizontalCenter: parent.horizontalCenter
-          implicitWidth: Math.max(140, cardRow.implicitWidth + 16)
-          implicitHeight: 32
-          radius: 6
+          implicitWidth: Math.max(60, unlaunchText.implicitWidth + 16)
+          implicitHeight: 28
+          radius: 5
           color: root.isDark ? Qt.rgba(0.13, 0.14, 0.18, 0.98) : Qt.rgba(0.96, 0.96, 0.98, 0.98)
           border.color: root.isDark ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(0, 0, 0, 0.12)
           border.width: 1
-          z: 100
+          z: 120
+
+          Text {
+            id: unlaunchText
+            anchors.centerIn: parent
+            text: modelData.name || ""
+            font.family: "Segoe UI"
+            font.pixelSize: 11
+            color: root.isDark ? "#ffffff" : "#1a1a1a"
+          }
+        }
+
+        // 6b. Windows 11 Live Window Preview Card(s) with Quickshell.Wayland ScreencopyView
+        Rectangle {
+          id: previewCard
+          property bool hovered: false
+          visible: Boolean(itemBox.previewActive && !modelData.isStart && !modelData.isTaskView && itemBox.appRunning)
+          anchors.bottom: parent.top
+          anchors.bottomMargin: 8
+          anchors.horizontalCenter: parent.horizontalCenter
+          implicitWidth: previewCardRow.implicitWidth + 12
+          implicitHeight: previewCardRow.implicitHeight + 12
+          radius: 8
+          color: root.isDark ? Qt.rgba(0.12, 0.13, 0.17, 0.98) : Qt.rgba(0.96, 0.96, 0.98, 0.98)
+          border.color: root.isDark ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(0, 0, 0, 0.12)
+          border.width: 1
+          z: 120
 
           RowLayout {
-            id: cardRow
-            anchors.fill: parent
-            anchors.leftMargin: 8
-            anchors.rightMargin: 6
+            id: previewCardRow
+            anchors.centerIn: parent
             spacing: 8
 
-            Text {
-              text: itemBox.activeClient ? (itemBox.activeClient.title || modelData.name) : modelData.name
-              font.family: "Segoe UI"
-              font.pixelSize: 11
-              color: root.isDark ? "#ffffff" : "#1a1a1a"
-              Layout.fillWidth: true
-              elide: Text.ElideRight
-            }
+            Repeater {
+              model: itemBox.activeClients
 
-            // Quick Minimize Button inside Preview
-            Rectangle {
-              visible: itemBox.appRunning
-              implicitWidth: 20
-              implicitHeight: 20
-              radius: 3
-              color: minM.containsMouse ? (root.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.10)) : "transparent"
+              Rectangle {
+                id: thumbTile
+                property var clientObj: modelData
+                property bool isThumbFocused: root.isClientFocused(clientObj)
+                property bool thumbHovered: thumbArea.containsMouse || closeM.containsMouse || minM.containsMouse
+                implicitWidth: 196
+                implicitHeight: 140
+                radius: 6
+                color: thumbHovered
+                       ? (root.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08))
+                       : (isThumbFocused
+                          ? (root.isDark ? Qt.rgba(1, 1, 1, 0.07) : Qt.rgba(0, 0, 0, 0.05))
+                          : (root.isDark ? Qt.rgba(0, 0, 0, 0.35) : Qt.rgba(1, 1, 1, 0.50)))
+                border.color: isThumbFocused
+                              ? (root.isBarLight ? "#0067c0" : "#60cdff")
+                              : (thumbHovered ? (root.isDark ? Qt.rgba(1, 1, 1, 0.25) : Qt.rgba(0, 0, 0, 0.20)) : (root.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08)))
+                border.width: isThumbFocused ? 1.5 : 1
 
-              Text { anchors.centerIn: parent; text: "—"; font.pixelSize: 10; color: root.isDark ? "#ffffff" : "#1a1a1a" }
+                ColumnLayout {
+                  anchors.fill: parent
+                  anchors.margins: 6
+                  spacing: 4
 
-              MouseArea {
-                id: minM
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                  Quickshell.execDetached(["omarchy-undercover-minimize"])
+                  // Title Bar & Controls
+                  RowLayout {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 20
+                    spacing: 6
+
+                    Image {
+                      Layout.preferredWidth: 14
+                      Layout.preferredHeight: 14
+                      sourceSize: Qt.size(14, 14)
+                      source: root.resolveAppIcon(clientObj) || (itemBox.modelData.iconFile ? ("file://" + root.homeDir + "/.local/share/icons/win11/" + itemBox.modelData.iconFile) : "")
+                      fillMode: Image.PreserveAspectFit
+                      smooth: true
+                    }
+
+                    Text {
+                      text: clientObj ? (clientObj.title || itemBox.modelData.name || "") : (itemBox.modelData.name || "")
+                      font.family: "Segoe UI"
+                      font.pixelSize: 11
+                      font.bold: isThumbFocused
+                      color: root.isDark ? "#ffffff" : "#1a1a1a"
+                      Layout.fillWidth: true
+                      elide: Text.ElideRight
+                    }
+
+                    // Quick Minimize Button
+                    Rectangle {
+                      implicitWidth: 18
+                      implicitHeight: 18
+                      radius: 3
+                      color: minM.containsMouse ? (root.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.10)) : "transparent"
+
+                      Text {
+                        anchors.centerIn: parent
+                        text: "—"
+                        font.pixelSize: 9
+                        color: root.isDark ? "#ffffff" : "#1a1a1a"
+                      }
+
+                      MouseArea {
+                        id: minM
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onEntered: {
+                          previewCard.hovered = true
+                          previewHideTimer.stop()
+                        }
+                        onExited: {
+                          previewCard.hovered = false
+                          previewHideTimer.restart()
+                        }
+                        onClicked: {
+                          if (clientObj && clientObj.address) {
+                            Quickshell.execDetached(["omarchy-undercover-minimize", clientObj.address])
+                          }
+                        }
+                      }
+                    }
+
+                    // Quick Close Button
+                    Rectangle {
+                      implicitWidth: 18
+                      implicitHeight: 18
+                      radius: 3
+                      color: closeM.containsMouse ? "#c42b1c" : "transparent"
+
+                      Text {
+                        anchors.centerIn: parent
+                        text: "✕"
+                        font.pixelSize: 9
+                        color: closeM.containsMouse ? "#ffffff" : (root.isDark ? "#ffffff" : "#1a1a1a")
+                      }
+
+                      MouseArea {
+                        id: closeM
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onEntered: {
+                          previewCard.hovered = true
+                          previewHideTimer.stop()
+                        }
+                        onExited: {
+                          previewCard.hovered = false
+                          previewHideTimer.restart()
+                        }
+                        onClicked: {
+                          root.closeClient(clientObj)
+                        }
+                      }
+                    }
+                  }
+
+                  // Screencopy Live Visual Thumbnail Frame
+                  Rectangle {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    radius: 4
+                    clip: true
+                    color: root.isDark ? Qt.rgba(0, 0, 0, 0.5) : Qt.rgba(0, 0, 0, 0.08)
+                    border.width: 1
+                    border.color: root.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.05)
+
+                    ScreencopyView {
+                      id: scView
+                      anchors.fill: parent
+                      anchors.margins: 1
+                      visible: scView.hasContent
+                      captureSource: {
+                        var addr = String((clientObj && clientObj.address) || "").toLowerCase().trim()
+                        return root.handleByAddress[addr] || null
+                      }
+                      live: true
+                    }
+
+                    // Fallback visual when capture not yet active or minimized
+                    Item {
+                      anchors.fill: parent
+                      visible: !scView.hasContent
+
+                      ColumnLayout {
+                        anchors.centerIn: parent
+                        spacing: 6
+
+                        Image {
+                          Layout.alignment: Qt.AlignHCenter
+                          Layout.preferredWidth: 32
+                          Layout.preferredHeight: 32
+                          sourceSize: Qt.size(32, 32)
+                          source: root.resolveAppIcon(clientObj) || (itemBox.modelData.iconFile ? ("file://" + root.homeDir + "/.local/share/icons/win11/" + itemBox.modelData.iconFile) : "")
+                          fillMode: Image.PreserveAspectFit
+                        }
+
+                        Text {
+                          Layout.alignment: Qt.AlignHCenter
+                          text: clientObj ? (clientObj.title || "") : ""
+                          font.family: "Segoe UI"
+                          font.pixelSize: 10
+                          color: root.isDark ? Qt.rgba(1, 1, 1, 0.6) : Qt.rgba(0, 0, 0, 0.6)
+                          elide: Text.ElideRight
+                          Layout.maximumWidth: 160
+                        }
+                      }
+                    }
+                  }
                 }
-              }
-            }
 
-            // Quick Close Button inside Preview
-            Rectangle {
-              visible: itemBox.appRunning
-              implicitWidth: 20
-              implicitHeight: 20
-              radius: 3
-              color: closeM.containsMouse ? "#c42b1c" : "transparent"
-
-              Text { anchors.centerIn: parent; text: "✕"; font.pixelSize: 10; color: closeM.containsMouse ? "#ffffff" : (root.isDark ? "#ffffff" : "#1a1a1a") }
-
-              MouseArea {
-                id: closeM
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                  root.closeClient(itemBox.activeClient)
+                MouseArea {
+                  id: thumbArea
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  z: -1
+                  onEntered: {
+                    previewCard.hovered = true
+                    previewHideTimer.stop()
+                  }
+                  onExited: {
+                    previewCard.hovered = false
+                    previewHideTimer.restart()
+                  }
+                  onClicked: {
+                    root.shiftToClient(clientObj)
+                    itemBox.previewActive = false
+                  }
                 }
               }
             }
           }
         }
 
-        // Windows 11 Virtual Desktops Preview & Workspace Seeking Card
+        // 7. Windows 11 Task View Overview & Virtual Desktops Card
         Rectangle {
           id: taskViewCard
-          visible: Boolean(itemMouse.containsMouse && modelData && modelData.isTaskView)
+          property bool hovered: false
+          visible: Boolean((itemBox.previewActive || taskViewCard.hovered) && modelData && modelData.isTaskView)
           anchors.bottom: parent.top
           anchors.bottomMargin: 8
           anchors.horizontalCenter: parent.horizontalCenter
-          implicitWidth: Math.max(220, deskRow.implicitWidth + 24)
-          implicitHeight: 74
+          implicitWidth: Math.max(260, Math.max(deskRow.implicitWidth + 24, (root.hyprClients && root.hyprClients.length > 0 ? Math.min(4, root.hyprClients.length) * 168 + 24 : 0)))
+          implicitHeight: (root.hyprClients && root.hyprClients.length > 0) ? 214 : 76
           radius: 8
           color: root.isDark ? Qt.rgba(0.12, 0.13, 0.17, 0.98) : Qt.rgba(0.96, 0.96, 0.98, 0.98)
           border.color: root.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.12)
           border.width: 1
-          z: 110
+          z: 120
+
+          MouseArea {
+            id: taskViewBgMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            z: -1
+            onEntered: {
+              taskViewCard.hovered = true
+              previewHideTimer.stop()
+            }
+            onExited: {
+              taskViewCard.hovered = false
+              previewHideTimer.restart()
+            }
+          }
 
           ColumnLayout {
             anchors.fill: parent
             anchors.margins: 8
             spacing: 6
 
+            // Section 1: Open Windows Live Tiles (ScreencopyView)
+            Item {
+              visible: root.hyprClients && root.hyprClients.length > 0
+              Layout.fillWidth: true
+              Layout.preferredHeight: 126
+
+              ColumnLayout {
+                anchors.fill: parent
+                spacing: 4
+
+                RowLayout {
+                  Layout.fillWidth: true
+                  Text {
+                    text: "Open Windows"
+                    font.family: "Segoe UI"
+                    font.pixelSize: 11
+                    font.bold: true
+                    color: root.isDark ? "#ffffff" : "#1a1a1a"
+                  }
+                  Item { Layout.fillWidth: true }
+                  Text {
+                    text: "Click to switch"
+                    font.family: "Segoe UI"
+                    font.pixelSize: 9
+                    color: root.isDark ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.5)
+                  }
+                }
+
+                RowLayout {
+                  id: taskViewWinRow
+                  spacing: 6
+
+                  Repeater {
+                    model: (root.hyprClients || []).slice(0, 4)
+
+                    Rectangle {
+                      id: tvThumb
+                      property var tvClient: modelData
+                      property bool isTvFocused: root.isClientFocused(tvClient)
+                      implicitWidth: 160
+                      implicitHeight: 102
+                      radius: 5
+                      color: tvM.containsMouse
+                             ? (root.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.08))
+                             : (isTvFocused
+                                ? (root.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05))
+                                : (root.isDark ? Qt.rgba(0, 0, 0, 0.35) : Qt.rgba(1, 1, 1, 0.50)))
+                      border.color: isTvFocused
+                                    ? (root.isBarLight ? "#0067c0" : "#60cdff")
+                                    : (tvM.containsMouse ? (root.isDark ? Qt.rgba(1, 1, 1, 0.22) : Qt.rgba(0, 0, 0, 0.18)) : (root.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.06)))
+                      border.width: isTvFocused ? 1.5 : 1
+
+                      ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: 4
+                        spacing: 2
+
+                        RowLayout {
+                          Layout.fillWidth: true
+                          Layout.preferredHeight: 16
+                          spacing: 4
+
+                          Image {
+                            Layout.preferredWidth: 12
+                            Layout.preferredHeight: 12
+                            sourceSize: Qt.size(12, 12)
+                            source: root.resolveAppIcon(tvClient)
+                            fillMode: Image.PreserveAspectFit
+                          }
+
+                          Text {
+                            text: tvClient ? (tvClient.title || tvClient.class || "") : ""
+                            font.family: "Segoe UI"
+                            font.pixelSize: 10
+                            font.bold: isTvFocused
+                            color: root.isDark ? "#ffffff" : "#1a1a1a"
+                            Layout.fillWidth: true
+                            elide: Text.ElideRight
+                          }
+
+                          Rectangle {
+                            implicitWidth: 14
+                            implicitHeight: 14
+                            radius: 2
+                            color: tvCloseM.containsMouse ? "#c42b1c" : "transparent"
+
+                            Text {
+                              anchors.centerIn: parent
+                              text: "✕"
+                              font.pixelSize: 8
+                              color: tvCloseM.containsMouse ? "#ffffff" : (root.isDark ? "#ffffff" : "#1a1a1a")
+                            }
+
+                            MouseArea {
+                              id: tvCloseM
+                              anchors.fill: parent
+                              hoverEnabled: true
+                              cursorShape: Qt.PointingHandCursor
+                              onEntered: {
+                                taskViewCard.hovered = true
+                                previewHideTimer.stop()
+                              }
+                              onExited: {
+                                taskViewCard.hovered = false
+                                previewHideTimer.restart()
+                              }
+                              onClicked: root.closeClient(tvClient)
+                            }
+                          }
+                        }
+
+                        // Screencopy Preview inside Task View
+                        Rectangle {
+                          Layout.fillWidth: true
+                          Layout.fillHeight: true
+                          radius: 3
+                          clip: true
+                          color: root.isDark ? Qt.rgba(0, 0, 0, 0.45) : Qt.rgba(0, 0, 0, 0.06)
+
+                          ScreencopyView {
+                            id: tvScView
+                            anchors.fill: parent
+                            visible: tvScView.hasContent
+                            captureSource: {
+                              var addr = String((tvClient && tvClient.address) || "").toLowerCase().trim()
+                              return root.handleByAddress[addr] || null
+                            }
+                            live: true
+                          }
+
+                          Item {
+                            anchors.fill: parent
+                            visible: !tvScView.hasContent
+
+                            Image {
+                              anchors.centerIn: parent
+                              width: 24
+                              height: 24
+                              sourceSize: Qt.size(24, 24)
+                              source: root.resolveAppIcon(tvClient)
+                              fillMode: Image.PreserveAspectFit
+                            }
+                          }
+                        }
+                      }
+
+                      MouseArea {
+                        id: tvM
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        z: -1
+                        onEntered: {
+                          taskViewCard.hovered = true
+                          previewHideTimer.stop()
+                        }
+                        onExited: {
+                          taskViewCard.hovered = false
+                          previewHideTimer.restart()
+                        }
+                        onClicked: {
+                          root.shiftToClient(tvClient)
+                          itemBox.previewActive = false
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+
+            // Section 2: Desktops Row
             RowLayout {
               Layout.fillWidth: true
               Text {
@@ -720,6 +1146,14 @@ BarWidget {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
+                    onEntered: {
+                      taskViewCard.hovered = true
+                      previewHideTimer.stop()
+                    }
+                    onExited: {
+                      taskViewCard.hovered = false
+                      previewHideTimer.restart()
+                    }
                     onClicked: {
                       root.switchToWorkspace(modelData.toString())
                       root.activeWorkspaceId = modelData
@@ -750,6 +1184,14 @@ BarWidget {
                   anchors.fill: parent
                   hoverEnabled: true
                   cursorShape: Qt.PointingHandCursor
+                  onEntered: {
+                    taskViewCard.hovered = true
+                    previewHideTimer.stop()
+                  }
+                  onExited: {
+                    taskViewCard.hovered = false
+                    previewHideTimer.restart()
+                  }
                   onClicked: {
                     root.switchToWorkspace("empty")
                   }
@@ -759,9 +1201,9 @@ BarWidget {
           }
         }
 
-        // Standard Tooltip for Start
+        // 8. Standard Tooltip for Start
         Rectangle {
-          visible: Boolean(itemMouse.containsMouse && modelData && modelData.isStart)
+          visible: Boolean(itemBox.previewActive && modelData && modelData.isStart)
           anchors.bottom: parent.top
           anchors.bottomMargin: 6
           anchors.horizontalCenter: parent.horizontalCenter
@@ -789,6 +1231,15 @@ BarWidget {
           hoverEnabled: true
           cursorShape: Qt.PointingHandCursor
           acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+
+          onEntered: {
+            previewHideTimer.stop()
+            itemBox.previewActive = true
+          }
+
+          onExited: {
+            previewHideTimer.restart()
+          }
 
           onWheel: function(wheel) {
             root.seekWorkspace(wheel.angleDelta.y)
