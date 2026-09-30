@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+# =============================================================================
+# 🍏 macOS Sequoia Native Quickshell Dynamic Island Dispatcher
+# Apple-style Deep Pitch Black Dynamic Island
+# =============================================================================
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_DIR="$HOME/.config/omarchy-undercover"
+PLUGIN_DIR="$HOME/.config/omarchy/plugins/omarchy-undercover"
+
+QS_SRC=""
+for cand in \
+    "$CONFIG_DIR/quickshell/mac-island" \
+    "$PLUGIN_DIR/configs/quickshell/mac-island" \
+    "${SCRIPT_DIR}/../configs/quickshell/mac-island" \
+    "${SCRIPT_DIR}/../quickshell/mac-island" \
+    "${SCRIPT_DIR}/quickshell/mac-island" \
+    "${SCRIPT_DIR}/configs/quickshell/mac-island"; do
+    if [[ -d "$cand" && -f "$cand/shell.qml" ]]; then
+        QS_SRC="$cand"
+        break
+    fi
+done
+
+action="${1:-start}"
+
+is_running() {
+    pgrep -f "quickshell.*mac-island" >/dev/null 2>&1
+}
+
+stop_island() {
+    pkill -f "quickshell.*mac-island" 2>/dev/null || true
+    sleep 0.1
+    pkill -9 -f "quickshell.*mac-island" 2>/dev/null || true
+}
+
+start_island() {
+    if is_running; then
+        return 0
+    fi
+
+    if ! command -v quickshell >/dev/null 2>&1; then
+        echo "quickshell not found" >&2
+        return 1
+    fi
+
+    if [[ -z "$QS_SRC" || ! -d "$QS_SRC" ]]; then
+        echo "mac-island QuickShell source directory not found" >&2
+        return 1
+    fi
+
+    # Sync into config directory for runtime stability
+    local runtime_dir="$CONFIG_DIR/quickshell/mac-island"
+    if [[ "$QS_SRC" != "$runtime_dir" ]]; then
+        mkdir -p "$runtime_dir"
+        cp -rf "$QS_SRC/"* "$runtime_dir/" 2>/dev/null || true
+        QS_SRC="$runtime_dir"
+    fi
+
+    export QML_IMPORT_PATH="$QS_SRC"
+    setsid -f quickshell -p "$QS_SRC" >/dev/null 2>&1 || (nohup quickshell -p "$QS_SRC" >/dev/null 2>&1 &)
+}
+
+case "$action" in
+    start)
+        start_island
+        ;;
+    stop)
+        stop_island
+        ;;
+    restart|reload)
+        stop_island
+        sleep 0.2
+        start_island
+        ;;
+    toggle)
+        if is_running; then
+            stop_island
+        else
+            start_island
+        fi
+        ;;
+    status)
+        if is_running; then
+            echo "running"
+        else
+            echo "stopped"
+        fi
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|toggle|status}" >&2
+        exit 1
+        ;;
+esac
