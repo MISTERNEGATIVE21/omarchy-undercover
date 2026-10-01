@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+import json
+import sys
+import subprocess
+import shutil
+
+def run(cmd):
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, check=False).stdout
+    except Exception:
+        return ""
+
+def get_state():
+    def_sink = run(['pactl', 'get-default-sink']).strip()
+    def_source = run(['pactl', 'get-default-source']).strip()
+    
+    try:
+        sinks_raw = json.loads(run(['pactl', '-f', 'json', 'list', 'sinks']))
+    except Exception:
+        sinks_raw = []
+    try:
+        sources_raw = json.loads(run(['pactl', '-f', 'json', 'list', 'sources']))
+    except Exception:
+        sources_raw = []
+    try:
+        streams_raw = json.loads(run(['pactl', '-f', 'json', 'list', 'sink-inputs']))
+    except Exception:
+        streams_raw = []
+
+    sinks = []
+    for s in sinks_raw:
+        name = s.get('name', '')
+        desc = s.get('description', name)
+        vol_dict = s.get('volume', {})
+        vols = [v.get('value', 0) for v in vol_dict.values() if isinstance(v, dict)]
+        vol_pct = int(round((sum(vols) / len(vols) / 65536.0) * 100)) if vols else 100
+        muted = s.get('mute', False)
+        stype = '🎧' if any(w in desc.lower() for w in ['head', 'buds', 'airpods', 'wh-']) else '🔊'
+        sinks.append({
+            'name': name,
+            'description': desc,
+            'volume': vol_pct,
+            'muted': muted,
+            'isDefault': (name == def_sink),
+            'type': stype
+        })
+
+    sources = []
+    for s in sources_raw:
+        name = s.get('name', '')
+        if name.endswith('.monitor'):
+            continue
+        desc = s.get('description', name)
+        vol_dict = s.get('volume', {})
+        vols = [v.get('value', 0) for v in vol_dict.values() if isinstance(v, dict)]
+        vol_pct = int(round((sum(vols) / len(vols) / 65536.0) * 100)) if vols else 100
+        muted = s.get('mute', False)
+        stype = '🎙️'
+        sources.append({
+            'name': name,
+            'description': desc,
+            'volume': vol_pct,
+            'muted': muted,
+            'isDefault': (name == def_source),
+            'type': stype
+        })
+
+    streams = []
+    for st in streams_raw:
+        idx = st.get('index')
+        props = st.get('properties', {})
+        app_name = props.get('application.name') or props.get('media.name') or 'Application'
+        icon = props.get('application.icon_name') or ''
+        vol_dict = st.get('volume', {})
+        vols = [v.get('value', 0) for v in vol_dict.values() if isinstance(v, dict)]
+        vol_pct = int(round((sum(vols) / len(vols) / 65536.0) * 100)) if vols else 100
+        muted = st.get('mute', False)
+        sink_id = st.get('sink')
+        streams.append({
+            'index': idx,
+            'name': app_name,
+            'icon': icon,
+            'volume': vol_pct,
+            'muted': muted,
+            'sink': sink_id
+        })
+
+    master_sink = next((s for s in sinks if s['isDefault']), (sinks[0] if sinks else {'volume': 70, 'muted': False}))
+    master_source = next((s for s in sources if s['isDefault']), (sources[0] if sources else {'volume': 70, 'muted': False}))
+
+    return {
+        'masterVolume': master_sink.get('volume', 70),
+        'masterMuted': master_sink.get('muted', False),
+        'micVolume': master_source.get('volume', 70),
+        'micMuted': master_source.get('muted', False),
+        'defaultSink': def_sink,
+        'defaultSource': def_source,
+        'sinks': sinks,
+        'sources': sources,
+        'streams': streams
+    }
+
+if __name__ == '__main__':
+    print(json.dumps(get_state()))
