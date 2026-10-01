@@ -1994,51 +1994,316 @@ ShellRoot {
               ColumnLayout {
                 visible: settingsWin.currentCategory === 1
                 Layout.fillWidth: true
-                spacing: 14
+                spacing: 16
 
+                // 1. BLUETOOTH HERO CARD
                 Rectangle {
                   Layout.fillWidth: true
-                  implicitHeight: 68
+                  implicitHeight: 74
                   radius: 8
                   color: settingsWin.cardBg
                   border.color: settingsWin.cardBorder
                   border.width: 1
+
                   RowLayout {
                     anchors.fill: parent
                     anchors.margins: 16
                     spacing: 14
+
                     Image {
                       Layout.preferredWidth: 22
                       Layout.preferredHeight: 22
-                      width: 22; height: 22
                       source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/devices.svg"
                       fillMode: Image.PreserveAspectFit
                     }
-                    Text { text: "Bluetooth Radio Power"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary; Layout.fillWidth: true }
+                    ColumnLayout {
+                      Layout.fillWidth: true
+                      Text { text: "Bluetooth"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                      Text {
+                        text: settingsService.btEnabled ? "Discoverable and searching for accessories" : "Bluetooth is turned off"
+                        font.family: "Segoe UI, sans-serif"
+                        font.pixelSize: 11
+                        color: settingsWin.textSecondary
+                      }
+                    }
                     Switch {
-                      checked: settingsWin.btEnabled
-                      onToggled: {
-                        settingsWin.btEnabled = checked
-                        settingsWin.runCmd("bluetoothctl power " + (checked ? "on" : "off"))
+                      checked: settingsService.btEnabled
+                      onToggled: settingsService.toggleBluetooth(checked)
+                    }
+                  }
+                }
+
+                // 2. ADD DEVICE & BLUETOOTH ACCESSORIES
+                Rectangle {
+                  Layout.fillWidth: true
+                  implicitHeight: btAccCol.implicitHeight + 28
+                  radius: 8
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  ColumnLayout {
+                    id: btAccCol
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 12
+
+                    RowLayout {
+                      Layout.fillWidth: true
+                      Text {
+                        text: "Devices & Accessories"
+                        font.family: "Segoe UI, sans-serif"
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
+                        color: settingsWin.textPrimary
+                        Layout.fillWidth: true
+                      }
+                      Rectangle {
+                        implicitWidth: 104
+                        implicitHeight: 28
+                        radius: 4
+                        color: addDevM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.06)) : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : "#fbfbfb")
+                        border.color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.14)
+                        border.width: 1
+                        Text {
+                          anchors.centerIn: parent
+                          text: "+ Add device"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 11
+                          font.weight: Font.DemiBold
+                          color: settingsWin.textPrimary
+                        }
+                        MouseArea {
+                          id: addDevM
+                          anchors.fill: parent
+                          hoverEnabled: true
+                          cursorShape: Qt.PointingHandCursor
+                          onClicked: settingsService.scanBluetooth()
+                        }
+                      }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    // Devices List
+                    ColumnLayout {
+                      Layout.fillWidth: true
+                      spacing: 6
+
+                      Text {
+                        visible: settingsService.btDevices.length === 0
+                        text: settingsService.btEnabled ? "No Bluetooth devices currently paired or connected." : "Turn on Bluetooth to view paired devices."
+                        font.family: "Segoe UI, sans-serif"
+                        font.pixelSize: 11
+                        color: settingsWin.textSecondary
+                      }
+
+                      Repeater {
+                        model: settingsService.btDevices
+                        delegate: Rectangle {
+                          Layout.fillWidth: true
+                          implicitHeight: 46
+                          radius: 6
+                          color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.04) : Qt.rgba(0, 0, 0, 0.02)
+
+                          RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 12
+                            spacing: 12
+
+                            Text {
+                              text: {
+                                var n = (modelData.name || "").toLowerCase()
+                                if (n.indexOf("head") !== -1 || n.indexOf("bud") !== -1 || n.indexOf("airpod") !== -1) return "🎧"
+                                if (n.indexOf("mouse") !== -1) return "🖱️"
+                                if (n.indexOf("key") !== -1) return "⌨️"
+                                return "📶"
+                              }
+                              font.pixelSize: 14
+                            }
+
+                            ColumnLayout {
+                              Layout.fillWidth: true
+                              spacing: 1
+                              Text {
+                                text: modelData.name || modelData.address || "Bluetooth Device"
+                                font.family: "Segoe UI, sans-serif"
+                                font.pixelSize: 12
+                                font.weight: Font.DemiBold
+                                color: settingsWin.textPrimary
+                              }
+                              Text {
+                                text: modelData.connected ? ("Connected" + (modelData.battery !== undefined ? (" • " + modelData.battery + "%") : "")) : (modelData.paired ? "Paired" : "Available")
+                                font.family: "Segoe UI, sans-serif"
+                                font.pixelSize: 10
+                                color: modelData.connected ? settingsWin.accentColor : settingsWin.textSecondary
+                              }
+                            }
+
+                            Rectangle {
+                              implicitWidth: 80
+                              implicitHeight: 24
+                              radius: 4
+                              color: devBtnM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
+                              border.color: settingsWin.cardBorder
+                              border.width: 1
+                              Text {
+                                anchors.centerIn: parent
+                                text: modelData.connected ? "Disconnect" : "Connect"
+                                font.family: "Segoe UI, sans-serif"
+                                font.pixelSize: 10
+                                font.weight: Font.DemiBold
+                                color: settingsWin.textPrimary
+                              }
+                              MouseArea {
+                                id: devBtnM
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                  if (modelData.connected) {
+                                    settingsService.disconnectBluetooth(modelData.address)
+                                  } else {
+                                    settingsService.connectBluetooth(modelData.address)
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
                       }
                     }
                   }
                 }
 
+                // 3. MOUSE CARD
                 Rectangle {
                   Layout.fillWidth: true
-                  implicitHeight: 46
-                  radius: 6
-                  color: settingsWin.accentColor
-                  Text {
-                    anchors.centerIn: parent
-                    text: "Open Advanced Bluetooth Manager"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 12; font.weight: Font.DemiBold
-                    color: settingsWin.isDark ? "#000000" : "#ffffff"
-                  }
-                  MouseArea {
+                  implicitHeight: mouseCol.implicitHeight + 28
+                  radius: 8
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  ColumnLayout {
+                    id: mouseCol
                     anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: settingsWin.runCmd("omarchy-win11-bluetooth || blueman-manager")
+                    anchors.margins: 16
+                    spacing: 14
+
+                    Text {
+                      text: "Mouse"
+                      font.family: "Segoe UI, sans-serif"
+                      font.pixelSize: 13
+                      font.weight: Font.DemiBold
+                      color: settingsWin.textPrimary
+                    }
+
+                    // Pointer speed slider
+                    RowLayout {
+                      Layout.fillWidth: true
+                      spacing: 12
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+                        Text { text: "Mouse pointer speed"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 12; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { text: "Adjust tracking speed and sensitivity for pointing devices"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
+                      }
+                      Slider {
+                        Layout.preferredWidth: 160
+                        from: 1; to: 20; stepSize: 1
+                        value: Math.max(1, Math.min(20, Math.round((settingsService.mouseSpeed + 1.0) * 9.5 + 1)))
+                        onMoved: {
+                          var sens = (value - 10) / 10.0
+                          settingsService.mouseSpeed = sens
+                          settingsService.setDeviceOption("*", "sensitivity", sens.toFixed(2), "pointer")
+                        }
+                      }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    // Natural scrolling toggle
+                    RowLayout {
+                      Layout.fillWidth: true
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+                        Text { text: "Natural scrolling"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 12; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { text: "Content moves in the same direction you scroll the wheel"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
+                      }
+                      Switch {
+                        checked: settingsService.mouseNaturalScroll
+                        onToggled: {
+                          settingsService.mouseNaturalScroll = checked
+                          settingsService.setDeviceOption("*", "natural_scroll", checked ? "true" : "false", "pointer")
+                        }
+                      }
+                    }
+                  }
+                }
+
+                // 4. TOUCHPAD CARD
+                Rectangle {
+                  Layout.fillWidth: true
+                  implicitHeight: touchCol.implicitHeight + 28
+                  radius: 8
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  ColumnLayout {
+                    id: touchCol
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 14
+
+                    Text {
+                      text: "Touchpad"
+                      font.family: "Segoe UI, sans-serif"
+                      font.pixelSize: 13
+                      font.weight: Font.DemiBold
+                      color: settingsWin.textPrimary
+                    }
+
+                    // Tap to click
+                    RowLayout {
+                      Layout.fillWidth: true
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+                        Text { text: "Tap to click"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 12; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { text: "Tap on touchpad with a single finger to click"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
+                      }
+                      Switch {
+                        checked: settingsService.touchpadTapToClick
+                        onToggled: {
+                          settingsService.touchpadTapToClick = checked
+                          settingsService.setDeviceOption("*", "tap-to-click", checked ? "true" : "false", "pointer")
+                        }
+                      }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    // Touchpad scrolling direction
+                    RowLayout {
+                      Layout.fillWidth: true
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+                        Text { text: "Touchpad scrolling direction"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 12; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { text: "Down motion scrolls down (natural gestures)"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
+                      }
+                      Switch {
+                        checked: settingsService.touchpadNaturalScroll
+                        onToggled: {
+                          settingsService.touchpadNaturalScroll = checked
+                          settingsService.setDeviceOption("*", "natural_scroll", checked ? "true" : "false", "pointer")
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -2049,55 +2314,272 @@ ShellRoot {
               ColumnLayout {
                 visible: settingsWin.currentCategory === 2
                 Layout.fillWidth: true
-                spacing: 14
+                spacing: 16
 
+                // 1. WI-FI HERO TOGGLE CARD
                 Rectangle {
                   Layout.fillWidth: true
-                  implicitHeight: 68
+                  implicitHeight: 74
                   radius: 8
                   color: settingsWin.cardBg
                   border.color: settingsWin.cardBorder
                   border.width: 1
+
                   RowLayout {
                     anchors.fill: parent
                     anchors.margins: 16
                     spacing: 14
+
                     Image {
                       Layout.preferredWidth: 22
                       Layout.preferredHeight: 22
-                      width: 22; height: 22
                       source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/network.svg"
                       fillMode: Image.PreserveAspectFit
                     }
                     ColumnLayout {
                       Layout.fillWidth: true
-                      Text { text: "Wi-Fi Connection"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
-                      Text { text: settingsWin.wifiEnabled ? settingsWin.wifiSsid : "Wi-Fi is turned off"; textFormat: Text.PlainText; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                      Text { text: "Wi-Fi"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                      Text {
+                        text: settingsService.wifiEnabled ? (settingsService.wifiActiveSsid ? ("Connected to " + settingsService.wifiActiveSsid) : "Available networks nearby") : "Wi-Fi is turned off"
+                        font.family: "Segoe UI, sans-serif"
+                        font.pixelSize: 11
+                        color: settingsWin.textSecondary
+                      }
                     }
                     Switch {
-                      checked: settingsWin.wifiEnabled
-                      onToggled: {
-                        settingsWin.wifiEnabled = checked
-                        settingsWin.runCmd("nmcli radio wifi " + (checked ? "on" : "off"))
+                      checked: settingsService.wifiEnabled
+                      onToggled: settingsService.toggleWifi(checked)
+                    }
+                  }
+                }
+
+                // 2. ACTIVE NETWORK PROPERTIES (If Connected)
+                Rectangle {
+                  visible: settingsService.wifiEnabled && settingsService.wifiActiveSsid !== ""
+                  Layout.fillWidth: true
+                  implicitHeight: 74
+                  radius: 8
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 14
+
+                    Text { text: "📶"; font.pixelSize: 22 }
+
+                    ColumnLayout {
+                      Layout.fillWidth: true
+                      Text {
+                        text: settingsService.wifiActiveSsid
+                        font.family: "Segoe UI, sans-serif"
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
+                        color: settingsWin.textPrimary
+                      }
+                      Text {
+                        text: "Connected, secured • Internet access"
+                        font.family: "Segoe UI, sans-serif"
+                        font.pixelSize: 11
+                        color: settingsWin.accentColor
+                      }
+                    }
+
+                    Rectangle {
+                      implicitWidth: 90
+                      implicitHeight: 28
+                      radius: 4
+                      color: disBtnM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
+                      border.color: settingsWin.cardBorder
+                      border.width: 1
+                      Text {
+                        anchors.centerIn: parent
+                        text: "Disconnect"
+                        font.family: "Segoe UI, sans-serif"
+                        font.pixelSize: 11
+                        color: settingsWin.textPrimary
+                      }
+                      MouseArea {
+                        id: disBtnM
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: settingsService.disconnectWifi()
                       }
                     }
                   }
                 }
 
+                // 3. AVAILABLE NETWORKS CARD
                 Rectangle {
+                  visible: settingsService.wifiEnabled
                   Layout.fillWidth: true
-                  implicitHeight: 46
-                  radius: 6
-                  color: settingsWin.accentColor
-                  Text {
-                    anchors.centerIn: parent
-                    text: "Scan & Connect to Wi-Fi Networks"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 12; font.weight: Font.DemiBold
-                    color: settingsWin.isDark ? "#000000" : "#ffffff"
-                  }
-                  MouseArea {
+                  implicitHeight: netCol.implicitHeight + 28
+                  radius: 8
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  ColumnLayout {
+                    id: netCol
                     anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: settingsWin.runCmd("omarchy-win11-wifi || nm-connection-editor")
+                    anchors.margins: 16
+                    spacing: 12
+
+                    RowLayout {
+                      Layout.fillWidth: true
+                      Text {
+                        text: "Available networks"
+                        font.family: "Segoe UI, sans-serif"
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
+                        color: settingsWin.textPrimary
+                        Layout.fillWidth: true
+                      }
+
+                      Rectangle {
+                        implicitWidth: 80
+                        implicitHeight: 28
+                        radius: 4
+                        color: rescanM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.06)) : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : "#fbfbfb")
+                        border.color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.14)
+                        border.width: 1
+                        Text {
+                          anchors.centerIn: parent
+                          text: settingsService.wifiScanning ? "Scanning..." : "Rescan"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textPrimary
+                        }
+                        MouseArea {
+                          id: rescanM
+                          anchors.fill: parent
+                          hoverEnabled: true
+                          cursorShape: Qt.PointingHandCursor
+                          onClicked: settingsService.scanWifi()
+                        }
+                      }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    ColumnLayout {
+                      Layout.fillWidth: true
+                      spacing: 4
+
+                      property string expandedSsid: ""
+
+                      Repeater {
+                        model: settingsService.wifiNetworks
+                        delegate: Rectangle {
+                          Layout.fillWidth: true
+                          implicitHeight: isExpanded ? 80 : 38
+                          radius: 6
+                          readonly property bool isExpanded: parent.expandedSsid === modelData.ssid
+                          color: isExpanded
+                                 ? (settingsWin.isDark ? Qt.rgba(0.38, 0.80, 1.0, 0.14) : Qt.rgba(0, 0.40, 0.75, 0.08))
+                                 : (wifiRowM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.03)) : "transparent")
+
+                          ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 8
+                            spacing: 6
+
+                            RowLayout {
+                              Layout.fillWidth: true
+                              spacing: 10
+
+                              Text { text: "📶"; font.pixelSize: 14 }
+                              Text {
+                                text: modelData.ssid || "Hidden Network"
+                                font.family: "Segoe UI, sans-serif"
+                                font.pixelSize: 12
+                                font.weight: modelData.connected ? Font.DemiBold : Font.Normal
+                                color: settingsWin.textPrimary
+                                Layout.fillWidth: true
+                                elide: Text.ElideRight
+                              }
+                              Text {
+                                visible: modelData.security && modelData.security !== "--"
+                                text: "🔒"
+                                font.pixelSize: 11
+                              }
+                              Text {
+                                visible: modelData.connected
+                                text: "✓"
+                                font.pixelSize: 12
+                                font.weight: Font.Bold
+                                color: settingsWin.accentColor
+                              }
+                            }
+
+                            // Password prompt row when expanded
+                            RowLayout {
+                              visible: isExpanded && !modelData.connected
+                              Layout.fillWidth: true
+                              spacing: 8
+
+                              Rectangle {
+                                Layout.fillWidth: true
+                                implicitHeight: 28
+                                radius: 4
+                                color: settingsWin.isDark ? Qt.rgba(0, 0, 0, 0.25) : "#ffffff"
+                                border.color: settingsWin.cardBorder
+                                border.width: 1
+
+                                TextInput {
+                                  id: pwField
+                                  anchors.fill: parent
+                                  anchors.margins: 6
+                                  echoMode: TextInput.Password
+                                  font.family: "Segoe UI, sans-serif"
+                                  font.pixelSize: 11
+                                  color: settingsWin.textPrimary
+                                }
+                              }
+
+                              Rectangle {
+                                implicitWidth: 70
+                                implicitHeight: 28
+                                radius: 4
+                                color: settingsWin.accentColor
+                                Text {
+                                  anchors.centerIn: parent
+                                  text: "Connect"
+                                  font.family: "Segoe UI, sans-serif"
+                                  font.pixelSize: 11
+                                  font.weight: Font.DemiBold
+                                  color: settingsWin.isDark ? "#000000" : "#ffffff"
+                                }
+                                MouseArea {
+                                  anchors.fill: parent
+                                  cursorShape: Qt.PointingHandCursor
+                                  onClicked: {
+                                    settingsService.connectWifi(modelData.ssid, pwField.text)
+                                    parent.parent.parent.parent.expandedSsid = ""
+                                  }
+                                }
+                              }
+                            }
+                          }
+
+                          MouseArea {
+                            id: wifiRowM
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            enabled: !isExpanded
+                            onClicked: {
+                              if (!modelData.connected) {
+                                parent.parent.expandedSsid = modelData.ssid
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
                   }
                 }
               }
