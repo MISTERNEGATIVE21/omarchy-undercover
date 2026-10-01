@@ -129,16 +129,24 @@ if [[ -d "$INSTALLED_PLUGIN" ]]; then
     cp -f "${REPO_DIR}/Widget.qml" "${INSTALLED_PLUGIN}/Widget.qml" 2>/dev/null || true
     cp -f "${REPO_DIR}/Panel.qml" "${INSTALLED_PLUGIN}/Panel.qml" 2>/dev/null || true
     cp -f "${REPO_DIR}/Service.qml" "${INSTALLED_PLUGIN}/Service.qml" 2>/dev/null || true
-    cp -f "${REPO_DIR}/settings.conf" "${INSTALLED_PLUGIN}/settings.conf" 2>/dev/null || true
+    [[ ! -f "${INSTALLED_PLUGIN}/settings.conf" ]] && cp -f "${REPO_DIR}/settings.conf" "${INSTALLED_PLUGIN}/settings.conf" 2>/dev/null || true
     [[ -f "${REPO_DIR}/defaults.json" ]] && cp -f "${REPO_DIR}/defaults.json" "${INSTALLED_PLUGIN}/defaults.json" 2>/dev/null || true
-    [[ -f "${REPO_DIR}/apps.json" ]] && cp -f "${REPO_DIR}/apps.json" "${INSTALLED_PLUGIN}/apps.json" 2>/dev/null || true
+    [[ ! -f "${INSTALLED_PLUGIN}/apps.json" && -f "${REPO_DIR}/apps.json" ]] && cp -f "${REPO_DIR}/apps.json" "${INSTALLED_PLUGIN}/apps.json" 2>/dev/null || true
     if [[ -d "${REPO_DIR}/assets" ]]; then
         mkdir -p "${INSTALLED_PLUGIN}/assets"
         cp -rf "${REPO_DIR}/assets"/* "${INSTALLED_PLUGIN}/assets/" 2>/dev/null || true
     fi
+    if [[ -d "${REPO_DIR}/bin" ]]; then
+        mkdir -p "${INSTALLED_PLUGIN}/bin"
+        cp -rf "${REPO_DIR}/bin"/* "${INSTALLED_PLUGIN}/bin/" 2>/dev/null || true
+    fi
     if [[ -d "${REPO_DIR}/configs" ]]; then
         mkdir -p "${INSTALLED_PLUGIN}/configs"
         cp -rf "${REPO_DIR}/configs"/* "${INSTALLED_PLUGIN}/configs/" 2>/dev/null || true
+    fi
+    if [[ -d "${REPO_DIR}/lib" ]]; then
+        mkdir -p "${INSTALLED_PLUGIN}/lib"
+        cp -rf "${REPO_DIR}/lib"/* "${INSTALLED_PLUGIN}/lib/" 2>/dev/null || true
     fi
     if [[ -d "${REPO_DIR}/scripts" ]]; then
         mkdir -p "${INSTALLED_PLUGIN}/scripts"
