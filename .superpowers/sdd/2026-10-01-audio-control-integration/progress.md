@@ -9,4 +9,5 @@ Task 1: complete (commit 0076a4a, tests: ./bin/omarchy-audio-service --build-inf
 Task 2: complete (commit edf6691, tests: Quickshell AudioService QML import and state query → PASS)
 Task 3: complete (commit ec06f86, tests: quickshell -p configs/quickshell/win11-sound → Configuration Loaded PASS)
 Task 4: complete (commit 6dcf45e, tests: quickshell -p configs/quickshell/win11-settings with --page sound → Configuration Loaded PASS)
-Task 5: complete (tests: quickshell -p configs/quickshell/mac-sound → Configuration Loaded PASS)
+Task 5: complete (commit 8026354, tests: quickshell -p configs/quickshell/mac-sound → Configuration Loaded PASS)
+Task 6: complete (tests: quickshell -p configs/quickshell/mac-settings → Configuration Loaded PASS)

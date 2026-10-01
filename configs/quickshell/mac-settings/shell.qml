@@ -104,6 +104,86 @@ ShellRoot {
       runCmd(cmd)
     }
 
+    AudioService {
+      id: audioService
+    }
+
+    property int audioBalance: 50
+    property bool micTesting: false
+
+    function applyBalance(b) {
+      settingsWin.audioBalance = b
+      var master = audioService.masterVolume
+      var left = master
+      var right = master
+      if (b < 50) {
+        var r = b / 50.0
+        right = Math.round(master * r)
+      } else if (b > 50) {
+        var r = (100 - b) / 50.0
+        left = Math.round(master * r)
+      }
+      runCmd("pactl set-sink-volume @DEFAULT_SINK@ " + left + "% " + right + "%")
+    }
+
+    function getAudioDeviceIcon(desc, name, isSource) {
+      var d = ((desc || "") + " " + (name || "")).toLowerCase()
+      if (isSource) {
+        if (d.indexOf("headset") !== -1 || d.indexOf("airpods") !== -1) return "🎧"
+        if (d.indexOf("webcam") !== -1 || d.indexOf("camera") !== -1) return "📷"
+        return "🎙️"
+      }
+      if (d.indexOf("airpods") !== -1 || d.indexOf("headphone") !== -1 || d.indexOf("headset") !== -1) return "🎧"
+      if (d.indexOf("hdmi") !== -1 || d.indexOf("displayport") !== -1 || d.indexOf("tv") !== -1) return "📺"
+      if (d.indexOf("blue") !== -1) return "📶"
+      return "🔊"
+    }
+
+    function getAudioDeviceType(desc, name, isSource) {
+      var d = ((desc || "") + " " + (name || "")).toLowerCase()
+      if (isSource) {
+        if (d.indexOf("usb") !== -1) return "USB Audio"
+        if (d.indexOf("bluetooth") !== -1 || d.indexOf("bluez") !== -1) return "Bluetooth"
+        if (d.indexOf("headset") !== -1 || d.indexOf("headphone") !== -1) return "Headset Microphone"
+        if (d.indexOf("webcam") !== -1 || d.indexOf("camera") !== -1) return "Webcam Microphone"
+        return "Built-in Microphone"
+      }
+      if (d.indexOf("usb") !== -1) return "USB Audio"
+      if (d.indexOf("bluetooth") !== -1 || d.indexOf("bluez") !== -1) return "Bluetooth"
+      if (d.indexOf("headphone") !== -1 || d.indexOf("headset") !== -1) return "Headphone Port"
+      if (d.indexOf("hdmi") !== -1 || d.indexOf("displayport") !== -1) return "DisplayPort / HDMI"
+      return "Built-in Speakers"
+    }
+
+    function getAudioAppIcon(stream) {
+      var n = ((stream.binary || "") + " " + (stream.app_name || "") + " " + (stream.name || "")).toLowerCase()
+      if (n.indexOf("firefox") !== -1 || n.indexOf("chrome") !== -1 || n.indexOf("browser") !== -1 || n.indexOf("brave") !== -1) return "🌐"
+      if (n.indexOf("spotify") !== -1 || n.indexOf("music") !== -1 || n.indexOf("amberol") !== -1) return "🎵"
+      if (n.indexOf("discord") !== -1 || n.indexOf("slack") !== -1 || n.indexOf("telegram") !== -1) return "💬"
+      if (n.indexOf("vlc") !== -1 || n.indexOf("mpv") !== -1 || n.indexOf("video") !== -1) return "🎬"
+      if (n.indexOf("game") !== -1 || n.indexOf("steam") !== -1) return "🎮"
+      return "🎚️"
+    }
+
+    // Page watcher for direct navigation to sound
+    FileView {
+      path: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/omarchy-settings-page"
+      watchChanges: true
+      onLoaded: {
+        var p = text().trim()
+        if (p === "sound" || p === "5") {
+          settingsWin.currentCategory = 5
+        }
+      }
+      onFileChanged: {
+        reload()
+        var p = text().trim()
+        if (p === "sound" || p === "5") {
+          settingsWin.currentCategory = 5
+        }
+      }
+    }
+
     // Reactive Watcher on State
     FileView {
       id: stateWatcher
@@ -1376,20 +1456,32 @@ ShellRoot {
               ColumnLayout {
                 visible: settingsWin.currentCategory === 5
                 Layout.fillWidth: true
-                spacing: 14
+                spacing: 16
 
+                Text {
+                  text: "Sound"
+                  font.family: "SF Pro Text, -apple-system, sans-serif"
+                  font.pixelSize: 18
+                  font.bold: true
+                  color: settingsWin.textPrimary
+                }
+
+                // ==========================================
+                // SOUND EFFECTS & ALERTS
+                // ==========================================
                 Rectangle {
                   Layout.fillWidth: true
-                  implicitHeight: 124
+                  implicitHeight: alertCol.implicitHeight + 28
                   radius: 10
                   color: settingsWin.cardBg
                   border.color: settingsWin.cardBorder
                   border.width: 1
 
                   ColumnLayout {
+                    id: alertCol
                     anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 14
+                    anchors.margins: 14
+                    spacing: 12
 
                     RowLayout {
                       Layout.fillWidth: true
@@ -1397,42 +1489,762 @@ ShellRoot {
                       Image {
                         Layout.preferredWidth: 20
                         Layout.preferredHeight: 20
-                        width: 20; height: 20
                         source: "file://" + settingsWin.pluginDir + "/assets/icons/mac-settings/sound.svg"
                         fillMode: Image.PreserveAspectFit
                       }
-                      Text {
-                        text: "Output Volume (" + settingsWin.volumeLevel + "%)"
-                        font.family: "SF Pro Text, -apple-system, sans-serif"
-                        font.pixelSize: 12
-                        color: settingsWin.textPrimary
+                      ColumnLayout {
+                        spacing: 2
+                        Text {
+                          text: "Alert sound effect"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 13
+                          font.weight: Font.DemiBold
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: "Play system ping alert sound"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
                       }
                       Item { Layout.fillWidth: true }
-                      Slider {
-                        from: 0; to: 100; stepSize: 1
-                        value: settingsWin.volumeLevel
-                        onMoved: {
-                          settingsWin.volumeLevel = Math.round(value)
-                          settingsWin.runCmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ " + (settingsWin.volumeLevel / 100).toFixed(2))
+                      Button {
+                        text: "Play Ping"
+                        onClicked: settingsWin.runCmd("omarchy-play-sound mac-switch")
+                      }
+                    }
+                  }
+                }
+
+                // ==========================================
+                // OUTPUT SECTION
+                // ==========================================
+                Text {
+                  text: "Output"
+                  font.family: "SF Pro Text, -apple-system, sans-serif"
+                  font.pixelSize: 14
+                  font.weight: Font.DemiBold
+                  color: settingsWin.textPrimary
+                }
+
+                Rectangle {
+                  Layout.fillWidth: true
+                  implicitHeight: outputCol.implicitHeight + 28
+                  radius: 10
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  ColumnLayout {
+                    id: outputCol
+                    anchors.fill: parent
+                    anchors.margins: 14
+                    spacing: 12
+
+                    // Table Header
+                    RowLayout {
+                      Layout.fillWidth: true
+                      Text {
+                        text: "Name"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 11
+                        font.weight: Font.Bold
+                        color: settingsWin.textSecondary
+                        Layout.fillWidth: true
+                      }
+                      Text {
+                        text: "Type"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 11
+                        font.weight: Font.Bold
+                        color: settingsWin.textSecondary
+                        Layout.preferredWidth: 140
+                      }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    // Output Sinks Table
+                    ColumnLayout {
+                      Layout.fillWidth: true
+                      spacing: 4
+
+                      Repeater {
+                        model: audioService.sinks
+                        delegate: Rectangle {
+                          Layout.fillWidth: true
+                          implicitHeight: 34
+                          radius: 6
+                          color: modelData.is_default
+                                 ? (settingsWin.isDark ? Qt.rgba(0, 122, 255, 0.28) : Qt.rgba(0, 122, 255, 0.15))
+                                 : (sinkRowArea.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05)) : "transparent")
+
+                          RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            spacing: 8
+
+                            Text {
+                              text: settingsWin.getAudioDeviceIcon(modelData.description, modelData.name, false)
+                              font.pixelSize: 14
+                            }
+                            Text {
+                              text: modelData.description || modelData.name
+                              font.family: "SF Pro Text, -apple-system, sans-serif"
+                              font.pixelSize: 12
+                              font.weight: modelData.is_default ? Font.DemiBold : Font.Normal
+                              color: settingsWin.textPrimary
+                              Layout.fillWidth: true
+                              elide: Text.ElideRight
+                            }
+                            Text {
+                              text: settingsWin.getAudioDeviceType(modelData.description, modelData.name, false)
+                              font.family: "SF Pro Text, -apple-system, sans-serif"
+                              font.pixelSize: 11
+                              color: settingsWin.textSecondary
+                              Layout.preferredWidth: 140
+                              elide: Text.ElideRight
+                            }
+                            Text {
+                              visible: modelData.is_default
+                              text: "✓"
+                              font.pixelSize: 12
+                              color: "#007aff"
+                              font.weight: Font.Bold
+                            }
+                          }
+
+                          MouseArea {
+                            id: sinkRowArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: audioService.setDefaultSink(modelData.name)
+                          }
                         }
                       }
                     }
 
                     Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
 
+                    // Output Volume Slider Row
                     RowLayout {
                       Layout.fillWidth: true
+                      spacing: 12
+
                       Text {
-                        text: "Play system alert sound"
+                        text: "Output volume"
                         font.family: "SF Pro Text, -apple-system, sans-serif"
                         font.pixelSize: 12
                         color: settingsWin.textPrimary
+                        Layout.preferredWidth: 110
+                      }
+
+                      Rectangle {
+                        implicitWidth: 26
+                        implicitHeight: 26
+                        radius: 5
+                        color: spkMuteBtnArea.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.1)) : "transparent"
+                        Text {
+                          anchors.centerIn: parent
+                          text: audioService.masterMuted ? "🔇" : (audioService.masterVolume === 0 ? "🔈" : (audioService.masterVolume > 50 ? "🔊" : "🔉"))
+                          font.pixelSize: 14
+                        }
+                        MouseArea {
+                          id: spkMuteBtnArea
+                          anchors.fill: parent
+                          hoverEnabled: true
+                          cursorShape: Qt.PointingHandCursor
+                          onClicked: audioService.toggleMasterMute()
+                        }
+                      }
+
+                      Slider {
+                        id: macOutSlider
+                        Layout.fillWidth: true
+                        from: 0
+                        to: 100
+                        stepSize: 1
+                        value: audioService.masterVolume
+                        onMoved: {
+                          settingsWin.volumeLevel = Math.round(value)
+                          audioService.setMasterVolume(Math.round(value))
+                        }
+
+                        background: Rectangle {
+                          x: macOutSlider.leftPadding
+                          y: macOutSlider.topPadding + macOutSlider.availableHeight / 2 - height / 2
+                          implicitWidth: 160
+                          implicitHeight: 6
+                          width: macOutSlider.availableWidth
+                          height: 6
+                          radius: 3
+                          color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.12)
+
+                          Rectangle {
+                            width: macOutSlider.visualPosition * parent.width
+                            height: parent.height
+                            color: audioService.masterMuted ? "#8e8e93" : "#007aff"
+                            radius: 3
+                          }
+                        }
+
+                        handle: Rectangle {
+                          x: macOutSlider.leftPadding + macOutSlider.visualPosition * (macOutSlider.availableWidth - width)
+                          y: macOutSlider.topPadding + macOutSlider.availableHeight / 2 - height / 2
+                          implicitWidth: 16
+                          implicitHeight: 16
+                          radius: 8
+                          color: "#ffffff"
+                          border.color: Qt.rgba(0, 0, 0, 0.2)
+                          border.width: 1
+                        }
+                      }
+
+                      Text {
+                        text: audioService.masterMuted ? "Muted" : (audioService.masterVolume + "%")
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 11
+                        font.weight: Font.DemiBold
+                        color: audioService.masterMuted ? "#8e8e93" : settingsWin.textPrimary
+                        Layout.preferredWidth: 44
+                        horizontalAlignment: Text.AlignRight
+                      }
+                    }
+
+                    // Stereo Balance Slider Row
+                    RowLayout {
+                      Layout.fillWidth: true
+                      spacing: 12
+
+                      Text {
+                        text: "Balance"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 12
+                        color: settingsWin.textPrimary
+                        Layout.preferredWidth: 110
+                      }
+
+                      Text {
+                        text: "Left"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 11
+                        color: settingsWin.textSecondary
+                      }
+
+                      Slider {
+                        id: macBalanceSlider
+                        Layout.fillWidth: true
+                        from: 0
+                        to: 100
+                        stepSize: 1
+                        value: settingsWin.audioBalance
+                        onMoved: settingsWin.applyBalance(Math.round(value))
+
+                        background: Rectangle {
+                          x: macBalanceSlider.leftPadding
+                          y: macBalanceSlider.topPadding + macBalanceSlider.availableHeight / 2 - height / 2
+                          implicitWidth: 160
+                          implicitHeight: 6
+                          width: macBalanceSlider.availableWidth
+                          height: 6
+                          radius: 3
+                          color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.12)
+
+                          // Center tick marker
+                          Rectangle {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: 2
+                            height: 10
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: settingsWin.textSecondary
+                          }
+                        }
+
+                        handle: Rectangle {
+                          x: macBalanceSlider.leftPadding + macBalanceSlider.visualPosition * (macBalanceSlider.availableWidth - width)
+                          y: macBalanceSlider.topPadding + macBalanceSlider.availableHeight / 2 - height / 2
+                          implicitWidth: 16
+                          implicitHeight: 16
+                          radius: 8
+                          color: "#ffffff"
+                          border.color: Qt.rgba(0, 0, 0, 0.2)
+                          border.width: 1
+                        }
+                      }
+
+                      Text {
+                        text: "Right"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 11
+                        color: settingsWin.textSecondary
+                      }
+                    }
+
+                    // Speaker Channel Test Row
+                    RowLayout {
+                      Layout.fillWidth: true
+                      spacing: 10
+
+                      Text {
+                        text: "Channel test"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 12
+                        color: settingsWin.textPrimary
+                        Layout.preferredWidth: 110
+                      }
+
+                      Button {
+                        text: "Left"
+                        onClicked: audioService.runSpeakerTest("left")
+                      }
+                      Button {
+                        text: "Right"
+                        onClicked: audioService.runSpeakerTest("right")
+                      }
+                      Button {
+                        text: "Both Channels"
+                        onClicked: audioService.runSpeakerTest("both")
                       }
                       Item { Layout.fillWidth: true }
-                      Button {
-                        text: "Play macOS Ping"
-                        onClicked: settingsWin.runCmd("omarchy-play-sound mac-switch")
+                    }
+                  }
+                }
+
+                // ==========================================
+                // INPUT (MICROPHONE) SECTION
+                // ==========================================
+                Text {
+                  text: "Input"
+                  font.family: "SF Pro Text, -apple-system, sans-serif"
+                  font.pixelSize: 14
+                  font.weight: Font.DemiBold
+                  color: settingsWin.textPrimary
+                }
+
+                Rectangle {
+                  Layout.fillWidth: true
+                  implicitHeight: inputCol.implicitHeight + 28
+                  radius: 10
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  ColumnLayout {
+                    id: inputCol
+                    anchors.fill: parent
+                    anchors.margins: 14
+                    spacing: 12
+
+                    // Table Header
+                    RowLayout {
+                      Layout.fillWidth: true
+                      Text {
+                        text: "Name"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 11
+                        font.weight: Font.Bold
+                        color: settingsWin.textSecondary
+                        Layout.fillWidth: true
                       }
+                      Text {
+                        text: "Type"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 11
+                        font.weight: Font.Bold
+                        color: settingsWin.textSecondary
+                        Layout.preferredWidth: 140
+                      }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    // Input Sources Table
+                    ColumnLayout {
+                      Layout.fillWidth: true
+                      spacing: 4
+
+                      Repeater {
+                        model: audioService.sources
+                        delegate: Rectangle {
+                          Layout.fillWidth: true
+                          implicitHeight: 34
+                          radius: 6
+                          color: modelData.is_default
+                                 ? (settingsWin.isDark ? Qt.rgba(52, 199, 89, 0.25) : Qt.rgba(52, 199, 89, 0.15))
+                                 : (sourceRowArea.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05)) : "transparent")
+
+                          RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            spacing: 8
+
+                            Text {
+                              text: settingsWin.getAudioDeviceIcon(modelData.description, modelData.name, true)
+                              font.pixelSize: 13
+                            }
+                            Text {
+                              text: modelData.description || modelData.name
+                              font.family: "SF Pro Text, -apple-system, sans-serif"
+                              font.pixelSize: 12
+                              font.weight: modelData.is_default ? Font.DemiBold : Font.Normal
+                              color: settingsWin.textPrimary
+                              Layout.fillWidth: true
+                              elide: Text.ElideRight
+                            }
+                            Text {
+                              text: settingsWin.getAudioDeviceType(modelData.description, modelData.name, true)
+                              font.family: "SF Pro Text, -apple-system, sans-serif"
+                              font.pixelSize: 11
+                              color: settingsWin.textSecondary
+                              Layout.preferredWidth: 140
+                              elide: Text.ElideRight
+                            }
+                            Text {
+                              visible: modelData.is_default
+                              text: "✓"
+                              font.pixelSize: 12
+                              color: "#34c759"
+                              font.weight: Font.Bold
+                            }
+                          }
+
+                          MouseArea {
+                            id: sourceRowArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: audioService.setDefaultSource(modelData.name)
+                          }
+                        }
+                      }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    // Input Volume Slider Row
+                    RowLayout {
+                      Layout.fillWidth: true
+                      spacing: 12
+
+                      Text {
+                        text: "Input volume"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 12
+                        color: settingsWin.textPrimary
+                        Layout.preferredWidth: 110
+                      }
+
+                      Rectangle {
+                        implicitWidth: 26
+                        implicitHeight: 26
+                        radius: 5
+                        color: micMuteBtnArea.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.1)) : "transparent"
+                        Text {
+                          anchors.centerIn: parent
+                          text: audioService.micMuted ? "🔇" : "🎙️"
+                          font.pixelSize: 13
+                        }
+                        MouseArea {
+                          id: micMuteBtnArea
+                          anchors.fill: parent
+                          hoverEnabled: true
+                          cursorShape: Qt.PointingHandCursor
+                          onClicked: audioService.toggleMicMute()
+                        }
+                      }
+
+                      Slider {
+                        id: macInSlider
+                        Layout.fillWidth: true
+                        from: 0
+                        to: 100
+                        stepSize: 1
+                        value: audioService.micVolume
+                        onMoved: audioService.setMicVolume(Math.round(value))
+
+                        background: Rectangle {
+                          x: macInSlider.leftPadding
+                          y: macInSlider.topPadding + macInSlider.availableHeight / 2 - height / 2
+                          implicitWidth: 160
+                          implicitHeight: 6
+                          width: macInSlider.availableWidth
+                          height: 6
+                          radius: 3
+                          color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.12)
+
+                          Rectangle {
+                            width: macInSlider.visualPosition * parent.width
+                            height: parent.height
+                            color: audioService.micMuted ? "#8e8e93" : "#34c759"
+                            radius: 3
+                          }
+                        }
+
+                        handle: Rectangle {
+                          x: macInSlider.leftPadding + macInSlider.visualPosition * (macInSlider.availableWidth - width)
+                          y: macInSlider.topPadding + macInSlider.availableHeight / 2 - height / 2
+                          implicitWidth: 16
+                          implicitHeight: 16
+                          radius: 8
+                          color: "#ffffff"
+                          border.color: Qt.rgba(0, 0, 0, 0.2)
+                          border.width: 1
+                        }
+                      }
+
+                      Text {
+                        text: audioService.micMuted ? "Muted" : (audioService.micVolume + "%")
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 11
+                        font.weight: Font.DemiBold
+                        color: audioService.micMuted ? "#8e8e93" : settingsWin.textPrimary
+                        Layout.preferredWidth: 44
+                        horizontalAlignment: Text.AlignRight
+                      }
+                    }
+
+                    // Input Level Meter Row
+                    RowLayout {
+                      Layout.fillWidth: true
+                      spacing: 12
+
+                      Text {
+                        text: "Input level"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 12
+                        color: settingsWin.textPrimary
+                        Layout.preferredWidth: 110
+                      }
+
+                      Rectangle {
+                        Layout.fillWidth: true
+                        implicitHeight: 16
+                        radius: 8
+                        color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.06)
+
+                        RowLayout {
+                          anchors.fill: parent
+                          anchors.margins: 3
+                          spacing: 3
+
+                          Repeater {
+                            model: 15
+                            delegate: Rectangle {
+                              Layout.fillWidth: true
+                              Layout.fillHeight: true
+                              radius: 2
+                              color: {
+                                var active = settingsWin.micTesting || (!audioService.micMuted && audioService.micVolume > 0 && Math.sin(Date.now() / 200 + index) > 0.1)
+                                if (!active) {
+                                  return settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.1)
+                                }
+                                return index > 12 ? "#ff3b30" : (index > 9 ? "#ff9500" : "#34c759")
+                              }
+                            }
+                          }
+                        }
+                      }
+
+                      Button {
+                        text: settingsWin.micTesting ? "Testing..." : "Test Mic"
+                        onClicked: {
+                          settingsWin.micTesting = true
+                          micStopTimer.restart()
+                          settingsWin.runCmd("arecord -d 2 -f cd /tmp/omarchy_mic_test.wav && aplay /tmp/omarchy_mic_test.wav; rm -f /tmp/omarchy_mic_test.wav")
+                        }
+                      }
+
+                      Timer {
+                        id: micStopTimer
+                        interval: 4000
+                        onTriggered: settingsWin.micTesting = false
+                      }
+                    }
+                  }
+                }
+
+                // ==========================================
+                // APPLICATION VOLUMES (VOLUME MIXER)
+                // ==========================================
+                Text {
+                  visible: audioService.streams.length > 0
+                  text: "Application Volumes"
+                  font.family: "SF Pro Text, -apple-system, sans-serif"
+                  font.pixelSize: 14
+                  font.weight: Font.DemiBold
+                  color: settingsWin.textPrimary
+                }
+
+                Rectangle {
+                  visible: audioService.streams.length > 0
+                  Layout.fillWidth: true
+                  implicitHeight: appCol.implicitHeight + 28
+                  radius: 10
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  ColumnLayout {
+                    id: appCol
+                    anchors.fill: parent
+                    anchors.margins: 14
+                    spacing: 12
+
+                    Repeater {
+                      model: audioService.streams
+                      delegate: ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+
+                        RowLayout {
+                          Layout.fillWidth: true
+                          spacing: 10
+
+                          Text {
+                            text: settingsWin.getAudioAppIcon(modelData)
+                            font.pixelSize: 14
+                          }
+                          Text {
+                            text: modelData.app_name || modelData.name || "Application"
+                            font.family: "SF Pro Text, -apple-system, sans-serif"
+                            font.pixelSize: 12
+                            font.weight: Font.DemiBold
+                            color: settingsWin.textPrimary
+                            Layout.fillWidth: true
+                            elide: Text.ElideRight
+                          }
+                          Rectangle {
+                            implicitWidth: 24
+                            implicitHeight: 24
+                            radius: 4
+                            color: appStreamMuteArea.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.1)) : "transparent"
+                            Text {
+                              anchors.centerIn: parent
+                              text: modelData.muted ? "🔇" : "🔊"
+                              font.pixelSize: 11
+                            }
+                            MouseArea {
+                              id: appStreamMuteArea
+                              anchors.fill: parent
+                              hoverEnabled: true
+                              cursorShape: Qt.PointingHandCursor
+                              onClicked: audioService.toggleStreamMute(modelData.id)
+                            }
+                          }
+                          Text {
+                            text: modelData.muted ? "Muted" : (modelData.volume + "%")
+                            font.family: "SF Pro Text, -apple-system, sans-serif"
+                            font.pixelSize: 11
+                            color: modelData.muted ? "#8e8e93" : settingsWin.textSecondary
+                            Layout.preferredWidth: 44
+                            horizontalAlignment: Text.AlignRight
+                          }
+                        }
+
+                        Slider {
+                          id: macAppSlider
+                          Layout.fillWidth: true
+                          Layout.preferredHeight: 18
+                          from: 0
+                          to: 100
+                          stepSize: 1
+                          value: modelData.volume
+                          onMoved: audioService.setStreamVolume(modelData.id, Math.round(value))
+
+                          background: Rectangle {
+                            x: macAppSlider.leftPadding
+                            y: macAppSlider.topPadding + macAppSlider.availableHeight / 2 - height / 2
+                            implicitWidth: 160
+                            implicitHeight: 5
+                            width: macAppSlider.availableWidth
+                            height: 5
+                            radius: 2.5
+                            color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.12)
+
+                            Rectangle {
+                              width: macAppSlider.visualPosition * parent.width
+                              height: parent.height
+                              color: modelData.muted ? "#8e8e93" : "#007aff"
+                              radius: 2.5
+                            }
+                          }
+
+                          handle: Rectangle {
+                            x: macAppSlider.leftPadding + macAppSlider.visualPosition * (macAppSlider.availableWidth - width)
+                            y: macAppSlider.topPadding + macAppSlider.availableHeight / 2 - height / 2
+                            implicitWidth: 14
+                            implicitHeight: 14
+                            radius: 7
+                            color: "#ffffff"
+                            border.color: Qt.rgba(0, 0, 0, 0.2)
+                            border.width: 1
+                          }
+                        }
+
+                        Rectangle {
+                          visible: index < (audioService.streams.length - 1)
+                          Layout.fillWidth: true
+                          height: 1
+                          color: settingsWin.separatorColor
+                        }
+                      }
+                    }
+                  }
+                }
+
+                // ==========================================
+                // SOUND SYSTEM MAINTENANCE & RECOVERY
+                // ==========================================
+                Text {
+                  text: "Sound System Maintenance"
+                  font.family: "SF Pro Text, -apple-system, sans-serif"
+                  font.pixelSize: 14
+                  font.weight: Font.DemiBold
+                  color: settingsWin.textPrimary
+                }
+
+                Rectangle {
+                  Layout.fillWidth: true
+                  implicitHeight: recCol.implicitHeight + 28
+                  radius: 10
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  RowLayout {
+                    id: recCol
+                    anchors.fill: parent
+                    anchors.margins: 14
+                    spacing: 12
+
+                    ColumnLayout {
+                      spacing: 3
+                      Layout.fillWidth: true
+
+                      Text {
+                        text: "Reset Sound System"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
+                        color: settingsWin.textPrimary
+                      }
+                      Text {
+                        text: "Restart PipeWire and WirePlumber services if audio glitches, freezes, or devices become unresponsive."
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 11
+                        color: settingsWin.textSecondary
+                        wrapMode: Text.Wrap
+                        Layout.fillWidth: true
+                      }
+                    }
+
+                    Button {
+                      text: "Reset Sound System"
+                      onClicked: audioService.runRecovery()
                     }
                   }
                 }
