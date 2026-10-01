@@ -8,4 +8,5 @@ Pre-flight: all interfaces verified consistent.
 Task 1: complete (commit 0cc43c4, tests: tests/test_settings_engine.sh & omarchy-settings-engine state JSON verification → PASS)
 Task 2: complete (commit ba5c692, tests: tests/test_settings_service_load.sh & quickshell configs load → PASS)
 Task 3: complete (commit 3f72677, tests: quickshell -p configs/quickshell/win11-settings → Configuration Loaded PASS)
-Task 4: complete (tests: quickshell -p configs/quickshell/win11-settings → Configuration Loaded PASS)
+Task 4: complete (commit a094d51, tests: quickshell -p configs/quickshell/win11-settings → Configuration Loaded PASS)
+Task 5: complete (tests: quickshell -p configs/quickshell/mac-settings → Configuration Loaded PASS)

@@ -108,6 +108,10 @@ ShellRoot {
       id: audioService
     }
 
+    SettingsService {
+      id: settingsService
+    }
+
     property int audioBalance: 50
     property bool micTesting: false
 
@@ -165,7 +169,7 @@ ShellRoot {
       return "🎚️"
     }
 
-    // Page watcher for direct navigation to sound
+    // Page watcher for direct navigation to sound, display, battery, etc.
     FileView {
       path: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/omarchy-settings-page"
       watchChanges: true
@@ -173,6 +177,16 @@ ShellRoot {
         var p = text().trim()
         if (p === "sound" || p === "5") {
           settingsWin.currentCategory = 5
+        } else if (p === "display" || p === "displays" || p === "8") {
+          settingsWin.currentCategory = 8
+        } else if (p === "battery" || p === "power" || p === "9") {
+          settingsWin.currentCategory = 9
+        } else if (p === "wifi" || p === "network" || p === "3") {
+          settingsWin.currentCategory = 3
+        } else if (p === "bluetooth" || p === "4") {
+          settingsWin.currentCategory = 4
+        } else if (p === "trackpad" || p === "mouse" || p === "10") {
+          settingsWin.currentCategory = 10
         }
       }
       onFileChanged: {
@@ -180,6 +194,16 @@ ShellRoot {
         var p = text().trim()
         if (p === "sound" || p === "5") {
           settingsWin.currentCategory = 5
+        } else if (p === "display" || p === "displays" || p === "8") {
+          settingsWin.currentCategory = 8
+        } else if (p === "battery" || p === "power" || p === "9") {
+          settingsWin.currentCategory = 9
+        } else if (p === "wifi" || p === "network" || p === "3") {
+          settingsWin.currentCategory = 3
+        } else if (p === "bluetooth" || p === "4") {
+          settingsWin.currentCategory = 4
+        } else if (p === "trackpad" || p === "mouse" || p === "10") {
+          settingsWin.currentCategory = 10
         }
       }
     }
@@ -567,10 +591,13 @@ ShellRoot {
               property var categories: [
                 { id: 0, iconBg: "#007aff", icon: "appearance.svg", name: "Appearance" },
                 { id: 1, iconBg: "#5856d6", icon: "dock.svg", name: "Desktop & Dock" },
+                { id: 8, iconBg: "#007aff", icon: "display.svg", name: "Displays" },
                 { id: 2, iconBg: "#34c759", icon: "wallpaper.svg", name: "Wallpaper" },
                 { id: 3, iconBg: "#007aff", icon: "wifi.svg", name: "Wi-Fi" },
                 { id: 4, iconBg: "#007aff", icon: "bluetooth.svg", name: "Bluetooth" },
                 { id: 5, iconBg: "#ff2d55", icon: "sound.svg", name: "Sound" },
+                { id: 9, iconBg: "#34c759", icon: "battery.svg", name: "Battery" },
+                { id: 10, iconBg: "#5856d6", icon: "trackpad.svg", name: "Trackpad & Mouse" },
                 { id: 6, iconBg: "#af52de", icon: "disguise.svg", name: "Undercover Disguise" },
                 { id: 7, iconBg: "#8e8e93", icon: "general.svg", name: "General & About" }
               ]
@@ -718,6 +745,9 @@ ShellRoot {
                     case 5: return "Sound"
                     case 6: return "Undercover Disguise Transformation"
                     case 7: return "General & About This Mac"
+                    case 8: return "Displays"
+                    case 9: return "Battery"
+                    case 10: return "Trackpad & Mouse"
                     default: return "System Settings"
                   }
                 }
@@ -1013,16 +1043,17 @@ ShellRoot {
                   }
                 }
 
-                // Window Gaps & Rounding Group
+                // Window Gaps, Rounding, Motion & Effects
                 Rectangle {
                   Layout.fillWidth: true
-                  implicitHeight: 120
+                  implicitHeight: windowFxCol.implicitHeight + 28
                   radius: 10
                   color: settingsWin.cardBg
                   border.color: settingsWin.cardBorder
                   border.width: 1
 
                   ColumnLayout {
+                    id: windowFxCol
                     anchors.fill: parent
                     anchors.margins: 16
                     spacing: 12
@@ -1031,19 +1062,20 @@ ShellRoot {
                     RowLayout {
                       Layout.fillWidth: true
                       Text {
-                        text: "Desktop Window Gaps (" + settingsWin.windowGaps + "px)"
+                        text: "Desktop Window Gaps (" + settingsService.windowGaps + "px)"
                         font.family: "SF Pro Text, -apple-system, sans-serif"
                         font.pixelSize: 12
                         color: settingsWin.textPrimary
                       }
                       Item { Layout.fillWidth: true }
                       Slider {
-                        from: 0; to: 24; stepSize: 1
-                        value: settingsWin.windowGaps
+                        from: 0; to: 30; stepSize: 1
+                        value: settingsService.windowGaps
                         onMoved: {
-                          settingsWin.windowGaps = Math.round(value)
-                          settingsWin.saveSetting("WINDOW_GAPS", settingsWin.windowGaps)
-                          settingsWin.runCmd("hyprctl keyword general:gaps_in " + Math.round(settingsWin.windowGaps / 2) + " && hyprctl keyword general:gaps_out " + settingsWin.windowGaps)
+                          var v = Math.round(value)
+                          settingsWin.windowGaps = v
+                          settingsService.setWindowGaps(v)
+                          settingsWin.saveSetting("WINDOW_GAPS", v)
                         }
                       }
                     }
@@ -1054,19 +1086,106 @@ ShellRoot {
                     RowLayout {
                       Layout.fillWidth: true
                       Text {
-                        text: "Window Corner Radius (" + settingsWin.windowRounding + "px)"
+                        text: "Window Corner Radius (" + settingsService.windowRounding + "px)"
                         font.family: "SF Pro Text, -apple-system, sans-serif"
                         font.pixelSize: 12
                         color: settingsWin.textPrimary
                       }
                       Item { Layout.fillWidth: true }
                       Slider {
-                        from: 0; to: 22; stepSize: 1
-                        value: settingsWin.windowRounding
+                        from: 0; to: 24; stepSize: 1
+                        value: settingsService.windowRounding
                         onMoved: {
-                          settingsWin.windowRounding = Math.round(value)
-                          settingsWin.saveSetting("WINDOW_ROUNDING", settingsWin.windowRounding)
-                          settingsWin.runCmd("hyprctl keyword decoration:rounding " + settingsWin.windowRounding)
+                          var v = Math.round(value)
+                          settingsWin.windowRounding = v
+                          settingsService.setWindowRounding(v)
+                          settingsWin.saveSetting("WINDOW_ROUNDING", v)
+                        }
+                      }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    // Window Animations Toggle
+                    RowLayout {
+                      Layout.fillWidth: true
+                      ColumnLayout {
+                        spacing: 2
+                        Text {
+                          text: "Window Animations & Motion"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 12
+                          font.weight: Font.DemiBold
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: "Fluid opening, closing, and workspace sliding animations"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+                      Item { Layout.fillWidth: true }
+
+                      Rectangle {
+                        width: 38; height: 22; radius: 11
+                        color: settingsService.animationsEnabled ? "#34c759" : (settingsWin.isDark ? "#39393d" : "#e5e5ea")
+                        Rectangle {
+                          width: 18; height: 18; radius: 9
+                          x: settingsService.animationsEnabled ? 18 : 2
+                          anchors.verticalCenter: parent.verticalCenter
+                          color: "#ffffff"
+                          Behavior on x { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+                        }
+                        MouseArea {
+                          anchors.fill: parent
+                          cursorShape: Qt.PointingHandCursor
+                          onClicked: {
+                            settingsService.setAnimationsEnabled(!settingsService.animationsEnabled)
+                          }
+                        }
+                      }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    // Window Blur & Transparency Toggle
+                    RowLayout {
+                      Layout.fillWidth: true
+                      ColumnLayout {
+                        spacing: 2
+                        Text {
+                          text: "Window Blur & Acrylic Effects"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 12
+                          font.weight: Font.DemiBold
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: "Enable backdrop blur on transparent windows and surfaces"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+                      Item { Layout.fillWidth: true }
+
+                      Rectangle {
+                        width: 38; height: 22; radius: 11
+                        color: settingsService.blurEnabled ? "#34c759" : (settingsWin.isDark ? "#39393d" : "#e5e5ea")
+                        Rectangle {
+                          width: 18; height: 18; radius: 9
+                          x: settingsService.blurEnabled ? 18 : 2
+                          anchors.verticalCenter: parent.verticalCenter
+                          color: "#ffffff"
+                          Behavior on x { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+                        }
+                        MouseArea {
+                          anchors.fill: parent
+                          cursorShape: Qt.PointingHandCursor
+                          onClicked: {
+                            settingsService.setBlurEnabled(!settingsService.blurEnabled)
+                          }
                         }
                       }
                     }
@@ -2490,6 +2609,678 @@ ShellRoot {
                       Button {
                         text: "Run Integrity Check"
                         onClicked: settingsWin.runCmd("omarchy-undercover --verify")
+                      }
+                    }
+                  }
+                }
+              }
+
+              // ==========================================
+              // TAB 8: DISPLAYS
+              // ==========================================
+              ColumnLayout {
+                visible: settingsWin.currentCategory === 8
+                Layout.fillWidth: true
+                spacing: 16
+
+                // 1. Apple-style Monitor Hero Card
+                Rectangle {
+                  Layout.fillWidth: true
+                  implicitHeight: 200
+                  radius: 10
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  ColumnLayout {
+                    anchors.centerIn: parent
+                    spacing: 10
+
+                    // Monitor Bezel Illustration
+                    Rectangle {
+                      Layout.alignment: Qt.AlignHCenter
+                      width: 180
+                      height: 110
+                      radius: 8
+                      color: settingsWin.isDark ? "#1a1a1e" : "#e5e5ea"
+                      border.color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.2) : Qt.rgba(0, 0, 0, 0.2)
+                      border.width: 3
+
+                      // Display Screen Inner
+                      Rectangle {
+                        anchors.fill: parent
+                        anchors.margins: 4
+                        radius: 5
+                        color: settingsWin.isDark ? "#2c2c30" : "#d1d1d6"
+                        clip: true
+
+                        // Wallpaper preview or desktop gradient
+                        Rectangle {
+                          anchors.fill: parent
+                          gradient: Gradient {
+                            GradientStop { position: 0.0; color: settingsWin.accentColor }
+                            GradientStop { position: 1.0; color: settingsWin.isDark ? "#0f0f14" : "#f0f0f5" }
+                          }
+                          opacity: 0.85
+                        }
+
+                        // Mac Dock line simulation inside preview
+                        Rectangle {
+                          anchors.bottom: parent.bottom
+                          anchors.bottomMargin: 4
+                          anchors.horizontalCenter: parent.horizontalCenter
+                          width: 44; height: 4; radius: 2
+                          color: Qt.rgba(1, 1, 1, 0.6)
+                        }
+                      }
+                    }
+
+                    // Display Stand
+                    Rectangle {
+                      Layout.alignment: Qt.AlignHCenter
+                      width: 44
+                      height: 12
+                      radius: 3
+                      color: settingsWin.isDark ? "#3a3a40" : "#c7c7cc"
+                    }
+
+                    // Display Name and Details
+                    ColumnLayout {
+                      Layout.alignment: Qt.AlignHCenter
+                      spacing: 2
+                      Text {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: {
+                          if (settingsService.monitors.length > 0) {
+                            var m = settingsService.monitors[0]
+                            return m.description || m.name || "Built-in Retina Display"
+                          }
+                          return "Built-in Retina Display"
+                        }
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
+                        color: settingsWin.textPrimary
+                      }
+                      Text {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: {
+                          if (settingsService.monitors.length > 0) {
+                            var m = settingsService.monitors[0]
+                            var res = m.resolution || (m.width + "x" + m.height)
+                            var hz = m.refreshRate ? Math.round(m.refreshRate) + " Hertz" : "60 Hertz"
+                            var sc = m.scale ? " (" + Math.round(m.scale * 100) + "%)" : ""
+                            return res + " @ " + hz + sc
+                          }
+                          return "1920 × 1080 @ 60 Hertz (100%)"
+                        }
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 11
+                        color: settingsWin.textSecondary
+                      }
+                    }
+                  }
+                }
+
+                // 2. Resolution & Scaling Card
+                Rectangle {
+                  Layout.fillWidth: true
+                  implicitHeight: dispScaleCol.implicitHeight + 28
+                  radius: 10
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  ColumnLayout {
+                    id: dispScaleCol
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 14
+
+                    RowLayout {
+                      Layout.fillWidth: true
+                      ColumnLayout {
+                        spacing: 2
+                        Text {
+                          text: "Display Scaling"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 13
+                          font.weight: Font.DemiBold
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: "Choose scaled text and UI size for comfortable reading"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+                    }
+
+                    // Apple-style scaling selector pills
+                    RowLayout {
+                      Layout.fillWidth: true
+                      spacing: 10
+
+                      property var scalePresets: [
+                        { label: "Larger Text", scale: 1.5, pct: "150%" },
+                        { label: "Default", scale: 1.25, pct: "125%" },
+                        { label: "Native", scale: 1.0, pct: "100%" },
+                        { label: "More Space", scale: 0.8, pct: "80%" }
+                      ]
+
+                      Repeater {
+                        model: parent.scalePresets
+                        delegate: Rectangle {
+                          Layout.fillWidth: true
+                          implicitHeight: 64
+                          radius: 8
+
+                          readonly property bool isSelected: {
+                            if (settingsService.monitors.length > 0) {
+                              var cur = settingsService.monitors[0].scale || 1.0
+                              return Math.abs(cur - modelData.scale) < 0.08
+                            }
+                            return modelData.scale === 1.0
+                          }
+
+                          color: isSelected
+                                 ? (settingsWin.isDark ? Qt.rgba(0.2, 0.4, 0.8, 0.3) : Qt.rgba(0.0, 0.48, 1.0, 0.12))
+                                 : (scMouse.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.04)) : "transparent")
+                          border.color: isSelected ? settingsWin.accentColor : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.12))
+                          border.width: isSelected ? 2 : 1
+
+                          ColumnLayout {
+                            anchors.centerIn: parent
+                            spacing: 4
+                            Text {
+                              Layout.alignment: Qt.AlignHCenter
+                              text: modelData.label
+                              font.family: "SF Pro Text, -apple-system, sans-serif"
+                              font.pixelSize: 12
+                              font.weight: isSelected ? Font.DemiBold : Font.Normal
+                              color: isSelected ? settingsWin.accentColor : settingsWin.textPrimary
+                            }
+                            Text {
+                              Layout.alignment: Qt.AlignHCenter
+                              text: modelData.pct
+                              font.family: "SF Pro Text, -apple-system, sans-serif"
+                              font.pixelSize: 10
+                              color: settingsWin.textSecondary
+                            }
+                          }
+
+                          MouseArea {
+                            id: scMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                              if (settingsService.monitors.length > 0) {
+                                var m = settingsService.monitors[0]
+                                var desc = m.description || m.name
+                                settingsService.setMonitorScale(desc, modelData.scale)
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    // Scale Percentage Buttons
+                    RowLayout {
+                      Layout.fillWidth: true
+                      Text {
+                        text: "Custom Scale"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 12
+                        color: settingsWin.textPrimary
+                      }
+                      Item { Layout.fillWidth: true }
+
+                      property var numScales: [1.0, 1.25, 1.5, 1.75, 2.0]
+                      Repeater {
+                        model: parent.numScales
+                        delegate: Rectangle {
+                          implicitWidth: 54; implicitHeight: 28; radius: 6
+                          readonly property bool isSelected: {
+                            if (settingsService.monitors.length > 0) {
+                              var cur = settingsService.monitors[0].scale || 1.0
+                              return Math.abs(cur - modelData) < 0.05
+                            }
+                            return modelData === 1.0
+                          }
+                          color: isSelected ? settingsWin.accentColor : (numMouse.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(0, 0, 0, 0.06)) : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.05) : Qt.rgba(0, 0, 0, 0.03)))
+                          border.color: isSelected ? settingsWin.accentColor : settingsWin.cardBorder
+                          border.width: 1
+
+                          Text {
+                            anchors.centerIn: parent
+                            text: Math.round(modelData * 100) + "%"
+                            font.family: "SF Pro Text, -apple-system, sans-serif"
+                            font.pixelSize: 11
+                            font.weight: isSelected ? Font.DemiBold : Font.Normal
+                            color: isSelected ? "#ffffff" : settingsWin.textPrimary
+                          }
+
+                          MouseArea {
+                            id: numMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                              if (settingsService.monitors.length > 0) {
+                                var m = settingsService.monitors[0]
+                                var desc = m.description || m.name
+                                settingsService.setMonitorScale(desc, modelData)
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+
+                // 3. Refresh Rate & Resolution Card
+                Rectangle {
+                  Layout.fillWidth: true
+                  implicitHeight: dispRateCol.implicitHeight + 28
+                  radius: 10
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  ColumnLayout {
+                    id: dispRateCol
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 12
+
+                    RowLayout {
+                      Layout.fillWidth: true
+                      ColumnLayout {
+                        spacing: 2
+                        Text {
+                          text: "Active Resolution"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 12
+                          font.weight: Font.DemiBold
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: settingsService.monitors.length > 0 ? (settingsService.monitors[0].resolution || "1920x1080") : "1920x1080"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+                      Item { Layout.fillWidth: true }
+                      Text {
+                        text: (settingsService.monitors.length > 0 && settingsService.monitors[0].refreshRate ? Math.round(settingsService.monitors[0].refreshRate) + " Hz" : "60 Hz")
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 12
+                        font.bold: true
+                        color: settingsWin.accentColor
+                      }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    // Refresh Rate Selector Buttons
+                    RowLayout {
+                      Layout.fillWidth: true
+                      Text {
+                        text: "Refresh Rate"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 12
+                        color: settingsWin.textPrimary
+                      }
+                      Item { Layout.fillWidth: true }
+
+                      property var rates: [60, 75, 120, 144, 165]
+                      Repeater {
+                        model: parent.rates
+                        delegate: Rectangle {
+                          implicitWidth: 62; implicitHeight: 28; radius: 6
+                          readonly property bool isSelected: {
+                            if (settingsService.monitors.length > 0) {
+                              var curHz = Math.round(settingsService.monitors[0].refreshRate || 60)
+                              return curHz === modelData
+                            }
+                            return modelData === 60
+                          }
+                          color: isSelected ? settingsWin.accentColor : (rateMouse.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(0, 0, 0, 0.06)) : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.05) : Qt.rgba(0, 0, 0, 0.03)))
+                          border.color: isSelected ? settingsWin.accentColor : settingsWin.cardBorder
+                          border.width: 1
+
+                          Text {
+                            anchors.centerIn: parent
+                            text: modelData + " Hz"
+                            font.family: "SF Pro Text, -apple-system, sans-serif"
+                            font.pixelSize: 11
+                            font.weight: isSelected ? Font.DemiBold : Font.Normal
+                            color: isSelected ? "#ffffff" : settingsWin.textPrimary
+                          }
+
+                          MouseArea {
+                            id: rateMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                              if (settingsService.monitors.length > 0) {
+                                var m = settingsService.monitors[0]
+                                var desc = m.description || m.name
+                                var w = m.width || 1920
+                                var h = m.height || 1080
+                                settingsService.setMonitorMode(desc, w + "x" + h + "@" + modelData)
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+
+                // 4. Night Shift Card
+                Rectangle {
+                  Layout.fillWidth: true
+                  implicitHeight: nightShiftCol.implicitHeight + 28
+                  radius: 10
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  ColumnLayout {
+                    id: nightShiftCol
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 12
+
+                    RowLayout {
+                      Layout.fillWidth: true
+                      ColumnLayout {
+                        spacing: 2
+                        Text {
+                          text: "Night Shift"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 13
+                          font.weight: Font.DemiBold
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: "Automatically shift colors to the warmer end of the spectrum to reduce eye strain"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+                      Item { Layout.fillWidth: true }
+
+                      property bool nsActive: false
+
+                      Rectangle {
+                        width: 38; height: 22; radius: 11
+                        color: parent.nsActive ? "#34c759" : (settingsWin.isDark ? "#39393d" : "#e5e5ea")
+                        Rectangle {
+                          width: 18; height: 18; radius: 9
+                          x: parent.parent.nsActive ? 18 : 2
+                          anchors.verticalCenter: parent.verticalCenter
+                          color: "#ffffff"
+                          Behavior on x { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+                        }
+                        MouseArea {
+                          anchors.fill: parent
+                          cursorShape: Qt.PointingHandCursor
+                          onClicked: {
+                            parent.parent.nsActive = !parent.parent.nsActive
+                            settingsService.setHyprOption("nightlight", parent.parent.nsActive ? "on" : "off")
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+
+              // ==========================================
+              // TAB 9: BATTERY
+              // ==========================================
+              ColumnLayout {
+                visible: settingsWin.currentCategory === 9
+                Layout.fillWidth: true
+                spacing: 16
+
+                // 1. Apple-style Battery Hero Card
+                Rectangle {
+                  Layout.fillWidth: true
+                  implicitHeight: 120
+                  radius: 10
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 20
+                    spacing: 20
+
+                    // Battery Icon Gauge Graphic
+                    Rectangle {
+                      width: 56; height: 32; radius: 6
+                      color: "transparent"
+                      border.color: settingsWin.textPrimary
+                      border.width: 2.5
+
+                      // Terminal nub
+                      Rectangle {
+                        anchors.left: parent.right
+                        anchors.leftMargin: 2
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 4; height: 12; radius: 2
+                        color: settingsWin.textPrimary
+                      }
+
+                      // Inner Level Fill
+                      Rectangle {
+                        anchors.left: parent.left
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        anchors.margins: 3
+                        width: Math.max(4, (parent.width - 6) * (Math.min(100, Math.max(0, settingsService.batteryPct)) / 100.0))
+                        radius: 3
+                        color: settingsService.batteryPct <= 20 ? "#ff9f0a" : "#34c759"
+                      }
+
+                      // Charging Bolt Indicator
+                      Text {
+                        visible: settingsService.isCharging
+                        anchors.centerIn: parent
+                        text: "⚡"
+                        font.pixelSize: 14
+                      }
+                    }
+
+                    ColumnLayout {
+                      Layout.fillWidth: true
+                      spacing: 4
+
+                      RowLayout {
+                        spacing: 8
+                        Text {
+                          text: settingsService.batteryPct + "%"
+                          font.family: "SF Pro Display, -apple-system, sans-serif"
+                          font.pixelSize: 28
+                          font.weight: Font.Bold
+                          color: settingsWin.textPrimary
+                        }
+                        Rectangle {
+                          radius: 4
+                          implicitWidth: healthText.implicitWidth + 10
+                          implicitHeight: 20
+                          color: Qt.rgba(0.2, 0.78, 0.35, 0.15)
+                          Text {
+                            id: healthText
+                            anchors.centerIn: parent
+                            text: "Normal"
+                            font.family: "SF Pro Text, -apple-system, sans-serif"
+                            font.pixelSize: 11
+                            font.weight: Font.DemiBold
+                            color: "#34c759"
+                          }
+                        }
+                      }
+
+                      Text {
+                        text: settingsService.isCharging ? "Power Source: Power Adapter (Charging)" : "Power Source: Battery"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 12
+                        color: settingsWin.textSecondary
+                      }
+                    }
+
+                    // Horizontal Progress Meter
+                    Rectangle {
+                      implicitWidth: 150
+                      implicitHeight: 8
+                      radius: 4
+                      color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)
+
+                      Rectangle {
+                        width: Math.max(6, parent.width * (Math.min(100, Math.max(0, settingsService.batteryPct)) / 100.0))
+                        height: parent.height
+                        radius: 4
+                        color: settingsService.batteryPct <= 20 ? "#ff9f0a" : "#34c759"
+                      }
+                    }
+                  }
+                }
+
+                // 2. Energy Mode (Power Profiles) Card
+                Rectangle {
+                  Layout.fillWidth: true
+                  implicitHeight: energyCol.implicitHeight + 28
+                  radius: 10
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  ColumnLayout {
+                    id: energyCol
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 14
+
+                    ColumnLayout {
+                      spacing: 2
+                      Text {
+                        text: "Energy Mode"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
+                        color: settingsWin.textPrimary
+                      }
+                      Text {
+                        text: "Optimize energy consumption based on current performance and workflow needs"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 11
+                        color: settingsWin.textSecondary
+                      }
+                    }
+
+                    // Apple-style Segmented Control for Power Profiles
+                    Rectangle {
+                      Layout.fillWidth: true
+                      implicitHeight: 38
+                      radius: 8
+                      color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.06)
+                      border.color: settingsWin.cardBorder
+                      border.width: 1
+
+                      RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: 3
+                        spacing: 4
+
+                        property var profiles: [
+                          { label: "Low Power", id: "power-saver", desc: "Reduces energy usage to increase battery life and operate cooler." },
+                          { label: "Automatic", id: "balanced", desc: "Dynamically balances energy usage and system performance for everyday tasks." },
+                          { label: "High Power", id: "performance", desc: "Maximizes performance for sustained intensive compute workflows." }
+                        ]
+
+                        Repeater {
+                          model: parent.profiles
+                          delegate: Rectangle {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            radius: 6
+
+                            readonly property bool isSelected: settingsService.powerProfile === modelData.id
+                            color: isSelected
+                                   ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.22) : "#ffffff")
+                                   : (profMouse.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.04)) : "transparent")
+
+                            border.color: isSelected ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.1)) : "transparent"
+                            border.width: isSelected ? 1 : 0
+
+                            Text {
+                              anchors.centerIn: parent
+                              text: modelData.label
+                              font.family: "SF Pro Text, -apple-system, sans-serif"
+                              font.pixelSize: 12
+                              font.weight: isSelected ? Font.DemiBold : Font.Normal
+                              color: isSelected ? settingsWin.textPrimary : settingsWin.textSecondary
+                            }
+
+                            MouseArea {
+                              id: profMouse
+                              anchors.fill: parent
+                              hoverEnabled: true
+                              cursorShape: Qt.PointingHandCursor
+                              onClicked: settingsService.setPowerProfile(modelData.id)
+                            }
+                          }
+                        }
+                      }
+                    }
+
+                    // Profile Description
+                    Text {
+                      Layout.fillWidth: true
+                      text: {
+                        switch(settingsService.powerProfile) {
+                          case "power-saver": return "Low Power mode reduces system power draw to maximize battery runtime."
+                          case "performance": return "High Power mode boosts CPU clocks for intensive compiling and graphics tasks."
+                          default: return "Automatic dynamically balances system power and performance for smooth multitasking."
+                        }
+                      }
+                      font.family: "SF Pro Text, -apple-system, sans-serif"
+                      font.pixelSize: 11
+                      color: settingsWin.textSecondary
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    // Battery Health Row
+                    RowLayout {
+                      Layout.fillWidth: true
+                      Text {
+                        text: "Battery Condition"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 12
+                        color: settingsWin.textPrimary
+                      }
+                      Item { Layout.fillWidth: true }
+                      Text {
+                        text: "Normal (Maximum Capacity 100%)"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 12
+                        font.weight: Font.DemiBold
+                        color: "#34c759"
                       }
                     }
                   }
