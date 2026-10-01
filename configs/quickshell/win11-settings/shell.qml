@@ -93,6 +93,10 @@ ShellRoot {
       id: audioService
     }
 
+    SettingsService {
+      id: settingsService
+    }
+
     FileView {
       path: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/omarchy-settings-page"
       watchChanges: true
@@ -101,6 +105,16 @@ ShellRoot {
         if (p === "sound") {
           settingsWin.currentCategory = 0
           settingsWin.systemSubPage = "sound"
+        } else if (p === "display") {
+          settingsWin.currentCategory = 0
+          settingsWin.systemSubPage = "display"
+        } else if (p === "power") {
+          settingsWin.currentCategory = 0
+          settingsWin.systemSubPage = "power"
+        } else if (p === "wifi" || p === "network") {
+          settingsWin.currentCategory = 2
+        } else if (p === "bluetooth") {
+          settingsWin.currentCategory = 1
         }
       }
       onFileChanged: {
@@ -109,6 +123,16 @@ ShellRoot {
         if (p === "sound") {
           settingsWin.currentCategory = 0
           settingsWin.systemSubPage = "sound"
+        } else if (p === "display") {
+          settingsWin.currentCategory = 0
+          settingsWin.systemSubPage = "display"
+        } else if (p === "power") {
+          settingsWin.currentCategory = 0
+          settingsWin.systemSubPage = "power"
+        } else if (p === "wifi" || p === "network") {
+          settingsWin.currentCategory = 2
+        } else if (p === "bluetooth") {
+          settingsWin.currentCategory = 1
         }
       }
     }
@@ -652,7 +676,7 @@ ShellRoot {
                 spacing: 12
 
                 Rectangle {
-                  visible: settingsWin.currentCategory === 0 && settingsWin.systemSubPage === "sound"
+                  visible: settingsWin.currentCategory === 0 && settingsWin.systemSubPage !== ""
                   implicitWidth: 32
                   implicitHeight: 32
                   radius: 6
@@ -676,8 +700,8 @@ ShellRoot {
                 ColumnLayout {
                   spacing: 2
                   Text {
-                    visible: settingsWin.currentCategory === 0 && settingsWin.systemSubPage === "sound"
-                    text: "System > Sound"
+                    visible: settingsWin.currentCategory === 0 && settingsWin.systemSubPage !== ""
+                    text: "System > " + (settingsWin.systemSubPage === "sound" ? "Sound" : (settingsWin.systemSubPage === "display" ? "Display" : "Power & battery"))
                     font.family: "Segoe UI, sans-serif"
                     font.pixelSize: 11
                     color: settingsWin.textSecondary
@@ -685,7 +709,10 @@ ShellRoot {
                   Text {
                     text: {
                       if (settingsWin.currentCategory === 0) {
-                        return settingsWin.systemSubPage === "sound" ? "Sound" : "System"
+                        if (settingsWin.systemSubPage === "sound") return "Sound"
+                        if (settingsWin.systemSubPage === "display") return "Display"
+                        if (settingsWin.systemSubPage === "power") return "Power & battery"
+                        return "System"
                       }
                       switch(settingsWin.currentCategory) {
                         case 1: return "Bluetooth & devices"
@@ -869,6 +896,97 @@ ShellRoot {
                       hoverEnabled: true
                       cursorShape: Qt.PointingHandCursor
                       onClicked: settingsWin.systemSubPage = "sound"
+                    }
+                  }
+
+                  // Display Subpage Tile
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 74
+                    radius: 8
+                    color: dispTileM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.04)) : settingsWin.cardBg
+                    border.color: settingsWin.cardBorder
+                    border.width: 1
+
+                    RowLayout {
+                      anchors.fill: parent
+                      anchors.margins: 16
+                      spacing: 14
+
+                      Image {
+                        Layout.preferredWidth: 22
+                        Layout.preferredHeight: 22
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/display.svg"
+                        fillMode: Image.PreserveAspectFit
+                      }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        Text { text: "Display"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text {
+                          text: {
+                            if (settingsService.monitors.length > 0) {
+                              var m = settingsService.monitors[0]
+                              return (m.description || m.name) + " • " + (m.resolution || "1920x1080") + " • Scale " + Math.round((m.scale || 1.0) * 100) + "%"
+                            }
+                            return "Monitors, scale, resolution, refresh rate, and night light"
+                          }
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                          elide: Text.ElideRight
+                        }
+                      }
+                      Text { text: "❯"; font.pixelSize: 14; color: settingsWin.textSecondary }
+                    }
+
+                    MouseArea {
+                      id: dispTileM
+                      anchors.fill: parent
+                      hoverEnabled: true
+                      cursorShape: Qt.PointingHandCursor
+                      onClicked: settingsWin.systemSubPage = "display"
+                    }
+                  }
+
+                  // Power & Battery Subpage Tile
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 74
+                    radius: 8
+                    color: pwrTileM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.04)) : settingsWin.cardBg
+                    border.color: settingsWin.cardBorder
+                    border.width: 1
+
+                    RowLayout {
+                      anchors.fill: parent
+                      anchors.margins: 16
+                      spacing: 14
+
+                      Image {
+                        Layout.preferredWidth: 22
+                        Layout.preferredHeight: 22
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/battery.svg"
+                        fillMode: Image.PreserveAspectFit
+                      }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        Text { text: "Power & battery"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text {
+                          text: (settingsService.batteryPct !== undefined ? (settingsService.batteryPct + "% • ") : "") + (settingsService.isCharging ? "Plugged in" : "On battery") + " • Mode: " + settingsService.powerProfile
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+                      Text { text: "❯"; font.pixelSize: 14; color: settingsWin.textSecondary }
+                    }
+
+                    MouseArea {
+                      id: pwrTileM
+                      anchors.fill: parent
+                      hoverEnabled: true
+                      cursorShape: Qt.PointingHandCursor
+                      onClicked: settingsWin.systemSubPage = "power"
                     }
                   }
 
@@ -1412,6 +1530,462 @@ ShellRoot {
                     }
                   }
                 }
+
+                // ==========================================
+                // TAB 0 VIEW 3: FULL SYSTEM > DISPLAY SUBPAGE
+                // ==========================================
+                ColumnLayout {
+                  visible: settingsWin.systemSubPage === "display"
+                  Layout.fillWidth: true
+                  spacing: 16
+
+                  // 1. MONITOR ARRANGEMENT DIAGRAM
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 140
+                    radius: 8
+                    color: settingsWin.cardBg
+                    border.color: settingsWin.cardBorder
+                    border.width: 1
+
+                    ColumnLayout {
+                      anchors.fill: parent
+                      anchors.margins: 16
+                      spacing: 12
+
+                      RowLayout {
+                        Layout.fillWidth: true
+                        Text {
+                          text: "Select a display below to change its settings"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 12
+                          color: settingsWin.textSecondary
+                          Layout.fillWidth: true
+                        }
+                        Text {
+                          text: settingsService.monitors.length + (settingsService.monitors.length === 1 ? " display connected" : " displays connected")
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.accentColor
+                        }
+                      }
+
+                      // Visual Monitor Diagram Box
+                      RowLayout {
+                        Layout.alignment: Qt.AlignHCenter
+                        spacing: 14
+
+                        Repeater {
+                          model: settingsService.monitors.length > 0 ? settingsService.monitors : [{ description: "Primary Display", resolution: "1920x1080", scale: 1.0 }]
+                          delegate: Rectangle {
+                            implicitWidth: 130
+                            implicitHeight: 74
+                            radius: 6
+                            color: settingsWin.isDark ? Qt.rgba(0.18, 0.22, 0.28, 0.9) : Qt.rgba(0.85, 0.90, 0.96, 0.9)
+                            border.color: settingsWin.accentColor
+                            border.width: 2
+
+                            ColumnLayout {
+                              anchors.centerIn: parent
+                              spacing: 2
+                              Text {
+                                text: String(index + 1)
+                                font.family: "Segoe UI, sans-serif"
+                                font.pixelSize: 18
+                                font.weight: Font.Bold
+                                color: settingsWin.textPrimary
+                                Layout.alignment: Qt.AlignHCenter
+                              }
+                              Text {
+                                text: modelData.description || modelData.name || "Display"
+                                font.family: "Segoe UI, sans-serif"
+                                font.pixelSize: 10
+                                color: settingsWin.textSecondary
+                                elide: Text.ElideRight
+                                Layout.maximumWidth: 110
+                                Layout.alignment: Qt.AlignHCenter
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+
+                  // 2. SCALE & LAYOUT CARD
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: scaleCol.implicitHeight + 28
+                    radius: 8
+                    color: settingsWin.cardBg
+                    border.color: settingsWin.cardBorder
+                    border.width: 1
+
+                    ColumnLayout {
+                      id: scaleCol
+                      anchors.fill: parent
+                      anchors.margins: 16
+                      spacing: 14
+
+                      RowLayout {
+                        Layout.fillWidth: true
+                        ColumnLayout {
+                          spacing: 2
+                          Layout.fillWidth: true
+                          Text { text: "Scale"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                          Text { text: "Change the size of text, apps, and other items"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                        }
+                      }
+
+                      // Scale Option Pills
+                      RowLayout {
+                        spacing: 8
+                        property var scales: [
+                          { label: "100%", val: 1.0 },
+                          { label: "125%", val: 1.25 },
+                          { label: "150%", val: 1.5 },
+                          { label: "175%", val: 1.75 },
+                          { label: "200%", val: 2.0 }
+                        ]
+
+                        Repeater {
+                          model: parent.scales
+                          delegate: Rectangle {
+                            implicitWidth: 64
+                            implicitHeight: 32
+                            radius: 4
+                            readonly property bool isSelected: {
+                              if (settingsService.monitors.length > 0) {
+                                return Math.abs((settingsService.monitors[0].scale || 1.0) - modelData.val) < 0.05
+                              }
+                              return modelData.val === 1.0
+                            }
+                            color: isSelected
+                                   ? (settingsWin.isDark ? Qt.rgba(0.38, 0.80, 1.0, 0.20) : Qt.rgba(0, 0.40, 0.75, 0.15))
+                                   : (scaleMouse.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(0, 0, 0, 0.06)) : "transparent")
+                            border.color: isSelected ? settingsWin.accentColor : settingsWin.cardBorder
+                            border.width: 1
+
+                            Text {
+                              anchors.centerIn: parent
+                              text: modelData.label
+                              font.family: "Segoe UI, sans-serif"
+                              font.pixelSize: 12
+                              font.weight: isSelected ? Font.DemiBold : Font.Normal
+                              color: isSelected ? settingsWin.accentColor : settingsWin.textPrimary
+                            }
+
+                            MouseArea {
+                              id: scaleMouse
+                              anchors.fill: parent
+                              hoverEnabled: true
+                              cursorShape: Qt.PointingHandCursor
+                              onClicked: {
+                                if (settingsService.monitors.length > 0) {
+                                  var monDesc = settingsService.monitors[0].description || settingsService.monitors[0].name
+                                  settingsService.setMonitorScale(monDesc, modelData.val)
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+
+                      Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                      // Display Resolution Row
+                      RowLayout {
+                        Layout.fillWidth: true
+                        ColumnLayout {
+                          spacing: 2
+                          Layout.fillWidth: true
+                          Text { text: "Display resolution"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                          Text {
+                            text: (settingsService.monitors.length > 0 ? (settingsService.monitors[0].resolution || "1920x1080") : "1920x1080") + " (Active resolution)"
+                            font.family: "Segoe UI, sans-serif"
+                            font.pixelSize: 11
+                            color: settingsWin.textSecondary
+                          }
+                        }
+                        Text {
+                          text: settingsService.monitors.length > 0 ? (settingsService.monitors[0].resolution || "1920x1080") : "1920x1080"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 12
+                          font.weight: Font.DemiBold
+                          color: settingsWin.accentColor
+                        }
+                      }
+                    }
+                  }
+
+                  // 3. NIGHT LIGHT CARD
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 74
+                    radius: 8
+                    color: settingsWin.cardBg
+                    border.color: settingsWin.cardBorder
+                    border.width: 1
+
+                    RowLayout {
+                      anchors.fill: parent
+                      anchors.margins: 16
+                      spacing: 14
+
+                      Image {
+                        Layout.preferredWidth: 22
+                        Layout.preferredHeight: 22
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/moon.svg"
+                        fillMode: Image.PreserveAspectFit
+                      }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        Text { text: "Night light"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { text: "Use warmer colors to help reduce eye strain and sleep better"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                      }
+
+                      Rectangle {
+                        implicitWidth: 44
+                        implicitHeight: 22
+                        radius: 11
+                        color: nlSwitchMouse.containsMouse ? (nlSwitchActive ? (settingsWin.isDark ? "#48b7eb" : "#005a9e") : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.25) : Qt.rgba(0, 0, 0, 0.2))) : (nlSwitchActive ? settingsWin.accentColor : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.18) : Qt.rgba(0, 0, 0, 0.15)))
+
+                        property bool nlSwitchActive: false
+
+                        Rectangle {
+                          x: parent.nlSwitchActive ? parent.width - width - 3 : 3
+                          anchors.verticalCenter: parent.verticalCenter
+                          implicitWidth: 16
+                          implicitHeight: 16
+                          radius: 8
+                          color: "#ffffff"
+                          Behavior on x { NumberAnimation { duration: 120 } }
+                        }
+
+                        MouseArea {
+                          id: nlSwitchMouse
+                          anchors.fill: parent
+                          cursorShape: Qt.PointingHandCursor
+                          onClicked: {
+                            parent.nlSwitchActive = !parent.nlSwitchActive
+                            settingsService.setHyprOption("nightlight", parent.nlSwitchActive ? "on" : "off")
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+
+                // ==========================================
+                // TAB 0 VIEW 4: FULL SYSTEM > POWER & BATTERY SUBPAGE
+                // ==========================================
+                ColumnLayout {
+                  visible: settingsWin.systemSubPage === "power"
+                  Layout.fillWidth: true
+                  spacing: 16
+
+                  // 1. BATTERY HERO STATUS CARD
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 96
+                    radius: 8
+                    color: settingsWin.cardBg
+                    border.color: settingsWin.cardBorder
+                    border.width: 1
+
+                    RowLayout {
+                      anchors.fill: parent
+                      anchors.margins: 18
+                      spacing: 16
+
+                      Text { text: settingsService.isCharging ? "⚡" : "🔋"; font.pixelSize: 32 }
+
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 3
+                        Text {
+                          text: settingsService.batteryPct + "%"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 24
+                          font.weight: Font.Bold
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: settingsService.isCharging ? "Plugged in, charging" : "Discharging on battery power"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+
+                      // Battery Level Meter Bar
+                      Rectangle {
+                        implicitWidth: 140
+                        implicitHeight: 12
+                        radius: 6
+                        color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)
+
+                        Rectangle {
+                          width: Math.max(8, parent.width * (settingsService.batteryPct / 100.0))
+                          height: parent.height
+                          radius: 6
+                          color: settingsService.batteryPct > 20 ? settingsWin.accentColor : "#ff453a"
+                        }
+                      }
+                    }
+                  }
+
+                  // 2. POWER MODE CARD
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: pwrModeCol.implicitHeight + 28
+                    radius: 8
+                    color: settingsWin.cardBg
+                    border.color: settingsWin.cardBorder
+                    border.width: 1
+
+                    ColumnLayout {
+                      id: pwrModeCol
+                      anchors.fill: parent
+                      anchors.margins: 16
+                      spacing: 14
+
+                      Text {
+                        text: "Power mode"
+                        font.family: "Segoe UI, sans-serif"
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
+                        color: settingsWin.textPrimary
+                      }
+                      Text {
+                        text: "Optimize your PC based on performance and battery usage"
+                        font.family: "Segoe UI, sans-serif"
+                        font.pixelSize: 11
+                        color: settingsWin.textSecondary
+                      }
+
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+
+                        property var modes: [
+                          { id: "power-saver", label: "Best power efficiency", desc: "Reduces performance to extend battery life" },
+                          { id: "balanced", label: "Balanced", desc: "Automatically balances energy and performance" },
+                          { id: "performance", label: "Best performance", desc: "Maximizes system speed and responsiveness" }
+                        ]
+
+                        Repeater {
+                          model: parent.modes
+                          delegate: Rectangle {
+                            Layout.fillWidth: true
+                            implicitHeight: 44
+                            radius: 6
+                            readonly property bool isSelected: settingsService.powerProfile === modelData.id
+                            color: isSelected
+                                   ? (settingsWin.isDark ? Qt.rgba(0.38, 0.80, 1.0, 0.14) : Qt.rgba(0, 0.40, 0.75, 0.08))
+                                   : (pwrRowMouse.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.03)) : "transparent")
+                            border.color: isSelected ? settingsWin.accentColor : "transparent"
+                            border.width: 1
+
+                            RowLayout {
+                              anchors.fill: parent
+                              anchors.leftMargin: 12
+                              anchors.rightMargin: 12
+                              spacing: 12
+
+                              Rectangle {
+                                implicitWidth: 16
+                                implicitHeight: 16
+                                radius: 8
+                                color: "transparent"
+                                border.color: isSelected ? settingsWin.accentColor : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(0, 0, 0, 0.3))
+                                border.width: 1.5
+
+                                Rectangle {
+                                  anchors.centerIn: parent
+                                  implicitWidth: 8
+                                  implicitHeight: 8
+                                  radius: 4
+                                  color: settingsWin.accentColor
+                                  visible: isSelected
+                                }
+                              }
+
+                              ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 1
+                                Text {
+                                  text: modelData.label
+                                  font.family: "Segoe UI, sans-serif"
+                                  font.pixelSize: 12
+                                  font.weight: isSelected ? Font.DemiBold : Font.Normal
+                                  color: settingsWin.textPrimary
+                                }
+                                Text {
+                                  text: modelData.desc
+                                  font.family: "Segoe UI, sans-serif"
+                                  font.pixelSize: 10
+                                  color: settingsWin.textSecondary
+                                }
+                              }
+                            }
+
+                            MouseArea {
+                              id: pwrRowMouse
+                              anchors.fill: parent
+                              hoverEnabled: true
+                              cursorShape: Qt.PointingHandCursor
+                              onClicked: settingsService.setPowerProfile(modelData.id)
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+
+                  // 3. SCREEN AND SLEEP TIMEOUTS
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 74
+                    radius: 8
+                    color: settingsWin.cardBg
+                    border.color: settingsWin.cardBorder
+                    border.width: 1
+
+                    RowLayout {
+                      anchors.fill: parent
+                      anchors.margins: 16
+                      spacing: 14
+
+                      Image {
+                        Layout.preferredWidth: 22
+                        Layout.preferredHeight: 22
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/idle.svg"
+                        fillMode: Image.PreserveAspectFit
+                      }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        Text { text: "Screen and sleep"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { text: "Turn off screen and lock workstation after inactivity"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                      }
+                      Rectangle {
+                        implicitWidth: 90
+                        implicitHeight: 28
+                        radius: 4
+                        color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05)
+                        border.color: settingsWin.cardBorder
+                        border.width: 1
+                        Text {
+                          anchors.centerIn: parent
+                          text: "10 minutes"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textPrimary
+                        }
+                      }
+                    }
+                  }
+                }
               }
 
               // ==========================================
@@ -1941,6 +2515,116 @@ ShellRoot {
                           onToggled: {
                             settingsWin.togglePin(modelData.id, checked)
                           }
+                        }
+                      }
+                    }
+                  }
+                }
+
+                // Visual Effects & Window Styling Card
+                Rectangle {
+                  Layout.fillWidth: true
+                  implicitHeight: fxCol.implicitHeight + 28
+                  radius: 8
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  ColumnLayout {
+                    id: fxCol
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 14
+
+                    Text {
+                      text: "Visual Effects & Window Styling"
+                      font.family: "Segoe UI, sans-serif"
+                      font.pixelSize: 13
+                      font.weight: Font.DemiBold
+                      color: settingsWin.textPrimary
+                    }
+                    Text {
+                      text: "Configure transparency, window animations, corner curvature, and desktop gaps"
+                      font.family: "Segoe UI, sans-serif"
+                      font.pixelSize: 11
+                      color: settingsWin.textSecondary
+                    }
+
+                    // Transparency effects row
+                    RowLayout {
+                      Layout.fillWidth: true
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+                        Text { text: "Transparency effects"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 12; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { text: "Windows and surfaces appear translucent with background blur"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
+                      }
+                      Switch {
+                        checked: settingsService.blurEnabled
+                        onToggled: settingsService.setHyprOption("decoration:blur:enabled", checked ? "true" : "false")
+                      }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    // Animation effects row
+                    RowLayout {
+                      Layout.fillWidth: true
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+                        Text { text: "Animation effects"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 12; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { text: "Animate windows opening, closing, and workspace transitions"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
+                      }
+                      Switch {
+                        checked: settingsService.animationsEnabled
+                        onToggled: settingsService.setHyprOption("animations:enabled", checked ? "true" : "false")
+                      }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    // Corner Rounding Slider
+                    RowLayout {
+                      Layout.fillWidth: true
+                      spacing: 12
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+                        Text { text: "Corner Rounding (" + settingsService.windowRounding + "px)"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 12; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { text: "Adjust curvature radius for window borders and popups"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
+                      }
+                      Slider {
+                        Layout.preferredWidth: 160
+                        from: 0; to: 24; stepSize: 1
+                        value: settingsService.windowRounding
+                        onMoved: {
+                          settingsService.windowRounding = Math.round(value)
+                          settingsService.setHyprOption("decoration:rounding", Math.round(value))
+                        }
+                      }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    // Window Gaps Slider
+                    RowLayout {
+                      Layout.fillWidth: true
+                      spacing: 12
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+                        Text { text: "Desktop Window Gaps (" + settingsService.windowGaps + "px)"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 12; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { text: "Adjust outer and inner margins between tiled windows"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
+                      }
+                      Slider {
+                        Layout.preferredWidth: 160
+                        from: 0; to: 30; stepSize: 1
+                        value: settingsService.windowGaps
+                        onMoved: {
+                          settingsService.windowGaps = Math.round(value)
+                          settingsService.setHyprOption("general:gaps_in", Math.round(value))
+                          settingsService.setHyprOption("general:gaps_out", Math.round(value * 1.5))
                         }
                       }
                     }
