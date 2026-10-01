@@ -313,6 +313,8 @@ state() {
     --argjson bluetooth "${bluetooth:-{\}}" \
     --argjson power "${power:-{\}}" \
     --argjson audio "${audio:-{\}}" \
+    --arg projectionMode "$(monitor_projection_mode 2>/dev/null || echo 'extend')" \
+    --argjson monitorProfiles "$(monitor_profile_list 2>/dev/null || echo '[]')" \
     --arg textScale "${textscale:-1}" \
     '{
       theme: $theme,
@@ -332,6 +334,8 @@ state() {
       hyprChanged: $hyprChanged,
       searchIndex: $searchIndex,
       monitors: $monitors,
+      projectionMode: $projectionMode,
+      monitorProfiles: $monitorProfiles,
       compose: $compose,
       plugins: $plugins,
       pluginUpdates: $pluginUpdates,

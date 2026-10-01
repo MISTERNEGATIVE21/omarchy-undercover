@@ -6,6 +6,8 @@ Item {
   id: root
 
   property var monitors: []
+  property string projectionMode: "extend"
+  property var monitorProfiles: []
   property bool wifiEnabled: true
   property bool wifiScanning: false
   property string wifiActiveSsid: ""
@@ -52,6 +54,54 @@ Item {
   function setMonitorMode(desc, mode) {
     runCmd("omarchy-settings-engine monitors mode '" + desc + "' '" + mode + "'")
     refreshTimer.restart()
+  }
+
+  function setMonitorTransform(desc, transform) {
+    runCmd("omarchy-settings-engine monitors transform '" + desc + "' " + transform)
+    refreshTimer.restart()
+  }
+
+  function setMonitorVrr(desc, vrr) {
+    runCmd("omarchy-settings-engine monitors vrr '" + desc + "' " + vrr)
+    refreshTimer.restart()
+  }
+
+  function setMonitorMirror(desc, target) {
+    runCmd("omarchy-settings-engine monitors mirror '" + desc + "' '" + (target || "none") + "'")
+    refreshTimer.restart()
+  }
+
+  function setMonitorDisabled(desc, disabled) {
+    runCmd("omarchy-settings-engine monitors disabled '" + desc + "' " + (disabled ? "true" : "false"))
+    refreshTimer.restart()
+  }
+
+  function setProjectionMode(mode) {
+    root.projectionMode = mode
+    runCmd("omarchy-settings-engine monitors project " + mode)
+    refreshTimer.restart()
+  }
+
+  function saveMonitorProfile(name) {
+    if (!name) return
+    runCmd("omarchy-settings-engine monitors profile save '" + name + "'")
+    refreshTimer.restart()
+  }
+
+  function applyMonitorProfile(name) {
+    if (!name) return
+    runCmd("omarchy-settings-engine monitors profile apply '" + name + "'")
+    refreshTimer.restart()
+  }
+
+  function deleteMonitorProfile(name) {
+    if (!name) return
+    runCmd("omarchy-settings-engine monitors profile delete '" + name + "'")
+    refreshTimer.restart()
+  }
+
+  function identifyDisplays() {
+    runCmd("omarchy-display-identify 2>/dev/null || omarchy-settings-engine monitors identify 2>/dev/null")
   }
 
   function scanWifi() {
@@ -134,6 +184,12 @@ Item {
 
           if (data.monitors && Array.isArray(data.monitors)) {
             root.monitors = data.monitors
+          }
+          if (data.projectionMode) {
+            root.projectionMode = data.projectionMode
+          }
+          if (data.monitorProfiles && Array.isArray(data.monitorProfiles)) {
+            root.monitorProfiles = data.monitorProfiles
           }
           if (data.wifi) {
             root.wifiEnabled = (data.wifi.enabled !== false)

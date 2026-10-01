@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Copyright (C) 2026 misternegative21
+# Omarchy Undercover - Display Identification Overlay Trigger
+# License: GPL-3.0-or-later
+# ==============================================================================
+
+set -euo pipefail
+
+TRIGGER_FILE="${XDG_RUNTIME_DIR:-/tmp}/omarchy-identify-displays"
+date +%s%N > "$TRIGGER_FILE"

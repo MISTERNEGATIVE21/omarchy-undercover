@@ -37,7 +37,26 @@ monitors_cmd() {
     state) monitor_state ;;
     scale) shift; monitor_set "${1:?missing monitor}" scale "${2:?missing scale}" ;;
     mode) shift; monitor_set "${1:?missing monitor}" mode "${2:?missing mode}" ;;
-    *) die "usage: omarchy-settings-engine monitors state | scale <display> <val> | mode <display> <val>" ;;
+    transform) shift; monitor_set "${1:?missing monitor}" transform "${2:?missing transform}" ;;
+    vrr) shift; monitor_set "${1:?missing monitor}" vrr "${2:?missing vrr}" ;;
+    mirror) shift; monitor_set "${1:?missing monitor}" mirror "${2:?missing mirror}" ;;
+    disabled) shift; monitor_set "${1:?missing monitor}" disabled "${2:?missing boolean}" ;;
+    position) shift; monitor_set "${1:?missing monitor}" position "${2:?missing position}" ;;
+    project) shift; monitor_project "${1:-extend}" ;;
+    projection) monitor_projection_mode ;;
+    profiles) monitor_profile_list ;;
+    profile)
+      shift
+      case ${1:-list} in
+        list) monitor_profile_list ;;
+        save) shift; monitor_profile_save "${1:?missing profile name}" ;;
+        apply) shift; monitor_profile_apply "${1:?missing profile name}" ;;
+        delete|remove) shift; monitor_profile_delete "${1:?missing profile name}" ;;
+        *) die "usage: omarchy-settings-engine monitors profile <list|save|apply|delete> [name]" ;;
+      esac
+      ;;
+    identify) monitor_identify ;;
+    *) die "usage: omarchy-settings-engine monitors state | scale | mode | transform | vrr | mirror | disabled | project | profile | identify" ;;
   esac
 }
 

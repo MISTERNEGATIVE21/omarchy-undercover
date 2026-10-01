@@ -7,6 +7,10 @@ import QtQuick.Layouts
 import QtQuick.Controls
 
 ShellRoot {
+  DisplayIdentifyOverlay {
+    id: identifyOverlay
+  }
+
   PanelWindow {
     id: actionCenterWindow
     screen: Quickshell.screens[0]
@@ -29,9 +33,13 @@ ShellRoot {
     implicitWidth: Math.min(380, (screen ? screen.width : 1280) - 24)
     implicitHeight: Math.min(500, (screen ? screen.height : 720) - 70)
 
+    SettingsService {
+      id: settingsService
+    }
+
     property string homeDir: Quickshell.env("HOME")
     property bool isDark: true
-    property string currentView: "main" // "main" | "wifi" | "bluetooth"
+    property string currentView: "main" // "main" | "wifi" | "bluetooth" | "project"
     property bool hasEntered: false
 
     function closePopup() {
@@ -813,6 +821,113 @@ ShellRoot {
               anchors.fill: parent
               cursorShape: Qt.PointingHandCursor
               onClicked: actionCenterWindow.launchApp("omarchy-undercover-settings")
+            }
+          }
+
+          // Project Tile (Win+P)
+          Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: 48
+            radius: 6
+            color: (settingsService.projectionMode && settingsService.projectionMode !== "extend" && settingsService.projectionMode !== "pc")
+              ? actionCenterWindow.accentColor
+              : actionCenterWindow.innerCardBg
+            border.color: (settingsService.projectionMode && settingsService.projectionMode !== "extend" && settingsService.projectionMode !== "pc")
+              ? actionCenterWindow.accentBorder
+              : actionCenterWindow.innerCardBorder
+            border.width: 1
+
+            RowLayout {
+              anchors.fill: parent
+              spacing: 0
+
+              // Left part: open Project view
+              Item {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+
+                RowLayout {
+                  anchors.fill: parent
+                  anchors.leftMargin: 10
+                  anchors.rightMargin: 4
+                  spacing: 8
+
+                  Text {
+                    text: "󰍹"
+                    font.pixelSize: 16
+                    color: (settingsService.projectionMode && settingsService.projectionMode !== "extend" && settingsService.projectionMode !== "pc")
+                      ? "#ffffff"
+                      : actionCenterWindow.textPrimary
+                  }
+
+                  ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 0
+                    Text {
+                      text: "Project"
+                      font.family: "Segoe UI"
+                      font.pixelSize: 11
+                      font.bold: true
+                      color: (settingsService.projectionMode && settingsService.projectionMode !== "extend" && settingsService.projectionMode !== "pc")
+                        ? "#ffffff"
+                        : actionCenterWindow.textPrimary
+                    }
+                    Text {
+                      text: {
+                        var m = settingsService.projectionMode || "extend"
+                        if (m === "pc") return "PC screen only"
+                        if (m === "duplicate") return "Duplicate"
+                        if (m === "second") return "Second screen"
+                        return "Extend"
+                      }
+                      font.family: "Segoe UI"
+                      font.pixelSize: 9
+                      color: (settingsService.projectionMode && settingsService.projectionMode !== "extend" && settingsService.projectionMode !== "pc")
+                        ? Qt.rgba(1, 1, 1, 0.85)
+                        : actionCenterWindow.textSecondary
+                      elide: Text.ElideRight
+                      Layout.fillWidth: true
+                    }
+                  }
+                }
+
+                MouseArea {
+                  anchors.fill: parent
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: {
+                    actionCenterWindow.currentView = "project"
+                  }
+                }
+              }
+
+              // Right part: chevron -> in-place Project flyout
+              Rectangle {
+                implicitWidth: 32
+                implicitHeight: 48
+                color: projChevronMouse.containsMouse
+                  ? ((settingsService.projectionMode && settingsService.projectionMode !== "extend" && settingsService.projectionMode !== "pc") ? Qt.rgba(1, 1, 1, 0.15) : actionCenterWindow.hoverBg)
+                  : "transparent"
+
+                Text {
+                  anchors.centerIn: parent
+                  text: "›"
+                  font.pixelSize: 15
+                  font.bold: true
+                  color: (settingsService.projectionMode && settingsService.projectionMode !== "extend" && settingsService.projectionMode !== "pc")
+                    ? "#ffffff"
+                    : actionCenterWindow.textPrimary
+                }
+
+                MouseArea {
+                  id: projChevronMouse
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: {
+                    actionCenterWindow.currentView = "project"
+                  }
+                }
+              }
             }
           }
         }
@@ -1881,6 +1996,262 @@ ShellRoot {
             cursorShape: Qt.PointingHandCursor
             onClicked: {
               actionCenterWindow.launchApp("blueman-manager || omarchy-undercover-settings")
+            }
+          }
+        }
+      }
+
+      // ==========================================
+      // SUB-VIEW 3: PROJECT (Win+P Multi-Monitor)
+      // ==========================================
+      ColumnLayout {
+        visible: actionCenterWindow.currentView === "project"
+        anchors.fill: parent
+        anchors.margins: 14
+        spacing: 10
+
+        // Header Row
+        RowLayout {
+          Layout.fillWidth: true
+          implicitHeight: 30
+          spacing: 8
+
+          Rectangle {
+            implicitWidth: 28
+            implicitHeight: 28
+            radius: 6
+            color: projBackMouse.containsMouse ? actionCenterWindow.hoverBg : "transparent"
+            Text {
+              anchors.centerIn: parent
+              text: "←"
+              font.pixelSize: 14
+              font.bold: true
+              color: actionCenterWindow.textPrimary
+            }
+            MouseArea {
+              id: projBackMouse
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: actionCenterWindow.currentView = "main"
+            }
+          }
+
+          Text {
+            text: "Project"
+            font.family: "Segoe UI, sans-serif"
+            font.pixelSize: 14
+            font.weight: Font.Bold
+            color: actionCenterWindow.textPrimary
+            Layout.fillWidth: true
+          }
+
+          // Quick Identify Displays Button
+          Rectangle {
+            implicitWidth: 84
+            implicitHeight: 26
+            radius: 4
+            color: projIdBtnMouse.containsMouse ? actionCenterWindow.hoverBg : "transparent"
+            border.color: actionCenterWindow.innerCardBorder
+            border.width: 1
+
+            RowLayout {
+              anchors.centerIn: parent
+              spacing: 4
+              Text { text: "󰑮"; font.pixelSize: 11; color: actionCenterWindow.textPrimary }
+              Text { text: "Identify"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 10; color: actionCenterWindow.textPrimary }
+            }
+
+            MouseArea {
+              id: projIdBtnMouse
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: {
+                identifyOverlay.trigger()
+                settingsService.identifyDisplays()
+              }
+            }
+          }
+        }
+
+        // Subtitle instructions
+        Text {
+          text: "Select a projection mode for connected displays"
+          font.family: "Segoe UI, sans-serif"
+          font.pixelSize: 11
+          color: actionCenterWindow.textSecondary
+          Layout.fillWidth: true
+        }
+
+        // 4 Projection Mode Tiles
+        ColumnLayout {
+          Layout.fillWidth: true
+          spacing: 8
+
+          property var projModes: [
+            { id: "pc", name: "PC screen only", desc: "Disconnect other displays; use only your primary screen", icon: "󰍹" },
+            { id: "duplicate", name: "Duplicate", desc: "Show the same screen on both displays", icon: "󰍺" },
+            { id: "extend", name: "Extend", desc: "Spread across all connected displays side-by-side", icon: "󰍹󰍹" },
+            { id: "second", name: "Second screen only", desc: "Turn off your primary screen; use secondary display", icon: "󰍺" }
+          ]
+
+          Repeater {
+            model: parent.projModes
+            delegate: Rectangle {
+              Layout.fillWidth: true
+              implicitHeight: 52
+              radius: 6
+              readonly property bool isSelected: (settingsService.projectionMode || "extend") === modelData.id
+              color: isSelected
+                ? actionCenterWindow.accentColor
+                : (projTileMouse.containsMouse ? actionCenterWindow.hoverBg : actionCenterWindow.innerCardBg)
+              border.color: isSelected ? actionCenterWindow.accentBorder : actionCenterWindow.innerCardBorder
+              border.width: 1
+
+              RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 12
+                anchors.rightMargin: 12
+                spacing: 12
+
+                Text {
+                  text: modelData.icon
+                  font.pixelSize: 18
+                  color: isSelected ? "#ffffff" : actionCenterWindow.textPrimary
+                }
+
+                ColumnLayout {
+                  Layout.fillWidth: true
+                  spacing: 1
+
+                  Text {
+                    text: modelData.name
+                    font.family: "Segoe UI, sans-serif"
+                    font.pixelSize: 12
+                    font.bold: true
+                    color: isSelected ? "#ffffff" : actionCenterWindow.textPrimary
+                  }
+
+                  Text {
+                    text: modelData.desc
+                    font.family: "Segoe UI, sans-serif"
+                    font.pixelSize: 9
+                    color: isSelected ? Qt.rgba(1, 1, 1, 0.85) : actionCenterWindow.textSecondary
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
+                  }
+                }
+
+                Text {
+                  text: "✓"
+                  font.pixelSize: 13
+                  font.bold: true
+                  color: "#ffffff"
+                  visible: isSelected
+                }
+              }
+
+              MouseArea {
+                id: projTileMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                  settingsService.setProjectionMode(modelData.id)
+                }
+              }
+            }
+          }
+        }
+
+        // Layout Profiles Quick Switcher (if profiles exist)
+        ColumnLayout {
+          Layout.fillWidth: true
+          spacing: 6
+          visible: settingsService.monitorProfiles && settingsService.monitorProfiles.length > 0
+
+          Text {
+            text: "SAVED PROFILES"
+            font.family: "Segoe UI, sans-serif"
+            font.pixelSize: 10
+            font.bold: true
+            color: actionCenterWindow.textSecondary
+            Layout.topMargin: 4
+          }
+
+          Repeater {
+            model: settingsService.monitorProfiles || []
+            delegate: Rectangle {
+              Layout.fillWidth: true
+              implicitHeight: 32
+              radius: 4
+              color: profItemMouse.containsMouse ? actionCenterWindow.hoverBg : actionCenterWindow.innerCardBg
+              border.color: actionCenterWindow.innerCardBorder
+              border.width: 1
+
+              RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 10
+                anchors.rightMargin: 10
+                spacing: 8
+
+                Text { text: "󰍹"; font.pixelSize: 12; color: actionCenterWindow.accentColor }
+                Text {
+                  text: String(modelData)
+                  font.family: "Segoe UI, sans-serif"
+                  font.pixelSize: 11
+                  font.weight: Font.DemiBold
+                  color: actionCenterWindow.textPrimary
+                  Layout.fillWidth: true
+                }
+                Text {
+                  text: "Apply"
+                  font.family: "Segoe UI, sans-serif"
+                  font.pixelSize: 10
+                  font.bold: true
+                  color: actionCenterWindow.accentColor
+                }
+              }
+
+              MouseArea {
+                id: profItemMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: settingsService.applyMonitorProfile(String(modelData))
+              }
+            }
+          }
+        }
+
+        Item { Layout.fillHeight: true }
+
+        // Display Settings Link Footer
+        Rectangle {
+          Layout.fillWidth: true
+          implicitHeight: 30
+          radius: 5
+          color: acDispSettingsM.containsMouse ? actionCenterWindow.hoverBg : "transparent"
+          RowLayout {
+            anchors.centerIn: parent
+            spacing: 6
+            Text { text: "⚙️"; font.pixelSize: 11 }
+            Text {
+              text: "More display settings"
+              font.family: "Segoe UI, sans-serif"
+              font.pixelSize: 10
+              font.bold: true
+              color: actionCenterWindow.accentColor
+            }
+          }
+          MouseArea {
+            id: acDispSettingsM
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+              actionCenterWindow.launchApp("omarchy-win11-settings --page display")
             }
           }
         }

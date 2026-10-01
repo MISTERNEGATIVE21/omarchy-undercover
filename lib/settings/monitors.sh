@@ -119,6 +119,10 @@ monitor_live() {
           height: $m.height,
           refreshRate: ($m.refreshRate | floor),
           transform: ($m.transform // 0),
+          vrr: (if $m.vrr == true or $m.vrr == 1 then 1 elif $m.vrr == 2 then 2 else 0 end),
+          mirrorOf: (if $m.mirrorOf == "none" or $m.mirrorOf == null then "" else $m.mirrorOf end),
+          x: ($m.x // 0),
+          y: ($m.y // 0),
           modes: $modes,
           mode: (($modes
                   | map(select(startswith("\($m.width)x\($m.height)@")))
@@ -229,11 +233,16 @@ monitor_state() {
                   elif $live != null then $live.name
                   else $name end),
           connected: ($live != null),
-          disabled: ($live.disabled // false),
+          disabled: ($ours.disabled // $live.disabled // false),
           modes: ($live.modes // []),
-          width: $live.width,
-          height: $live.height,
-          refreshRate: $live.refreshRate,
+          width: ($live.width // 1920),
+          height: ($live.height // 1080),
+          refreshRate: ($live.refreshRate // 60),
+          x: ($ours.x // $live.x // 0),
+          y: ($ours.y // $live.y // 0),
+          transform: ($ours.transform // $live.transform // 0),
+          vrr: ($ours.vrr // $live.vrr // 0),
+          mirrorOf: ($ours.mirror // $live.mirrorOf // ""),
           # What is in force: what was set here, else what their config gives
           # it, else what it is actually running.
           mode: ($ours.mode // $live.mode // $theirs.mode // "preferred"),
@@ -278,7 +287,7 @@ monitor_apply_live() {
 # not running. The list the display itself reports is the check.
 monitor_mode_supported() {
   local name=$1 mode=$2 found
-  [[ $mode == preferred ]] && return 0
+  [[ $mode == preferred || $mode == disable ]] && return 0
   found=$(monitor_find "$name")
   [[ $found == null ]] && return 0
   jq -e --arg m "$mode" '.modes | index($m) != null' <<<"$found" >/dev/null
@@ -294,13 +303,46 @@ monitor_set() {
 
   case $field in
     mode)
-      [[ $value == preferred || $value =~ ^[0-9]+x[0-9]+@[0-9]+(\.[0-9]+)?$ ]] \
+      [[ $value == preferred || $value == disable || $value =~ ^[0-9]+x[0-9]+@[0-9]+(\.[0-9]+)?$ ]] \
         || die "'$value' is not a resolution"
-      monitor_mode_supported "$name" "$value" || die "$name cannot run $value"
+      [[ $value == disable ]] || monitor_mode_supported "$name" "$value" || die "$name cannot run $value"
       json=$(jq -Rn --arg v "$value" '$v') ;;
     scale)
       [[ $value =~ ^[0-9]+(\.[0-9]+)?$ ]] || die "'$value' is not a scale"
       json=$value ;;
+    transform)
+      case $value in
+        normal|0) value=0 ;;
+        portrait|90|1) value=1 ;;
+        flipped|180|2) value=2 ;;
+        flipped-portrait|270|3) value=3 ;;
+        [0-7]) ;;
+        *) die "'$value' is not a valid transform (0-7)" ;;
+      esac
+      json=$value ;;
+    vrr)
+      case $value in
+        true|1|on) value=1 ;;
+        2|fullscreen) value=2 ;;
+        false|0|off) value=0 ;;
+        *) die "'$value' is not a valid vrr mode (0, 1, 2)" ;;
+      esac
+      json=$value ;;
+    mirror)
+      if [[ $value == "none" || $value == "null" || -z $value ]]; then
+        monitor_unset "$name" mirror
+        return 0
+      fi
+      json=$(jq -Rn --arg v "$value" '$v') ;;
+    disabled)
+      case $value in
+        true|1|yes) value=true ;;
+        false|0|no) value=false ;;
+        *) die "'$value' is not a valid boolean" ;;
+      esac
+      json=$value ;;
+    position)
+      json=$(jq -Rn --arg v "$value" '$v') ;;
     *) die "unknown display setting '$field'" ;;
   esac
 
@@ -337,7 +379,7 @@ monitor_in_force() {
   local found
   found=$(monitor_find "$1")
   [[ $found == null ]] && { echo '{}'; return 0; }
-  jq -c '{ mode: .mode, scale: .scale }' <<<"$found"
+  jq -c '{ mode: .mode, scale: .scale, transform: .transform, vrr: .vrr }' <<<"$found"
 }
 
 # Putting one back writes the value the display had and then drops the rule:
@@ -360,6 +402,154 @@ monitor_unset() {
   monitor_apply_live "$name"
   [[ $field == scale ]] && monitor_is_internal "$name" && monitor_lua_scale "$name" --
   return 0
+}
+
+monitor_projection_mode() {
+  local stored_mode live count
+  stored_mode=$(jq -r '.projectionMode // empty' <<<"$(read_store)")
+  if [[ -n "$stored_mode" ]]; then
+    echo "$stored_mode"
+    return 0
+  fi
+  live=$(monitor_live)
+  count=$(jq 'length' <<<"$live")
+  if (( count < 2 )); then
+    echo "extend"
+    return 0
+  fi
+
+  local first_dis second_dis second_mir
+  first_dis=$(jq -r '.[0].disabled // false' <<<"$live")
+  second_dis=$(jq -r '.[1].disabled // false' <<<"$live")
+  second_mir=$(jq -r '.[1].mirrorOf // ""' <<<"$live")
+
+  if [[ -n "$second_mir" ]]; then
+    echo "duplicate"
+  elif [[ "$first_dis" == "true" ]]; then
+    echo "second"
+  elif [[ "$second_dis" == "true" ]]; then
+    echo "pc"
+  else
+    echo "extend"
+  fi
+}
+
+monitor_project() {
+  local mode=${1:-extend} live
+  live=$(monitor_live)
+  local count
+  count=$(jq 'length' <<<"$live")
+  (( count > 0 )) || die "no displays connected"
+
+  local primary secondary
+  primary=$(jq -r '.[0].key' <<<"$live")
+  secondary=$(jq -r '.[1].key // empty' <<<"$live")
+
+  case $mode in
+    pc)
+      monitor_set "$primary" mode "preferred"
+      monitor_unset "$primary" mirror
+      if [[ -n $secondary ]]; then
+        while read -r name; do
+          [[ -z "$name" ]] && continue
+          monitor_set "$name" mode "disable"
+        done < <(jq -r '.[1:][].key' <<<"$live")
+      fi
+      ;;
+    duplicate)
+      [[ -n $secondary ]] || die "need at least 2 displays to duplicate"
+      local prim_output
+      prim_output=$(jq -r '.[0].name' <<<"$live")
+      monitor_set "$primary" mode "preferred"
+      monitor_unset "$primary" mirror
+      while read -r name; do
+        [[ -z "$name" ]] && continue
+        monitor_set "$name" mirror "$prim_output"
+      done < <(jq -r '.[1:][].key' <<<"$live")
+      ;;
+    extend)
+      while read -r name; do
+        [[ -z "$name" ]] && continue
+        monitor_unset "$name" mirror
+        monitor_set "$name" mode "preferred"
+        monitor_set "$name" position "auto"
+      done < <(jq -r '.[].key' <<<"$live")
+      ;;
+    second)
+      [[ -n $secondary ]] || die "need at least 2 displays for second screen only"
+      monitor_set "$primary" mode "disable"
+      while read -r name; do
+        [[ -z "$name" ]] && continue
+        monitor_unset "$name" mirror
+        monitor_set "$name" mode "preferred"
+        monitor_set "$name" position "0x0"
+      done < <(jq -r '.[1:][].key' <<<"$live")
+      ;;
+    *)
+      die "unknown projection mode '$mode' (expected pc, duplicate, extend, second)"
+      ;;
+  esac
+
+  edit_store '.projectionMode = $m' --arg m "$mode"
+}
+
+monitor_profile_save() {
+  local name=$1
+  [[ -n $name ]] || die "profile name required"
+  local current
+  current=$(monitor_state)
+  edit_store '.monitorProfiles = ((.monitorProfiles // {}) | .[$n] = $m)' \
+    --arg n "$name" --argjson m "$current"
+}
+
+monitor_profile_apply() {
+  local name=$1
+  [[ -n $name ]] || die "profile name required"
+  local prof
+  prof=$(jq -c --arg n "$name" '.monitorProfiles[$n] // null' <<<"$(read_store)")
+  [[ "$prof" == "null" || -z "$prof" ]] && die "profile '$name' not found"
+
+  while read -r mon; do
+    [[ -z "$mon" ]] && continue
+    local key mode scale transform vrr mirror disabled
+    key=$(jq -r '.name' <<<"$mon")
+    mode=$(jq -r '.mode // "preferred"' <<<"$mon")
+    scale=$(jq -r '.scale // 1' <<<"$mon")
+    transform=$(jq -r '.transform // 0' <<<"$mon")
+    vrr=$(jq -r '.vrr // 0' <<<"$mon")
+    mirror=$(jq -r '.mirrorOf // ""' <<<"$mon")
+    disabled=$(jq -r '.disabled // false' <<<"$mon")
+
+    if [[ "$disabled" == "true" || "$mode" == "disable" ]]; then
+      monitor_set "$key" mode "disable"
+    else
+      monitor_set "$key" mode "$mode"
+      monitor_set "$key" scale "$scale"
+      monitor_set "$key" transform "$transform"
+      monitor_set "$key" vrr "$vrr"
+      if [[ -n "$mirror" ]]; then
+        monitor_set "$key" mirror "$mirror"
+      else
+        monitor_unset "$key" mirror
+      fi
+    fi
+  done < <(jq -c '.[]' <<<"$prof")
+}
+
+monitor_profile_delete() {
+  local name=$1
+  [[ -n $name ]] || die "profile name required"
+  edit_store '.monitorProfiles = ((.monitorProfiles // {}) | del(.[$n]))' \
+    --arg n "$name"
+}
+
+monitor_profile_list() {
+  jq -c '(.monitorProfiles // {}) | keys' <<<"$(read_store)"
+}
+
+monitor_identify() {
+  local trigger="${XDG_RUNTIME_DIR:-/tmp}/omarchy-identify-displays"
+  date +%s%N > "$trigger"
 }
 
 # ------------------------------------------------- the laptop panel is theirs

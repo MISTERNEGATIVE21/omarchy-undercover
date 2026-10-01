@@ -7,9 +7,20 @@ import QtQuick.Layouts
 import QtQuick.Controls
 
 ShellRoot {
+  DisplayIdentifyOverlay {
+    id: identifyOverlay
+  }
+
   FloatingWindow {
     id: settingsWin
     title: "Settings"
+    property int selectedMonitorIndex: 0
+    readonly property var activeMon: {
+      if (settingsService.monitors && settingsService.monitors.length > settingsWin.selectedMonitorIndex) {
+        return settingsService.monitors[settingsWin.selectedMonitorIndex]
+      }
+      return (settingsService.monitors && settingsService.monitors.length > 0) ? settingsService.monitors[0] : null
+    }
 
     implicitWidth: Math.min(960, (Quickshell.screens[0] ? Quickshell.screens[0].width - 40 : 960))
     implicitHeight: Math.min(620, (Quickshell.screens[0] ? Quickshell.screens[0].height - 60 : 620))
@@ -1539,19 +1550,22 @@ ShellRoot {
                   Layout.fillWidth: true
                   spacing: 16
 
-                  // 1. MONITOR ARRANGEMENT DIAGRAM
+                  readonly property var activeMon: settingsWin.activeMon
+
+                  // 1. MONITOR ARRANGEMENT DIAGRAM & IDENTIFY / DETECT
                   Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 140
+                    implicitHeight: diagramCol.implicitHeight + 28
                     radius: 8
                     color: settingsWin.cardBg
                     border.color: settingsWin.cardBorder
                     border.width: 1
 
                     ColumnLayout {
+                      id: diagramCol
                       anchors.fill: parent
                       anchors.margins: 16
-                      spacing: 12
+                      spacing: 14
 
                       RowLayout {
                         Layout.fillWidth: true
@@ -1563,7 +1577,7 @@ ShellRoot {
                           Layout.fillWidth: true
                         }
                         Text {
-                          text: settingsService.monitors.length + (settingsService.monitors.length === 1 ? " display connected" : " displays connected")
+                          text: (settingsService.monitors.length || 1) + ((settingsService.monitors.length === 1) ? " display connected" : " displays connected")
                           font.family: "Segoe UI, sans-serif"
                           font.pixelSize: 11
                           color: settingsWin.accentColor
@@ -1576,14 +1590,18 @@ ShellRoot {
                         spacing: 14
 
                         Repeater {
-                          model: settingsService.monitors.length > 0 ? settingsService.monitors : [{ description: "Primary Display", resolution: "1920x1080", scale: 1.0 }]
+                          model: settingsService.monitors.length > 0 ? settingsService.monitors : [{ description: "Primary Display", resolution: "2560x1440", scale: 1.0, transform: 0 }]
                           delegate: Rectangle {
+                            id: monBox
                             implicitWidth: 130
-                            implicitHeight: 74
+                            implicitHeight: 76
                             radius: 6
-                            color: settingsWin.isDark ? Qt.rgba(0.18, 0.22, 0.28, 0.9) : Qt.rgba(0.85, 0.90, 0.96, 0.9)
-                            border.color: settingsWin.accentColor
-                            border.width: 2
+                            readonly property bool isSelected: settingsWin.selectedMonitorIndex === index
+                            color: isSelected
+                              ? (settingsWin.isDark ? Qt.rgba(0.18, 0.26, 0.38, 0.95) : Qt.rgba(0.85, 0.92, 0.98, 0.95))
+                              : (monMouse.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.05)) : (settingsWin.isDark ? Qt.rgba(0.16, 0.18, 0.22, 0.9) : Qt.rgba(0.92, 0.94, 0.96, 0.9)))
+                            border.color: isSelected ? settingsWin.accentColor : settingsWin.cardBorder
+                            border.width: isSelected ? 2 : 1
 
                             ColumnLayout {
                               anchors.centerIn: parent
@@ -1593,11 +1611,11 @@ ShellRoot {
                                 font.family: "Segoe UI, sans-serif"
                                 font.pixelSize: 18
                                 font.weight: Font.Bold
-                                color: settingsWin.textPrimary
+                                color: monBox.isSelected ? settingsWin.accentColor : settingsWin.textPrimary
                                 Layout.alignment: Qt.AlignHCenter
                               }
                               Text {
-                                text: modelData.description || modelData.name || "Display"
+                                text: modelData.description || modelData.output || modelData.name || ("Display " + (index + 1))
                                 font.family: "Segoe UI, sans-serif"
                                 font.pixelSize: 10
                                 color: settingsWin.textSecondary
@@ -1606,13 +1624,177 @@ ShellRoot {
                                 Layout.alignment: Qt.AlignHCenter
                               }
                             }
+
+                            MouseArea {
+                              id: monMouse
+                              anchors.fill: parent
+                              hoverEnabled: true
+                              cursorShape: Qt.PointingHandCursor
+                              onClicked: settingsWin.selectedMonitorIndex = index
+                            }
+                          }
+                        }
+                      }
+
+                      // Fluent Identify & Detect Buttons Row
+                      RowLayout {
+                        Layout.alignment: Qt.AlignHCenter
+                        spacing: 10
+
+                        Rectangle {
+                          implicitWidth: 96
+                          implicitHeight: 32
+                          radius: 4
+                          color: idBtnMouse.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.08)) : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.07) : Qt.rgba(0, 0, 0, 0.04))
+                          border.color: settingsWin.cardBorder
+                          border.width: 1
+
+                          RowLayout {
+                            anchors.centerIn: parent
+                            spacing: 6
+                            Text { text: "󰑮"; font.pixelSize: 13; color: settingsWin.textPrimary }
+                            Text { text: "Identify"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 12; color: settingsWin.textPrimary }
+                          }
+
+                          MouseArea {
+                            id: idBtnMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                              identifyOverlay.trigger()
+                              settingsService.identifyDisplays()
+                            }
+                          }
+                        }
+
+                        Rectangle {
+                          implicitWidth: 90
+                          implicitHeight: 32
+                          radius: 4
+                          color: detBtnMouse.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.08)) : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.07) : Qt.rgba(0, 0, 0, 0.04))
+                          border.color: settingsWin.cardBorder
+                          border.width: 1
+
+                          RowLayout {
+                            anchors.centerIn: parent
+                            spacing: 6
+                            Text { text: "󰑐"; font.pixelSize: 13; color: settingsWin.textPrimary }
+                            Text { text: "Detect"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 12; color: settingsWin.textPrimary }
+                          }
+
+                          MouseArea {
+                            id: detBtnMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: settingsService.refresh()
                           }
                         }
                       }
                     }
                   }
 
-                  // 2. SCALE & LAYOUT CARD
+                  // 2. MULTIPLE DISPLAYS CARD (Projection Modes)
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: multiCol.implicitHeight + 28
+                    radius: 8
+                    color: settingsWin.cardBg
+                    border.color: settingsWin.cardBorder
+                    border.width: 1
+
+                    ColumnLayout {
+                      id: multiCol
+                      anchors.fill: parent
+                      anchors.margins: 16
+                      spacing: 12
+
+                      RowLayout {
+                        Layout.fillWidth: true
+                        ColumnLayout {
+                          spacing: 2
+                          Layout.fillWidth: true
+                          Text { text: "Multiple displays"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                          Text { text: "Choose how your screens work together when projecting or connecting displays"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                        }
+                      }
+
+                      // Projection Mode Pills
+                      RowLayout {
+                        spacing: 8
+                        property var modes: [
+                          { label: "Extend", mode: "extend", desc: "Extend displays" },
+                          { label: "Duplicate", mode: "duplicate", desc: "Duplicate displays" },
+                          { label: "Show on 1", mode: "pc", desc: "Show only on 1" },
+                          { label: "Show on 2", mode: "second", desc: "Show only on 2" }
+                        ]
+
+                        Repeater {
+                          model: parent.modes
+                          delegate: Rectangle {
+                            implicitWidth: 105
+                            implicitHeight: 32
+                            radius: 4
+                            readonly property bool isSelected: (settingsService.projectionMode || "extend") === modelData.mode
+                            color: isSelected
+                              ? (settingsWin.isDark ? Qt.rgba(0.38, 0.80, 1.0, 0.20) : Qt.rgba(0, 0.40, 0.75, 0.15))
+                              : (projMouse.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(0, 0, 0, 0.06)) : "transparent")
+                            border.color: isSelected ? settingsWin.accentColor : settingsWin.cardBorder
+                            border.width: 1
+
+                            Text {
+                              anchors.centerIn: parent
+                              text: modelData.label
+                              font.family: "Segoe UI, sans-serif"
+                              font.pixelSize: 12
+                              font.weight: isSelected ? Font.DemiBold : Font.Normal
+                              color: isSelected ? settingsWin.accentColor : settingsWin.textPrimary
+                            }
+
+                            MouseArea {
+                              id: projMouse
+                              anchors.fill: parent
+                              hoverEnabled: true
+                              cursorShape: Qt.PointingHandCursor
+                              onClicked: settingsService.setProjectionMode(modelData.mode)
+                            }
+                          }
+                        }
+                      }
+
+                      Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                      // Main display checkbox row
+                      RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+                        Rectangle {
+                          implicitWidth: 18
+                          implicitHeight: 18
+                          radius: 3
+                          color: (settingsWin.selectedMonitorIndex === 0) ? settingsWin.accentColor : "transparent"
+                          border.color: (settingsWin.selectedMonitorIndex === 0) ? settingsWin.accentColor : settingsWin.cardBorder
+                          border.width: 1
+                          Text {
+                            anchors.centerIn: parent
+                            text: "✓"
+                            font.pixelSize: 12
+                            color: settingsWin.isDark ? "#000000" : "#ffffff"
+                            visible: settingsWin.selectedMonitorIndex === 0
+                          }
+                        }
+                        Text {
+                          text: "Make this my main display"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 12
+                          color: (settingsWin.selectedMonitorIndex === 0) ? settingsWin.textSecondary : settingsWin.textPrimary
+                        }
+                      }
+                    }
+                  }
+
+                  // 3. SCALE & DISPLAY SETTINGS FOR SELECTED MONITOR
                   Rectangle {
                     Layout.fillWidth: true
                     implicitHeight: scaleCol.implicitHeight + 28
@@ -1632,8 +1814,14 @@ ShellRoot {
                         ColumnLayout {
                           spacing: 2
                           Layout.fillWidth: true
-                          Text { text: "Scale"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
-                          Text { text: "Change the size of text, apps, and other items"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                          Text {
+                            text: "Display " + (settingsWin.selectedMonitorIndex + 1) + (settingsWin.activeMon ? (" • " + (settingsWin.activeMon.description || settingsWin.activeMon.output || settingsWin.activeMon.name)) : "")
+                            font.family: "Segoe UI, sans-serif"
+                            font.pixelSize: 13
+                            font.weight: Font.DemiBold
+                            color: settingsWin.textPrimary
+                          }
+                          Text { text: "Scale, resolution, orientation, and refresh settings for the selected display"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
                         }
                       }
 
@@ -1655,14 +1843,14 @@ ShellRoot {
                             implicitHeight: 32
                             radius: 4
                             readonly property bool isSelected: {
-                              if (settingsService.monitors.length > 0) {
-                                return Math.abs((settingsService.monitors[0].scale || 1.0) - modelData.val) < 0.05
+                              if (settingsWin.activeMon && settingsWin.activeMon.scale !== undefined) {
+                                return Math.abs(settingsWin.activeMon.scale - modelData.val) < 0.05
                               }
                               return modelData.val === 1.0
                             }
                             color: isSelected
-                                   ? (settingsWin.isDark ? Qt.rgba(0.38, 0.80, 1.0, 0.20) : Qt.rgba(0, 0.40, 0.75, 0.15))
-                                   : (scaleMouse.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(0, 0, 0, 0.06)) : "transparent")
+                              ? (settingsWin.isDark ? Qt.rgba(0.38, 0.80, 1.0, 0.20) : Qt.rgba(0, 0.40, 0.75, 0.15))
+                              : (scaleMouse.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(0, 0, 0, 0.06)) : "transparent")
                             border.color: isSelected ? settingsWin.accentColor : settingsWin.cardBorder
                             border.width: 1
 
@@ -1681,9 +1869,8 @@ ShellRoot {
                               hoverEnabled: true
                               cursorShape: Qt.PointingHandCursor
                               onClicked: {
-                                if (settingsService.monitors.length > 0) {
-                                  var monDesc = settingsService.monitors[0].description || settingsService.monitors[0].name
-                                  settingsService.setMonitorScale(monDesc, modelData.val)
+                                if (settingsWin.activeMon) {
+                                  settingsService.setMonitorScale(settingsWin.activeMon.name, modelData.val)
                                 }
                               }
                             }
@@ -1701,24 +1888,352 @@ ShellRoot {
                           Layout.fillWidth: true
                           Text { text: "Display resolution"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
                           Text {
-                            text: (settingsService.monitors.length > 0 ? (settingsService.monitors[0].resolution || "1920x1080") : "1920x1080") + " (Active resolution)"
+                            text: (settingsWin.activeMon ? (settingsWin.activeMon.mode || (settingsWin.activeMon.width + "x" + settingsWin.activeMon.height + "@" + settingsWin.activeMon.refreshRate)) : "2560x1440@165") + " (Active mode)"
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 11
                             color: settingsWin.textSecondary
                           }
                         }
                         Text {
-                          text: settingsService.monitors.length > 0 ? (settingsService.monitors[0].resolution || "1920x1080") : "1920x1080"
+                          text: settingsWin.activeMon ? (settingsWin.activeMon.width + " × " + settingsWin.activeMon.height + " @ " + settingsWin.activeMon.refreshRate + "Hz") : "2560 × 1440 @ 165Hz"
                           font.family: "Segoe UI, sans-serif"
                           font.pixelSize: 12
                           font.weight: Font.DemiBold
                           color: settingsWin.accentColor
                         }
                       }
+
+                      Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                      // Display Orientation Row
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        Text { text: "Display orientation"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+
+                        RowLayout {
+                          spacing: 8
+                          property var orientations: [
+                            { label: "Landscape", val: 0 },
+                            { label: "Portrait", val: 1 },
+                            { label: "Landscape (flipped)", val: 2 },
+                            { label: "Portrait (flipped)", val: 3 }
+                          ]
+
+                          Repeater {
+                            model: parent.orientations
+                            delegate: Rectangle {
+                              implicitWidth: 124
+                              implicitHeight: 32
+                              radius: 4
+                              readonly property bool isSelected: (settingsWin.activeMon ? (settingsWin.activeMon.transform || 0) : 0) === modelData.val
+                              color: isSelected
+                                ? (settingsWin.isDark ? Qt.rgba(0.38, 0.80, 1.0, 0.20) : Qt.rgba(0, 0.40, 0.75, 0.15))
+                                : (orientMouse.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(0, 0, 0, 0.06)) : "transparent")
+                              border.color: isSelected ? settingsWin.accentColor : settingsWin.cardBorder
+                              border.width: 1
+
+                              Text {
+                                anchors.centerIn: parent
+                                text: modelData.label
+                                font.family: "Segoe UI, sans-serif"
+                                font.pixelSize: 11
+                                font.weight: isSelected ? Font.DemiBold : Font.Normal
+                                color: isSelected ? settingsWin.accentColor : settingsWin.textPrimary
+                              }
+
+                              MouseArea {
+                                id: orientMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                  if (settingsWin.activeMon) {
+                                    settingsService.setMonitorTransform(settingsWin.activeMon.name, modelData.val)
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+
+                      Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                      // Variable Refresh Rate (VRR / Adaptive Sync)
+                      RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 14
+
+                        ColumnLayout {
+                          Layout.fillWidth: true
+                          spacing: 2
+                          Text { text: "Variable refresh rate (Adaptive Sync)"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                          Text { text: "Dynamically matches display refresh rate to reduce screen tearing and stutter"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                        }
+
+                        Rectangle {
+                          implicitWidth: 44
+                          implicitHeight: 22
+                          radius: 11
+                          readonly property bool vrrActive: (settingsWin.activeMon ? (settingsWin.activeMon.vrr > 0) : false)
+                          color: vrrSwitchMouse.containsMouse ? (vrrActive ? (settingsWin.isDark ? "#48b7eb" : "#005a9e") : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.25) : Qt.rgba(0, 0, 0, 0.2))) : (vrrActive ? settingsWin.accentColor : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.18) : Qt.rgba(0, 0, 0, 0.15)))
+
+                          Rectangle {
+                            x: parent.vrrActive ? parent.width - width - 3 : 3
+                            anchors.verticalCenter: parent.verticalCenter
+                            implicitWidth: 16
+                            implicitHeight: 16
+                            radius: 8
+                            color: "#ffffff"
+                            Behavior on x { NumberAnimation { duration: 120 } }
+                          }
+
+                          MouseArea {
+                            id: vrrSwitchMouse
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                              if (settingsWin.activeMon) {
+                                var nextVal = parent.vrrActive ? 0 : 1
+                                settingsService.setMonitorVrr(settingsWin.activeMon.name, nextVal)
+                              }
+                            }
+                          }
+                        }
+                      }
                     }
                   }
 
-                  // 3. NIGHT LIGHT CARD
+                  // 4. DISPLAY LAYOUT PROFILES
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: profCol.implicitHeight + 28
+                    radius: 8
+                    color: settingsWin.cardBg
+                    border.color: settingsWin.cardBorder
+                    border.width: 1
+
+                    ColumnLayout {
+                      id: profCol
+                      anchors.fill: parent
+                      anchors.margins: 16
+                      spacing: 12
+
+                      RowLayout {
+                        Layout.fillWidth: true
+                        ColumnLayout {
+                          spacing: 2
+                          Layout.fillWidth: true
+                          Text { text: "Display layout profiles"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                          Text { text: "Save and quickly switch display arrangements for desks, docks, and mobile setups"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                        }
+                      }
+
+                      // Save Profile Row
+                      RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+
+                        Rectangle {
+                          Layout.fillWidth: true
+                          implicitHeight: 32
+                          radius: 4
+                          color: settingsWin.isDark ? Qt.rgba(0, 0, 0, 0.25) : Qt.rgba(1, 1, 1, 0.8)
+                          border.color: profInput.activeFocus ? settingsWin.accentColor : settingsWin.cardBorder
+                          border.width: 1
+
+                          TextInput {
+                            id: profInput
+                            anchors.fill: parent
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 10
+                            verticalAlignment: TextInput.AlignVCenter
+                            font.family: "Segoe UI, sans-serif"
+                            font.pixelSize: 12
+                            color: settingsWin.textPrimary
+                            clip: true
+
+                            Text {
+                              anchors.fill: parent
+                              verticalAlignment: Text.AlignVCenter
+                              text: "Enter profile name (e.g. Work Desk, Dock)..."
+                              font.family: "Segoe UI, sans-serif"
+                              font.pixelSize: 12
+                              color: settingsWin.textSecondary
+                              visible: !profInput.text && !profInput.activeFocus
+                            }
+                          }
+                        }
+
+                        Rectangle {
+                          implicitWidth: 100
+                          implicitHeight: 32
+                          radius: 4
+                          color: saveProfMouse.containsMouse ? (settingsWin.isDark ? "#48b7eb" : "#005a9e") : settingsWin.accentColor
+
+                          Text {
+                            anchors.centerIn: parent
+                            text: "Save profile"
+                            font.family: "Segoe UI, sans-serif"
+                            font.pixelSize: 12
+                            font.weight: Font.DemiBold
+                            color: settingsWin.accentTextColor
+                          }
+
+                          MouseArea {
+                            id: saveProfMouse
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                              var name = profInput.text.trim()
+                              if (name) {
+                                settingsService.saveMonitorProfile(name)
+                                profInput.text = ""
+                              }
+                            }
+                          }
+                        }
+                      }
+
+                      // Saved Profiles List
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+                        visible: settingsService.monitorProfiles && settingsService.monitorProfiles.length > 0
+
+                        Repeater {
+                          model: settingsService.monitorProfiles || []
+                          delegate: Rectangle {
+                            Layout.fillWidth: true
+                            implicitHeight: 36
+                            radius: 4
+                            color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.04) : Qt.rgba(0, 0, 0, 0.02)
+                            border.color: settingsWin.cardBorder
+                            border.width: 1
+
+                            RowLayout {
+                              anchors.fill: parent
+                              anchors.leftMargin: 12
+                              anchors.rightMargin: 8
+                              spacing: 8
+
+                              Text { text: "󰍹"; font.pixelSize: 14; color: settingsWin.accentColor }
+                              Text {
+                                text: String(modelData)
+                                font.family: "Segoe UI, sans-serif"
+                                font.pixelSize: 12
+                                font.weight: Font.DemiBold
+                                color: settingsWin.textPrimary
+                                Layout.fillWidth: true
+                              }
+
+                              Rectangle {
+                                implicitWidth: 64
+                                implicitHeight: 24
+                                radius: 3
+                                color: applyProfMouse.containsMouse ? (settingsWin.isDark ? Qt.rgba(0.38, 0.80, 1.0, 0.3) : Qt.rgba(0, 0.40, 0.75, 0.25)) : (settingsWin.isDark ? Qt.rgba(0.38, 0.80, 1.0, 0.15) : Qt.rgba(0, 0.40, 0.75, 0.12))
+
+                                Text {
+                                  anchors.centerIn: parent
+                                  text: "Apply"
+                                  font.family: "Segoe UI, sans-serif"
+                                  font.pixelSize: 11
+                                  font.weight: Font.DemiBold
+                                  color: settingsWin.accentColor
+                                }
+
+                                MouseArea {
+                                  id: applyProfMouse
+                                  anchors.fill: parent
+                                  hoverEnabled: true
+                                  cursorShape: Qt.PointingHandCursor
+                                  onClicked: settingsService.applyMonitorProfile(String(modelData))
+                                }
+                              }
+
+                              Rectangle {
+                                implicitWidth: 26
+                                implicitHeight: 24
+                                radius: 3
+                                color: delProfMouse.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 0, 0, 0.2) : Qt.rgba(1, 0, 0, 0.1)) : "transparent"
+
+                                Text {
+                                  anchors.centerIn: parent
+                                  text: "✕"
+                                  font.pixelSize: 11
+                                  color: delProfMouse.containsMouse ? "#ff5555" : settingsWin.textSecondary
+                                }
+
+                                MouseArea {
+                                  id: delProfMouse
+                                  anchors.fill: parent
+                                  hoverEnabled: true
+                                  cursorShape: Qt.PointingHandCursor
+                                  onClicked: settingsService.deleteMonitorProfile(String(modelData))
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+
+                  // 5. ADVANCED DISPLAY CONTROLS (Launch hyprmoncfg)
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 74
+                    radius: 8
+                    color: settingsWin.cardBg
+                    border.color: settingsWin.cardBorder
+                    border.width: 1
+
+                    RowLayout {
+                      anchors.fill: parent
+                      anchors.margins: 16
+                      spacing: 14
+
+                      Text { text: "󰢹"; font.pixelSize: 22; color: settingsWin.accentColor }
+
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        Text { text: "Advanced monitor layout"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { text: "Launch visual monitor manager for custom desktop placement and geometry"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                      }
+
+                      Rectangle {
+                        implicitWidth: 120
+                        implicitHeight: 32
+                        radius: 4
+                        color: advBtnMouse.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.08)) : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.07) : Qt.rgba(0, 0, 0, 0.04))
+                        border.color: settingsWin.cardBorder
+                        border.width: 1
+
+                        Text {
+                          anchors.centerIn: parent
+                          text: "Open manager"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 12
+                          font.weight: Font.DemiBold
+                          color: settingsWin.textPrimary
+                        }
+
+                        MouseArea {
+                          id: advBtnMouse
+                          anchors.fill: parent
+                          hoverEnabled: true
+                          cursorShape: Qt.PointingHandCursor
+                          onClicked: {
+                            settingsWin.runCmd("hyprmoncfg 2>/dev/null || omarchy-hyprmoncfg 2>/dev/null || omarchy-undercover-settings display 2>/dev/null || true")
+                          }
+                        }
+                      }
+                    }
+                  }
+
+                  // 6. NIGHT LIGHT CARD
                   Rectangle {
                     Layout.fillWidth: true
                     implicitHeight: 74
