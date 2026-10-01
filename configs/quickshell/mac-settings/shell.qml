@@ -1466,8 +1466,9 @@ ShellRoot {
               ColumnLayout {
                 visible: settingsWin.currentCategory === 3
                 Layout.fillWidth: true
-                spacing: 14
+                spacing: 16
 
+                // 1. Apple-style Wi-Fi Hero Toggle Card
                 Rectangle {
                   Layout.fillWidth: true
                   implicitHeight: 74
@@ -1479,37 +1480,295 @@ ShellRoot {
                   RowLayout {
                     anchors.fill: parent
                     anchors.margins: 16
-                    spacing: 12
+                    spacing: 14
 
-                    Image {
-                      Layout.preferredWidth: 24
-                      Layout.preferredHeight: 24
-                      width: 24; height: 24
-                      source: "file://" + settingsWin.pluginDir + "/assets/icons/mac-settings/wifi.svg"
-                      fillMode: Image.PreserveAspectFit
+                    Rectangle {
+                      width: 32; height: 32; radius: 8
+                      color: "#007aff"
+                      Image {
+                        anchors.centerIn: parent
+                        width: 18; height: 18
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/mac-settings/wifi.svg"
+                        fillMode: Image.PreserveAspectFit
+                      }
                     }
 
                     ColumnLayout {
+                      Layout.fillWidth: true
                       spacing: 2
                       Text {
                         text: "Wi-Fi"
                         font.family: "SF Pro Text, -apple-system, sans-serif"
-                        font.pixelSize: 14
-                        font.bold: true
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
                         color: settingsWin.textPrimary
                       }
                       Text {
-                        text: settingsWin.wifiEnabled ? "Connected to: " + settingsWin.wifiSsid : "Wi-Fi is Off"
-                        textFormat: Text.PlainText
+                        text: settingsService.wifiEnabled ? (settingsService.wifiActiveSsid ? "Connected to " + settingsService.wifiActiveSsid : "Looking for networks nearby...") : "Wi-Fi is Off"
                         font.family: "SF Pro Text, -apple-system, sans-serif"
                         font.pixelSize: 11
                         color: settingsWin.textSecondary
                       }
                     }
-                    Item { Layout.fillWidth: true }
-                    Button {
-                      text: "Network Manager..."
-                      onClicked: settingsWin.runCmd("omarchy-mac-wifi || nm-connection-editor")
+
+                    Rectangle {
+                      width: 38; height: 22; radius: 11
+                      color: settingsService.wifiEnabled ? "#34c759" : (settingsWin.isDark ? "#39393d" : "#e5e5ea")
+                      Rectangle {
+                        width: 18; height: 18; radius: 9
+                        x: settingsService.wifiEnabled ? 18 : 2
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: "#ffffff"
+                        Behavior on x { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+                      }
+                      MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: settingsService.toggleWifi(!settingsService.wifiEnabled)
+                      }
+                    }
+                  }
+                }
+
+                // 2. Active Network Card (If Connected)
+                Rectangle {
+                  visible: settingsService.wifiEnabled && settingsService.wifiActiveSsid !== ""
+                  Layout.fillWidth: true
+                  implicitHeight: 74
+                  radius: 10
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 14
+
+                    Text { text: "📶"; font.pixelSize: 22 }
+
+                    ColumnLayout {
+                      Layout.fillWidth: true
+                      spacing: 2
+                      Text {
+                        text: settingsService.wifiActiveSsid
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
+                        color: settingsWin.textPrimary
+                      }
+                      Text {
+                        text: "Connected, Secured • Known Network"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 11
+                        color: "#34c759"
+                      }
+                    }
+
+                    Rectangle {
+                      implicitWidth: 92
+                      implicitHeight: 28
+                      radius: 6
+                      color: disBtnM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04))
+                      border.color: settingsWin.cardBorder
+                      border.width: 1
+                      Text {
+                        anchors.centerIn: parent
+                        text: "Disconnect"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 11
+                        color: settingsWin.textPrimary
+                      }
+                      MouseArea {
+                        id: disBtnM
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: settingsService.disconnectWifi()
+                      }
+                    }
+                  }
+                }
+
+                // 3. Available Networks Card
+                Rectangle {
+                  visible: settingsService.wifiEnabled
+                  Layout.fillWidth: true
+                  implicitHeight: netCol.implicitHeight + 28
+                  radius: 10
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  ColumnLayout {
+                    id: netCol
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 12
+
+                    RowLayout {
+                      Layout.fillWidth: true
+                      Text {
+                        text: "Available Networks"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
+                        color: settingsWin.textPrimary
+                        Layout.fillWidth: true
+                      }
+
+                      Rectangle {
+                        implicitWidth: 84
+                        implicitHeight: 28
+                        radius: 6
+                        color: rescanM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.08)) : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04))
+                        border.color: settingsWin.cardBorder
+                        border.width: 1
+                        Text {
+                          anchors.centerIn: parent
+                          text: settingsService.wifiScanning ? "Scanning..." : "Rescan"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textPrimary
+                        }
+                        MouseArea {
+                          id: rescanM
+                          anchors.fill: parent
+                          hoverEnabled: true
+                          cursorShape: Qt.PointingHandCursor
+                          onClicked: settingsService.scanWifi()
+                        }
+                      }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    ColumnLayout {
+                      Layout.fillWidth: true
+                      spacing: 4
+
+                      property string expandedSsid: ""
+
+                      Text {
+                        visible: settingsService.wifiNetworks.length === 0
+                        text: "No other Wi-Fi networks found nearby. Click Rescan to search."
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 11
+                        color: settingsWin.textSecondary
+                      }
+
+                      Repeater {
+                        model: settingsService.wifiNetworks
+                        delegate: Rectangle {
+                          Layout.fillWidth: true
+                          implicitHeight: isExpanded ? 84 : 40
+                          radius: 7
+                          readonly property bool isExpanded: parent.expandedSsid === modelData.ssid
+                          color: isExpanded
+                                 ? (settingsWin.isDark ? Qt.rgba(0.2, 0.48, 1.0, 0.16) : Qt.rgba(0.0, 0.48, 1.0, 0.08))
+                                 : (wifiRowM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04)) : "transparent")
+
+                          ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 8
+                            spacing: 6
+
+                            RowLayout {
+                              Layout.fillWidth: true
+                              spacing: 10
+
+                              Text { text: "📶"; font.pixelSize: 14 }
+                              Text {
+                                text: modelData.ssid || "Hidden Network"
+                                font.family: "SF Pro Text, -apple-system, sans-serif"
+                                font.pixelSize: 12
+                                font.weight: modelData.connected ? Font.DemiBold : Font.Normal
+                                color: settingsWin.textPrimary
+                                Layout.fillWidth: true
+                                elide: Text.ElideRight
+                              }
+                              Text {
+                                visible: modelData.security && modelData.security !== "--"
+                                text: "🔒"
+                                font.pixelSize: 11
+                              }
+                              Text {
+                                visible: modelData.connected
+                                text: "✓"
+                                font.pixelSize: 12
+                                font.weight: Font.Bold
+                                color: "#34c759"
+                              }
+                            }
+
+                            // Password prompt when expanded
+                            RowLayout {
+                              visible: isExpanded && !modelData.connected
+                              Layout.fillWidth: true
+                              spacing: 8
+
+                              Rectangle {
+                                Layout.fillWidth: true
+                                implicitHeight: 28
+                                radius: 6
+                                color: settingsWin.isDark ? Qt.rgba(0, 0, 0, 0.3) : "#ffffff"
+                                border.color: settingsWin.cardBorder
+                                border.width: 1
+
+                                TextInput {
+                                  id: pwField
+                                  anchors.fill: parent
+                                  anchors.margins: 6
+                                  echoMode: TextInput.Password
+                                  font.family: "SF Pro Text, -apple-system, sans-serif"
+                                  font.pixelSize: 11
+                                  color: settingsWin.textPrimary
+                                  clip: true
+                                }
+                              }
+
+                              Rectangle {
+                                implicitWidth: 68
+                                implicitHeight: 28
+                                radius: 6
+                                color: settingsWin.accentColor
+                                Text {
+                                  anchors.centerIn: parent
+                                  text: "Join"
+                                  font.family: "SF Pro Text, -apple-system, sans-serif"
+                                  font.pixelSize: 11
+                                  font.weight: Font.DemiBold
+                                  color: "#ffffff"
+                                }
+                                MouseArea {
+                                  anchors.fill: parent
+                                  cursorShape: Qt.PointingHandCursor
+                                  onClicked: {
+                                    settingsService.connectWifi(modelData.ssid, pwField.text)
+                                    parent.parent.parent.parent.parent.expandedSsid = ""
+                                  }
+                                }
+                              }
+                            }
+                          }
+
+                          MouseArea {
+                            id: wifiRowM
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            enabled: !isExpanded
+                            onClicked: {
+                              if (modelData.connected) return
+                              if (modelData.security && modelData.security !== "--") {
+                                parent.parent.expandedSsid = modelData.ssid
+                              } else {
+                                settingsService.connectWifi(modelData.ssid, "")
+                              }
+                            }
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -1521,8 +1780,9 @@ ShellRoot {
               ColumnLayout {
                 visible: settingsWin.currentCategory === 4
                 Layout.fillWidth: true
-                spacing: 14
+                spacing: 16
 
+                // 1. Apple-style Bluetooth Hero Toggle Card
                 Rectangle {
                   Layout.fillWidth: true
                   implicitHeight: 74
@@ -1534,36 +1794,197 @@ ShellRoot {
                   RowLayout {
                     anchors.fill: parent
                     anchors.margins: 16
-                    spacing: 12
+                    spacing: 14
 
-                    Image {
-                      Layout.preferredWidth: 24
-                      Layout.preferredHeight: 24
-                      width: 24; height: 24
-                      source: "file://" + settingsWin.pluginDir + "/assets/icons/mac-settings/bluetooth.svg"
-                      fillMode: Image.PreserveAspectFit
+                    Rectangle {
+                      width: 32; height: 32; radius: 8
+                      color: "#007aff"
+                      Image {
+                        anchors.centerIn: parent
+                        width: 18; height: 18
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/mac-settings/bluetooth.svg"
+                        fillMode: Image.PreserveAspectFit
+                      }
                     }
 
                     ColumnLayout {
+                      Layout.fillWidth: true
                       spacing: 2
                       Text {
                         text: "Bluetooth"
                         font.family: "SF Pro Text, -apple-system, sans-serif"
-                        font.pixelSize: 14
-                        font.bold: true
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
                         color: settingsWin.textPrimary
                       }
                       Text {
-                        text: settingsWin.btEnabled ? "On and discovering devices" : "Bluetooth is Off"
+                        text: settingsService.btEnabled ? "Now discoverable as \"Omarchy Mac\"" : "Bluetooth is Off"
                         font.family: "SF Pro Text, -apple-system, sans-serif"
                         font.pixelSize: 11
                         color: settingsWin.textSecondary
                       }
                     }
-                    Item { Layout.fillWidth: true }
-                    Button {
-                      text: "Bluetooth Devices..."
-                      onClicked: settingsWin.runCmd("omarchy-mac-bluetooth || blueman-manager")
+
+                    Rectangle {
+                      width: 38; height: 22; radius: 11
+                      color: settingsService.btEnabled ? "#34c759" : (settingsWin.isDark ? "#39393d" : "#e5e5ea")
+                      Rectangle {
+                        width: 18; height: 18; radius: 9
+                        x: settingsService.btEnabled ? 18 : 2
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: "#ffffff"
+                        Behavior on x { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+                      }
+                      MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: settingsService.toggleBluetooth(!settingsService.btEnabled)
+                      }
+                    }
+                  }
+                }
+
+                // 2. Devices & Accessories Card
+                Rectangle {
+                  visible: settingsService.btEnabled
+                  Layout.fillWidth: true
+                  implicitHeight: btAccCol.implicitHeight + 28
+                  radius: 10
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  ColumnLayout {
+                    id: btAccCol
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 12
+
+                    RowLayout {
+                      Layout.fillWidth: true
+                      Text {
+                        text: "My Devices"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
+                        color: settingsWin.textPrimary
+                        Layout.fillWidth: true
+                      }
+
+                      Rectangle {
+                        implicitWidth: 104
+                        implicitHeight: 28
+                        radius: 6
+                        color: scanBtM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.08)) : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04))
+                        border.color: settingsWin.cardBorder
+                        border.width: 1
+                        Text {
+                          anchors.centerIn: parent
+                          text: settingsService.btDiscovering ? "Scanning..." : "Scan for Devices"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textPrimary
+                        }
+                        MouseArea {
+                          id: scanBtM
+                          anchors.fill: parent
+                          hoverEnabled: true
+                          cursorShape: Qt.PointingHandCursor
+                          onClicked: settingsService.scanBluetooth()
+                        }
+                      }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    // Devices List
+                    ColumnLayout {
+                      Layout.fillWidth: true
+                      spacing: 6
+
+                      Text {
+                        visible: settingsService.btDevices.length === 0
+                        text: "No Bluetooth accessories found nearby. Put your device in pairing mode."
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 11
+                        color: settingsWin.textSecondary
+                      }
+
+                      Repeater {
+                        model: settingsService.btDevices
+                        delegate: Rectangle {
+                          Layout.fillWidth: true
+                          implicitHeight: 46
+                          radius: 7
+                          color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.04) : Qt.rgba(0, 0, 0, 0.02)
+
+                          RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 12
+                            spacing: 12
+
+                            Text {
+                              text: {
+                                var n = (modelData.name || "").toLowerCase()
+                                if (n.indexOf("head") !== -1 || n.indexOf("bud") !== -1 || n.indexOf("airpod") !== -1) return "🎧"
+                                if (n.indexOf("mouse") !== -1) return "🖱️"
+                                if (n.indexOf("key") !== -1) return "⌨️"
+                                return "📶"
+                              }
+                              font.pixelSize: 15
+                            }
+
+                            ColumnLayout {
+                              Layout.fillWidth: true
+                              spacing: 1
+                              Text {
+                                text: modelData.name || modelData.address || "Bluetooth Accessory"
+                                font.family: "SF Pro Text, -apple-system, sans-serif"
+                                font.pixelSize: 12
+                                font.weight: Font.DemiBold
+                                color: settingsWin.textPrimary
+                              }
+                              Text {
+                                text: modelData.connected ? ("Connected" + (modelData.battery !== undefined ? " • " + modelData.battery + "%" : "")) : (modelData.paired ? "Not Connected" : "Nearby Accessory")
+                                font.family: "SF Pro Text, -apple-system, sans-serif"
+                                font.pixelSize: 10
+                                color: modelData.connected ? "#34c759" : settingsWin.textSecondary
+                              }
+                            }
+
+                            Rectangle {
+                              implicitWidth: 84
+                              implicitHeight: 26
+                              radius: 6
+                              color: devBtnM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.08)) : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04))
+                              border.color: settingsWin.cardBorder
+                              border.width: 1
+                              Text {
+                                anchors.centerIn: parent
+                                text: modelData.connected ? "Disconnect" : "Connect"
+                                font.family: "SF Pro Text, -apple-system, sans-serif"
+                                font.pixelSize: 11
+                                font.weight: Font.DemiBold
+                                color: settingsWin.textPrimary
+                              }
+                              MouseArea {
+                                id: devBtnM
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                  if (modelData.connected) {
+                                    settingsService.disconnectBluetooth(modelData.address)
+                                  } else {
+                                    settingsService.connectBluetooth(modelData.address)
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -3282,6 +3703,242 @@ ShellRoot {
                         font.weight: Font.DemiBold
                         color: "#34c759"
                       }
+                    }
+                  }
+                }
+              }
+
+              // ==========================================
+              // TAB 10: TRACKPAD & MOUSE
+              // ==========================================
+              ColumnLayout {
+                visible: settingsWin.currentCategory === 10
+                Layout.fillWidth: true
+                spacing: 16
+
+                // 1. Point & Click Card
+                Rectangle {
+                  Layout.fillWidth: true
+                  implicitHeight: pointCol.implicitHeight + 28
+                  radius: 10
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  ColumnLayout {
+                    id: pointCol
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 14
+
+                    Text {
+                      text: "Point & Click"
+                      font.family: "SF Pro Text, -apple-system, sans-serif"
+                      font.pixelSize: 13
+                      font.weight: Font.DemiBold
+                      color: settingsWin.textPrimary
+                    }
+
+                    // Tracking Speed Slider Row
+                    RowLayout {
+                      Layout.fillWidth: true
+                      spacing: 12
+
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+                        Text {
+                          text: "Tracking speed"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 12
+                          font.weight: Font.DemiBold
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: "Adjust cursor sensitivity and pointer acceleration"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+
+                      RowLayout {
+                        spacing: 8
+                        Text {
+                          text: "Slow"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 10
+                          color: settingsWin.textSecondary
+                        }
+                        Slider {
+                          Layout.preferredWidth: 160
+                          from: 1; to: 20; stepSize: 1
+                          value: Math.max(1, Math.min(20, Math.round((settingsService.mouseSpeed + 1.0) * 9.5 + 1)))
+                          onMoved: {
+                            var sens = (value - 10) / 10.0
+                            settingsService.mouseSpeed = sens
+                            settingsService.setDeviceOption("*", "sensitivity", sens.toFixed(2), "pointer")
+                          }
+                        }
+                        Text {
+                          text: "Fast"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 10
+                          color: settingsWin.textSecondary
+                        }
+                      }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    // Natural Scrolling Toggle
+                    RowLayout {
+                      Layout.fillWidth: true
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+                        Text {
+                          text: "Natural scrolling"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 12
+                          font.weight: Font.DemiBold
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: "Content moves in the same direction as your fingers"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+
+                      Rectangle {
+                        width: 38; height: 22; radius: 11
+                        color: settingsService.touchpadNaturalScroll ? "#34c759" : (settingsWin.isDark ? "#39393d" : "#e5e5ea")
+                        Rectangle {
+                          width: 18; height: 18; radius: 9
+                          x: settingsService.touchpadNaturalScroll ? 18 : 2
+                          anchors.verticalCenter: parent.verticalCenter
+                          color: "#ffffff"
+                          Behavior on x { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+                        }
+                        MouseArea {
+                          anchors.fill: parent
+                          cursorShape: Qt.PointingHandCursor
+                          onClicked: {
+                            var next = !settingsService.touchpadNaturalScroll
+                            settingsService.touchpadNaturalScroll = next
+                            settingsService.setDeviceOption("*", "natural_scroll", next ? "true" : "false", "touchpad")
+                          }
+                        }
+                      }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    // Tap to Click Toggle
+                    RowLayout {
+                      Layout.fillWidth: true
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+                        Text {
+                          text: "Tap to click"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 12
+                          font.weight: Font.DemiBold
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: "Tap on trackpad with one finger instead of pressing down"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+
+                      Rectangle {
+                        width: 38; height: 22; radius: 11
+                        color: settingsService.touchpadTapToClick ? "#34c759" : (settingsWin.isDark ? "#39393d" : "#e5e5ea")
+                        Rectangle {
+                          width: 18; height: 18; radius: 9
+                          x: settingsService.touchpadTapToClick ? 18 : 2
+                          anchors.verticalCenter: parent.verticalCenter
+                          color: "#ffffff"
+                          Behavior on x { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+                        }
+                        MouseArea {
+                          anchors.fill: parent
+                          cursorShape: Qt.PointingHandCursor
+                          onClicked: {
+                            var next = !settingsService.touchpadTapToClick
+                            settingsService.touchpadTapToClick = next
+                            settingsService.setDeviceOption("*", "tap-to-click", next ? "true" : "false", "touchpad")
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+
+                // 2. Scroll & Zoom Gestures Card
+                Rectangle {
+                  Layout.fillWidth: true
+                  implicitHeight: scrollCol.implicitHeight + 28
+                  radius: 10
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  ColumnLayout {
+                    id: scrollCol
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 12
+
+                    Text {
+                      text: "Scroll & Zoom Gestures"
+                      font.family: "SF Pro Text, -apple-system, sans-serif"
+                      font.pixelSize: 13
+                      font.weight: Font.DemiBold
+                      color: settingsWin.textPrimary
+                    }
+
+                    RowLayout {
+                      Layout.fillWidth: true
+                      ColumnLayout {
+                        spacing: 2
+                        Text { text: "Zoom in or out"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { text: "Pinch with two fingers"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                      }
+                      Item { Layout.fillWidth: true }
+                      Text { text: "Supported"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 11; color: "#34c759" }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    RowLayout {
+                      Layout.fillWidth: true
+                      ColumnLayout {
+                        spacing: 2
+                        Text { text: "Mission Control swipe"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { text: "Swipe up with three or four fingers"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                      }
+                      Item { Layout.fillWidth: true }
+                      Text { text: "Super + W"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 11; font.weight: Font.DemiBold; color: settingsWin.accentColor }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    RowLayout {
+                      Layout.fillWidth: true
+                      ColumnLayout {
+                        spacing: 2
+                        Text { text: "Switch between full-screen apps"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { text: "Swipe left or right with three fingers"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                      }
+                      Item { Layout.fillWidth: true }
+                      Text { text: "Workspace Swipe"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 11; font.weight: Font.DemiBold; color: settingsWin.accentColor }
                     }
                   }
                 }
