@@ -14,12 +14,24 @@
 -- =============================================================================
 
 local home = os.getenv("HOME")
-local settings_path = home .. "/.config/omarchy/plugins/omarchy-undercover/settings.conf"
-local _f = io.open(settings_path, "r")
-if _f then
-  _f:close()
-else
-  settings_path = home .. "/.config/omarchy/plugins/undercover/settings.conf"
+local script_dir = debug.getinfo(1, "S").source:sub(2):match("(.*/)")
+local candidate_settings = {
+  home .. "/.config/omarchy/plugins/omarchy-undercover/settings.conf",
+  home .. "/.config/omarchy/plugins/undercover/settings.conf",
+  script_dir and (script_dir .. "../../settings.conf"),
+  home .. "/omarchy-undercover/settings.conf",
+  "/usr/share/omarchy-undercover/settings.conf",
+}
+local settings_path = candidate_settings[1]
+for _, p in ipairs(candidate_settings) do
+  if p then
+    local f = io.open(p, "r")
+    if f then
+      f:close()
+      settings_path = p
+      break
+    end
+  end
 end
 
 local function get_setting(key, default)
@@ -66,17 +78,20 @@ end
 -- ---------------------------------------------------------------------------
 local function find_script(name)
   local dirs = {
+    script_dir and (script_dir .. "../../scripts"),
     home .. "/.config/omarchy/plugins/omarchy-undercover/scripts",
     home .. "/.config/omarchy/plugins/undercover/scripts",
     home .. "/omarchy-undercover/scripts",
     "/usr/share/omarchy-undercover/scripts",
   }
   for _, dir in ipairs(dirs) do
-    local path = dir .. "/" .. name
-    local f = io.open(path, "r")
-    if f then
-      f:close()
-      return path
+    if dir then
+      local path = dir .. "/" .. name
+      local f = io.open(path, "r")
+      if f then
+        f:close()
+        return path
+      end
     end
   end
   return name
@@ -306,19 +321,19 @@ if keybindings_enabled and hl and hl.bind then
   bind_key("BIND_WIN_CLOSE", "ALT + F4", hl.dsp.window.close(), "Close window")
 
   -- Windows 11 Multi-Monitor & Screen Management (Win + Shift + Arrows)
-  bind_key("BIND_WIN_MON_LEFT", "SUPER + SHIFT + LEFT", exec_cmd("hyprctl dispatch movewindow mon:l"), "Move active window to left monitor")
-  bind_key("BIND_WIN_MON_RIGHT", "SUPER + SHIFT + RIGHT", exec_cmd("hyprctl dispatch movewindow mon:r"), "Move active window to right monitor")
-  bind_key("BIND_WIN_MON_UP", "SUPER + SHIFT + UP", exec_cmd("hyprctl dispatch movewindow mon:u"), "Move active window to upper monitor")
-  bind_key("BIND_WIN_MON_DOWN", "SUPER + SHIFT + DOWN", exec_cmd("hyprctl dispatch movewindow mon:d"), "Move active window to lower monitor")
+  bind_key("BIND_WIN_MON_LEFT", "SUPER + SHIFT + LEFT", hl.dsp.window.move({ monitor = "l" }), "Move active window to left monitor")
+  bind_key("BIND_WIN_MON_RIGHT", "SUPER + SHIFT + RIGHT", hl.dsp.window.move({ monitor = "r" }), "Move active window to right monitor")
+  bind_key("BIND_WIN_MON_UP", "SUPER + SHIFT + UP", hl.dsp.window.move({ monitor = "u" }), "Move active window to upper monitor")
+  bind_key("BIND_WIN_MON_DOWN", "SUPER + SHIFT + DOWN", hl.dsp.window.move({ monitor = "d" }), "Move active window to lower monitor")
   bind_key("BIND_WIN_PROJECT", "SUPER + P", exec_cmd("omarchy-launch-walker -m displays || omarchy-display-picker || wdisplays"), "Project / Multi-display options")
 
   -- Windows 11 Virtual Desktops & Multiple Workspaces Management (Win + Ctrl + Arrows / D / F4)
-  bind_key("BIND_WIN_DESKTOP_PREV", "SUPER + CTRL + LEFT", exec_cmd("hyprctl dispatch workspace m-1"), "Switch to previous virtual desktop")
-  bind_key("BIND_WIN_DESKTOP_NEXT", "SUPER + CTRL + RIGHT", exec_cmd("hyprctl dispatch workspace m+1"), "Switch to next virtual desktop")
-  bind_key("BIND_WIN_DESKTOP_NEW", "SUPER + CTRL + D", exec_cmd("hyprctl dispatch workspace empty"), "Create new virtual desktop")
-  bind_key("BIND_WIN_DESKTOP_CLOSE", "SUPER + CTRL + F4", exec_cmd("hyprctl dispatch killactive"), "Close window on virtual desktop")
-  bind_key("BIND_WIN_MOVE_DESKTOP_PREV", "SUPER + CTRL + SHIFT + LEFT", exec_cmd("hyprctl dispatch movetoworkspace -1"), "Move window to previous virtual desktop")
-  bind_key("BIND_WIN_MOVE_DESKTOP_NEXT", "SUPER + CTRL + SHIFT + RIGHT", exec_cmd("hyprctl dispatch movetoworkspace +1"), "Move window to next virtual desktop")
+  bind_key("BIND_WIN_DESKTOP_PREV", "SUPER + CTRL + LEFT", hl.dsp.focus({ workspace = "m-1" }), "Switch to previous virtual desktop")
+  bind_key("BIND_WIN_DESKTOP_NEXT", "SUPER + CTRL + RIGHT", hl.dsp.focus({ workspace = "m+1" }), "Switch to next virtual desktop")
+  bind_key("BIND_WIN_DESKTOP_NEW", "SUPER + CTRL + D", hl.dsp.focus({ workspace = "empty" }), "Create new virtual desktop")
+  bind_key("BIND_WIN_DESKTOP_CLOSE", "SUPER + CTRL + F4", hl.dsp.window.close(), "Close window on virtual desktop")
+  bind_key("BIND_WIN_MOVE_DESKTOP_PREV", "SUPER + CTRL + SHIFT + LEFT", hl.dsp.window.move({ workspace = "-1" }), "Move window to previous virtual desktop")
+  bind_key("BIND_WIN_MOVE_DESKTOP_NEXT", "SUPER + CTRL + SHIFT + RIGHT", hl.dsp.window.move({ workspace = "+1" }), "Move window to next virtual desktop")
 
   -- Windows 11 Snap Assist & Tiling Shortcuts (Win + Alt + Arrows)
   bind_key("BIND_WIN_SNAP_LEFT", "SUPER + ALT + LEFT", exec_cmd("omarchy-undercover-snap left"), "Snap Window Left (50%)")

@@ -2,6 +2,11 @@
 # ==============================================================================
 # Omarchy Undercover File Manager Dispatcher
 # Launches Flea with tailored UI/UX matching the active Undercover disguise
+# License: GPL-3.0-or-later
+#
+# omarchy:summary=File manager launcher styled for active camouflage preset (Windows Explorer or macOS Finder)
+# omarchy:args=[path...]
+# omarchy:examples=omarchy-undercover-filemanager | omarchy-undercover-filemanager ~
 # ==============================================================================
 
 set -euo pipefail

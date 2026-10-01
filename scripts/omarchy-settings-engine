@@ -3,6 +3,10 @@
 # Copyright (C) 2026 misternegative21
 # Omarchy Undercover - Unified Settings Engine (adapted from OmaSettings)
 # License: GPL-3.0-or-later
+#
+# omarchy:summary=Unified settings engine providing JSON state and hardware controls for Windows 11 & macOS Settings
+# omarchy:args=[state | monitors | devices | wifi | bluetooth | power | audio | set | reset]
+# omarchy:examples=omarchy-settings-engine state | omarchy-settings-engine monitors state
 # ==============================================================================
 
 set -uo pipefail

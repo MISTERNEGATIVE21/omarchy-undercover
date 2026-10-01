@@ -3,6 +3,10 @@
 # Copyright (C) 2026 misternegative21
 # Omarchy Hyprland Undercover Launcher Dispatcher
 # License: GPL-3.0-or-later
+#
+# omarchy:summary=Application launcher dispatcher styled for active camouflage preset
+# omarchy:args=[]
+# omarchy:examples=omarchy-undercover-launcher
 # ==============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

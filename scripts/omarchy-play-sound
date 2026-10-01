@@ -2,6 +2,11 @@
 # ==============================================================================
 # Omarchy Undercover Audio Dispatcher
 # Plays authentic macOS / Windows 11 notification and switch sound effects
+# License: GPL-3.0-or-later
+#
+# omarchy:summary=Play authentic macOS / Windows 11 system and notification sound effects
+# omarchy:args=[notify|mac-notify|mac-switch|win11-notify|win11-switch|<sound-file>]
+# omarchy:examples=omarchy-play-sound win11-notify
 # ==============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -11,6 +16,8 @@ elif [[ -d "$HOME/.config/omarchy/plugins/omarchy-undercover/assets/sounds" ]]; 
     SOUNDS_DIR="$HOME/.config/omarchy/plugins/omarchy-undercover/assets/sounds"
 elif [[ -d "$HOME/.config/omarchy/plugins/undercover/assets/sounds" ]]; then
     SOUNDS_DIR="$HOME/.config/omarchy/plugins/undercover/assets/sounds"
+elif [[ -d "/usr/share/omarchy-undercover/assets/sounds" ]]; then
+    SOUNDS_DIR="/usr/share/omarchy-undercover/assets/sounds"
 else
     SOUNDS_DIR="$HOME/.config/omarchy/plugins/omarchy-undercover/assets/sounds"
 fi

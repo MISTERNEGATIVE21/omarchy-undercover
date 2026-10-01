@@ -1,6 +1,6 @@
 # Maintainer: MISTERNEGATIVE21 <MISTERNEGATIVE21@gmail.com>
 pkgname=omarchy-undercover
-pkgver=6.0.0
+pkgver=6.1.0
 pkgrel=1
 pkgdesc="Windows 11 desktop transformation tool for Omarchy Hyprland"
 arch=('any')
@@ -77,6 +77,17 @@ package() {
         install -d "$pkgdir/usr/share/omarchy-undercover/assets/mac-dock"
         cp -r "$srcdir/assets/mac-dock/"* "$pkgdir/usr/share/omarchy-undercover/assets/mac-dock/"
     fi
+    if [ -d "$srcdir/assets/sounds" ]; then
+        install -d "$pkgdir/usr/share/omarchy-undercover/assets/sounds"
+        cp -r "$srcdir/assets/sounds/"* "$pkgdir/usr/share/omarchy-undercover/assets/sounds/"
+    fi
+
+    # Install plugin manifest & QML root entry points
+    for qml_entry in manifest.json Widget.qml Panel.qml Service.qml; do
+        if [ -f "$srcdir/$qml_entry" ]; then
+            install -m 644 "$srcdir/$qml_entry" "$pkgdir/usr/share/omarchy-undercover/$qml_entry"
+        fi
+    done
 
     # Install desktop files & assets
     install -m 644 "$srcdir/assets/omarchy-undercover.desktop" "$pkgdir/usr/share/applications/"

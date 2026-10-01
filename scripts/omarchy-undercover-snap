@@ -3,6 +3,11 @@
 # Omarchy Undercover - Intelligent Window Snapping & Tiling Controller
 # High-performance Wayland window tiling and snapping helper for Hyprland
 # Supports macOS Sequoia Tiling & Windows 11 Snap Assist
+# License: GPL-3.0-or-later
+#
+# omarchy:summary=Intelligent window snapping and tiling controller for Hyprland
+# omarchy:args=[left|right|up|down|top-left|top-right|bottom-left|bottom-right|center|fullscreen|toggle-split|menu]
+# omarchy:examples=omarchy-undercover-snap left | omarchy-undercover-snap menu
 # =============================================================================
 
 set -euo pipefail
@@ -17,72 +22,121 @@ get_active_window() {
     hyprctl activewindow -j 2>/dev/null || echo "{}"
 }
 
-get_active_monitor() {
-    hyprctl monitors -j 2>/dev/null | jq -r '.[] | select(.focused == true)' 2>/dev/null || echo "{}"
+get_monitor_box() {
+    hyprctl monitors -j 2>/dev/null | python3 -c '
+import sys, json
+try:
+    mons = json.load(sys.stdin)
+    m = next((m for m in mons if m.get("focused")), mons[0] if mons else {})
+    scale = float(m.get("scale", 1.0)) or 1.0
+    w = int(m.get("width", 1920) / scale)
+    h = int(m.get("height", 1080) / scale)
+    x = int(m.get("x", 0))
+    y = int(m.get("y", 0))
+    res = m.get("reserved", [0, 0, 0, 0])
+    top_bar = int(res[1]) if len(res) > 1 else 0
+    bot_bar = int(res[3]) if len(res) > 3 else 0
+    print(f"{x} {y + top_bar} {w} {h - top_bar - bot_bar}")
+except Exception:
+    print("0 0 1920 1080")
+' 2>/dev/null || echo "0 0 1920 1080"
+}
+
+snap_window() {
+    local tx="$1" ty="$2" tw="$3" th="$4"
+    # Un-fullscreen if needed
+    hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = "none" })' >/dev/null 2>&1 || hyprctl dispatch fullscreen 0 >/dev/null 2>&1 || true
+
+    # Check if window is floating; if not, float it
+    local local_window
+    local_window=$(get_active_window)
+    local is_float
+    is_float=$(echo "$local_window" | jq -r '.floating // false' 2>/dev/null || echo "false")
+    if [[ "$is_float" != "true" ]]; then
+        hyprctl dispatch 'hl.dsp.window.float()' >/dev/null 2>&1 || hyprctl dispatch togglefloating active >/dev/null 2>&1 || true
+    fi
+
+    # Resize and move to exact coordinates
+    if hyprctl dispatch "hl.dsp.window.resize({ x = $tw, y = $th, exact = true })" >/dev/null 2>&1; then
+        hyprctl dispatch "hl.dsp.window.move({ x = $tx, y = $ty, exact = true })" >/dev/null 2>&1 || true
+    else
+        hyprctl --batch "dispatch resizeactive exact ${tw} ${th}; dispatch moveactive exact ${tx} ${ty}" >/dev/null 2>&1 || true
+    fi
 }
 
 ACTION="${1:-menu}"
+GAP=8
+
+read -r MX MY MW MH < <(get_monitor_box)
+HALF_W=$(( (MW / 2) - (GAP + (GAP / 2)) ))
+HALF_H=$(( (MH / 2) - (GAP + (GAP / 2)) ))
+FULL_H=$(( MH - (GAP * 2) ))
+
+LEFT_X=$(( MX + GAP ))
+RIGHT_X=$(( MX + (MW / 2) + (GAP / 2) ))
+TOP_Y=$(( MY + GAP ))
+BOT_Y=$(( MY + (MH / 2) + (GAP / 2) ))
 
 case "$ACTION" in
     left)
-        # Snap window to left half
-        # First ensure window is floating or tiled as needed
-        hyprctl --batch "dispatch setfloating active; dispatch resizeactive exact 49% 97%; dispatch moveactive exact 1% 2%" >/dev/null 2>&1 || true
+        snap_window "$LEFT_X" "$TOP_Y" "$HALF_W" "$FULL_H"
         ;;
     right)
-        # Snap window to right half
-        hyprctl --batch "dispatch setfloating active; dispatch resizeactive exact 49% 97%; dispatch moveactive exact 50% 2%" >/dev/null 2>&1 || true
+        snap_window "$RIGHT_X" "$TOP_Y" "$HALF_W" "$FULL_H"
         ;;
     up|maximize)
-        # Maximize / Zoom window (macOS green button or Win+Up)
-        # Check if already fullscreen/maximized
         local_window=$(get_active_window)
         is_fs=$(echo "$local_window" | jq -r '.fullscreen // 0' 2>/dev/null || echo "0")
         if [[ "$is_fs" == "2" || "$is_fs" == "1" ]]; then
-            # If already maximized, toggle back to normal floating
-            hyprctl dispatch fullscreen 1 >/dev/null 2>&1 || true
+            hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = "none" })' >/dev/null 2>&1 || hyprctl dispatch fullscreen 0 >/dev/null 2>&1 || true
         else
-            hyprctl dispatch fullscreen 1 >/dev/null 2>&1 || true
+            hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = "maximized" })' >/dev/null 2>&1 || hyprctl dispatch fullscreen 1 >/dev/null 2>&1 || true
         fi
         ;;
     down|restore)
-        # Restore window down or minimize
         local_window=$(get_active_window)
         is_fs=$(echo "$local_window" | jq -r '.fullscreen // 0' 2>/dev/null || echo "0")
         is_float=$(echo "$local_window" | jq -r '.floating // false' 2>/dev/null || echo "false")
         if [[ "$is_fs" != "0" ]]; then
-            hyprctl dispatch fullscreen 0 >/dev/null 2>&1 || true
+            hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = "none" })' >/dev/null 2>&1 || hyprctl dispatch fullscreen 0 >/dev/null 2>&1 || true
         elif [[ "$is_float" == "true" ]]; then
             # Minimize active window
-            hyprctl dispatch movetoworkspacesilent special:minimized >/dev/null 2>&1 || true
+            hyprctl dispatch 'hl.dsp.window.move({ workspace = "special:minimized", follow = false })' >/dev/null 2>&1 || hyprctl dispatch movetoworkspacesilent special:minimized >/dev/null 2>&1 || true
         else
-            hyprctl --batch "dispatch setfloating active; dispatch resizeactive exact 70% 75%; dispatch centerwindow" >/dev/null 2>&1 || true
+            CW=$(( (MW * 72) / 100 ))
+            CH=$(( (MH * 75) / 100 ))
+            CX=$(( MX + (MW - CW) / 2 ))
+            CY=$(( MY + (MH - CH) / 2 ))
+            snap_window "$CX" "$CY" "$CW" "$CH"
         fi
         ;;
     top-left)
-        hyprctl --batch "dispatch setfloating active; dispatch resizeactive exact 49% 48%; dispatch moveactive exact 1% 2%" >/dev/null 2>&1 || true
+        snap_window "$LEFT_X" "$TOP_Y" "$HALF_W" "$HALF_H"
         ;;
     top-right)
-        hyprctl --batch "dispatch setfloating active; dispatch resizeactive exact 49% 48%; dispatch moveactive exact 50% 2%" >/dev/null 2>&1 || true
+        snap_window "$RIGHT_X" "$TOP_Y" "$HALF_W" "$HALF_H"
         ;;
     bottom-left)
-        hyprctl --batch "dispatch setfloating active; dispatch resizeactive exact 49% 48%; dispatch moveactive exact 1% 50%" >/dev/null 2>&1 || true
+        snap_window "$LEFT_X" "$BOT_Y" "$HALF_W" "$HALF_H"
         ;;
     bottom-right)
-        hyprctl --batch "dispatch setfloating active; dispatch resizeactive exact 49% 48%; dispatch moveactive exact 50% 50%" >/dev/null 2>&1 || true
+        snap_window "$RIGHT_X" "$BOT_Y" "$HALF_W" "$HALF_H"
         ;;
     center)
-        hyprctl --batch "dispatch setfloating active; dispatch resizeactive exact 72% 78%; dispatch centerwindow" >/dev/null 2>&1 || true
+        CW=$(( (MW * 72) / 100 ))
+        CH=$(( (MH * 78) / 100 ))
+        CX=$(( MX + (MW - CW) / 2 ))
+        CY=$(( MY + (MH - CH) / 2 ))
+        snap_window "$CX" "$CY" "$CW" "$CH"
         ;;
     fullscreen)
-        hyprctl dispatch fullscreen 0 >/dev/null 2>&1 || true
+        hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = "fullscreen" })' >/dev/null 2>&1 || hyprctl dispatch fullscreen 0 >/dev/null 2>&1 || true
         ;;
     toggle-split)
-        hyprctl dispatch togglesplit >/dev/null 2>&1 || true
+        hyprctl dispatch 'hl.dsp.layout("togglesplit")' >/dev/null 2>&1 || hyprctl dispatch togglesplit >/dev/null 2>&1 || true
         ;;
     menu)
-        # Show interactive Snap Layouts HUD using Rofi or Walker
-        # Read current desktop state (macOS vs Windows 11)
+        SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
         STATE_FILE="$HOME/.config/omarchy/plugins/omarchy-undercover/state"
         if [[ ! -f "$STATE_FILE" && -f "${SCRIPT_DIR}/../state" ]]; then
             STATE_FILE="${SCRIPT_DIR}/../state"
@@ -113,16 +167,16 @@ case "$ACTION" in
         selected=$(echo -e "$choices" | rofi -dmenu -p "$title" $theme_flag 2>/dev/null || true)
 
         case "$selected" in
-            *"Left Half"*) $0 left ;;
-            *"Right Half"*) $0 right ;;
-            *"Maximize"*) $0 up ;;
-            *"Center Window"*) $0 center ;;
-            *"Top-Left"*) $0 top-left ;;
-            *"Top-Right"*) $0 top-right ;;
-            *"Bottom-Left"*) $0 bottom-left ;;
-            *"Bottom-Right"*) $0 bottom-right ;;
-            *"Restore"*) $0 down ;;
-            *"Minimize"*) hyprctl dispatch movetoworkspacesilent special:minimized 2>/dev/null || true ;;
+            *"Left Half"*) "$0" left ;;
+            *"Right Half"*) "$0" right ;;
+            *"Maximize"*) "$0" up ;;
+            *"Center Window"*) "$0" center ;;
+            *"Top-Left"*) "$0" top-left ;;
+            *"Top-Right"*) "$0" top-right ;;
+            *"Bottom-Left"*) "$0" bottom-left ;;
+            *"Bottom-Right"*) "$0" bottom-right ;;
+            *"Restore"*) "$0" down ;;
+            *"Minimize"*) hyprctl dispatch 'hl.dsp.window.move({ workspace = "special:minimized", follow = false })' 2>/dev/null || hyprctl dispatch movetoworkspacesilent special:minimized 2>/dev/null || true ;;
         esac
         ;;
     *)

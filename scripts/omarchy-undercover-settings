@@ -12,6 +12,10 @@ Features:
 
 Copyright (C) 2026 misternegative21
 License: GPL-3.0-or-later
+
+omarchy:summary=GTK4 and Adwaita control center and settings transformation GUI for Omarchy Undercover
+omarchy:args=[--mac | --win | --splash]
+omarchy:examples=omarchy-undercover-settings | omarchy-undercover-settings --mac
 """
 
 import os
@@ -28,7 +32,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio, GLib, Gdk
 
 APP_ID = "org.omarchy.undercover.settings"
-VERSION = "6.0.0"
+VERSION = "6.1.0"
 
 _script_parent = Path(__file__).resolve().parent.parent
 if (_script_parent / "manifest.json").exists():
@@ -40,11 +44,20 @@ elif (Path.home() / ".config/omarchy/plugins/undercover").exists():
 else:
     PLUGIN_DIR = Path.home() / ".config/omarchy/plugins/omarchy-undercover"
 
-CONFIG_DIR = PLUGIN_DIR
-STATE_DIR = PLUGIN_DIR
+user_plugin_dir = Path.home() / ".config" / "omarchy" / "plugins" / "omarchy-undercover"
+if not user_plugin_dir.exists() and (Path.home() / ".config" / "omarchy" / "plugins" / "undercover").exists():
+    user_plugin_dir = Path.home() / ".config" / "omarchy" / "plugins" / "undercover"
 
-STATE_FILE = PLUGIN_DIR / "state"
-SETTINGS_FILE = PLUGIN_DIR / "settings.conf"
+if os.access(PLUGIN_DIR, os.W_OK) and not str(PLUGIN_DIR).startswith("/usr"):
+    CONFIG_DIR = PLUGIN_DIR
+    STATE_DIR = PLUGIN_DIR
+else:
+    CONFIG_DIR = user_plugin_dir
+    STATE_DIR = user_plugin_dir
+
+CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+STATE_FILE = STATE_DIR / "state"
+SETTINGS_FILE = CONFIG_DIR / "settings.conf"
 
 WALLPAPER_DIR = PLUGIN_DIR / "assets" / "wallpapers" if (PLUGIN_DIR / "assets" / "wallpapers").exists() else PLUGIN_DIR / "wallpapers"
 ICON_PATH = PLUGIN_DIR / "assets" / "icons" / "omarchy-undercover" / "scalable" / "apps" / "omarchy-undercover.svg"
@@ -275,13 +288,14 @@ def get_previous_theme_name():
     return "Default Omarchy"
 
 def read_setting(key, default=""):
-    if SETTINGS_FILE.exists():
-        try:
-            for line in SETTINGS_FILE.read_text().splitlines():
-                if line.startswith(key + "="):
-                    return line.split("=", 1)[1].strip()
-        except OSError:
-            pass
+    for sf in (SETTINGS_FILE, PLUGIN_DIR / "settings.conf"):
+        if sf.exists():
+            try:
+                for line in sf.read_text().splitlines():
+                    if line.startswith(key + "="):
+                        return line.split("=", 1)[1].strip()
+            except OSError:
+                pass
     return default
 
 def write_setting(key, value):

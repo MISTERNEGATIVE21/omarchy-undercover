@@ -24,6 +24,12 @@ unset _SOURCE _DIR
 ## Source common.sh
 if [[ -f "$SCRIPT_DIR/common.sh" ]]; then
     source "$SCRIPT_DIR/common.sh"
+elif [[ -f "${SCRIPT_DIR}/../scripts/common.sh" ]]; then
+    source "${SCRIPT_DIR}/../scripts/common.sh"
+elif [[ -f "$HOME/.config/omarchy/plugins/omarchy-undercover/scripts/common.sh" ]]; then
+    source "$HOME/.config/omarchy/plugins/omarchy-undercover/scripts/common.sh"
+elif [[ -f "/usr/share/omarchy-undercover/scripts/common.sh" ]]; then
+    source "/usr/share/omarchy-undercover/scripts/common.sh"
 fi
 
 # Official Omarchy plugin directory
@@ -37,71 +43,25 @@ else
     PLUGIN_DIR="${SCRIPT_DIR}/.."
 fi
 
-CONFIG_DIR="$PLUGIN_DIR"
-STATE_DIR="$PLUGIN_DIR"
+if [[ -w "$PLUGIN_DIR" && ! "$PLUGIN_DIR" =~ ^/usr ]]; then
+    CONFIG_DIR="$PLUGIN_DIR"
+    STATE_DIR="$PLUGIN_DIR"
+else
+    CONFIG_DIR="$(undercover_user_dir)"
+    STATE_DIR="$CONFIG_DIR"
+fi
 
-STATE_FILE="$PLUGIN_DIR/state"
-BACKUP_DIR="$PLUGIN_DIR/backups"
-BASELINE_FILE="$PLUGIN_DIR/baseline"
-SETTINGS_FILE="$PLUGIN_DIR/settings.conf"
+STATE_FILE="$(undercover_state_file)"
+BACKUP_DIR="$STATE_DIR/backups"
+BASELINE_FILE="$STATE_DIR/baseline"
+SETTINGS_FILE="$(undercover_settings_file)"
 
 WINDOWS_GTK_THEME="Win11-Dark"
 WINDOWS_ICON_THEME="Fluent-dark"
 WINDOWS_CURSOR_THEME="Fluent-dark-cursors"
 WINDOWS_FONT_NAME="Roboto 10.5"
 
-mkdir -p "$BACKUP_DIR"
-
-if [[ -f "$PLUGIN_DIR/scripts/common.sh" ]]; then
-    source "$PLUGIN_DIR/scripts/common.sh"
-elif [[ -f "$HOME/.config/omarchy/plugins/omarchy-undercover/scripts/common.sh" ]]; then
-    source "$HOME/.config/omarchy/plugins/omarchy-undercover/scripts/common.sh"
-elif [[ -f "$HOME/.local/share/omarchy/bin/common.sh" ]]; then
-    source "$HOME/.local/share/omarchy/bin/common.sh"
-elif [[ -f "/usr/share/omarchy-undercover/scripts/common.sh" ]]; then
-    source "/usr/share/omarchy-undercover/scripts/common.sh"
-else
-    msg() { echo -e "\e[1;32m[INFO]\e[0m $1"; }
-    warn() { echo -e "\e[1;33m[WARN]\e[0m $1"; }
-    error() { echo -e "\e[1;31m[ERROR]\e[0m $1"; exit 1; }
-    command_exists() { command -v "$1" >/dev/null 2>&1; }
-    omarchy_reload_waybar() {
-        pkill -9 -x waybar 2>/dev/null || true
-        local retry=0
-        while pgrep -x waybar >/dev/null && [[ $retry -lt 8 ]]; do sleep 0.05; ((retry++)); done
-        pkill -9 -x waybar 2>/dev/null || true
-        local log_dir="${XDG_RUNTIME_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}}/omarchy-undercover"
-        mkdir -p -m 0700 "$log_dir" 2>/dev/null || true
-        nohup waybar >"$log_dir/waybar.log" 2>&1 &
-        disown 2>/dev/null || true
-        sleep 0.35
-        local pids=($(pgrep -x waybar))
-        if [[ ${#pids[@]} -gt 1 ]]; then
-            for ((i=1; i<${#pids[@]}; i++)); do kill -9 "${pids[$i]}" 2>/dev/null || true; done
-        fi
-    }
-    omarchy_reload_hyprland() { hyprctl reload 2>/dev/null || true; }
-    omarchy_set_gnome_theme() {
-        gsettings set org.gnome.desktop.interface gtk-theme "$1" 2>/dev/null || true
-        gsettings set org.gnome.desktop.interface icon-theme "$2" 2>/dev/null || true
-        gsettings set org.gnome.desktop.interface cursor-theme "$3" 2>/dev/null || true
-        gsettings set org.gnome.desktop.interface font-name "$WINDOWS_FONT_NAME" 2>/dev/null || true
-        gsettings set org.gnome.desktop.interface color-scheme "prefer-dark" 2>/dev/null || true
-    }
-    backup_config_dir() {
-        local src="$1" dest="$2"
-        if [[ -d "$src" ]]; then cp -r "$src" "$dest"; fi
-    }
-    restore_config_dir() {
-        local src="$1" dest="$2"
-        if [[ -d "$src" ]]; then rm -rf "$dest"; cp -r "$src" "$dest"; fi
-    }
-    create_manifest() {
-        local file="$1"
-        shift
-        echo "{\"timestamp\":\"$(date -u +'%Y-%m-%dT%H:%M:%SZ')\"}" > "$file"
-    }
-fi
+mkdir -p "$BACKUP_DIR" "$STATE_DIR"
 
 # ---------------------------------------------------------------------------
 # Helpers

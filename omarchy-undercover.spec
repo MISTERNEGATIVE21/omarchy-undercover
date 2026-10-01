@@ -1,5 +1,5 @@
 Name:           omarchy-undercover
-Version:        6.0.0
+Version:        6.1.0
 Release:        1%{?dist}
 Summary:        Camouflage & desktop transformation suite (macOS Sequoia & Windows 11 Fluent) for Omarchy Hyprland
 
@@ -34,21 +34,28 @@ mkdir -p %{buildroot}%{_datadir}/icons/hicolor/scalable/apps
 mkdir -p %{buildroot}%{_licensedir}/%{name}
 
 install -m 0755 scripts/omarchy-undercover %{buildroot}%{_bindir}/omarchy-undercover
-install -m 0755 scripts/omarchy-undercover-setup %{buildroot}%{_bindir}/omarchy-undercover-setup
 install -m 0755 scripts/omarchy-undercover-settings %{buildroot}%{_bindir}/omarchy-undercover-settings
 install -m 0755 scripts/omarchy-undercover-launcher %{buildroot}%{_bindir}/omarchy-undercover-launcher
 install -m 0755 scripts/omarchy-undercover-wallpaper %{buildroot}%{_bindir}/omarchy-undercover-wallpaper
 install -m 0755 scripts/omarchy-undercover-show-desktop %{buildroot}%{_bindir}/omarchy-undercover-show-desktop
 install -m 0755 scripts/omarchy-undercover-minimize %{buildroot}%{_bindir}/omarchy-undercover-minimize
 install -m 0755 scripts/omarchy-undercover-new-desktop %{buildroot}%{_bindir}/omarchy-undercover-new-desktop
-install -m 0755 uninstall.sh %{buildroot}%{_bindir}/omarchy-undercover-uninstall
+
+mkdir -p %{buildroot}%{_datadir}/omarchy-undercover/lib/settings
+mkdir -p %{buildroot}%{_datadir}/omarchy-undercover/assets/sounds
 
 install -m 0644 scripts/common.sh %{buildroot}%{_datadir}/omarchy-undercover/scripts/common.sh
 cp -pr configs/* %{buildroot}%{_datadir}/omarchy-undercover/configs/
+cp -pr lib/settings/* %{buildroot}%{_datadir}/omarchy-undercover/lib/settings/
 cp -pr widgets/* %{buildroot}%{_datadir}/omarchy-undercover/widgets/
 cp -pr assets/wallpapers/* %{buildroot}%{_datadir}/omarchy-undercover/wallpapers/
 cp -pr assets/themes/* %{buildroot}%{_datadir}/omarchy-undercover/assets/themes/
 cp -pr assets/icons/* %{buildroot}%{_datadir}/omarchy-undercover/assets/icons/
+cp -pr assets/sounds/* %{buildroot}%{_datadir}/omarchy-undercover/assets/sounds/
+
+for f in manifest.json Widget.qml Panel.qml Service.qml; do
+    [ -f "$f" ] && install -m 0644 "$f" %{buildroot}%{_datadir}/omarchy-undercover/"$f"
+done
 
 install -m 0644 assets/omarchy-undercover.desktop %{buildroot}%{_datadir}/applications/
 install -m 0644 assets/omarchy-undercover-settings.desktop %{buildroot}%{_datadir}/applications/
@@ -58,14 +65,12 @@ install -m 0644 LICENSE %{buildroot}%{_licensedir}/%{name}/LICENSE
 
 %files
 %{_bindir}/omarchy-undercover
-%{_bindir}/omarchy-undercover-setup
 %{_bindir}/omarchy-undercover-settings
 %{_bindir}/omarchy-undercover-launcher
 %{_bindir}/omarchy-undercover-wallpaper
 %{_bindir}/omarchy-undercover-show-desktop
 %{_bindir}/omarchy-undercover-minimize
 %{_bindir}/omarchy-undercover-new-desktop
-%{_bindir}/omarchy-undercover-uninstall
 %{_datadir}/omarchy-undercover/
 %{_datadir}/applications/*.desktop
 %{_licensedir}/%{name}/LICENSE

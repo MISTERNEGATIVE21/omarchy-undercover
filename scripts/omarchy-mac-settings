@@ -3,6 +3,10 @@
 # Copyright (C) 2026 misternegative21
 # Omarchy Undercover - macOS Sequoia System Settings QuickShell Application
 # License: GPL-3.0-or-later
+#
+# omarchy:summary=Launch macOS Sequoia System Settings and hardware controls panel
+# omarchy:args=[--page|-p <page>]
+# omarchy:examples=omarchy-mac-settings | omarchy-mac-settings --page displays
 # ==============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -34,7 +38,9 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-PAGE_FILE="${XDG_RUNTIME_DIR:-/tmp}/omarchy-settings-page"
+RUN_DIR="${XDG_RUNTIME_DIR:-/tmp/omarchy-${UID:-1000}}"
+mkdir -p -m 0700 "$RUN_DIR" 2>/dev/null || true
+PAGE_FILE="$RUN_DIR/omarchy-settings-page"
 if [[ -n "$PAGE_ARG" ]]; then
     echo "$PAGE_ARG" > "$PAGE_FILE"
 fi

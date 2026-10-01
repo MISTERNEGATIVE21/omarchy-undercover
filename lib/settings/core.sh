@@ -45,6 +45,7 @@ capture() {
 # answers is derived after they are all in.
 par_begin() {
   PAR_DIR=$(mktemp -d) || return 1
+  trap par_end EXIT
 }
 
 # The name is the answer's; the rest is the question. A producer that fails

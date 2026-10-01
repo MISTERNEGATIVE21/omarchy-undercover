@@ -3,12 +3,24 @@
 -- =============================================================================
 
 local home = os.getenv("HOME")
-local settings_path = home .. "/.config/omarchy/plugins/omarchy-undercover/settings.conf"
-local _f = io.open(settings_path, "r")
-if _f then
-  _f:close()
-else
-  settings_path = home .. "/.config/omarchy/plugins/undercover/settings.conf"
+local script_dir = debug.getinfo(1, "S").source:sub(2):match("(.*/)")
+local candidate_settings = {
+  home .. "/.config/omarchy/plugins/omarchy-undercover/settings.conf",
+  home .. "/.config/omarchy/plugins/undercover/settings.conf",
+  script_dir and (script_dir .. "../../settings.conf"),
+  home .. "/omarchy-undercover/settings.conf",
+  "/usr/share/omarchy-undercover/settings.conf",
+}
+local settings_path = candidate_settings[1]
+for _, p in ipairs(candidate_settings) do
+  if p then
+    local f = io.open(p, "r")
+    if f then
+      f:close()
+      settings_path = p
+      break
+    end
+  end
 end
 
 local function get_setting(key, default)
@@ -39,17 +51,20 @@ if mode ~= "mac" and mode ~= "ios" then return end
 -- ---------------------------------------------------------------------------
 local function find_script(name)
   local dirs = {
+    script_dir and (script_dir .. "../../scripts"),
     home .. "/.config/omarchy/plugins/omarchy-undercover/scripts",
     home .. "/.config/omarchy/plugins/undercover/scripts",
     home .. "/omarchy-undercover/scripts",
     "/usr/share/omarchy-undercover/scripts",
   }
   for _, dir in ipairs(dirs) do
-    local path = dir .. "/" .. name
-    local f = io.open(path, "r")
-    if f then
-      f:close()
-      return path
+    if dir then
+      local path = dir .. "/" .. name
+      local f = io.open(path, "r")
+      if f then
+        f:close()
+        return path
+      end
     end
   end
   return name
