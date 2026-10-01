@@ -1570,8 +1570,50 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         btn_wb.connect("clicked", lambda b: (subprocess.run(["omarchy-detect-backend", "--reload-bar"], check=False), self.show_toast("Status bar reloaded cleanly!")))
         row_wb.add_suffix(btn_wb)
         group.add(row_wb)
-
         page.add(group)
+
+        # Credits & Acknowledgments Group
+        group_credits = Adw.PreferencesGroup(
+            title="Credits & Acknowledgments",
+            description="Omarchy Undercover is crafted by misternegative21 and powered by open-source community plugins."
+        )
+
+        row_lead = Adw.ActionRow(
+            title="misternegative21",
+            subtitle="Creator & Lead Developer • Architecture, Camouflage Suite & Multi-Monitor Integration"
+        )
+        row_lead.set_icon_name("avatar-default-symbolic")
+        group_credits.add(row_lead)
+
+        row_crmne = Adw.ActionRow(
+            title="crmne (@crmne)",
+            subtitle="omarchy-hyprmoncfg — Multi-monitor management, display profiles, VRR & projection"
+        )
+        row_crmne.set_icon_name("video-display-symbolic")
+        group_credits.add(row_crmne)
+
+        row_twiking = Adw.ActionRow(
+            title="twiking (@twiking)",
+            subtitle="omasettings — Settings architecture & native system configuration patterns"
+        )
+        row_twiking.set_icon_name("preferences-system-symbolic")
+        group_credits.add(row_twiking)
+
+        row_ssupt = Adw.ActionRow(
+            title="ssupt (@ssupt)",
+            subtitle="omarchy-audio-control — High-performance PipeWire daemon & audio rules engine"
+        )
+        row_ssupt.set_icon_name("audio-volume-high-symbolic")
+        group_credits.add(row_ssupt)
+
+        row_thisisgm = Adw.ActionRow(
+            title="thisisgm (@thisisgm)",
+            subtitle="omarchy-flea-filemanager — Lightweight native Flea file manager & desktop shelf"
+        )
+        row_thisisgm.set_icon_name("system-file-manager-symbolic")
+        group_credits.add(row_thisisgm)
+
+        page.add(group_credits)
         self.stack.add_titled(page, "diagnostics", "Diagnostics")
 
     def run_diagnostics(self, btn):

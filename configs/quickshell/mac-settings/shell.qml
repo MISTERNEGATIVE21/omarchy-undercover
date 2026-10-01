@@ -3034,6 +3034,182 @@ ShellRoot {
                     }
                   }
                 }
+
+                // ==========================================
+                // CREDITS & ACKNOWLEDGMENTS
+                // ==========================================
+                Rectangle {
+                  Layout.fillWidth: true
+                  radius: 10
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+                  implicitHeight: macCreditsCol.implicitHeight + 36
+
+                  ColumnLayout {
+                    id: macCreditsCol
+                    anchors.fill: parent
+                    anchors.margins: 18
+                    spacing: 12
+
+                    RowLayout {
+                      spacing: 12
+                      Text { text: "🌟"; font.pixelSize: 18 }
+                      ColumnLayout {
+                        spacing: 2
+                        Text {
+                          text: "Credits & Acknowledgments"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 14
+                          font.bold: true
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: "Omarchy Undercover is crafted by misternegative21 and powered by open-source plugins"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    // Lead Creator
+                    RowLayout {
+                      Layout.fillWidth: true
+                      spacing: 12
+                      Rectangle {
+                        width: 30; height: 30; radius: 8
+                        color: settingsWin.accentColor
+                        Text { anchors.centerIn: parent; text: "👑"; font.pixelSize: 13 }
+                      }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 1
+                        Text {
+                          text: "misternegative21"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 12
+                          font.bold: true
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: "Creator & Lead Developer • Architecture, Camouflage Suite & Multi-Monitor Integration"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    Text {
+                      text: "Featured Plugin Contributors:"
+                      font.family: "SF Pro Text, -apple-system, sans-serif"
+                      font.pixelSize: 12
+                      font.bold: true
+                      color: settingsWin.textPrimary
+                    }
+
+                    // crmne
+                    RowLayout {
+                      Layout.fillWidth: true
+                      spacing: 12
+                      Text { text: "🖥️"; font.pixelSize: 14 }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 1
+                        Text {
+                          text: "crmne (@crmne)"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 12
+                          font.bold: true
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: "omarchy-hyprmoncfg — Multi-monitor management, display profiles, VRR & projection"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+                    }
+
+                    // twiking
+                    RowLayout {
+                      Layout.fillWidth: true
+                      spacing: 12
+                      Text { text: "⚙️"; font.pixelSize: 14 }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 1
+                        Text {
+                          text: "twiking (@twiking)"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 12
+                          font.bold: true
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: "omasettings — Settings architecture & native system configuration patterns"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+                    }
+
+                    // ssupt
+                    RowLayout {
+                      Layout.fillWidth: true
+                      spacing: 12
+                      Text { text: "🔊"; font.pixelSize: 14 }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 1
+                        Text {
+                          text: "ssupt (@ssupt)"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 12
+                          font.bold: true
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: "omarchy-audio-control — High-performance PipeWire daemon & audio rules engine"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+                    }
+
+                    // thisisgm
+                    RowLayout {
+                      Layout.fillWidth: true
+                      spacing: 12
+                      Text { text: "📁"; font.pixelSize: 14 }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 1
+                        Text {
+                          text: "thisisgm (@thisisgm)"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 12
+                          font.bold: true
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: "omarchy-flea-filemanager — Lightweight native Flea file manager & desktop shelf"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+                    }
+                  }
+                }
               }
 
               // ==========================================

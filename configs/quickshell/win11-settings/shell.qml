@@ -4055,7 +4055,7 @@ ShellRoot {
                     ColumnLayout {
                       Layout.fillWidth: true
                       Text { text: "You're up to date"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 14; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
-                      Text { text: "Omarchy Undercover v5.0.0 • Omarchy Shell Plugin Protocol v1"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                      Text { text: "Omarchy Undercover v6.0.0 • Omarchy Shell Plugin Protocol v1"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
                     }
                     Rectangle {
                       implicitWidth: 130
@@ -4074,6 +4074,197 @@ ShellRoot {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         onClicked: settingsWin.runCmd("xdg-terminal-exec -e bash -c 'omarchy update; read -p \"Press Enter to close\"'")
+                      }
+                    }
+                  }
+                }
+
+                // ==========================================
+                // CREDITS & ACKNOWLEDGMENTS
+                // ==========================================
+                Rectangle {
+                  Layout.fillWidth: true
+                  radius: 8
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+                  implicitHeight: winCreditsCol.implicitHeight + 32
+
+                  ColumnLayout {
+                    id: winCreditsCol
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 12
+
+                    RowLayout {
+                      spacing: 10
+                      Text {
+                        text: "🌟"
+                        font.pixelSize: 16
+                      }
+                      ColumnLayout {
+                        spacing: 2
+                        Text {
+                          text: "Credits & Acknowledgments"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 14
+                          font.weight: Font.DemiBold
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: "Omarchy Undercover is crafted by misternegative21 and powered by open-source plugins"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+                    }
+
+                    Rectangle {
+                      Layout.fillWidth: true
+                      height: 1
+                      color: settingsWin.cardBorder
+                    }
+
+                    // Lead Creator: misternegative21
+                    RowLayout {
+                      Layout.fillWidth: true
+                      spacing: 12
+                      Rectangle {
+                        width: 32; height: 32; radius: 16
+                        color: settingsWin.accentColor
+                        Text {
+                          anchors.centerIn: parent
+                          text: "👑"
+                          font.pixelSize: 14
+                        }
+                      }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 1
+                        Text {
+                          text: "misternegative21"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 12
+                          font.weight: Font.DemiBold
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: "Creator & Lead Developer • Architecture, Camouflage Suite & Multi-Monitor Integration"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+                    }
+
+                    Rectangle {
+                      Layout.fillWidth: true
+                      height: 1
+                      color: settingsWin.cardBorder
+                    }
+
+                    Text {
+                      text: "Featured Plugin Contributors:"
+                      font.family: "Segoe UI, sans-serif"
+                      font.pixelSize: 12
+                      font.weight: Font.DemiBold
+                      color: settingsWin.textPrimary
+                    }
+
+                    // crmne
+                    RowLayout {
+                      Layout.fillWidth: true
+                      spacing: 12
+                      Text { text: "🖥️"; font.pixelSize: 14 }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 1
+                        Text {
+                          text: "crmne (@crmne)"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 12
+                          font.weight: Font.DemiBold
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: "omarchy-hyprmoncfg — Multi-monitor management, display profiles, VRR & projection"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+                    }
+
+                    // twiking
+                    RowLayout {
+                      Layout.fillWidth: true
+                      spacing: 12
+                      Text { text: "⚙️"; font.pixelSize: 14 }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 1
+                        Text {
+                          text: "twiking (@twiking)"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 12
+                          font.weight: Font.DemiBold
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: "omasettings — Settings architecture & native system configuration patterns"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+                    }
+
+                    // ssupt
+                    RowLayout {
+                      Layout.fillWidth: true
+                      spacing: 12
+                      Text { text: "🔊"; font.pixelSize: 14 }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 1
+                        Text {
+                          text: "ssupt (@ssupt)"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 12
+                          font.weight: Font.DemiBold
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: "omarchy-audio-control — High-performance PipeWire daemon & audio rules engine"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+                    }
+
+                    // thisisgm
+                    RowLayout {
+                      Layout.fillWidth: true
+                      spacing: 12
+                      Text { text: "📁"; font.pixelSize: 14 }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 1
+                        Text {
+                          text: "thisisgm (@thisisgm)"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 12
+                          font.weight: Font.DemiBold
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: "omarchy-flea-filemanager — Lightweight native Flea file manager & desktop shelf"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
                       }
                     }
                   }

@@ -275,6 +275,31 @@ omarchy plugin remove omarchy-undercover
 
 ---
 
+## Credits & Acknowledgments
+
+**Omarchy Undercover** is developed and maintained by **misternegative21** with inspiration, modules, and architecture incorporated from exceptional community plugins and contributors across the Omarchy Linux ecosystem.
+
+### Creator & Lead Developer
+* **misternegative21** ([@MISTERNEGATIVE21](https://github.com/MISTERNEGATIVE21))
+  * Project creator, lead architecture, and maintenance.
+  * Windows 11 Fluent and macOS Sequoia QuickShell desktop environments, widgets, popups, and transitions.
+  * Dynamic multi-monitor management, display identification badges, and projection flyouts.
+  * Camouflage switching engine, system layer rules, and packaging.
+
+### Integrated Plugins & Upstream Contributors
+* **crmne** ([@crmne](https://github.com/crmne)) — [crmne/omarchy-hyprmoncfg](https://github.com/crmne/omarchy-hyprmoncfg)
+  * Display management foundations, multi-monitor configuration logic, layout profiles, VRR, and display orientation integration.
+* **twiking** ([@twiking](https://github.com/twiking)) — [twiking/omasettings](https://github.com/twiking/omasettings)
+  * Settings architecture, design patterns, and native system configuration controls for Windows and macOS settings panels.
+* **ssupt** ([@ssupt](https://github.com/ssupt)) — [ssupt/omarchy-audio-control](https://github.com/ssupt/omarchy-audio-control)
+  * High-performance PipeWire/WirePlumber audio daemon (`omarchy-audio-service`), speaker test suite, per-app audio stream mixer, and audio routing rules.
+* **thisisgm** ([@thisisgm](https://github.com/thisisgm)) — [thisisgm/omarchy-flea-filemanager](https://github.com/thisisgm/omarchy-flea-filemanager)
+  * Lightweight native Flea file manager integration and desktop shelf concepts.
+* **Omarchy Core Team & Hyprland Communities**
+  * Special thanks to the Omarchy maintainers, the Hyprland development community, and the QuickShell project for empowering rich Wayland desktop interfaces.
+
+---
+
 ## License
 
 Copyright (C) 2026 misternegative21 <supergogetavegito21@gmail.com>
