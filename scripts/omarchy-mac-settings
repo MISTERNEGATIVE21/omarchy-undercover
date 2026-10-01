@@ -21,6 +21,24 @@ if [[ ! -d "$DIR" && -d "$PLUGIN_DIR/quickshell/mac-settings" ]]; then
     DIR="$PLUGIN_DIR/quickshell/mac-settings"
 fi
 
+PAGE_ARG=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --page|-p)
+            PAGE_ARG="$2"
+            shift 2
+            ;;
+        *)
+            shift
+            ;;
+    esac
+done
+
+PAGE_FILE="${XDG_RUNTIME_DIR:-/tmp}/omarchy-settings-page"
+if [[ -n "$PAGE_ARG" ]]; then
+    echo "$PAGE_ARG" > "$PAGE_FILE"
+fi
+
 if command -v hyprctl >/dev/null 2>&1; then
     # If System Settings window is already open, focus it and bring it to top immediately
     TARGET_ADDR=$(hyprctl clients -j 2>/dev/null | jq -r '.[] | select((.class == "org.quickshell" and (.title == "System Settings" or .title == "Settings")) or .class == "org.omarchy.undercover.settings") | .address' 2>/dev/null | head -n1)
