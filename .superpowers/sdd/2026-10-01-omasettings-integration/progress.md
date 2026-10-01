@@ -5,4 +5,5 @@ Pre-flight scan:
 - Task 2 produces SettingsService.qml; Tasks 3, 4, 5, 6 consume SettingsService.qml (Clean)
 - Task 7 packages all modules into PKGBUILD (Clean)
 Pre-flight: all interfaces verified consistent.
-Task 1: complete (tests: tests/test_settings_engine.sh & omarchy-settings-engine state JSON verification → PASS)
+Task 1: complete (commit 0cc43c4, tests: tests/test_settings_engine.sh & omarchy-settings-engine state JSON verification → PASS)
+Task 2: complete (tests: tests/test_settings_service_load.sh & quickshell configs load → PASS)
