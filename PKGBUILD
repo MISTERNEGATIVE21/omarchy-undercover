@@ -47,6 +47,12 @@ package() {
     # Install configuration files
     cp -r "$srcdir/configs/"* "$pkgdir/usr/share/omarchy-undercover/configs/"
 
+    # Install settings libraries
+    if [ -d "$srcdir/lib/settings" ]; then
+        install -d "$pkgdir/usr/share/omarchy-undercover/lib/settings"
+        cp -r "$srcdir/lib/settings/"* "$pkgdir/usr/share/omarchy-undercover/lib/settings/"
+    fi
+
     # Install widgets
     if [ -d "$srcdir/widgets" ]; then
         install -d "$pkgdir/usr/share/omarchy-undercover/widgets"

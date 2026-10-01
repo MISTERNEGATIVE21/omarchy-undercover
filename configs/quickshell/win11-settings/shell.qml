@@ -2507,7 +2507,7 @@ ShellRoot {
                                 font.pixelSize: 11
                               }
                               Text {
-                                visible: modelData.connected
+                                visible: Boolean(modelData.connected)
                                 text: "✓"
                                 font.pixelSize: 12
                                 font.weight: Font.Bold
@@ -2517,7 +2517,7 @@ ShellRoot {
 
                             // Password prompt row when expanded
                             RowLayout {
-                              visible: isExpanded && !modelData.connected
+                              visible: isExpanded && !Boolean(modelData.connected)
                               Layout.fillWidth: true
                               spacing: 8
 
