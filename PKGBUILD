@@ -23,12 +23,24 @@ package() {
     install -d "$pkgdir/usr/share/icons/hicolor/scalable/apps"
     install -d "$pkgdir/usr/share/licenses/$pkgname"
 
+    # Install binaries
+    if [ -d "$srcdir/bin" ]; then
+        for bin_file in "$srcdir/bin/"*; do
+            if [ -f "$bin_file" ] && [ -x "$bin_file" ]; then
+                install -m 755 "$bin_file" "$pkgdir/usr/bin/$(basename "$bin_file")"
+            fi
+        done
+    fi
+
     # Install scripts
     for script_file in "$srcdir/scripts/"*; do
         if [ -f "$script_file" ] && [ -x "$script_file" ]; then
             install -m 755 "$script_file" "$pkgdir/usr/bin/$(basename "$script_file")"
         fi
     done
+    if [ -f "$srcdir/scripts/.audio-common" ]; then
+        install -m 644 "$srcdir/scripts/.audio-common" "$pkgdir/usr/share/omarchy-undercover/scripts/.audio-common"
+    fi
     install -m 644 "$srcdir/scripts/common.sh" "$pkgdir/usr/share/omarchy-undercover/scripts/common.sh"
     install -m 755 "$srcdir/scripts/common.sh" "$pkgdir/usr/bin/omarchy-undercover-common.sh"
 
