@@ -6,19 +6,41 @@
 # ==============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [[ -f "${SCRIPT_DIR}/../manifest.json" ]]; then
-    PLUGIN_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-elif [[ -d "$HOME/.config/omarchy/plugins/omarchy-undercover" ]]; then
-    PLUGIN_DIR="$HOME/.config/omarchy/plugins/omarchy-undercover"
-elif [[ -d "$HOME/.config/omarchy/plugins/undercover" ]]; then
-    PLUGIN_DIR="$HOME/.config/omarchy/plugins/undercover"
-else
-    PLUGIN_DIR="$HOME/.config/omarchy/plugins/omarchy-undercover"
-fi
+REAL_SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+
+for cand in \
+    "${REAL_SCRIPT_DIR}/.." \
+    "${SCRIPT_DIR}/.." \
+    "$HOME/.config/omarchy/plugins/omarchy-undercover" \
+    "$HOME/omarchy-undercover"; do
+    if [[ -f "$cand/manifest.json" ]]; then
+        PLUGIN_DIR="$cand"
+        break
+    fi
+done
+PLUGIN_DIR="${PLUGIN_DIR:-$HOME/.config/omarchy/plugins/omarchy-undercover}"
 
 DIR="$PLUGIN_DIR/configs/quickshell/win11-settings"
 if [[ ! -d "$DIR" && -d "$PLUGIN_DIR/quickshell/win11-settings" ]]; then
     DIR="$PLUGIN_DIR/quickshell/win11-settings"
+fi
+
+PAGE_ARG=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --page|-p)
+            PAGE_ARG="$2"
+            shift 2
+            ;;
+        *)
+            shift
+            ;;
+    esac
+done
+
+PAGE_FILE="${XDG_RUNTIME_DIR:-/tmp}/omarchy-settings-page"
+if [[ -n "$PAGE_ARG" ]]; then
+    echo "$PAGE_ARG" > "$PAGE_FILE"
 fi
 
 if command -v hyprctl >/dev/null 2>&1; then
@@ -27,7 +49,7 @@ if command -v hyprctl >/dev/null 2>&1; then
     if [[ -n "$TARGET_ADDR" && "$TARGET_ADDR" != "null" ]]; then
         hyprctl dispatch "hl.dsp.focus({ window = \"address:${TARGET_ADDR}\" })" >/dev/null 2>&1 || hyprctl dispatch focuswindow "address:${TARGET_ADDR}" >/dev/null 2>&1 || true
         hyprctl dispatch "hl.dsp.window.alter_zorder({ mode = \"top\", window = \"address:${TARGET_ADDR}\" })" >/dev/null 2>&1 || true
-        hyprctl dispatch "hl.dsp.window.bring_to_top({ window = \"address:${TARGET_ADDR}\" })" >/dev/null 2>&1 || hyprctl dispatch bringactivetotop >/dev/null 2>&1 || true
+        hyprctl dispatch "hl.dsp.window.bring_to_top({ window = \"address:${TARGET_ADDR}\" })" >/dev/null 2>&1 || true
         exit 0
     fi
 

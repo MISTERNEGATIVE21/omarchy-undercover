@@ -85,7 +85,33 @@ ShellRoot {
     property string taskbarAlign: "center"
     property int windowGaps: 8
     property int windowRounding: 10
+    property string systemSubPage: ""
+    property real stereoBalance: 0.5
     property string pluginDir: Quickshell.env("OMARCHY_PLUGIN_DIR") || (settingsWin.homeDir + "/.config/omarchy/plugins/omarchy-undercover")
+
+    AudioService {
+      id: audioService
+    }
+
+    FileView {
+      path: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/omarchy-settings-page"
+      watchChanges: true
+      onLoaded: {
+        var p = text().trim()
+        if (p === "sound") {
+          settingsWin.currentCategory = 0
+          settingsWin.systemSubPage = "sound"
+        }
+      }
+      onFileChanged: {
+        reload()
+        var p = text().trim()
+        if (p === "sound") {
+          settingsWin.currentCategory = 0
+          settingsWin.systemSubPage = "sound"
+        }
+      }
+    }
 
     function runCmd(cmd) {
       Quickshell.execDetached(["bash", "-c", cmd])
@@ -620,24 +646,63 @@ ShellRoot {
 
               Item { implicitHeight: 4 }
 
-              // Dynamic Category Header
-              Text {
-                text: {
-                  switch(settingsWin.currentCategory) {
-                    case 0: return "System"
-                    case 1: return "Bluetooth & devices"
-                    case 2: return "Network & internet"
-                    case 3: return "Personalization"
-                    case 4: return "PowerToys & Tools (Winux Utilities)"
-                    case 5: return "Undercover Disguise Transformation"
-                    case 6: return "Windows Update & System Health"
-                    default: return "Settings"
+              // Dynamic Category Header with Breadcrumb / Subpage support
+              RowLayout {
+                Layout.fillWidth: true
+                spacing: 12
+
+                Rectangle {
+                  visible: settingsWin.currentCategory === 0 && settingsWin.systemSubPage === "sound"
+                  implicitWidth: 32
+                  implicitHeight: 32
+                  radius: 6
+                  color: backSoundM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
+                  Text {
+                    anchors.centerIn: parent
+                    text: "←"
+                    font.family: "Segoe UI, sans-serif"
+                    font.pixelSize: 18
+                    color: settingsWin.textPrimary
+                  }
+                  MouseArea {
+                    id: backSoundM
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: settingsWin.systemSubPage = ""
                   }
                 }
-                font.family: "Segoe UI, sans-serif"
-                font.pixelSize: 24
-                font.weight: Font.Bold
-                color: settingsWin.textPrimary
+
+                ColumnLayout {
+                  spacing: 2
+                  Text {
+                    visible: settingsWin.currentCategory === 0 && settingsWin.systemSubPage === "sound"
+                    text: "System > Sound"
+                    font.family: "Segoe UI, sans-serif"
+                    font.pixelSize: 11
+                    color: settingsWin.textSecondary
+                  }
+                  Text {
+                    text: {
+                      if (settingsWin.currentCategory === 0) {
+                        return settingsWin.systemSubPage === "sound" ? "Sound" : "System"
+                      }
+                      switch(settingsWin.currentCategory) {
+                        case 1: return "Bluetooth & devices"
+                        case 2: return "Network & internet"
+                        case 3: return "Personalization"
+                        case 4: return "PowerToys & Tools (Winux Utilities)"
+                        case 5: return "Undercover Disguise Transformation"
+                        case 6: return "Windows Update & System Health"
+                        default: return "Settings"
+                      }
+                    }
+                    font.family: "Segoe UI, sans-serif"
+                    font.pixelSize: 24
+                    font.weight: Font.Bold
+                    color: settingsWin.textPrimary
+                  }
+                }
               }
 
               // ==========================================
@@ -648,223 +713,701 @@ ShellRoot {
                 Layout.fillWidth: true
                 spacing: 14
 
-                // Hero Specs Banner Card
-                Rectangle {
+                // ==========================================
+                // TAB 0 VIEW 1: SYSTEM OVERVIEW
+                // ==========================================
+                ColumnLayout {
+                  visible: settingsWin.systemSubPage === ""
                   Layout.fillWidth: true
-                  implicitHeight: 78
-                  radius: 8
-                  color: settingsWin.cardBg
-                  border.color: settingsWin.cardBorder
-                  border.width: 1
+                  spacing: 14
 
-                  RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 16
+                  // Hero Specs Banner Card
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 78
+                    radius: 8
+                    color: settingsWin.cardBg
+                    border.color: settingsWin.cardBorder
+                    border.width: 1
 
-                    Image {
-                      Layout.preferredWidth: 44
-                      Layout.preferredHeight: 44
-                      width: 44; height: 44
-                      source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/system.svg"
-                      fillMode: Image.PreserveAspectFit
+                    RowLayout {
+                      anchors.fill: parent
+                      anchors.margins: 16
+                      spacing: 16
+
+                      Image {
+                        Layout.preferredWidth: 44
+                        Layout.preferredHeight: 44
+                        width: 44; height: 44
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/system.svg"
+                        fillMode: Image.PreserveAspectFit
+                      }
+
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+                        Text {
+                          text: "Omarchy Workstation PC"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 14
+                          font.weight: Font.DemiBold
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: "Windows 11 Pro Disguise • Arch Linux Kernel • Wayland Compositor"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+
+                      Rectangle {
+                        implicitWidth: 88
+                        implicitHeight: 28
+                        radius: 4
+                        color: renameM.containsMouse
+                               ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.06))
+                               : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : "#fbfbfb")
+                        border.color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.14)
+                        border.width: 1
+                        Text {
+                          anchors.centerIn: parent
+                          text: "Rename"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 11
+                          font.weight: Font.DemiBold
+                          color: settingsWin.textPrimary
+                        }
+                        MouseArea {
+                          id: renameM
+                          anchors.fill: parent
+                          hoverEnabled: true
+                          cursorShape: Qt.PointingHandCursor
+                          onClicked: settingsWin.runCmd("omarchy-rename-pc 2>/dev/null || true")
+                        }
+                      }
                     }
+                  }
 
-                    ColumnLayout {
-                      Layout.fillWidth: true
-                      spacing: 2
-                      Text {
-                        text: "Omarchy Workstation PC"
-                        font.family: "Segoe UI, sans-serif"
-                        font.pixelSize: 14
-                        font.weight: Font.DemiBold
-                        color: settingsWin.textPrimary
+                  // Display Brightness
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 74
+                    radius: 8
+                    color: settingsWin.cardBg
+                    border.color: settingsWin.cardBorder
+                    border.width: 1
+
+                    RowLayout {
+                      anchors.fill: parent
+                      anchors.margins: 16
+                      spacing: 14
+
+                      Image {
+                        Layout.preferredWidth: 22
+                        Layout.preferredHeight: 22
+                        width: 22; height: 22
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/sun.svg"
+                        fillMode: Image.PreserveAspectFit
+                      }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        Text { text: "Display Brightness"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { text: settingsWin.brightnessLevel + "% backlight brightness"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                      }
+                      Slider {
+                        Layout.preferredWidth: 180
+                        from: 5; to: 100
+                        value: settingsWin.brightnessLevel
+                        onMoved: {
+                          settingsWin.brightnessLevel = Math.round(value)
+                          settingsWin.runCmd("brightnessctl set " + Math.round(value) + "% >/dev/null 2>&1")
+                        }
+                      }
+                    }
+                  }
+
+                  // Sound Subpage Tile (Click to open full System > Sound)
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 74
+                    radius: 8
+                    color: soundTileM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.04)) : settingsWin.cardBg
+                    border.color: settingsWin.cardBorder
+                    border.width: 1
+
+                    RowLayout {
+                      anchors.fill: parent
+                      anchors.margins: 16
+                      spacing: 14
+
+                      Image {
+                        Layout.preferredWidth: 22
+                        Layout.preferredHeight: 22
+                        width: 22; height: 22
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/volume.svg"
+                        fillMode: Image.PreserveAspectFit
+                      }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        Text { text: "Sound"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { text: "Volume levels, output, input, sound devices, and volume mixer"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
                       }
                       Text {
-                        text: "Windows 11 Pro Disguise • Arch Linux Kernel • Wayland Compositor"
+                        text: audioService.masterVolume + "%"
+                        font.family: "Segoe UI, sans-serif"
+                        font.pixelSize: 12
+                        font.weight: Font.DemiBold
+                        color: settingsWin.accentColor
+                      }
+                      Text { text: "❯"; font.pixelSize: 14; color: settingsWin.textSecondary }
+                    }
+
+                    MouseArea {
+                      id: soundTileM
+                      anchors.fill: parent
+                      hoverEnabled: true
+                      cursorShape: Qt.PointingHandCursor
+                      onClicked: settingsWin.systemSubPage = "sound"
+                    }
+                  }
+
+                  // Window Gaps Tuning
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 74
+                    radius: 8
+                    color: settingsWin.cardBg
+                    border.color: settingsWin.cardBorder
+                    border.width: 1
+
+                    RowLayout {
+                      anchors.fill: parent
+                      anchors.margins: 16
+                      spacing: 14
+
+                      Image {
+                        Layout.preferredWidth: 22
+                        Layout.preferredHeight: 22
+                        width: 22; height: 22
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/gaps.svg"
+                        fillMode: Image.PreserveAspectFit
+                      }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        Text { text: "Desktop Window Gaps"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { text: settingsWin.windowGaps + "px outer spacing"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                      }
+                      Slider {
+                        Layout.preferredWidth: 180
+                        from: 0; to: 24
+                        value: settingsWin.windowGaps
+                        onMoved: {
+                          settingsWin.windowGaps = Math.round(value)
+                          settingsWin.saveSetting("WINDOW_GAPS", Math.round(value))
+                          settingsWin.runCmd("hyprctl keyword general:gaps_out " + Math.round(value) + " >/dev/null 2>&1; hyprctl keyword general:gaps_in " + Math.round(value / 2) + " >/dev/null 2>&1")
+                        }
+                      }
+                    }
+                  }
+
+                  // Window Rounding
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 74
+                    radius: 8
+                    color: settingsWin.cardBg
+                    border.color: settingsWin.cardBorder
+                    border.width: 1
+
+                    RowLayout {
+                      anchors.fill: parent
+                      anchors.margins: 16
+                      spacing: 14
+
+                      Image {
+                        Layout.preferredWidth: 22
+                        Layout.preferredHeight: 22
+                        width: 22; height: 22
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/rounding.svg"
+                        fillMode: Image.PreserveAspectFit
+                      }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        Text { text: "Corner Rounding (Mica Geometry)"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { text: settingsWin.windowRounding + "px corner radius"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                      }
+                      Slider {
+                        Layout.preferredWidth: 180
+                        from: 0; to: 20
+                        value: settingsWin.windowRounding
+                        onMoved: {
+                          settingsWin.windowRounding = Math.round(value)
+                          settingsWin.saveSetting("WINDOW_ROUNDING", Math.round(value))
+                          settingsWin.runCmd("hyprctl keyword decoration:rounding " + Math.round(value) + " >/dev/null 2>&1")
+                        }
+                      }
+                    }
+                  }
+                }
+
+                // ==========================================
+                // TAB 0 VIEW 2: FULL SYSTEM > SOUND SUBPAGE
+                // ==========================================
+                ColumnLayout {
+                  visible: settingsWin.systemSubPage === "sound"
+                  Layout.fillWidth: true
+                  spacing: 16
+
+                  // 1. OUTPUT GROUP CARD
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: outCol.implicitHeight + 32
+                    radius: 8
+                    color: settingsWin.cardBg
+                    border.color: settingsWin.cardBorder
+                    border.width: 1
+
+                    ColumnLayout {
+                      id: outCol
+                      anchors.fill: parent
+                      anchors.margins: 16
+                      spacing: 12
+
+                      RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+                        Text { text: "🔊"; font.pixelSize: 16 }
+                        ColumnLayout {
+                          Layout.fillWidth: true
+                          Text { text: "Output"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                          Text { text: "Choose where to play sound. Apps might have their own settings."; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                        }
+                      }
+
+                      Repeater {
+                        model: audioService.sinks
+                        delegate: Rectangle {
+                          Layout.fillWidth: true
+                          implicitHeight: 40
+                          radius: 6
+                          color: modelData.isDefault
+                                 ? (settingsWin.isDark ? Qt.rgba(0, 120, 212, 0.22) : Qt.rgba(0, 120, 212, 0.12))
+                                 : (devMouse.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.04)) : "transparent")
+                          border.color: modelData.isDefault ? settingsWin.accentColor : "transparent"
+                          border.width: 1
+
+                          RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 12
+                            spacing: 10
+
+                            Rectangle {
+                              implicitWidth: 16; implicitHeight: 16; radius: 8
+                              color: "transparent"
+                              border.color: modelData.isDefault ? settingsWin.accentColor : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(0, 0, 0, 0.3))
+                              border.width: 2
+                              Rectangle {
+                                visible: modelData.isDefault
+                                anchors.centerIn: parent
+                                width: 8; height: 8; radius: 4
+                                color: settingsWin.accentColor
+                              }
+                            }
+
+                            Text { text: modelData.type; font.pixelSize: 15 }
+                            Text {
+                              text: modelData.description || modelData.name
+                              font.family: "Segoe UI, sans-serif"
+                              font.pixelSize: 12
+                              font.weight: modelData.isDefault ? Font.DemiBold : Font.Normal
+                              color: settingsWin.textPrimary
+                              Layout.fillWidth: true
+                              elide: Text.ElideRight
+                            }
+                            Text {
+                              visible: modelData.isDefault
+                              text: "Default"
+                              font.family: "Segoe UI, sans-serif"
+                              font.pixelSize: 10
+                              color: settingsWin.accentColor
+                            }
+                          }
+
+                          MouseArea {
+                            id: devMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: audioService.setDefaultSink(modelData.name)
+                          }
+                        }
+                      }
+
+                      Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                      RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 14
+                        Text { text: "Volume"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 12; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Slider {
+                          Layout.fillWidth: true
+                          from: 0; to: 100
+                          value: audioService.masterVolume
+                          onMoved: audioService.setMasterVolume(value)
+                        }
+                        Text {
+                          text: audioService.masterVolume + "%"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 12
+                          color: settingsWin.accentColor
+                        }
+                      }
+
+                      RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 14
+                        Text { text: "Left / Right channel balance"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 12; color: settingsWin.textPrimary; Layout.preferredWidth: 160 }
+                        Text { text: "L"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                        Slider {
+                          Layout.fillWidth: true
+                          from: 0.0; to: 1.0
+                          value: settingsWin.stereoBalance
+                          onMoved: {
+                            settingsWin.stereoBalance = value
+                            var left = Math.round(audioService.masterVolume * (1.0 - Math.max(0, (value - 0.5) * 2)))
+                            var right = Math.round(audioService.masterVolume * (1.0 - Math.max(0, (0.5 - value) * 2)))
+                            audioService.runCmd("pactl set-sink-volume @DEFAULT_AUDIO_SINK@ " + left + "% " + right + "% >/dev/null 2>&1")
+                          }
+                        }
+                        Text { text: "R"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                      }
+
+                      RowLayout {
+                        Layout.fillWidth: true
+                        Text {
+                          text: "Test channel identification"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 12
+                          color: settingsWin.textPrimary
+                          Layout.fillWidth: true
+                        }
+                        Rectangle {
+                          implicitWidth: 110; implicitHeight: 28; radius: 4
+                          color: testBtnM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.06)) : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : "#fbfbfb")
+                          border.color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.14)
+                          border.width: 1
+                          RowLayout {
+                            anchors.centerIn: parent
+                            spacing: 6
+                            Text { text: "▶"; font.pixelSize: 10; color: settingsWin.textPrimary }
+                            Text { text: "Test Speaker"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                          }
+                          MouseArea {
+                            id: testBtnM
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: audioService.runSpeakerTest()
+                          }
+                        }
+                      }
+                    }
+                  }
+
+                  // 2. INPUT GROUP CARD
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: inCol.implicitHeight + 32
+                    radius: 8
+                    color: settingsWin.cardBg
+                    border.color: settingsWin.cardBorder
+                    border.width: 1
+
+                    ColumnLayout {
+                      id: inCol
+                      anchors.fill: parent
+                      anchors.margins: 16
+                      spacing: 12
+
+                      RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+                        Text { text: "🎙️"; font.pixelSize: 16 }
+                        ColumnLayout {
+                          Layout.fillWidth: true
+                          Text { text: "Input"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                          Text { text: "Choose a device for speaking or recording"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                        }
+                      }
+
+                      Repeater {
+                        model: audioService.sources
+                        delegate: Rectangle {
+                          Layout.fillWidth: true
+                          implicitHeight: 40
+                          radius: 6
+                          color: modelData.isDefault
+                                 ? (settingsWin.isDark ? Qt.rgba(0, 120, 212, 0.22) : Qt.rgba(0, 120, 212, 0.12))
+                                 : (srcMouse.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.04)) : "transparent")
+                          border.color: modelData.isDefault ? settingsWin.accentColor : "transparent"
+                          border.width: 1
+
+                          RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 12
+                            spacing: 10
+
+                            Rectangle {
+                              implicitWidth: 16; implicitHeight: 16; radius: 8
+                              color: "transparent"
+                              border.color: modelData.isDefault ? settingsWin.accentColor : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(0, 0, 0, 0.3))
+                              border.width: 2
+                              Rectangle {
+                                visible: modelData.isDefault
+                                anchors.centerIn: parent
+                                width: 8; height: 8; radius: 4
+                                color: settingsWin.accentColor
+                              }
+                            }
+
+                            Text { text: modelData.type; font.pixelSize: 15 }
+                            Text {
+                              text: modelData.description || modelData.name
+                              font.family: "Segoe UI, sans-serif"
+                              font.pixelSize: 12
+                              font.weight: modelData.isDefault ? Font.DemiBold : Font.Normal
+                              color: settingsWin.textPrimary
+                              Layout.fillWidth: true
+                              elide: Text.ElideRight
+                            }
+                            Text {
+                              visible: modelData.isDefault
+                              text: "Default"
+                              font.family: "Segoe UI, sans-serif"
+                              font.pixelSize: 10
+                              color: settingsWin.accentColor
+                            }
+                          }
+
+                          MouseArea {
+                            id: srcMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: audioService.setDefaultSource(modelData.name)
+                          }
+                        }
+                      }
+
+                      Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                      RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 14
+                        Text { text: "Input volume"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 12; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Slider {
+                          Layout.fillWidth: true
+                          from: 0; to: 100
+                          value: audioService.micVolume
+                          onMoved: audioService.setMicVolume(value)
+                        }
+                        Text {
+                          text: audioService.micVolume + "%"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 12
+                          color: settingsWin.accentColor
+                        }
+                      }
+
+                      RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 14
+                        Text {
+                          text: "Test your microphone"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 12
+                          color: settingsWin.textPrimary
+                          Layout.preferredWidth: 160
+                        }
+                        Rectangle {
+                          Layout.fillWidth: true
+                          implicitHeight: 8
+                          radius: 4
+                          color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.10)
+                          Rectangle {
+                            width: parent.width * (audioService.micMuted ? 0 : (audioService.micVolume / 100.0))
+                            height: parent.height
+                            radius: 4
+                            color: settingsWin.accentColor
+                          }
+                        }
+                        Rectangle {
+                          implicitWidth: 100; implicitHeight: 28; radius: 4
+                          color: testMicM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.06)) : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : "#fbfbfb")
+                          border.color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.14)
+                          border.width: 1
+                          Text {
+                            anchors.centerIn: parent
+                            text: "Start test"
+                            font.family: "Segoe UI, sans-serif"
+                            font.pixelSize: 11
+                            font.weight: Font.DemiBold
+                            color: settingsWin.textPrimary
+                          }
+                          MouseArea {
+                            id: testMicM
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                              audioService.runCmd("timeout 4s parecord /tmp/omarchy-mic-test.wav && paplay /tmp/omarchy-mic-test.wav &")
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+
+                  // 3. ADVANCED VOLUME MIXER
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: mixCol.implicitHeight + 32
+                    radius: 8
+                    color: settingsWin.cardBg
+                    border.color: settingsWin.cardBorder
+                    border.width: 1
+
+                    ColumnLayout {
+                      id: mixCol
+                      anchors.fill: parent
+                      anchors.margins: 16
+                      spacing: 12
+
+                      RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+                        Text { text: "🎚️"; font.pixelSize: 16 }
+                        ColumnLayout {
+                          Layout.fillWidth: true
+                          Text { text: "Volume mixer"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                          Text { text: "Apps volume and per-application output destinations"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                        }
+                      }
+
+                      Text {
+                        visible: audioService.streams.length === 0
+                        text: "No applications are currently playing audio."
                         font.family: "Segoe UI, sans-serif"
                         font.pixelSize: 11
                         color: settingsWin.textSecondary
                       }
-                    }
 
-                    Rectangle {
-                      implicitWidth: 88
-                      implicitHeight: 28
-                      radius: 4
-                      color: renameM.containsMouse
-                             ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.06))
-                             : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : "#fbfbfb")
-                      border.color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.14)
-                      border.width: 1
-                      Text {
-                        anchors.centerIn: parent
-                        text: "Rename"
-                        font.family: "Segoe UI, sans-serif"
-                        font.pixelSize: 11
-                        font.weight: Font.DemiBold
-                        color: settingsWin.textPrimary
-                      }
-                      MouseArea {
-                        id: renameM
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: settingsWin.runCmd("omarchy-rename-pc 2>/dev/null || true")
-                      }
-                    }
-                  }
-                }
+                      Repeater {
+                        model: audioService.streams
+                        delegate: Rectangle {
+                          Layout.fillWidth: true
+                          implicitHeight: 50
+                          radius: 6
+                          color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.05) : Qt.rgba(0, 0, 0, 0.03)
 
-                // Display Brightness
-                Rectangle {
-                  Layout.fillWidth: true
-                  implicitHeight: 74
-                  radius: 8
-                  color: settingsWin.cardBg
-                  border.color: settingsWin.cardBorder
-                  border.width: 1
+                          RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 12
+                            spacing: 12
 
-                  RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 14
+                            Text { text: "🎵"; font.pixelSize: 14 }
+                            Text {
+                              text: modelData.name
+                              font.family: "Segoe UI, sans-serif"
+                              font.pixelSize: 12
+                              font.weight: Font.DemiBold
+                              color: settingsWin.textPrimary
+                              Layout.preferredWidth: 160
+                              elide: Text.ElideRight
+                            }
 
-                    Image {
-                      Layout.preferredWidth: 22
-                      Layout.preferredHeight: 22
-                      width: 22; height: 22
-                      source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/sun.svg"
-                      fillMode: Image.PreserveAspectFit
-                    }
-                    ColumnLayout {
-                      Layout.fillWidth: true
-                      Text { text: "Display Brightness"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
-                      Text { text: settingsWin.brightnessLevel + "% backlight brightness"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
-                    }
-                    Slider {
-                      Layout.preferredWidth: 180
-                      from: 5; to: 100
-                      value: settingsWin.brightnessLevel
-                      onMoved: {
-                        settingsWin.brightnessLevel = Math.round(value)
-                        settingsWin.runCmd("brightnessctl set " + Math.round(value) + "% >/dev/null 2>&1")
+                            Slider {
+                              Layout.fillWidth: true
+                              from: 0; to: 100
+                              value: modelData.volume
+                              onMoved: audioService.setStreamVolume(modelData.index, value)
+                            }
+
+                            Text {
+                              text: modelData.volume + "%"
+                              font.family: "Segoe UI, sans-serif"
+                              font.pixelSize: 11
+                              color: settingsWin.accentColor
+                              Layout.preferredWidth: 40
+                            }
+
+                            Rectangle {
+                              implicitWidth: 26; implicitHeight: 26; radius: 4
+                              color: appMuteM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
+                              Text {
+                                anchors.centerIn: parent
+                                text: modelData.muted ? "󰝟" : "󰕾"
+                                font.pixelSize: 13
+                                color: modelData.muted ? "#ff5f56" : (settingsWin.isDark ? "#ffffff" : "#1a1a1a")
+                              }
+                              MouseArea {
+                                id: appMuteM
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: audioService.toggleStreamMute(modelData.index)
+                              }
+                            }
+                          }
+                        }
                       }
                     }
                   }
-                }
 
-                // Master Volume
-                Rectangle {
-                  Layout.fillWidth: true
-                  implicitHeight: 74
-                  radius: 8
-                  color: settingsWin.cardBg
-                  border.color: settingsWin.cardBorder
-                  border.width: 1
+                  // 4. TROUBLESHOOT & RECOVERY
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 74
+                    radius: 8
+                    color: settingsWin.cardBg
+                    border.color: settingsWin.cardBorder
+                    border.width: 1
 
-                  RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 14
+                    RowLayout {
+                      anchors.fill: parent
+                      anchors.margins: 16
+                      spacing: 14
 
-                    Image {
-                      Layout.preferredWidth: 22
-                      Layout.preferredHeight: 22
-                      width: 22; height: 22
-                      source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/volume.svg"
-                      fillMode: Image.PreserveAspectFit
-                    }
-                    ColumnLayout {
-                      Layout.fillWidth: true
-                      Text { text: "Master Volume"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
-                      Text { text: settingsWin.volumeLevel + "% output level"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
-                    }
-                    Slider {
-                      Layout.preferredWidth: 180
-                      from: 0; to: 100
-                      value: settingsWin.volumeLevel
-                      onMoved: {
-                        settingsWin.volumeLevel = Math.round(value)
-                        settingsWin.runCmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ " + (Math.round(value) / 100.0) + " >/dev/null 2>&1")
+                      Text { text: "🛠️"; font.pixelSize: 20 }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        Text { text: "Restart Audio Services"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { text: "Resets PipeWire and WirePlumber if audio streams stall or lock up"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
                       }
-                    }
-                  }
-                }
-
-                // Window Gaps Tuning
-                Rectangle {
-                  Layout.fillWidth: true
-                  implicitHeight: 74
-                  radius: 8
-                  color: settingsWin.cardBg
-                  border.color: settingsWin.cardBorder
-                  border.width: 1
-
-                  RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 14
-
-                    Image {
-                      Layout.preferredWidth: 22
-                      Layout.preferredHeight: 22
-                      width: 22; height: 22
-                      source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/gaps.svg"
-                      fillMode: Image.PreserveAspectFit
-                    }
-                    ColumnLayout {
-                      Layout.fillWidth: true
-                      Text { text: "Desktop Window Gaps"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
-                      Text { text: settingsWin.windowGaps + "px outer spacing"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
-                    }
-                    Slider {
-                      Layout.preferredWidth: 180
-                      from: 0; to: 24
-                      value: settingsWin.windowGaps
-                      onMoved: {
-                        settingsWin.windowGaps = Math.round(value)
-                        settingsWin.saveSetting("WINDOW_GAPS", Math.round(value))
-                        settingsWin.runCmd("hyprctl keyword general:gaps_out " + Math.round(value) + " >/dev/null 2>&1; hyprctl keyword general:gaps_in " + Math.round(value / 2) + " >/dev/null 2>&1")
-                      }
-                    }
-                  }
-                }
-
-                // Window Rounding
-                Rectangle {
-                  Layout.fillWidth: true
-                  implicitHeight: 74
-                  radius: 8
-                  color: settingsWin.cardBg
-                  border.color: settingsWin.cardBorder
-                  border.width: 1
-
-                  RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 14
-
-                    Image {
-                      Layout.preferredWidth: 22
-                      Layout.preferredHeight: 22
-                      width: 22; height: 22
-                      source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/rounding.svg"
-                      fillMode: Image.PreserveAspectFit
-                    }
-                    ColumnLayout {
-                      Layout.fillWidth: true
-                      Text { text: "Corner Rounding (Mica Geometry)"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
-                      Text { text: settingsWin.windowRounding + "px corner radius"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
-                    }
-                    Slider {
-                      Layout.preferredWidth: 180
-                      from: 0; to: 20
-                      value: settingsWin.windowRounding
-                      onMoved: {
-                        settingsWin.windowRounding = Math.round(value)
-                        settingsWin.saveSetting("WINDOW_ROUNDING", Math.round(value))
-                        settingsWin.runCmd("hyprctl keyword decoration:rounding " + Math.round(value) + " >/dev/null 2>&1")
+                      Rectangle {
+                        implicitWidth: 120; implicitHeight: 28; radius: 4
+                        color: recBtnM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.06)) : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : "#fbfbfb")
+                        border.color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.14)
+                        border.width: 1
+                        Text {
+                          anchors.centerIn: parent
+                          text: "Restart Services"
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 11
+                          font.weight: Font.DemiBold
+                          color: settingsWin.textPrimary
+                        }
+                        MouseArea {
+                          id: recBtnM
+                          anchors.fill: parent
+                          hoverEnabled: true
+                          cursorShape: Qt.PointingHandCursor
+                          onClicked: audioService.runRecovery()
+                        }
                       }
                     }
                   }
