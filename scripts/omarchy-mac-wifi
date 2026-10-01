@@ -4,15 +4,22 @@
 # =============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_DIR="$HOME/.config/omarchy-undercover"
+if [[ -f "${SCRIPT_DIR}/../manifest.json" ]]; then
+    PLUGIN_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+elif [[ -d "$HOME/.config/omarchy/plugins/omarchy-undercover" ]]; then
+    PLUGIN_DIR="$HOME/.config/omarchy/plugins/omarchy-undercover"
+elif [[ -d "$HOME/.config/omarchy/plugins/undercover" ]]; then
+    PLUGIN_DIR="$HOME/.config/omarchy/plugins/undercover"
+else
+    PLUGIN_DIR="$HOME/.config/omarchy/plugins/omarchy-undercover"
+fi
+CONFIG_DIR="$PLUGIN_DIR"
 
 QS_SRC=""
 for cand in \
-    "$CONFIG_DIR/quickshell/mac-wifi" \
     "$CONFIG_DIR/configs/quickshell/mac-wifi" \
-    "${SCRIPT_DIR}/../quickshell/mac-wifi" \
+    "$CONFIG_DIR/quickshell/mac-wifi" \
     "${SCRIPT_DIR}/../configs/quickshell/mac-wifi" \
-    "${SCRIPT_DIR}/quickshell/mac-wifi" \
     "${SCRIPT_DIR}/configs/quickshell/mac-wifi"; do
     if [[ -d "$cand" ]]; then
         QS_SRC="$cand"

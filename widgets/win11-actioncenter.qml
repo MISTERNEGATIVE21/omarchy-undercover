@@ -11,11 +11,52 @@ BarWidget {
   implicitWidth: pillContainer.implicitWidth + 14
   implicitHeight: root.bar ? root.bar.barSize : 40
 
+  readonly property bool interactive: true
+  readonly property bool pressable: true
+  readonly property bool concealed: false
+
+  function triggerPress(button) {
+    if (button === Qt.RightButton) {
+      root.runCmd("omarchy-win11-wifi")
+    } else {
+      root.runCmd("omarchy-win11-actioncenter")
+    }
+  }
+
+  property var registeredBar: null
+  function syncClickRegistration() {
+    if (registeredBar && registeredBar.unregisterClickTarget) registeredBar.unregisterClickTarget(root)
+    registeredBar = root.bar
+    if (registeredBar && registeredBar.registerClickTarget) registeredBar.registerClickTarget(root)
+  }
+  onBarChanged: syncClickRegistration()
+  Component.onCompleted: syncClickRegistration()
+  Component.onDestruction: if (registeredBar && registeredBar.unregisterClickTarget) registeredBar.unregisterClickTarget(root)
+
   property bool wifiOn: true
   property real volumeLevel: 0.7
   property bool isMuted: false
   property int batteryPct: 90
   property bool isCharging: false
+  property string homeDir: Quickshell.env("HOME")
+  property string configDir: homeDir + "/.config/omarchy/plugins/omarchy-undercover"
+
+  function resolveCmd(cmd) {
+    if (!cmd) return ""
+    var pluginScripts = root.configDir + "/scripts"
+    var devScripts = root.homeDir + "/omarchy-undercover/scripts"
+    return cmd.replace(/\b(omarchy-[a-zA-Z0-9_-]+)\b/g, function(match) {
+      return pluginScripts + "/" + match
+    })
+  }
+
+  function runCmd(cmd) {
+    var pluginScripts = root.configDir + "/scripts"
+    var devScripts = root.homeDir + "/omarchy-undercover/scripts"
+    var fullCmd = root.resolveCmd(cmd)
+    var wrapped = "export PATH=\"" + pluginScripts + ":" + devScripts + ":$PATH\"; " + fullCmd
+    Quickshell.execDetached(["bash", "-c", wrapped])
+  }
 
   Process {
     id: statePoller
@@ -100,16 +141,13 @@ BarWidget {
       cursorShape: Qt.PointingHandCursor
       onClicked: function(mouse) {
         if (mouse.button === Qt.RightButton) {
-          if (root.bar) root.bar.run("omarchy-win11-wifi")
-          else Quickshell.execDetached(["omarchy-win11-wifi"])
+          root.runCmd("omarchy-win11-wifi")
         } else {
-          if (root.bar) root.bar.run("omarchy-win11-actioncenter")
-          else Quickshell.execDetached(["omarchy-win11-actioncenter"])
+          root.runCmd("omarchy-win11-actioncenter")
         }
       }
       onPressAndHold: {
-        if (root.bar) root.bar.run("omarchy-win11-wifi")
-        else Quickshell.execDetached(["omarchy-win11-wifi"])
+        root.runCmd("omarchy-win11-sound")
       }
     }
   }

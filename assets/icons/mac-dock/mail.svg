@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="mailBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2bb4ff"/>
+      <stop offset="100%" stop-color="#007aff"/>
+    </linearGradient>
+    <filter id="mailShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#000000" flood-opacity="0.30"/>
+    </filter>
+  </defs>
+  <rect x="32" y="32" width="448" height="448" rx="105" fill="url(#mailBg)" filter="url(#mailShadow)"/>
+  <!-- Envelope -->
+  <rect x="110" y="160" width="292" height="192" rx="16" fill="#ffffff"/>
+  <!-- Envelope flap / fold lines -->
+  <path d="M110 170 L256 280 L402 170" fill="none" stroke="#007aff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M110 340 L210 250" fill="none" stroke="#e5eaf0" stroke-width="12" stroke-linecap="round"/>
+  <path d="M402 340 L302 250" fill="none" stroke="#e5eaf0" stroke-width="12" stroke-linecap="round"/>
+</svg>

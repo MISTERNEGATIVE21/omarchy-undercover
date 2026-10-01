@@ -9,12 +9,6 @@ if _f then
   _f:close()
 else
   settings_path = home .. "/.config/omarchy/plugins/undercover/settings.conf"
-  _f = io.open(settings_path, "r")
-  if _f then
-    _f:close()
-  else
-    settings_path = home .. "/.config/omarchy-undercover/settings.conf"
-  end
 end
 
 local function get_setting(key, default)
@@ -31,7 +25,7 @@ end
 
 local mode = get_setting("MODE", "")
 local state_path = home .. "/.config/omarchy/plugins/omarchy-undercover/state"
-local state_file = io.open(state_path, "r") or io.open(home .. "/.config/omarchy/plugins/undercover/state", "r") or io.open(home .. "/.config/omarchy-undercover/state", "r")
+local state_file = io.open(state_path, "r") or io.open(home .. "/.config/omarchy/plugins/undercover/state", "r")
 if state_file then
   local s = state_file:read("*l")
   state_file:close()
@@ -48,7 +42,6 @@ local function find_script(name)
     home .. "/.config/omarchy/plugins/omarchy-undercover/scripts",
     home .. "/.config/omarchy/plugins/undercover/scripts",
     home .. "/omarchy-undercover/scripts",
-    home .. "/.config/omarchy-undercover/scripts",
     "/usr/share/omarchy-undercover/scripts",
   }
   for _, dir in ipairs(dirs) do
@@ -67,6 +60,12 @@ local function exec_cmd(cmd)
     return find_script(name)
   end)
   return hl.dsp.exec_cmd(resolved)
+end
+
+local plugin_scripts = home .. "/.config/omarchy/plugins/omarchy-undercover/scripts"
+local current_path = os.getenv("PATH") or "/usr/local/bin:/usr/bin:/bin"
+if not current_path:find(plugin_scripts, 1, true) then
+  hl.env("PATH", plugin_scripts .. ":" .. current_path)
 end
 
 hl.config({
@@ -155,7 +154,7 @@ end
 -- ---------------------------------------------------------------------------
 -- Configurable macOS Sequoia Keybindings
 -- ---------------------------------------------------------------------------
-local keybindings_enabled = get_setting("ENABLE_KEYBINDINGS", "true") == "true"
+local keybindings_enabled = get_setting("ENABLE_KEYBINDINGS", "false") == "true"
 local override_omarchy = get_setting("OVERRIDE_DEFAULT_KEYBINDINGS", "false") == "true"
 
 if keybindings_enabled and hl and hl.bind then

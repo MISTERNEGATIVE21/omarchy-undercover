@@ -12,7 +12,7 @@ elif [[ -d "$HOME/.config/omarchy/plugins/omarchy-undercover" ]]; then
 elif [[ -d "$HOME/.config/omarchy/plugins/undercover" ]]; then
     PLUGIN_DIR="$HOME/.config/omarchy/plugins/undercover"
 else
-    PLUGIN_DIR="$HOME/.config/omarchy-undercover"
+    PLUGIN_DIR="$HOME/.config/omarchy/plugins/omarchy-undercover"
 fi
 
 SETTINGS_FILE="$PLUGIN_DIR/settings.conf"

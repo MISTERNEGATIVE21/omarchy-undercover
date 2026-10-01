@@ -9,7 +9,7 @@
 # omarchy:examples=omarchy-undercover-wallpaper
 # ==============================================================================
 #
-# Reads the WALLPAPER setting from ~/.config/omarchy-undercover/settings.conf
+# Reads the WALLPAPER setting from settings.conf in the plugin directory
 # and starts swaybg (or hyprpaper) with it. Runs automatically at Hyprland
 # startup via windows-mode.lua so the wallpaper survives relogin.
 
@@ -21,7 +21,7 @@ elif [[ -d "$HOME/.config/omarchy/plugins/omarchy-undercover" ]]; then
 elif [[ -d "$HOME/.config/omarchy/plugins/undercover" ]]; then
     PLUGIN_DIR="$HOME/.config/omarchy/plugins/undercover"
 else
-    PLUGIN_DIR="$HOME/.config/omarchy-undercover"
+    PLUGIN_DIR="$HOME/.config/omarchy/plugins/omarchy-undercover"
 fi
 
 CONFIG_DIR="$PLUGIN_DIR"

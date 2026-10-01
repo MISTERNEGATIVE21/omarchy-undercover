@@ -19,7 +19,6 @@ for cand in \
     "${SCRIPT_DIR}/../configs/quickshell/mac-controlcenter" \
     "$HOME/.config/omarchy/plugins/omarchy-undercover/configs/quickshell/mac-controlcenter" \
     "$HOME/omarchy-undercover/configs/quickshell/mac-controlcenter" \
-    "$HOME/.config/omarchy-undercover/quickshell/mac-controlcenter" \
     "/usr/share/omarchy-undercover/configs/quickshell/mac-controlcenter"; do
     if [[ -d "$cand" && -f "$cand/shell.qml" ]]; then
         QS_SRC="$cand"

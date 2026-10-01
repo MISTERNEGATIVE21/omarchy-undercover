@@ -84,7 +84,7 @@ ShellRoot {
     Process {
       id: statePoller
       running: true
-      command: ["bash", "-c", "cat $HOME/.config/omarchy-undercover/state 2>/dev/null || echo 'win11-dark'"]
+      command: ["bash", "-c", "cat $HOME/.config/omarchy/plugins/omarchy-undercover/state 2>/dev/null || echo 'win11-dark'"]
       stdout: SplitParser {
         onRead: function(line) {
           var s = String(line).trim()

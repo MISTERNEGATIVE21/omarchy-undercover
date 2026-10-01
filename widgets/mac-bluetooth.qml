@@ -35,12 +35,15 @@ BarWidget {
     }
   }
 
+  property string homeDir: Quickshell.env("HOME")
+  property string configDir: homeDir + "/.config/omarchy/plugins/omarchy-undercover"
+
   function launchFlyout() {
-    if (root.bar) {
-      root.bar.run("omarchy-mac-bluetooth")
-    } else {
-      Quickshell.execDetached(["omarchy-mac-bluetooth"])
-    }
+    var pluginScripts = root.configDir + "/scripts"
+    var devScripts = root.homeDir + "/omarchy-undercover/scripts"
+    var cmd = pluginScripts + "/omarchy-mac-bluetooth"
+    var wrapped = "export PATH=\"" + pluginScripts + ":" + devScripts + ":$PATH\"; " + cmd
+    Quickshell.execDetached(["bash", "-c", wrapped])
   }
 
   BarIconButton {

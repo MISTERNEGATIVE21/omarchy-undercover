@@ -104,7 +104,7 @@ window#waybar.mac-dock .modules-center {
 }
 
 window#waybar.mac-dock #custom-dock-finder {
-    background-image: url("/home/mister/.local/share/icons/mac-dock/finder.svg");
+    background-image: url("../../assets/icons/mac-dock/finder.svg");
     background-size: 40px 40px;
     background-repeat: no-repeat;
     background-position: center;
@@ -116,7 +116,7 @@ window#waybar.mac-dock #custom-dock-finder {
 }
 
 window#waybar.mac-dock #custom-dock-launchpad {
-    background-image: url("/home/mister/.local/share/icons/mac-dock/launchpad.svg");
+    background-image: url("../../assets/icons/mac-dock/launchpad.svg");
     background-size: 40px 40px;
     background-repeat: no-repeat;
     background-position: center;
@@ -128,7 +128,7 @@ window#waybar.mac-dock #custom-dock-launchpad {
 }
 
 window#waybar.mac-dock #custom-dock-safari {
-    background-image: url("/home/mister/.local/share/icons/mac-dock/safari.svg");
+    background-image: url("../../assets/icons/mac-dock/safari.svg");
     background-size: 40px 40px;
     background-repeat: no-repeat;
     background-position: center;
@@ -140,7 +140,7 @@ window#waybar.mac-dock #custom-dock-safari {
 }
 
 window#waybar.mac-dock #custom-dock-messages {
-    background-image: url("/home/mister/.local/share/icons/mac-dock/messages.svg");
+    background-image: url("../../assets/icons/mac-dock/messages.svg");
     background-size: 40px 40px;
     background-repeat: no-repeat;
     background-position: center;
@@ -152,7 +152,7 @@ window#waybar.mac-dock #custom-dock-messages {
 }
 
 window#waybar.mac-dock #custom-dock-music {
-    background-image: url("/home/mister/.local/share/icons/mac-dock/music.svg");
+    background-image: url("../../assets/icons/mac-dock/music.svg");
     background-size: 40px 40px;
     background-repeat: no-repeat;
     background-position: center;
@@ -164,7 +164,7 @@ window#waybar.mac-dock #custom-dock-music {
 }
 
 window#waybar.mac-dock #custom-dock-photos {
-    background-image: url("/home/mister/.local/share/icons/mac-dock/photos.svg");
+    background-image: url("../../assets/icons/mac-dock/photos.svg");
     background-size: 40px 40px;
     background-repeat: no-repeat;
     background-position: center;
@@ -176,7 +176,7 @@ window#waybar.mac-dock #custom-dock-photos {
 }
 
 window#waybar.mac-dock #custom-dock-appstore {
-    background-image: url("/home/mister/.local/share/icons/mac-dock/appstore.svg");
+    background-image: url("../../assets/icons/mac-dock/appstore.svg");
     background-size: 40px 40px;
     background-repeat: no-repeat;
     background-position: center;
@@ -188,7 +188,7 @@ window#waybar.mac-dock #custom-dock-appstore {
 }
 
 window#waybar.mac-dock #custom-dock-terminal {
-    background-image: url("/home/mister/.local/share/icons/mac-dock/terminal.svg");
+    background-image: url("../../assets/icons/mac-dock/terminal.svg");
     background-size: 40px 40px;
     background-repeat: no-repeat;
     background-position: center;
@@ -200,7 +200,7 @@ window#waybar.mac-dock #custom-dock-terminal {
 }
 
 window#waybar.mac-dock #custom-dock-settings {
-    background-image: url("/home/mister/.local/share/icons/mac-dock/settings.svg");
+    background-image: url("../../assets/icons/mac-dock/settings.svg");
     background-size: 40px 40px;
     background-repeat: no-repeat;
     background-position: center;

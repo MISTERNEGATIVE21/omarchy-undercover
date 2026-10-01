@@ -12,7 +12,7 @@ elif [[ -d "$HOME/.config/omarchy/plugins/omarchy-undercover/assets/sounds" ]]; 
 elif [[ -d "$HOME/.config/omarchy/plugins/undercover/assets/sounds" ]]; then
     SOUNDS_DIR="$HOME/.config/omarchy/plugins/undercover/assets/sounds"
 else
-    SOUNDS_DIR="$HOME/.config/omarchy-undercover/sounds"
+    SOUNDS_DIR="$HOME/.config/omarchy/plugins/omarchy-undercover/assets/sounds"
 fi
 
 TYPE="${1:-notify}"

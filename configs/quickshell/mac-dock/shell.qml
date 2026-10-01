@@ -65,7 +65,8 @@ ShellRoot {
     property int dockTransparency: 76
 
     property string homeDir: Quickshell.env("HOME")
-    property string iconBasePath: homeDir + "/.local/share/icons/mac-dock/"
+    property string pluginDir: Quickshell.env("OMARCHY_PLUGIN_DIR") || (dockWindow.homeDir + "/.config/omarchy/plugins/omarchy-undercover")
+    property string iconBasePath: pluginDir + "/assets/icons/mac-dock/"
     property bool isLight: false
     property bool isAutohide: false
     property bool isDockRevealed: true
@@ -177,7 +178,7 @@ ShellRoot {
     // Strict Theme Isolation Watcher via reactive FileView
     FileView {
       id: stateWatcher
-      path: dockWindow.homeDir + "/.config/omarchy-undercover/state"
+      path: dockWindow.pluginDir + "/state"
       watchChanges: true
       onLoaded: {
         var s = text().trim()
@@ -195,7 +196,7 @@ ShellRoot {
     // Settings Watcher for dynamic autohide
     FileView {
       id: settingsWatcher
-      path: dockWindow.homeDir + "/.config/omarchy-undercover/settings.conf"
+      path: dockWindow.pluginDir + "/settings.conf"
       watchChanges: true
       onLoaded: {
         var s = text()
@@ -355,7 +356,7 @@ ShellRoot {
     property var macPinsConfig: ({})
     FileView {
       id: defaultsFile
-      path: dockWindow.homeDir + "/.config/omarchy-undercover/defaults.json"
+      path: dockWindow.pluginDir + "/defaults.json"
       watchChanges: true
       onLoaded: {
         try {

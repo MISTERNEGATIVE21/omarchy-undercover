@@ -87,18 +87,19 @@ ShellRoot {
     property int windowGaps: 8
     property int windowRounding: 10
     property string currentDisguise: "mac-dark"
+    property string pluginDir: Quickshell.env("OMARCHY_PLUGIN_DIR") || (settingsWin.homeDir + "/.config/omarchy/plugins/omarchy-undercover")
 
     function runCmd(cmd) {
       Quickshell.execDetached(["bash", "-c", cmd])
     }
 
     function saveSetting(key, val) {
-      var cmd = "mkdir -p " + homeDir + "/.config/omarchy-undercover && " +
-                "touch " + homeDir + "/.config/omarchy-undercover/settings.conf && " +
-                "if grep -q '^" + key + "=' " + homeDir + "/.config/omarchy-undercover/settings.conf; then " +
-                "  sed -i 's/^" + key + "=.*/" + key + "=" + val + "/' " + homeDir + "/.config/omarchy-undercover/settings.conf; " +
+      var cmd = "mkdir -p " + settingsWin.pluginDir + " && " +
+                "touch " + settingsWin.pluginDir + "/settings.conf && " +
+                "if grep -q '^" + key + "=' " + settingsWin.pluginDir + "/settings.conf; then " +
+                "  sed -i 's/^" + key + "=.*/" + key + "=" + val + "/' " + settingsWin.pluginDir + "/settings.conf; " +
                 "else " +
-                "  echo '" + key + "=" + val + "' >> " + homeDir + "/.config/omarchy-undercover/settings.conf; " +
+                "  echo '" + key + "=" + val + "' >> " + settingsWin.pluginDir + "/settings.conf; " +
                 "fi"
       runCmd(cmd)
     }
@@ -106,7 +107,7 @@ ShellRoot {
     // Reactive Watcher on State
     FileView {
       id: stateWatcher
-      path: settingsWin.homeDir + "/.config/omarchy-undercover/state"
+      path: settingsWin.pluginDir + "/state"
       watchChanges: true
       onLoaded: {
         var s = text().trim()
@@ -124,7 +125,7 @@ ShellRoot {
     // Reactive Watcher on settings.conf
     FileView {
       id: settingsWatcher
-      path: settingsWin.homeDir + "/.config/omarchy-undercover/settings.conf"
+      path: settingsWin.pluginDir + "/settings.conf"
       watchChanges: true
       onLoaded: {
         var s = text()
@@ -342,7 +343,7 @@ ShellRoot {
                 spacing: 6
                 Image {
                   width: 12; height: 12
-                  source: "file://" + settingsWin.homeDir + "/.local/share/icons/apple-logo.svg"
+                  source: "file://" + settingsWin.pluginDir + "/assets/icons/apple-logo.svg"
                   fillMode: Image.PreserveAspectFit
                 }
                 Text {
@@ -458,7 +459,7 @@ ShellRoot {
 
                   Image {
                     width: 13; height: 13
-                    source: "file://" + settingsWin.homeDir + "/.local/share/icons/mac-settings/search.svg"
+                    source: "file://" + settingsWin.pluginDir + "/assets/icons/mac-settings/search.svg"
                     fillMode: Image.PreserveAspectFit
                     opacity: 0.6
                   }
@@ -528,7 +529,7 @@ ShellRoot {
                       Image {
                         anchors.centerIn: parent
                         width: 14; height: 14
-                        source: "file://" + settingsWin.homeDir + "/.local/share/icons/mac-settings/" + modelData.icon
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/mac-settings/" + modelData.icon
                         fillMode: Image.PreserveAspectFit
                       }
                     }
@@ -791,7 +792,7 @@ ShellRoot {
                               Layout.preferredWidth: 18
                               Layout.preferredHeight: 18
                               width: 18; height: 18
-                              source: "file://" + settingsWin.homeDir + "/.local/share/icons/" + (modelData.isWin ? "win11/" : "") + (modelData.icon === "disguise.svg" ? "win11-settings/" : "") + modelData.icon
+                              source: "file://" + settingsWin.pluginDir + "/assets/icons/" + (modelData.isWin ? "win11/" : "") + (modelData.icon === "disguise.svg" ? "win11-settings/" : "") + modelData.icon
                               fillMode: Image.PreserveAspectFit
                             }
 
@@ -1141,7 +1142,7 @@ ShellRoot {
                       Item { Layout.fillWidth: true }
                       Button {
                         text: "Restart Dock"
-                        onClicked: settingsWin.runCmd("pkill -f 'quickshell.*mac-dock' && nohup quickshell -p ~/.config/omarchy-undercover/quickshell/mac-dock >/dev/null 2>&1 &")
+                        onClicked: settingsWin.runCmd("pkill -f 'quickshell.*mac-dock' && nohup quickshell -p " + settingsWin.pluginDir + "/configs/quickshell/mac-dock >/dev/null 2>&1 &")
                       }
                     }
 
@@ -1230,7 +1231,7 @@ ShellRoot {
                           Image {
                             anchors.centerIn: parent
                             width: 24; height: 24
-                            source: "file://" + settingsWin.homeDir + "/.local/share/icons/mac-settings/wallpaper.svg"
+                            source: "file://" + settingsWin.pluginDir + "/assets/icons/mac-settings/wallpaper.svg"
                             fillMode: Image.PreserveAspectFit
                             opacity: 0.75
                           }
@@ -1285,7 +1286,7 @@ ShellRoot {
                       Layout.preferredWidth: 24
                       Layout.preferredHeight: 24
                       width: 24; height: 24
-                      source: "file://" + settingsWin.homeDir + "/.local/share/icons/mac-settings/wifi.svg"
+                      source: "file://" + settingsWin.pluginDir + "/assets/icons/mac-settings/wifi.svg"
                       fillMode: Image.PreserveAspectFit
                     }
 
@@ -1340,7 +1341,7 @@ ShellRoot {
                       Layout.preferredWidth: 24
                       Layout.preferredHeight: 24
                       width: 24; height: 24
-                      source: "file://" + settingsWin.homeDir + "/.local/share/icons/mac-settings/bluetooth.svg"
+                      source: "file://" + settingsWin.pluginDir + "/assets/icons/mac-settings/bluetooth.svg"
                       fillMode: Image.PreserveAspectFit
                     }
 
@@ -1397,7 +1398,7 @@ ShellRoot {
                         Layout.preferredWidth: 20
                         Layout.preferredHeight: 20
                         width: 20; height: 20
-                        source: "file://" + settingsWin.homeDir + "/.local/share/icons/mac-settings/sound.svg"
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/mac-settings/sound.svg"
                         fillMode: Image.PreserveAspectFit
                       }
                       Text {
@@ -1475,7 +1476,7 @@ ShellRoot {
                       Image {
                         Layout.preferredWidth: 24; Layout.preferredHeight: 24
                         width: 24; height: 24
-                        source: "file://" + settingsWin.homeDir + "/.local/share/icons/apple-logo.svg"
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/apple-logo.svg"
                         fillMode: Image.PreserveAspectFit
                       }
                       ColumnLayout {
@@ -1507,7 +1508,7 @@ ShellRoot {
                       Image {
                         Layout.preferredWidth: 24; Layout.preferredHeight: 24
                         width: 24; height: 24
-                        source: "file://" + settingsWin.homeDir + "/.local/share/icons/apple-logo.svg"
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/apple-logo.svg"
                         fillMode: Image.PreserveAspectFit
                       }
                       ColumnLayout {
@@ -1539,7 +1540,7 @@ ShellRoot {
                       Image {
                         Layout.preferredWidth: 22; Layout.preferredHeight: 22
                         width: 22; height: 22
-                        source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11/start.svg"
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/win11/start.svg"
                         fillMode: Image.PreserveAspectFit
                       }
                       ColumnLayout {
@@ -1571,7 +1572,7 @@ ShellRoot {
                       Image {
                         Layout.preferredWidth: 22; Layout.preferredHeight: 22
                         width: 22; height: 22
-                        source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11/start.svg"
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/win11/start.svg"
                         fillMode: Image.PreserveAspectFit
                       }
                       ColumnLayout {
@@ -1603,7 +1604,7 @@ ShellRoot {
                       Image {
                         Layout.preferredWidth: 22; Layout.preferredHeight: 22
                         width: 22; height: 22
-                        source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11-settings/disguise.svg"
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/disguise.svg"
                         fillMode: Image.PreserveAspectFit
                       }
                       ColumnLayout {
@@ -1650,7 +1651,7 @@ ShellRoot {
                         Image {
                           anchors.centerIn: parent
                           width: 28; height: 28
-                          source: "file://" + settingsWin.homeDir + "/.local/share/icons/apple-logo.svg"
+                          source: "file://" + settingsWin.pluginDir + "/assets/icons/apple-logo.svg"
                           fillMode: Image.PreserveAspectFit
                         }
                       }

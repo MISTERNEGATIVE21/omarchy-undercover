@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="ftBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <filter id="ftShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#000000" flood-opacity="0.30"/>
+    </filter>
+  </defs>
+  <rect x="32" y="32" width="448" height="448" rx="105" fill="url(#ftBg)" filter="url(#ftShadow)"/>
+  <!-- Video Camera -->
+  <rect x="115" y="165" width="180" height="182" rx="36" fill="#ffffff"/>
+  <path d="M315 210 L395 160 C402 156 410 161 410 169 L410 343 C410 351 402 356 395 352 L315 302 Z" fill="#ffffff"/>
+</svg>

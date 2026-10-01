@@ -34,6 +34,7 @@ ShellRoot {
     property bool showPowerPopup: false
     property bool showUserPopup: false
     property string homeDir: Quickshell.env("HOME")
+    property string pluginDir: Quickshell.env("OMARCHY_PLUGIN_DIR") || (startWindow.homeDir + "/.config/omarchy/plugins/omarchy-undercover")
     property string userName: Quickshell.env("USER") || "User"
     property bool hasEntered: false
 
@@ -62,13 +63,16 @@ ShellRoot {
 
     function runCmd(cmd) {
       startWindow.closeMenu()
-      Quickshell.execDetached(["bash", "-c", cmd])
+      var pluginScripts = startWindow.pluginDir + "/scripts"
+      var devScripts = startWindow.homeDir + "/omarchy-undercover/scripts"
+      var wrapped = "export PATH=\"" + pluginScripts + ":" + devScripts + ":$PATH\"; " + cmd
+      Quickshell.execDetached(["bash", "-c", wrapped])
     }
 
     // Reactive Theme State Poller via FileView
     FileView {
       id: stateWatcher
-      path: startWindow.homeDir + "/.config/omarchy-undercover/state"
+      path: startWindow.pluginDir + "/state"
       watchChanges: true
       onLoaded: {
         var s = text().trim()
@@ -83,7 +87,7 @@ ShellRoot {
 
     FileView {
       id: settingsWatcher
-      path: startWindow.homeDir + "/.config/omarchy-undercover/settings.conf"
+      path: startWindow.pluginDir + "/settings.conf"
       watchChanges: true
       onLoaded: {
         var s = text()
@@ -98,24 +102,24 @@ ShellRoot {
 
     // Pinned Applications (6x3 grid with authentic Fluent SVGs)
     property var pinnedApps: [
-      { name: "Edge", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/microsoft-edge.svg", exec: "omarchy-browser" },
-      { name: "Word", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/word.svg", exec: "libreoffice --writer || abiword || omarchy-browser https://office.com" },
-      { name: "Excel", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/excel.svg", exec: "libreoffice --calc || gnumeric || xdg-open https://office.com" },
-      { name: "PowerPoint", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/powerpoint.svg", exec: "libreoffice --impress || xdg-open https://office.com" },
-      { name: "Store", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/store.svg", exec: "pamac-manager || gnome-software || discover" },
-      { name: "Photos", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/photos.svg", exec: "eog || gwenview || loupe" },
-      { name: "Settings", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/settings.svg", exec: "omarchy-undercover-settings" },
-      { name: "Terminal", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/terminal.svg", exec: "xdg-terminal-exec" },
-      { name: "Explorer", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/explorer.svg", exec: "omarchy-undercover-filemanager || flea" },
-      { name: "Calculator", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/calculator.svg", exec: "gnome-calculator || kcalc || galculator" },
-      { name: "Spotify", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/spotify.svg", exec: "spotify || omarchy-win11-widgets" },
-      { name: "Antigravity", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/antigravity-ide.svg", exec: "antigravity-ide || code || vscodium" },
-      { name: "VS Code", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/vscode.svg", exec: "code || vscodium || cursor" },
-      { name: "Discord", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/discord.svg", exec: "discord || vesktop || telegram-desktop" },
-      { name: "Notepad", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/notepad.svg", exec: "gedit || kate || mousepad || gnome-text-editor" },
-      { name: "Mail", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/mail.svg", exec: "thunderbird || evolution || geary" },
-      { name: "Paint", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/paint.svg", exec: "drawing || gimp || inkscape || pinta" },
-      { name: "Weather", iconUrl: "file://" + startWindow.homeDir + "/.local/share/icons/win11/weather.svg", exec: "omarchy-win11-widgets" }
+      { name: "Edge", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/microsoft-edge.svg", exec: "omarchy-browser" },
+      { name: "Word", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/word.svg", exec: "libreoffice --writer || abiword || omarchy-browser https://office.com" },
+      { name: "Excel", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/excel.svg", exec: "libreoffice --calc || gnumeric || xdg-open https://office.com" },
+      { name: "PowerPoint", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/powerpoint.svg", exec: "libreoffice --impress || xdg-open https://office.com" },
+      { name: "Store", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/store.svg", exec: "pamac-manager || gnome-software || discover" },
+      { name: "Photos", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/photos.svg", exec: "eog || gwenview || loupe" },
+      { name: "Settings", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/settings.svg", exec: "omarchy-undercover-settings" },
+      { name: "Terminal", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/terminal.svg", exec: "xdg-terminal-exec" },
+      { name: "Explorer", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/explorer.svg", exec: "omarchy-undercover-filemanager || flea" },
+      { name: "Calculator", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/calculator.svg", exec: "gnome-calculator || kcalc || galculator" },
+      { name: "Spotify", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/spotify.svg", exec: "spotify || omarchy-win11-widgets" },
+      { name: "Antigravity", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/antigravity-ide.svg", exec: "antigravity-ide || code || vscodium" },
+      { name: "VS Code", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/vscode.svg", exec: "code || vscodium || cursor" },
+      { name: "Discord", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/discord.svg", exec: "discord || vesktop || telegram-desktop" },
+      { name: "Notepad", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/notepad.svg", exec: "gedit || kate || mousepad || gnome-text-editor" },
+      { name: "Mail", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/mail.svg", exec: "thunderbird || evolution || geary" },
+      { name: "Paint", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/paint.svg", exec: "drawing || gimp || inkscape || pinta" },
+      { name: "Weather", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/weather.svg", exec: "omarchy-win11-widgets" }
     ]
 
     // Dynamic System Applications Catalog (Discovered from XDG .desktop files)
@@ -124,14 +128,14 @@ ShellRoot {
     // Background App Indexer
     Process {
       id: appIndexer
-      command: ["omarchy-undercover-scan-apps"]
+      command: [startWindow.pluginDir + "/scripts/omarchy-undercover-scan-apps"]
       running: true
     }
 
     // Reactive Watcher on apps.json
     FileView {
       id: appsWatcher
-      path: startWindow.homeDir + "/.config/omarchy-undercover/apps.json"
+      path: startWindow.pluginDir + "/apps.json"
       watchChanges: true
       onLoaded: {
         try {
@@ -153,7 +157,7 @@ ShellRoot {
     }
 
     property var recommendedItems: [
-      { name: "omarchy-undercover", time: "Just now", icon: "📄", exec: "xdg-open ~/.config/omarchy-undercover" },
+      { name: "omarchy-undercover", time: "Just now", icon: "📄", exec: "omarchy-undercover-settings" },
       { name: "Windows-11-Fluent.pdf", time: "2h ago", icon: "📑", exec: "xdg-open ~/Documents" },
       { name: "Project-Roadmap-2026.docx", time: "Yesterday at 4:15 PM", icon: "📘", exec: "xdg-open ~/Documents" },
       { name: "hyprland-config.lua", time: "Yesterday at 11:30 AM", icon: "⚙️", exec: "xdg-open ~/.config/hypr" },
@@ -205,8 +209,8 @@ ShellRoot {
 
       Timer {
         id: leaveTimer
-        interval: 300
-        running: startWindow.hasEntered && !menuHover.hovered && !startWindow.showPowerPopup
+        interval: 1200
+        running: startWindow.hasEntered && !menuHover.hovered && !startWindow.showPowerPopup && !startWindow.showUserPopup && searchInput.text.trim().length === 0
         onTriggered: {
           startWindow.closeMenu()
         }

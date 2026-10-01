@@ -32,7 +32,6 @@ for cand in \
     "${SCRIPT_DIR}/../configs/quickshell/win11-actioncenter" \
     "$HOME/.config/omarchy/plugins/omarchy-undercover/configs/quickshell/win11-actioncenter" \
     "$HOME/omarchy-undercover/configs/quickshell/win11-actioncenter" \
-    "$HOME/.config/omarchy-undercover/quickshell/win11-actioncenter" \
     "/usr/share/omarchy-undercover/configs/quickshell/win11-actioncenter"; do
     if [[ -d "$cand" && -f "$cand/shell.qml" ]]; then
         QS_SRC="$cand"

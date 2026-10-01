@@ -11,8 +11,7 @@ Item {
     if (resolved && resolved.length > 1 && resolved.indexOf("/") !== -1) return resolved;
     return homeDir + "/.config/omarchy/plugins/omarchy-undercover";
   }
-  property string stateHome: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state"))
-  property string statePath: stateHome + "/omarchy/undercover/state"
+  property string statePath: pluginDir + "/state"
   property string currentState: "mac-dark"
   property string previousState: ""
 
@@ -86,11 +85,11 @@ Item {
       root.runCmd("omarchy-undercover --disable")
     }
 
-    function autohide(val) {
+    function autohide(val: string) {
       root.runCmd("omarchy-undercover --autohide " + (val === "on" || val === "true" ? "1" : "0"))
     }
 
-    function transparency(val) {
+    function transparency(val: string) {
       root.runCmd("omarchy-undercover --transparency " + (val === "off" || val === "false" ? "off" : "on"))
     }
 
@@ -126,11 +125,11 @@ Item {
       root.runCmd("omarchy-undercover --disable")
     }
 
-    function autohide(val) {
+    function autohide(val: string) {
       root.runCmd("omarchy-undercover --autohide " + (val === "on" || val === "true" ? "1" : "0"))
     }
 
-    function transparency(val) {
+    function transparency(val: string) {
       root.runCmd("omarchy-undercover --transparency " + (val === "off" || val === "false" ? "off" : "on"))
     }
 

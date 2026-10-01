@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="lpBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4a4c52"/>
+      <stop offset="50%" stop-color="#2c2d30"/>
+      <stop offset="100%" stop-color="#191a1c"/>
+    </linearGradient>
+    <filter id="lpShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect x="32" y="32" width="448" height="448" rx="105" fill="url(#lpBg)" filter="url(#lpShadow)"/>
+  <!-- Rocket Body -->
+  <path d="M 330,140 C 330,140 240,180 200,240 C 180,270 175,305 180,332 L 150,362 L 180,370 L 210,360 L 240,330 C 265,335 300,330 330,310 C 390,270 430,180 430,180 C 430,180 370,140 330,140 Z" fill="#ffffff" fill-opacity="0.95"/>
+  <path d="M 230,270 L 160,300 L 180,332 Z" fill="#e03030"/>
+  <circle cx="310" cy="220" r="24" fill="#007aff"/>
+  <circle cx="310" cy="220" r="18" fill="#ffffff"/>
+</svg>

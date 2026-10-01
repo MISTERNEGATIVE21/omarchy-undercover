@@ -42,6 +42,9 @@ BarWidget {
     }
   }
 
+  property string homeDir: Quickshell.env("HOME")
+  property string configDir: homeDir + "/.config/omarchy/plugins/omarchy-undercover"
+
   BarIconButton {
     id: button
     anchors.fill: parent
@@ -49,11 +52,11 @@ BarWidget {
     text: root.isMuted ? "󰝟" : (root.volumeLevel > 0.5 ? "󰕾" : (root.volumeLevel > 0 ? "󰖀" : "󰕿"))
     tooltipText: "Sound: " + (root.isMuted ? "Muted" : Math.round(root.volumeLevel * 100) + "%")
     onPressed: function() {
-      if (root.bar) {
-        root.bar.run("omarchy-mac-sound")
-      } else {
-        Quickshell.execDetached(["omarchy-mac-sound"])
-      }
+      var pluginScripts = root.configDir + "/scripts"
+      var devScripts = root.homeDir + "/omarchy-undercover/scripts"
+      var cmd = pluginScripts + "/omarchy-mac-sound"
+      var wrapped = "export PATH=\"" + pluginScripts + ":" + devScripts + ":$PATH\"; " + cmd
+      Quickshell.execDetached(["bash", "-c", wrapped])
     }
   }
 }

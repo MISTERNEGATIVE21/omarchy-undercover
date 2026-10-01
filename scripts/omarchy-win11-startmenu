@@ -39,27 +39,12 @@ elif (Path.home() / ".config/omarchy/plugins/omarchy-undercover").exists():
 elif (Path.home() / ".config/omarchy/plugins/undercover").exists():
     PLUGIN_DIR = Path.home() / ".config/omarchy/plugins/undercover"
 else:
-    PLUGIN_DIR = Path.home() / ".config/omarchy-undercover"
+    PLUGIN_DIR = Path.home() / ".config/omarchy/plugins/omarchy-undercover"
 
-_state_home = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state"))
-_config_home = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
-
-CONFIG_DIR = _config_home / "omarchy-undercover"
-STATE_DIR = _state_home / "omarchy" / "undercover"
-CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-STATE_DIR.mkdir(parents=True, exist_ok=True)
-
-STATE_FILE = STATE_DIR / "state"
-if not STATE_FILE.exists() and (PLUGIN_DIR / "state").exists():
-    STATE_FILE = PLUGIN_DIR / "state"
-
-SETTINGS_FILE = CONFIG_DIR / "settings.conf"
-if not SETTINGS_FILE.exists() and (PLUGIN_DIR / "settings.conf").exists():
-    try:
-        import shutil
-        shutil.copy2(PLUGIN_DIR / "settings.conf", SETTINGS_FILE)
-    except Exception:
-        pass
+CONFIG_DIR = PLUGIN_DIR
+STATE_DIR = PLUGIN_DIR
+STATE_FILE = PLUGIN_DIR / "state"
+SETTINGS_FILE = PLUGIN_DIR / "settings.conf"
 
 FM_CMD = str(PLUGIN_DIR / "scripts" / "omarchy-undercover-filemanager") if (PLUGIN_DIR / "scripts" / "omarchy-undercover-filemanager").exists() else "omarchy-undercover-filemanager"
 
@@ -112,7 +97,7 @@ PINNED_APPS = [
 ]
 
 RECOMMENDED_ITEMS = [
-    ("📄", "omarchy-undercover.sh", "Just now", "xdg-open ~/.config/omarchy-undercover"),
+    ("📄", "omarchy-undercover.sh", "Just now", "omarchy-undercover-settings"),
     ("📑", "Windows-11-Fluent-Design.pdf", "2h ago", "xdg-open ~/Documents || xdg-open ~"),
     ("📘", "Project-Roadmap-2026.docx", "Yesterday at 4:15 PM", "xdg-open ~/Documents || xdg-open ~"),
     ("⚙️", "hyprland-config.lua", "Yesterday at 11:30 AM", "xdg-open ~/.config/hypr || xdg-open ~"),
@@ -149,8 +134,8 @@ ALL_APPS_LIST = [
     ("⚙️", "Settings & Control Center", "S", "omarchy-undercover-settings"),
     ("🔊", "Sound & Volume Mixer", "S", "omarchy-win11-sound || pavucontrol"),
     ("🎵", "Spotify", "S", "spotify"),
-    ("📈", "System Task Manager", "S", "gnome-system-monitor || uwsm-app -- xdg-terminal-exec -e btop"),
-    ("⧉", "Task View / Switcher", "T", "rofi -show window -theme ~/.config/rofi/windows11.rasi"),
+    ("📈", "Task Manager", "T", "omarchy-win11-taskmanager || gnome-system-monitor || uwsm-app -- xdg-terminal-exec -e btop"),
+    ("⧉", "Task View", "T", "omarchy-win11-taskview || rofi -show window -theme ~/.config/rofi/windows11.rasi"),
     ("💻", "Terminal Console", "T", "xdg-terminal-exec"),
     ("🧑‍💻", "VS Code Editor", "V", "code || vscodium || cursor"),
     ("🎬", "VLC Media Player", "V", "vlc"),

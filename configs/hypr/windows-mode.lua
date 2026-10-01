@@ -6,7 +6,7 @@
 -- omarchy-undercover CLI. It transforms Hyprland into a Windows 11 experience:
 -- Fluent visuals/animations, Windows keybindings, Win11 wallpaper persistence
 -- and system-wide theming environment. All settings are read from
--- ~/.config/omarchy-undercover/settings.conf so the settings app can change
+-- plugin directory settings.conf so the settings app can change
 -- them live (apply with `hyprctl reload`).
 --
 -- It must stay safe to load in any order - the `o` and `hl` globals are
@@ -20,12 +20,6 @@ if _f then
   _f:close()
 else
   settings_path = home .. "/.config/omarchy/plugins/undercover/settings.conf"
-  _f = io.open(settings_path, "r")
-  if _f then
-    _f:close()
-  else
-    settings_path = home .. "/.config/omarchy-undercover/settings.conf"
-  end
 end
 
 local function get_setting(key, default)
@@ -54,7 +48,7 @@ local mode          = get_setting("MODE", "windows")
 
 -- Check state file first (highest precedence)
 local state_path = home .. "/.config/omarchy/plugins/omarchy-undercover/state"
-local state_file = io.open(state_path, "r") or io.open(home .. "/.config/omarchy/plugins/undercover/state", "r") or io.open(home .. "/.config/omarchy-undercover/state", "r")
+local state_file = io.open(state_path, "r") or io.open(home .. "/.config/omarchy/plugins/undercover/state", "r")
 if state_file then
   local s = state_file:read("*l")
   state_file:close()
@@ -75,7 +69,6 @@ local function find_script(name)
     home .. "/.config/omarchy/plugins/omarchy-undercover/scripts",
     home .. "/.config/omarchy/plugins/undercover/scripts",
     home .. "/omarchy-undercover/scripts",
-    home .. "/.config/omarchy-undercover/scripts",
     "/usr/share/omarchy-undercover/scripts",
   }
   for _, dir in ipairs(dirs) do
@@ -106,6 +99,12 @@ hl.env("HYPRCURSOR_SIZE", tostring(cursor_size))
 hl.env("GTK_THEME", "Win11-Dark")
 hl.env("QT_QPA_PLATFORMTHEME", "gtk3")
 hl.env("QT_STYLE_OVERRIDE", "kvantum")
+
+local plugin_scripts = home .. "/.config/omarchy/plugins/omarchy-undercover/scripts"
+local current_path = os.getenv("PATH") or "/usr/local/bin:/usr/bin:/bin"
+if not current_path:find(plugin_scripts, 1, true) then
+  hl.env("PATH", plugin_scripts .. ":" .. current_path)
+end
 
 -- ---------------------------------------------------------------------------
 -- Windows 11 wallpaper persistence (survives login/relog)
@@ -251,7 +250,7 @@ end
 -- ---------------------------------------------------------------------------
 -- Configurable Windows 11 Keybindings
 -- ---------------------------------------------------------------------------
-local keybindings_enabled = get_setting("ENABLE_KEYBINDINGS", "true") == "true"
+local keybindings_enabled = get_setting("ENABLE_KEYBINDINGS", "false") == "true"
 local override_omarchy = get_setting("OVERRIDE_DEFAULT_KEYBINDINGS", "false") == "true"
 
 if keybindings_enabled and hl and hl.bind then
@@ -306,12 +305,26 @@ if keybindings_enabled and hl and hl.bind then
   bind_key("BIND_WIN_MINIMIZE", "SUPER + M", exec_cmd("omarchy-undercover-minimize"), "Minimize window")
   bind_key("BIND_WIN_CLOSE", "ALT + F4", hl.dsp.window.close(), "Close window")
 
-  -- Windows 11 Snap Assist & Tiling Shortcuts
-  -- SUPER+CTRL+arrows avoids conflict with Omarchy's SUPER+arrows (window focus navigation)
-  bind_key("BIND_WIN_SNAP_LEFT", "SUPER + CTRL + LEFT", exec_cmd("omarchy-undercover-snap left"), "Snap Window Left (50%)")
-  bind_key("BIND_WIN_SNAP_RIGHT", "SUPER + CTRL + RIGHT", exec_cmd("omarchy-undercover-snap right"), "Snap Window Right (50%)")
-  bind_key("BIND_WIN_SNAP_UP", "SUPER + CTRL + UP", exec_cmd("omarchy-undercover-snap up"), "Maximize / Zoom Window")
-  bind_key("BIND_WIN_SNAP_DOWN", "SUPER + CTRL + DOWN", exec_cmd("omarchy-undercover-snap down"), "Restore / Minimize Window")
+  -- Windows 11 Multi-Monitor & Screen Management (Win + Shift + Arrows)
+  bind_key("BIND_WIN_MON_LEFT", "SUPER + SHIFT + LEFT", exec_cmd("hyprctl dispatch movewindow mon:l"), "Move active window to left monitor")
+  bind_key("BIND_WIN_MON_RIGHT", "SUPER + SHIFT + RIGHT", exec_cmd("hyprctl dispatch movewindow mon:r"), "Move active window to right monitor")
+  bind_key("BIND_WIN_MON_UP", "SUPER + SHIFT + UP", exec_cmd("hyprctl dispatch movewindow mon:u"), "Move active window to upper monitor")
+  bind_key("BIND_WIN_MON_DOWN", "SUPER + SHIFT + DOWN", exec_cmd("hyprctl dispatch movewindow mon:d"), "Move active window to lower monitor")
+  bind_key("BIND_WIN_PROJECT", "SUPER + P", exec_cmd("omarchy-launch-walker -m displays || omarchy-display-picker || wdisplays"), "Project / Multi-display options")
+
+  -- Windows 11 Virtual Desktops & Multiple Workspaces Management (Win + Ctrl + Arrows / D / F4)
+  bind_key("BIND_WIN_DESKTOP_PREV", "SUPER + CTRL + LEFT", exec_cmd("hyprctl dispatch workspace m-1"), "Switch to previous virtual desktop")
+  bind_key("BIND_WIN_DESKTOP_NEXT", "SUPER + CTRL + RIGHT", exec_cmd("hyprctl dispatch workspace m+1"), "Switch to next virtual desktop")
+  bind_key("BIND_WIN_DESKTOP_NEW", "SUPER + CTRL + D", exec_cmd("hyprctl dispatch workspace empty"), "Create new virtual desktop")
+  bind_key("BIND_WIN_DESKTOP_CLOSE", "SUPER + CTRL + F4", exec_cmd("hyprctl dispatch killactive"), "Close window on virtual desktop")
+  bind_key("BIND_WIN_MOVE_DESKTOP_PREV", "SUPER + CTRL + SHIFT + LEFT", exec_cmd("hyprctl dispatch movetoworkspace -1"), "Move window to previous virtual desktop")
+  bind_key("BIND_WIN_MOVE_DESKTOP_NEXT", "SUPER + CTRL + SHIFT + RIGHT", exec_cmd("hyprctl dispatch movetoworkspace +1"), "Move window to next virtual desktop")
+
+  -- Windows 11 Snap Assist & Tiling Shortcuts (Win + Alt + Arrows)
+  bind_key("BIND_WIN_SNAP_LEFT", "SUPER + ALT + LEFT", exec_cmd("omarchy-undercover-snap left"), "Snap Window Left (50%)")
+  bind_key("BIND_WIN_SNAP_RIGHT", "SUPER + ALT + RIGHT", exec_cmd("omarchy-undercover-snap right"), "Snap Window Right (50%)")
+  bind_key("BIND_WIN_SNAP_UP", "SUPER + ALT + UP", exec_cmd("omarchy-undercover-snap up"), "Maximize / Zoom Window")
+  bind_key("BIND_WIN_SNAP_DOWN", "SUPER + ALT + DOWN", exec_cmd("omarchy-undercover-snap down"), "Restore / Minimize Window")
 end
 
 

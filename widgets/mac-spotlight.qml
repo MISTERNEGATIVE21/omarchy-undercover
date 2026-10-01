@@ -22,12 +22,15 @@ BarWidget {
     fixedWidth: root.contentWidth
     tooltipText: "Spotlight (Super + Alt + Space)"
 
+    property string homeDir: Quickshell.env("HOME")
+    property string configDir: homeDir + "/.config/omarchy/plugins/omarchy-undercover"
+
     onPressed: function() {
-      if (root.bar) {
-        root.bar.run("omarchy-undercover-launcher")
-      } else {
-        Quickshell.execDetached(["omarchy-undercover-launcher"])
-      }
+      var pluginScripts = button.configDir + "/scripts"
+      var devScripts = button.homeDir + "/omarchy-undercover/scripts"
+      var cmd = pluginScripts + "/omarchy-undercover-launcher"
+      var wrapped = "export PATH=\"" + pluginScripts + ":" + devScripts + ":$PATH\"; " + cmd
+      Quickshell.execDetached(["bash", "-c", wrapped])
     }
 
     // Vector macOS Spotlight Magnifying Glass

@@ -32,20 +32,32 @@ BarWidget {
 
   Component.onCompleted: updateState()
 
+  property string homeDir: Quickshell.env("HOME")
+  property string configDir: homeDir + "/.config/omarchy/plugins/omarchy-undercover"
+
+  function resolveCmd(cmd) {
+    if (!cmd) return ""
+    var pluginScripts = root.configDir + "/scripts"
+    var devScripts = root.homeDir + "/omarchy-undercover/scripts"
+    return cmd.replace(/\b(omarchy-[a-zA-Z0-9_-]+)\b/g, function(match) {
+      return pluginScripts + "/" + match
+    })
+  }
+
+  function runCmd(cmd) {
+    var pluginScripts = root.configDir + "/scripts"
+    var devScripts = root.homeDir + "/omarchy-undercover/scripts"
+    var fullCmd = root.resolveCmd(cmd)
+    var wrapped = "export PATH=\"" + pluginScripts + ":" + devScripts + ":$PATH\"; " + fullCmd
+    Quickshell.execDetached(["bash", "-c", wrapped])
+  }
+
   function toggle() {
-    if (root.bar) {
-      root.bar.run("omarchy-undercover-hiddenbar --toggle")
-    } else {
-      Quickshell.execDetached(["omarchy-undercover-hiddenbar", "--toggle"])
-    }
+    root.runCmd("omarchy-undercover-hiddenbar --toggle")
   }
 
   function showDesktop() {
-    if (root.bar) {
-      root.bar.run("omarchy-undercover-show-desktop")
-    } else {
-      Quickshell.execDetached(["omarchy-undercover-show-desktop"])
-    }
+    root.runCmd("omarchy-undercover-show-desktop")
   }
 
   WidgetButton {

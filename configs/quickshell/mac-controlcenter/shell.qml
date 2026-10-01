@@ -157,7 +157,7 @@ ShellRoot {
     // Reactive Theme Poller
     FileView {
       id: stateWatcher
-      path: controlCenterWindow.homeDir + "/.config/omarchy-undercover/state"
+      path: controlCenterWindow.homeDir + "/.config/omarchy/plugins/omarchy-undercover/state"
       watchChanges: true
       onLoaded: {
         var s = text().trim()

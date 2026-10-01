@@ -22,3 +22,5 @@ docs/superpowers/
 superpowers/
 *superpower*
 scratch/
+.worktrees/
+apps.json

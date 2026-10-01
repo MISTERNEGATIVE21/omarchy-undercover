@@ -41,13 +41,18 @@ BarWidget {
       color: root.bar ? root.bar.foreground : "#ffffff"
     }
 
+    property string homeDir: Quickshell.env("HOME")
+    property string configDir: homeDir + "/.config/omarchy/plugins/omarchy-undercover"
+
     onPressed: function(btn) {
       if (btn === Qt.RightButton) {
-        if (root.bar) root.bar.run("omarchy-shell shell toggle omarchy.clock")
-        else Quickshell.execDetached(["omarchy-shell", "shell", "toggle", "omarchy.clock"])
+        Quickshell.execDetached(["omarchy-shell", "shell", "toggle", "omarchy.clock"])
       } else {
-        if (root.bar) root.bar.run("omarchy-mac-widgets")
-        else Quickshell.execDetached(["omarchy-mac-widgets"])
+        var pluginScripts = button.configDir + "/scripts"
+        var devScripts = button.homeDir + "/omarchy-undercover/scripts"
+        var cmd = pluginScripts + "/omarchy-mac-widgets"
+        var wrapped = "export PATH=\"" + pluginScripts + ":" + devScripts + ":$PATH\"; " + cmd
+        Quickshell.execDetached(["bash", "-c", wrapped])
       }
     }
   }

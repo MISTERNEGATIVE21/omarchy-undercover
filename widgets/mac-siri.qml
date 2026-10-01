@@ -94,13 +94,16 @@ BarWidget {
       if (root.bar) root.bar.hideTooltip(root)
     }
 
+    property string homeDir: Quickshell.env("HOME")
+    property string configDir: homeDir + "/.config/omarchy/plugins/omarchy-undercover"
+
     onClicked: {
-      if (root.bar) {
-        root.bar.hideTooltip(root)
-        root.bar.run("omarchy-mac-siri")
-      } else {
-        Quickshell.execDetached(["omarchy-mac-siri"])
-      }
+      if (root.bar) root.bar.hideTooltip(root)
+      var pluginScripts = mouseArea.configDir + "/scripts"
+      var devScripts = mouseArea.homeDir + "/omarchy-undercover/scripts"
+      var cmd = pluginScripts + "/omarchy-mac-siri"
+      var wrapped = "export PATH=\"" + pluginScripts + ":" + devScripts + ":$PATH\"; " + cmd
+      Quickshell.execDetached(["bash", "-c", wrapped])
     }
   }
 }

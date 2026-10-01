@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <filter id="pShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect x="32" y="32" width="448" height="448" rx="105" fill="#ffffff" filter="url(#pShadow)"/>
+  <!-- Rainbow Petals -->
+  <ellipse cx="256" cy="180" rx="32" ry="70" fill="#ff3b30" opacity="0.9"/>
+  <ellipse cx="256" cy="332" rx="32" ry="70" fill="#007aff" opacity="0.9"/>
+  <ellipse cx="180" cy="256" rx="70" ry="32" fill="#ff9500" opacity="0.9"/>
+  <ellipse cx="332" cy="256" rx="70" ry="32" fill="#34c759" opacity="0.9"/>
+  <ellipse cx="202" cy="202" rx="32" ry="70" transform="rotate(-45 202 202)" fill="#ffcc00" opacity="0.85"/>
+  <ellipse cx="310" cy="202" rx="32" ry="70" transform="rotate(45 310 202)" fill="#af52de" opacity="0.85"/>
+  <ellipse cx="202" cy="310" rx="32" ry="70" transform="rotate(45 202 310)" fill="#5856d6" opacity="0.85"/>
+  <ellipse cx="310" cy="310" rx="32" ry="70" transform="rotate(-45 310 310)" fill="#5ac8fa" opacity="0.85"/>
+</svg>

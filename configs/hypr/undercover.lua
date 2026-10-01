@@ -11,7 +11,6 @@ local function get_plugin_dir()
     home .. "/.config/omarchy/plugins/omarchy-undercover",
     home .. "/.config/omarchy/plugins/undercover",
     home .. "/omarchy-undercover",
-    home .. "/.config/omarchy-undercover",
     "/usr/share/omarchy-undercover",
   }
   for _, d in ipairs(dirs) do
@@ -38,10 +37,9 @@ end
 local function get_active_mode()
   -- Check state file first (highest precedence)
   local state_paths = {
-    home .. "/.local/state/omarchy/undercover/state",
     plugin_dir .. "/state",
+    home .. "/.config/omarchy/plugins/omarchy-undercover/state",
     home .. "/.config/omarchy/plugins/undercover/state",
-    home .. "/.config/omarchy-undercover/state",
   }
   for _, sp in ipairs(state_paths) do
     local f = io.open(sp, "r")
@@ -60,8 +58,8 @@ local function get_active_mode()
   -- Check settings.conf
   local settings_paths = {
     plugin_dir .. "/settings.conf",
+    home .. "/.config/omarchy/plugins/omarchy-undercover/settings.conf",
     home .. "/.config/omarchy/plugins/undercover/settings.conf",
-    home .. "/.config/omarchy-undercover/settings.conf",
   }
   for _, sp in ipairs(settings_paths) do
     local f = io.open(sp, "r")

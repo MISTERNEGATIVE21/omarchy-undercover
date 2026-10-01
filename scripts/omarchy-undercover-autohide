@@ -8,7 +8,7 @@ Features:
 - Active-flyout locking: taskbar stays locked visible while Start Menu, Quick Settings, Calendar or Widgets are open
 - 250ms smooth dwell buffer preventing accidental hide or jitter
 - Single-instance background daemon with start/stop/toggle/status commands
-- Fully synced with ~/.config/omarchy-undercover/settings.conf
+- Fully synced with settings.conf in the plugin directory
 """
 
 import sys
@@ -27,7 +27,7 @@ elif os.path.isdir(os.path.expanduser("~/.config/omarchy/plugins/omarchy-underco
 elif os.path.isdir(os.path.expanduser("~/.config/omarchy/plugins/undercover")):
     PLUGIN_DIR = os.path.expanduser("~/.config/omarchy/plugins/undercover")
 else:
-    PLUGIN_DIR = os.path.expanduser("~/.config/omarchy-undercover")
+    PLUGIN_DIR = os.path.expanduser("~/.config/omarchy/plugins/omarchy-undercover")
 
 CONFIG_DIR = PLUGIN_DIR
 PID_FILE = os.path.join(CONFIG_DIR, "autohide.pid")

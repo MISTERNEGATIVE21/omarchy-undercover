@@ -28,7 +28,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio, GLib, Gdk
 
 APP_ID = "org.omarchy.undercover.settings"
-VERSION = "5.7.6"
+VERSION = "5.7.8"
 
 _script_parent = Path(__file__).resolve().parent.parent
 if (_script_parent / "manifest.json").exists():
@@ -38,27 +38,13 @@ elif (Path.home() / ".config/omarchy/plugins/omarchy-undercover").exists():
 elif (Path.home() / ".config/omarchy/plugins/undercover").exists():
     PLUGIN_DIR = Path.home() / ".config/omarchy/plugins/undercover"
 else:
-    PLUGIN_DIR = Path.home() / ".config/omarchy-undercover"
+    PLUGIN_DIR = Path.home() / ".config/omarchy/plugins/omarchy-undercover"
 
-_state_home = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state"))
-_config_home = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+CONFIG_DIR = PLUGIN_DIR
+STATE_DIR = PLUGIN_DIR
 
-CONFIG_DIR = _config_home / "omarchy-undercover"
-STATE_DIR = _state_home / "omarchy" / "undercover"
-CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-STATE_DIR.mkdir(parents=True, exist_ok=True)
-
-STATE_FILE = STATE_DIR / "state"
-if not STATE_FILE.exists() and (PLUGIN_DIR / "state").exists():
-    STATE_FILE = PLUGIN_DIR / "state"
-
-SETTINGS_FILE = CONFIG_DIR / "settings.conf"
-if not SETTINGS_FILE.exists() and (PLUGIN_DIR / "settings.conf").exists():
-    try:
-        import shutil
-        shutil.copy2(PLUGIN_DIR / "settings.conf", SETTINGS_FILE)
-    except Exception:
-        pass
+STATE_FILE = PLUGIN_DIR / "state"
+SETTINGS_FILE = PLUGIN_DIR / "settings.conf"
 
 WALLPAPER_DIR = PLUGIN_DIR / "assets" / "wallpapers" if (PLUGIN_DIR / "assets" / "wallpapers").exists() else PLUGIN_DIR / "wallpapers"
 ICON_PATH = PLUGIN_DIR / "assets" / "icons" / "omarchy-undercover" / "scalable" / "apps" / "omarchy-undercover.svg"
@@ -1042,7 +1028,7 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
             title="Enable Mode Shortcuts",
             subtitle="Registers camouflage keybindings in Hyprland according to your active undercover mode"
         )
-        row_enable.set_active(read_setting("ENABLE_KEYBINDINGS", "true").lower() == "true")
+        row_enable.set_active(read_setting("ENABLE_KEYBINDINGS", "false").lower() == "true")
         def on_enable_toggled(row, param):
             val = "true" if row.get_active() else "false"
             write_setting("ENABLE_KEYBINDINGS", val)
@@ -1652,9 +1638,10 @@ if __name__ == "__main__":
                 subprocess.run(["hyprctl", "eval", 'if hl and hl.window_rule then hl.window_rule({ match = { class = "^org.quickshell$", title = "^System Settings$" }, float = true, center = true, size = { 980, 640 }, focus_on_activate = true }) end'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 subprocess.run(["hyprctl", "eval", 'if o and o.window then o.window({ class = "^org.quickshell$", title = "^System Settings$" }, { float = true, center = true, size = { 980, 640 }, focus_on_activate = true }) end'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             mac_paths = [
-                Path.home() / ".config/quickshell/mac-settings",
+                PLUGIN_DIR / "configs/quickshell/mac-settings",
+                PLUGIN_DIR / "quickshell/mac-settings",
                 Path(__file__).resolve().parent.parent / "configs/quickshell/mac-settings",
-                Path.home() / ".config/omarchy-undercover/quickshell/mac-settings",
+                Path.home() / ".config/omarchy/plugins/omarchy-undercover/configs/quickshell/mac-settings",
             ]
             for p in mac_paths:
                 if p.exists() and (p / "shell.qml").exists():
@@ -1664,9 +1651,10 @@ if __name__ == "__main__":
             subprocess.run(["hyprctl", "eval", 'if hl and hl.window_rule then hl.window_rule({ match = { class = "^org.quickshell$", title = "^Settings$" }, float = true, center = true, size = { 980, 640 }, focus_on_activate = true }) end'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             subprocess.run(["hyprctl", "eval", 'if o and o.window then o.window({ class = "^org.quickshell$", title = "^Settings$" }, { float = true, center = true, size = { 980, 640 }, focus_on_activate = true }) end'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         qs_paths = [
-            Path.home() / ".config/quickshell/win11-settings",
+            PLUGIN_DIR / "configs/quickshell/win11-settings",
+            PLUGIN_DIR / "quickshell/win11-settings",
             Path(__file__).resolve().parent.parent / "configs/quickshell/win11-settings",
-            Path.home() / ".config/omarchy-undercover/quickshell/win11-settings",
+            Path.home() / ".config/omarchy/plugins/omarchy-undercover/configs/quickshell/win11-settings",
         ]
         for p in qs_paths:
             if p.exists() and (p / "shell.qml").exists():

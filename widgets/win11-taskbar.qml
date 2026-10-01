@@ -11,33 +11,96 @@ BarWidget {
   id: root
   moduleName: "win11-taskbar"
 
+  readonly property bool interactive: true
+  readonly property bool pressable: false
+  readonly property bool concealed: false
+
   property string homeDir: Quickshell.env("HOME")
   property string configDir: homeDir + "/.config/omarchy/plugins/omarchy-undercover"
   property bool isDark: true
   property var winPinsConfig: ({})
   onWinPinsConfigChanged: root.refreshTaskbar()
 
-  // Live Wayland Toplevel handles mapping for ScreencopyView
-  property var handleByAddress: ({})
+  property var monitorsList: []
 
-  function buildHandles() {
-    var map = {}
-    var tls = (ToplevelManager && ToplevelManager.toplevels) ? ToplevelManager.toplevels.values : []
-    for (var i = 0; i < tls.length; i++) {
-      var t = tls[i]
-      var h = t.HyprlandToplevel
-      if (h) {
-        if (!t._boundAddress) {
-          t._boundAddress = true
-          h.addressChanged.connect(root.buildHandles)
-        }
-        var addr = String(h.address || "").toLowerCase().trim()
-        if (addr && addr !== "0") {
-          map["0x" + addr] = t
-          map[addr] = t
+  function getMonitorLabel(monitorId) {
+    if (root.monitorsList && root.monitorsList.length > 0) {
+      for (var i = 0; i < root.monitorsList.length; i++) {
+        var m = root.monitorsList[i]
+        if (m && (m.id === monitorId || m.name === String(monitorId))) {
+          var num = (i + 1)
+          return "Screen " + num + (m.name ? " (" + m.name + ")" : "")
         }
       }
     }
+    var mid = (typeof monitorId === "number") ? (monitorId + 1) : 1
+    return "Screen " + mid
+  }
+
+  // Live Wayland Toplevel handles mapping for ScreencopyView
+  property var toplevelByAddress: ({})
+  property var handleByAddress: ({})
+
+  function refreshToplevelMap() {
+    var map = {}
+    try {
+      if (Hyprland && Hyprland.workspaces && Hyprland.workspaces.values) {
+        var wss = Hyprland.workspaces.values
+        for (var i = 0; i < wss.length; i++) {
+          var tls = wss[i].toplevels ? wss[i].toplevels.values : []
+          for (var j = 0; j < tls.length; j++) {
+            var tl = tls[j]
+            var raw = tl.address
+            if (raw !== undefined && raw !== null) {
+              var addrStr = String(raw).toLowerCase().trim()
+              if (addrStr && addrStr !== "0") {
+                map[addrStr] = tl.wayland
+                if (addrStr.indexOf("0x") === 0) {
+                  map[addrStr.slice(2)] = tl.wayland
+                } else {
+                  map["0x" + addrStr] = tl.wayland
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch(e) {}
+    root.toplevelByAddress = map
+  }
+
+  function buildHandles() {
+    var map = {}
+    try {
+      var tls = (ToplevelManager && ToplevelManager.toplevels) ? ToplevelManager.toplevels.values : []
+      for (var i = 0; i < tls.length; i++) {
+        var t = tls[i]
+        var h = t.HyprlandToplevel
+        if (h) {
+          if (!t._boundAddress) {
+            t._boundAddress = true
+            h.addressChanged.connect(root.buildHandles)
+          }
+          var raw = h.address
+          if (raw !== undefined && raw !== null) {
+            var addrStr = String(raw).toLowerCase().trim()
+            if (addrStr && addrStr !== "0") {
+              map[addrStr] = t
+              if (addrStr.indexOf("0x") === 0) {
+                map[addrStr.slice(2)] = t
+              } else {
+                map["0x" + addrStr] = t
+              }
+            }
+            if (typeof raw === "number") {
+              var hex = raw.toString(16).toLowerCase()
+              map[hex] = t
+              map["0x" + hex] = t
+            }
+          }
+        }
+      }
+    } catch(e) {}
     root.handleByAddress = map
   }
 
@@ -48,6 +111,10 @@ BarWidget {
 
   Component.onCompleted: {
     root.buildHandles()
+    root.refreshToplevelMap()
+    if (Hyprland && Hyprland.refreshToplevels) {
+      Hyprland.refreshToplevels()
+    }
   }
 
   // Dynamic Bar-Aware Contrast Detection
@@ -79,47 +146,62 @@ BarWidget {
     return "'" + String(val || "").replace(/'/g, "'\\''") + "'"
   }
 
+  function resolveCmd(cmd) {
+    if (!cmd) return ""
+    var pluginScripts = root.configDir + "/scripts"
+    var devScripts = root.homeDir + "/omarchy-undercover/scripts"
+    return cmd.replace(/\b(omarchy-[a-zA-Z0-9_-]+)\b/g, function(match) {
+      return pluginScripts + "/" + match
+    })
+  }
+
   function runCmd(cmd) {
-    if (root.bar) {
-      root.bar.run(cmd)
-    } else {
-      Quickshell.execDetached(["bash", "-c", cmd])
-    }
+    var pluginScripts = root.configDir + "/scripts"
+    var devScripts = root.homeDir + "/omarchy-undercover/scripts"
+    var fullCmd = root.resolveCmd(cmd)
+    var wrapped = "export PATH=\"" + pluginScripts + ":" + devScripts + ":$PATH\"; " + fullCmd
+    Quickshell.execDetached(["bash", "-c", wrapped])
   }
 
   function shiftToClient(client) {
     if (!client || !client.address) return
-    var rawAddr = String(client.address).trim()
+    var rawAddr = String(client.address).toLowerCase().trim()
+    if (!rawAddr.startsWith("0x")) rawAddr = "0x" + rawAddr
     if (!/^0x[0-9a-fA-F]+$/.test(rawAddr)) return
-    if (client.workspace && client.workspace.id < 0) {
-      Quickshell.execDetached(["omarchy-undercover-minimize", rawAddr])
+
+    var wsId = 0
+    if (client.workspace) {
+      wsId = (client.workspace.id !== undefined) ? parseInt(client.workspace.id) : (typeof client.workspace === "number" ? client.workspace : 0)
+    }
+    if (wsId < 0) {
+      var minScript = root.configDir + "/scripts/omarchy-undercover-minimize"
+      Quickshell.execDetached([minScript, rawAddr])
       refreshTimer.restart()
       return
     }
-    var wsId = (client.workspace && client.workspace.id) ? parseInt(client.workspace.id) : 0
-    var safeWs = (wsId > 0) ? ("hyprctl dispatch workspace " + wsId + " 2>/dev/null; hyprctl dispatch " + root.shellQuote("hl.dsp.focus({ workspace = " + wsId + " })") + " 2>/dev/null; ") : ""
-    var cmd = safeWs +
-              "if hyprctl dispatch " + root.shellQuote("hl.dsp.focus({ window = 'address:" + rawAddr + "' })") + " 2>/dev/null; then :; else " +
-              "hyprctl dispatch focuswindow " + root.shellQuote("address:" + rawAddr) + " 2>/dev/null; fi"
-    if (root.bar) {
-      root.bar.run(cmd)
-    } else {
-      Quickshell.execDetached(["bash", "-c", cmd])
-    }
+
+    var monArg = (client.monitor !== undefined && client.monitor !== null && client.monitor !== "")
+      ? ('hyprctl dispatch "hl.dsp.focus({ monitor = ' + client.monitor + ' })" >/dev/null 2>&1 || true; ') : ""
+    var cmd = monArg +
+              'if hyprctl dispatch "hl.dsp.focus({ window = \\"address:' + rawAddr + '\\" })" >/dev/null 2>&1; then :; else ' +
+              'hyprctl dispatch focuswindow "address:' + rawAddr + '" >/dev/null 2>&1; fi; ' +
+              'hyprctl dispatch "hl.dsp.window.bring_to_top()" >/dev/null 2>&1 || true;'
+    Quickshell.execDetached(["bash", "-c", cmd])
     refreshTimer.restart()
   }
 
   function closeClient(client) {
     if (!client || !client.address) {
-      var fallbackCmd = "if hyprctl dispatch \"hl.dsp.window.close()\" 2>/dev/null; then :; else hyprctl dispatch killactive 2>/dev/null; fi"
+      var fallbackCmd = 'if hyprctl dispatch "hl.dsp.window.close()" 2>/dev/null; then :; else hyprctl dispatch killactive 2>/dev/null; fi'
       if (root.bar) root.bar.run(fallbackCmd)
       else Quickshell.execDetached(["bash", "-c", fallbackCmd])
       refreshTimer.restart()
       return
     }
-    var rawAddr = String(client.address).trim()
+    var rawAddr = String(client.address).toLowerCase().trim()
+    if (!rawAddr.startsWith("0x")) rawAddr = "0x" + rawAddr
     if (!/^0x[0-9a-fA-F]+$/.test(rawAddr)) return
-    var cmd = "if hyprctl dispatch " + root.shellQuote("hl.dsp.window.close({ window = 'address:" + rawAddr + "' })") + " 2>/dev/null; then :; else hyprctl dispatch closewindow " + root.shellQuote("address:" + rawAddr) + " 2>/dev/null; fi"
+    var cmd = 'if hyprctl dispatch "hl.dsp.window.close({ window = \\"address:' + rawAddr + '\\" })" >/dev/null 2>&1; then :; else hyprctl dispatch closewindow "address:' + rawAddr + '" >/dev/null 2>&1; fi'
     if (root.bar) root.bar.run(cmd)
     else Quickshell.execDetached(["bash", "-c", cmd])
     refreshTimer.restart()
@@ -128,7 +210,8 @@ BarWidget {
   function switchToWorkspace(ws) {
     var rawWs = String(ws).trim()
     if (!/^[0-9a-zA-Z_+-]+$/.test(rawWs)) return
-    var cmd = "if hyprctl dispatch " + root.shellQuote("hl.dsp.focus({ workspace = '" + rawWs + "' })") + " 2>/dev/null; then :; else hyprctl dispatch workspace " + root.shellQuote(rawWs) + " 2>/dev/null; fi"
+    var wsArg = /^[0-9]+$/.test(rawWs) ? rawWs : ('\\"' + rawWs + '\\"')
+    var cmd = 'if hyprctl dispatch "hl.dsp.focus({ workspace = ' + wsArg + ' })" >/dev/null 2>&1; then :; else hyprctl dispatch workspace "' + rawWs + '" >/dev/null 2>&1; fi'
     if (root.bar) root.bar.run(cmd)
     else Quickshell.execDetached(["bash", "-c", cmd])
     refreshTimer.restart()
@@ -136,9 +219,30 @@ BarWidget {
 
   function seekWorkspace(delta) {
     var wsArg = delta > 0 ? "e-1" : "e+1"
-    var cmd = "if hyprctl dispatch " + root.shellQuote("hl.dsp.focus({ workspace = '" + wsArg + "' })") + " 2>/dev/null; then :; else hyprctl dispatch workspace " + root.shellQuote(wsArg) + " 2>/dev/null; fi"
+    var cmd = 'if hyprctl dispatch "hl.dsp.focus({ workspace = \\"' + wsArg + '\\" })" >/dev/null 2>&1; then :; else hyprctl dispatch workspace "' + wsArg + '" >/dev/null 2>&1; fi'
     if (root.bar) root.bar.run(cmd)
     else Quickshell.execDetached(["bash", "-c", cmd])
+    refreshTimer.restart()
+  }
+
+  function getClientsForWorkspace(wsId) {
+    if (!root.hyprClients || root.hyprClients.length === 0) return []
+    return root.hyprClients.filter(function(c) {
+      return c && c.workspace && c.workspace.id === wsId
+    })
+  }
+
+  function closeWorkspace(wsId) {
+    var cls = root.getClientsForWorkspace(wsId)
+    var targetWs = (wsId > 1) ? (wsId - 1) : 1
+    for (var i = 0; i < cls.length; i++) {
+      if (cls[i] && cls[i].address) {
+        Quickshell.execDetached(["hyprctl", "dispatch", "movetoworkspacesilent", targetWs + ",address:" + cls[i].address])
+      }
+    }
+    if (root.activeWorkspaceId === wsId) {
+      root.switchToWorkspace(targetWs.toString())
+    }
     refreshTimer.restart()
   }
 
@@ -150,10 +254,9 @@ BarWidget {
 
   Process {
     id: hyprStateProc
-    // ponytail: hyprctl --batch gets all 4 queries in 1 socket round-trip, 3x faster than subshell chains
     command: [
       "bash", "-c",
-      "hyprctl --batch 'j/activeworkspace ; j/workspaces ; j/clients ; j/activewindow' 2>/dev/null | jq -s -c '{actWs: (.[0] // {}), allWs: (.[1] // []), cls: (.[2] // []), actWin: (.[3] // {})}'"
+      "hyprctl --batch 'j/activeworkspace ; j/workspaces ; j/clients ; j/activewindow ; j/monitors' 2>/dev/null | jq -s -c '{actWs: (.[0] // {}), allWs: (.[1] // []), cls: (.[2] // []), actWin: (.[3] // {}), mons: (.[4] // [])}'"
     ]
     stdout: SplitParser {
       onRead: function(line) {
@@ -174,12 +277,20 @@ BarWidget {
             root.workspaceList = ids
           }
           if (Array.isArray(data.cls)) {
-            root.hyprClients = data.cls.filter(function(c) { return c && c.mapped && !c.hidden })
+            var rawList = data.cls.filter(function(c) { return c && c.mapped && !c.hidden })
+            for (var k = 0; k < rawList.length; k++) {
+              var a = String(rawList[k].address || "").toLowerCase().trim()
+              rawList[k].toplevel = root.toplevelByAddress[a] || root.handleByAddress[a] || null
+            }
+            root.hyprClients = rawList
           }
           if (data.actWin && data.actWin.address) {
             root.hyprActiveWindow = data.actWin
           } else {
             root.hyprActiveWindow = ({})
+          }
+          if (Array.isArray(data.mons)) {
+            root.monitorsList = data.mons
           }
         } catch(e) {}
         root.refreshTaskbar()
@@ -204,7 +315,38 @@ BarWidget {
     running: false
     repeat: false
     onTriggered: {
+      root.refreshToplevelMap()
       if (!hyprStateProc.running) hyprStateProc.running = true
+    }
+  }
+
+  Connections {
+    target: Hyprland
+    function onRawEvent(event) {
+      switch (event.name) {
+      case "activewindowv2":
+      case "closewindow":
+      case "openwindow":
+      case "movewindow":
+      case "movewindowv2":
+      case "changefloatingmode":
+      case "windowtitle":
+      case "windowtitlev2":
+        refreshDebounce.restart()
+        break
+      }
+    }
+  }
+
+  Timer {
+    id: refreshDebounce
+    interval: 100
+    onTriggered: {
+      if (Hyprland && Hyprland.refreshToplevels) {
+        Hyprland.refreshToplevels()
+      }
+      root.refreshToplevelMap()
+      refreshTimer.restart()
     }
   }
 
@@ -230,24 +372,17 @@ BarWidget {
     }
   }
 
-  function findRunningClient(matchers) {
-    if (!matchers || matchers.length === 0) return null
-    var firstMatch = null
-    for (var i = 0; i < root.hyprClients.length; i++) {
-      var c = root.hyprClients[i]
-      if (!c) continue
-      var target = ((c.class || "") + " " + (c.initialClass || "") + " " + (c.title || "")).toLowerCase()
-      for (var j = 0; j < matchers.length; j++) {
-        if (target.indexOf(matchers[j].toLowerCase()) !== -1) {
-          if (root.hyprActiveWindow && root.hyprActiveWindow.address && c.address === root.hyprActiveWindow.address) {
-            return c
-          }
-          if (!firstMatch) firstMatch = c
-          break
-        }
-      }
+  function isClientMatching(c, matchers) {
+    if (!c || !matchers || matchers.length === 0) return false
+    var cls = String(c.class || "").toLowerCase().trim()
+    var initCls = String(c.initialClass || "").toLowerCase().trim()
+    for (var j = 0; j < matchers.length; j++) {
+      var m = String(matchers[j] || "").toLowerCase().trim()
+      if (!m) continue
+      if (cls === m || initCls === m) return true
+      if (cls.indexOf(m) !== -1 || initCls.indexOf(m) !== -1) return true
     }
-    return firstMatch
+    return false
   }
 
   function findAllRunningClients(matchers) {
@@ -256,30 +391,37 @@ BarWidget {
     for (var i = 0; i < root.hyprClients.length; i++) {
       var c = root.hyprClients[i]
       if (!c || !c.address) continue
-      var target = ((c.class || "") + " " + (c.initialClass || "") + " " + (c.title || "")).toLowerCase()
-      for (var j = 0; j < matchers.length; j++) {
-        if (target.indexOf(matchers[j].toLowerCase()) !== -1) {
-          list.push(c)
-          break
-        }
+      if (root.isClientMatching(c, matchers)) {
+        list.push(c)
       }
     }
     return list
   }
 
   function isClientFocused(client) {
-    if (!client || !client.address || !root.hyprActiveWindow || !root.hyprActiveWindow.address) return false
-    return client.address === root.hyprActiveWindow.address
+    if (!client || !client.address) return false
+    var addr = String(client.address).toLowerCase().trim().replace(/^0x/, "")
+    if (root.hyprActiveWindow && root.hyprActiveWindow.address) {
+      var actAddr = String(root.hyprActiveWindow.address).toLowerCase().trim().replace(/^0x/, "")
+      if (addr === actAddr) return true
+    }
+    try {
+      if (Hyprland.activeToplevel && Hyprland.activeToplevel.address) {
+        var hAddr = String(Hyprland.activeToplevel.address).toLowerCase().trim().replace(/^0x/, "")
+        if (addr === hAddr) return true
+      }
+    } catch(e) {}
+    return false
   }
 
   function resolveAppIcon(c) {
     if (!c) return ""
     var cls = (c.initialClass || c.class || "").toLowerCase()
     if (cls.indexOf("telegram") !== -1) {
-      return Quickshell.iconPath("telegram") || Quickshell.iconPath("org.telegram.desktop") || ("file://" + root.homeDir + "/.local/share/icons/win11/discord.svg")
+      return Quickshell.iconPath("telegram") || Quickshell.iconPath("org.telegram.desktop") || ("file://" + root.configDir + "/assets/icons/win11/discord.svg")
     }
     if (cls.indexOf("antigravity") !== -1) {
-      return "file://" + root.homeDir + "/.local/share/icons/win11/antigravity-ide.svg"
+      return "file://" + root.configDir + "/assets/icons/win11/antigravity-ide.svg"
     }
     var ip = Quickshell.iconPath(c.class) || Quickshell.iconPath(c.initialClass)
     if (ip) return ip
@@ -291,10 +433,25 @@ BarWidget {
     return "image://icon/" + (c.initialClass || c.class)
   }
 
-  // Reactive Theme state watcher via FileView
+  function formatAppName(c) {
+    if (!c) return "Application"
+    var raw = c.initialClass || c.class || ""
+    if (raw) {
+      var parts = raw.split(".")
+      var base = parts[parts.length - 1]
+      if (base.toLowerCase().indexOf("org.") === 0) base = base.slice(4)
+      base = base.replace(/-stable$|-bin$|-desktop$/i, "")
+      base = base.replace(/[-_]/g, " ")
+      if (base.length > 0) {
+        return base.charAt(0).toUpperCase() + base.slice(1)
+      }
+    }
+    return c.title || c.initialTitle || "Application"
+  }
+
   FileView {
     id: stateWatcher
-    path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/omarchy/undercover/state"
+    path: root.configDir + "/state"
     watchChanges: true
     printErrors: false
     onLoaded: {
@@ -335,29 +492,8 @@ BarWidget {
     root.refreshTaskbar()
   }
 
-  // Defaults & pinned apps poller via FileView
   FileView {
     id: defaultsFile
-    path: root.homeDir + "/.config/omarchy-undercover/defaults.json"
-    watchChanges: true
-    printErrors: false
-    onLoaded: {
-      try {
-        var d = JSON.parse(text())
-        root.applyDefaultsConfig(d)
-      } catch(e) {}
-    }
-    onFileChanged: {
-      reload()
-      try {
-        var d = JSON.parse(text())
-        root.applyDefaultsConfig(d)
-      } catch(e) {}
-    }
-  }
-
-  FileView {
-    id: defaultsFileAlt
     path: root.configDir + "/defaults.json"
     watchChanges: true
     printErrors: false
@@ -376,10 +512,9 @@ BarWidget {
     }
   }
 
-  // Windows 11 Taskbar Pinned Apps
   property var winApps: [
     { id: "start", name: "Start", isStart: true, iconFile: "start.svg", exec: "omarchy-win11-start", matchers: [] },
-    { id: "taskview", name: "Task View", isTaskView: true, iconFile: "taskview.svg", exec: "rofi -show window -theme ~/.config/rofi/windows11.rasi", matchers: [] },
+    { id: "taskview", name: "Task View", isTaskView: true, iconFile: "taskview.svg", exec: "omarchy-win11-taskview", matchers: [] },
     { id: "explorer", name: "File Explorer", iconFile: "explorer.svg", exec: "omarchy-undercover-filemanager ~ || flea", matchers: ["flea", "nautilus", "thunar", "dolphin", "nemo", "pcmanfm", "files", "org.gnome.nautilus"] },
     { id: "browser", name: "Microsoft Edge", iconFile: "microsoft-edge.svg", exec: "omarchy-browser", matchers: ["edge", "microsoft-edge", "chrome", "chromium", "firefox", "vivaldi", "brave", "zen", "browser", "google-chrome"] },
     { id: "antigravity", name: "Antigravity IDE", iconFile: "antigravity-ide.svg", exec: "antigravity-ide || code || vscodium", matchers: ["antigravity", "code", "vscodium", "vscode", "codium"] },
@@ -397,36 +532,34 @@ BarWidget {
     })
   }
 
-  // Dynamically discover all running unpinned applications
   function getUnpinnedRunningApps() {
     var pinned = root.getVisiblePinnedApps()
-    var unpinned = []
-    var seenKeys = {}
+    var unpinnedMap = {}
+    var order = []
 
     for (var i = 0; i < root.hyprClients.length; i++) {
       var c = root.hyprClients[i]
       if (!c || !c.address) continue
-      var cls = (c.class || "").toLowerCase()
-      var initCls = (c.initialClass || "").toLowerCase()
-      var title = (c.title || "").toLowerCase()
+      var cls = (c.class || "").toLowerCase().trim()
+      var initCls = (c.initialClass || "").toLowerCase().trim()
+      var title = (c.title || "").toLowerCase().trim()
 
-      // Skip internal quickshell desktop overlays
       if (cls === "org.quickshell" && (title === "" || title === "quickshell")) continue
 
       var isPinned = pinned.some(function(p) {
-        if (!p.matchers || p.matchers.length === 0) return false
-        var target = (cls + " " + initCls + " " + title)
-        return p.matchers.some(function(m) { return target.indexOf(m.toLowerCase()) !== -1 })
+        return root.isClientMatching(c, p.matchers)
       })
 
       if (!isPinned) {
         var baseKey = (initCls || cls || "app")
         if (baseKey.indexOf("telegram") !== -1) baseKey = "telegram"
-        if (!seenKeys[baseKey]) {
-          seenKeys[baseKey] = true
-          unpinned.push({
-            id: "running_" + c.address,
-            name: c.title || c.initialTitle || c.class || "Application",
+        if (!unpinnedMap[baseKey]) {
+          var rawMatchers = []
+          if (c.class) rawMatchers.push(c.class)
+          if (c.initialClass && rawMatchers.indexOf(c.initialClass) === -1) rawMatchers.push(c.initialClass)
+          unpinnedMap[baseKey] = {
+            id: "running_" + (c.class || c.address),
+            name: root.formatAppName(c),
             hyprClient: c,
             isStart: false,
             isTaskView: false,
@@ -435,12 +568,21 @@ BarWidget {
             appId: c.class || c.initialClass || "",
             iconFile: "",
             exec: "",
-            matchers: [c.class || "", c.initialClass || ""]
-          })
+            matchers: rawMatchers,
+            instances: [c]
+          }
+          order.push(baseKey)
+        } else {
+          unpinnedMap[baseKey].instances.push(c)
         }
       }
     }
-    return unpinned
+
+    var result = []
+    for (var k = 0; k < order.length; k++) {
+      result.push(unpinnedMap[order[k]])
+    }
+    return result
   }
 
   function getAllTaskbarItems() {
@@ -450,6 +592,154 @@ BarWidget {
     return pinned.concat(running)
   }
 
+  // ------------------------------------------------------------ Preview Popup Coordination (PopupCard)
+  property var previewTargetItem: null
+  property var previewTargetClients: []
+  property string previewMode: "none" // "app" | "taskview" | "tooltip"
+  property bool previewOpen: false
+  property bool previewPinned: false
+  property string tooltipString: ""
+
+  Item {
+    id: previewAnchor
+    property bool animate: false
+    visible: false
+
+    Behavior on x { enabled: previewAnchor.animate; NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+    Behavior on y { enabled: previewAnchor.animate; NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+    onXChanged: if (previewPopup.visible) previewPopup.anchor.updateAnchor()
+    onYChanged: if (previewPopup.visible) previewPopup.anchor.updateAnchor()
+  }
+
+  QtObject {
+    id: previewBar
+    readonly property string position: root.bar ? root.bar.position : "bottom"
+    property var activePopout: null
+    function requestPopout(owner) {}
+    function releasePopout(owner) {}
+  }
+
+  function placePreviewAnchor(itemBox) {
+    if (!itemBox) return
+    var p = itemBox.mapToItem(root, 0, 0)
+    previewAnchor.animate = root.previewOpen
+    previewAnchor.x = p.x
+    previewAnchor.y = p.y
+    previewAnchor.width = itemBox.width
+    previewAnchor.height = itemBox.height
+  }
+
+  function showAppPreview(itemBox, pinned) {
+    if (!itemBox) return
+    root.previewTargetItem = itemBox
+    root.previewTargetClients = itemBox.activeClients || []
+    root.previewMode = "app"
+    root.placePreviewAnchor(itemBox)
+    if (pinned !== undefined) root.previewPinned = pinned
+    root.previewOpen = true
+    previewHideTimer.stop()
+  }
+
+  function showTaskViewPreview(itemBox, pinned) {
+    if (!itemBox) return
+    root.previewTargetItem = itemBox
+    root.previewTargetClients = []
+    root.previewMode = "taskview"
+    root.placePreviewAnchor(itemBox)
+    if (pinned !== undefined) root.previewPinned = pinned
+    root.previewOpen = true
+    previewHideTimer.stop()
+  }
+
+  function showTooltipFor(itemBox, text) {
+    if (!itemBox || !text) return
+    root.previewTargetItem = itemBox
+    root.previewTargetClients = []
+    root.tooltipString = text
+    root.previewMode = "tooltip"
+    root.placePreviewAnchor(itemBox)
+    root.previewPinned = false
+    root.previewOpen = true
+    previewHideTimer.stop()
+  }
+
+  function toggleAppPreview(itemBox) {
+    if (root.previewOpen && root.previewTargetItem === itemBox && root.previewMode === "app") {
+      root.hidePreview(true)
+    } else {
+      root.showAppPreview(itemBox, true)
+    }
+  }
+
+  function toggleTaskViewPreview(itemBox) {
+    if (root.previewOpen && root.previewTargetItem === itemBox && root.previewMode === "taskview") {
+      root.hidePreview(true)
+    } else {
+      root.showTaskViewPreview(itemBox, true)
+    }
+  }
+
+  function hidePreview(force) {
+    if (root.previewPinned && !force) return
+    previewHideTimer.stop()
+    root.previewOpen = false
+    root.previewPinned = false
+    root.previewMode = "none"
+    root.previewTargetItem = null
+    root.previewTargetClients = []
+  }
+
+  function scheduleHidePreview() {
+    if (root.previewPinned) return
+    previewHideTimer.restart()
+  }
+
+  Timer {
+    id: previewHideTimer
+    interval: 220
+    repeat: false
+    onTriggered: {
+      if (!root.previewPinned && !previewPopup.containsMouse) {
+        root.hidePreview(true)
+      }
+    }
+  }
+
+  function calcPopupWidth() {
+    if (root.previewMode === "taskview") {
+      var wCount = (root.hyprClients && root.hyprClients.length > 0) ? Math.min(4, root.hyprClients.length) : 0
+      var wWidth = wCount * 172
+      var dWidth = (root.workspaceList ? root.workspaceList.length : 4) * 112 + 96
+      return Math.min(previewPopup.availableCardWidth > 0 ? previewPopup.availableCardWidth : 920, Math.max(340, Math.max(dWidth, wWidth) + 24))
+    }
+    if (root.previewMode === "tooltip") {
+      return Math.max(70, tooltipText.implicitWidth + 24)
+    }
+    if (root.previewMode === "app") {
+      var count = (root.previewTargetClients && root.previewTargetClients.length > 0) ? root.previewTargetClients.length : 1
+      var itemW = 208
+      var totalW = (count * itemW) + ((count - 1) * 8) + 24
+      var maxW = previewPopup.availableCardWidth > 0 ? previewPopup.availableCardWidth : 960
+      return Math.min(maxW, Math.max(220, totalW))
+    }
+    return 240
+  }
+
+  function calcPopupHeight() {
+    if (root.previewMode === "taskview") {
+      return (root.hyprClients && root.hyprClients.length > 0) ? 250 : 120
+    }
+    if (root.previewMode === "tooltip") {
+      return 26
+    }
+    if (root.previewMode === "app") {
+      var hasHeader = root.previewTargetClients && root.previewTargetClients.length > 1
+      return hasHeader ? 180 : 154
+    }
+    return 100
+  }
+
+  // ------------------------------------------------------------ Main Taskbar Items Row
   RowLayout {
     id: taskbarRow
     anchors.centerIn: parent
@@ -466,16 +756,21 @@ BarWidget {
         Layout.preferredHeight: root.tileHeight
         Layout.alignment: Qt.AlignVCenter
         radius: 4
+        property var itemData: modelData
 
         property var activeClients: {
-          if (modelData.isDynamic) {
-            return modelData.hyprClient ? [modelData.hyprClient] : []
-          }
-          if (modelData.matchers) {
+          if (modelData.matchers && modelData.matchers.length > 0) {
             return root.findAllRunningClients(modelData.matchers)
+          }
+          if (modelData.instances && modelData.instances.length > 0) {
+            return modelData.instances
+          }
+          if (modelData.hyprClient) {
+            return [modelData.hyprClient]
           }
           return []
         }
+
         property var activeClient: {
           if (activeClients && activeClients.length > 0) {
             for (var i = 0; i < activeClients.length; i++) {
@@ -487,7 +782,93 @@ BarWidget {
         }
         property bool appRunning: activeClients && activeClients.length > 0
         property bool appFocused: root.isClientFocused(activeClient)
-        property bool previewActive: false
+
+        readonly property bool interactive: true
+        readonly property bool pressable: true
+        readonly property bool concealed: false
+
+        property var registeredBar: null
+
+        function syncClickRegistration() {
+          if (registeredBar && registeredBar.unregisterClickTarget) {
+            registeredBar.unregisterClickTarget(itemBox)
+            registeredBar = null
+          }
+          if (root.bar && root.bar.registerClickTarget) {
+            registeredBar = root.bar
+            registeredBar.registerClickTarget(itemBox)
+          }
+        }
+
+        Connections {
+          target: root
+          function onBarChanged() {
+            itemBox.syncClickRegistration()
+          }
+        }
+
+        Component.onCompleted: {
+          itemBox.syncClickRegistration()
+        }
+
+        Component.onDestruction: {
+          if (registeredBar && registeredBar.unregisterClickTarget) {
+            registeredBar.unregisterClickTarget(itemBox)
+            registeredBar = null
+          }
+        }
+
+        function triggerPress(button) {
+          itemBox.handleClick(button)
+        }
+
+        function handleClick(button) {
+          if (button === Qt.MiddleButton) {
+            if (itemBox.appRunning && itemBox.activeClient) {
+              root.closeClient(itemBox.activeClient)
+            } else if (modelData.exec) {
+              root.runCmd(modelData.exec)
+            }
+          } else if (button === Qt.RightButton) {
+            if (modelData.isStart) {
+              root.runCmd("omarchy-undercover-settings")
+            } else if (itemBox.appRunning && itemBox.activeClient) {
+              root.closeClient(itemBox.activeClient)
+            } else {
+              root.runCmd("omarchy-win11-taskmanager || omarchy-win11-taskview")
+            }
+          } else {
+            // Left Click
+            if (modelData.isStart) {
+              root.hidePreview(true)
+              root.runCmd(modelData.exec)
+              return
+            }
+            if (modelData.isTaskView) {
+              root.toggleTaskViewPreview(itemBox)
+              return
+            }
+            if (itemBox.appRunning) {
+              var clients = itemBox.activeClients || []
+              if (clients.length > 1) {
+                root.toggleAppPreview(itemBox)
+                return
+              } else if (clients.length === 1 && itemBox.activeClient) {
+                if (itemBox.appFocused) {
+                  root.runCmd("omarchy-undercover-minimize")
+                } else {
+                  root.shiftToClient(itemBox.activeClient)
+                }
+                root.hidePreview(true)
+                return
+              }
+            }
+            root.hidePreview(true)
+            if (modelData.exec) {
+              root.runCmd(modelData.exec)
+            }
+          }
+        }
 
         color: itemMouse.pressed
                ? (root.isBarLight ? Qt.rgba(0, 0, 0, 0.16) : Qt.rgba(1, 1, 1, 0.18))
@@ -505,7 +886,7 @@ BarWidget {
           NumberAnimation { duration: 100; easing.type: Easing.OutCubic }
         }
 
-        // 1. Windows 11 Start Icon (Authentic Fluent SVG)
+        // 1. Windows 11 Start Icon
         Item {
           visible: modelData.isStart === true
           anchors.fill: parent
@@ -515,7 +896,7 @@ BarWidget {
             width: Math.round(root.iconSize * 0.92)
             height: Math.round(root.iconSize * 0.92)
             sourceSize: Qt.size(Math.round(root.iconSize * 0.92), Math.round(root.iconSize * 0.92))
-            source: "file://" + root.homeDir + "/.local/share/icons/win11/start.svg"
+            source: "file://" + root.configDir + "/assets/icons/win11/start.svg"
             fillMode: Image.PreserveAspectFit
             smooth: true
             mipmap: true
@@ -532,7 +913,6 @@ BarWidget {
             width: Math.round(root.iconSize * 0.88)
             height: Math.round(root.iconSize * 0.88)
 
-            // Back rectangle (high contrast outline)
             Rectangle {
               x: 0; y: 0
               width: Math.round(parent.width * 0.72)
@@ -543,7 +923,6 @@ BarWidget {
               border.color: root.isBarLight ? Qt.rgba(0, 0, 0, 0.75) : Qt.rgba(1, 1, 1, 0.85)
             }
 
-            // Front rectangle (vibrant blue accent)
             Rectangle {
               x: Math.round(parent.width * 0.28)
               y: Math.round(parent.height * 0.28)
@@ -553,6 +932,27 @@ BarWidget {
               color: root.isBarLight ? Qt.rgba(0, 0.4, 0.8, 0.22) : Qt.rgba(0, 0.47, 0.83, 0.35)
               border.width: 1.6
               border.color: root.isBarLight ? "#0067c0" : "#60cdff"
+            }
+          }
+
+          Rectangle {
+            visible: root.workspaceList.length > 1
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.margins: 1
+            width: 13
+            height: 13
+            radius: 6.5
+            color: root.isBarLight ? "#0067c0" : "#60cdff"
+            z: 5
+
+            Text {
+              anchors.centerIn: parent
+              text: root.activeWorkspaceId.toString()
+              font.family: "Segoe UI"
+              font.pixelSize: 8
+              font.bold: true
+              color: root.isBarLight ? "#ffffff" : "#000000"
             }
           }
         }
@@ -567,14 +967,14 @@ BarWidget {
             width: root.iconSize
             height: root.iconSize
             sourceSize: Qt.size(root.iconSize, root.iconSize)
-            source: modelData.iconFile ? ("file://" + root.homeDir + "/.local/share/icons/win11/" + modelData.iconFile) : ""
+            source: modelData.iconFile ? ("file://" + root.configDir + "/assets/icons/win11/" + modelData.iconFile) : ""
             fillMode: Image.PreserveAspectFit
             smooth: true
             mipmap: true
           }
         }
 
-        // 4. Dynamic Application Icon (For unpinned running windows like Telegram)
+        // 4. Dynamic Application Icon
         Item {
           visible: modelData.isDynamic === true
           anchors.fill: parent
@@ -600,10 +1000,35 @@ BarWidget {
           }
         }
 
-        // 5. Windows 11 Running/Focus Pill Indicator Under Icon
+        // 5. Numeric Multi-Instance Notification Badge (e.g. "2", "3")
+        Rectangle {
+          id: instanceBadge
+          visible: !modelData.isStart && !modelData.isTaskView && itemBox.appRunning && itemBox.activeClients.length > 1
+          anchors.top: parent.top
+          anchors.right: parent.right
+          anchors.topMargin: 1
+          anchors.rightMargin: 1
+          implicitWidth: Math.max(14, badgeText.implicitWidth + 6)
+          implicitHeight: 14
+          radius: 7
+          color: root.isBarLight ? "#0067c0" : "#60cdff"
+          z: 20
+
+          Text {
+            id: badgeText
+            anchors.centerIn: parent
+            text: itemBox.activeClients.length.toString()
+            font.family: "Segoe UI"
+            font.pixelSize: 9
+            font.bold: true
+            color: root.isBarLight ? "#ffffff" : "#000000"
+          }
+        }
+
+        // 6a. Single Instance Pill Indicator Under Icon
         Rectangle {
           id: bottomIndicator
-          visible: !modelData.isStart && !modelData.isTaskView && itemBox.appRunning
+          visible: !modelData.isStart && !modelData.isTaskView && itemBox.appRunning && (itemBox.activeClients.length <= 1)
           anchors.bottom: parent.bottom
           anchors.bottomMargin: 0
           anchors.horizontalCenter: parent.horizontalCenter
@@ -622,74 +1047,181 @@ BarWidget {
           }
         }
 
-        // Hide timer to keep preview open while moving mouse between icon and preview card
-        Timer {
-          id: previewHideTimer
-          interval: 240
-          repeat: false
-          onTriggered: {
-            if (!itemMouse.containsMouse && !previewCard.hovered && !taskViewCard.hovered) {
-              itemBox.previewActive = false
+        // 6b. Multi-Instance Visual Indicator Under Icon
+        Row {
+          id: multiIndicatorRow
+          visible: !modelData.isStart && !modelData.isTaskView && itemBox.appRunning && (itemBox.activeClients.length > 1)
+          anchors.bottom: parent.bottom
+          anchors.bottomMargin: 0
+          anchors.horizontalCenter: parent.horizontalCenter
+          spacing: 2
+          z: 10
+
+          Repeater {
+            model: Math.min(3, itemBox.activeClients.length)
+            Rectangle {
+              width: itemBox.appFocused ? (root.barH <= 28 ? 7 : 8) : (itemMouse.containsMouse ? 6 : 4)
+              height: (root.barH <= 28) ? 2 : 3
+              radius: 1
+              color: itemBox.appFocused
+                     ? (root.isBarLight ? "#0067c0" : "#60cdff")
+                     : (root.isBarLight ? Qt.rgba(0.25, 0.25, 0.25, 0.85) : Qt.rgba(0.9, 0.9, 0.9, 0.85))
+              border.width: itemBox.appFocused ? 0 : 1
+              border.color: root.isBarLight ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.4)
             }
           }
         }
 
-        // 6a. Windows 11 Unlaunched Application Tooltip
-        Rectangle {
-          id: unlaunchedTooltip
-          visible: itemBox.previewActive && !modelData.isStart && !modelData.isTaskView && !itemBox.appRunning
-          anchors.bottom: parent.top
-          anchors.bottomMargin: 8
-          anchors.horizontalCenter: parent.horizontalCenter
-          implicitWidth: Math.max(60, unlaunchText.implicitWidth + 16)
-          implicitHeight: 28
-          radius: 5
-          color: root.isDark ? Qt.rgba(0.13, 0.14, 0.18, 0.98) : Qt.rgba(0.96, 0.96, 0.98, 0.98)
-          border.color: root.isDark ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(0, 0, 0, 0.12)
-          border.width: 1
-          z: 120
+        MouseArea {
+          id: itemMouse
+          anchors.fill: parent
+          hoverEnabled: true
+          cursorShape: Qt.PointingHandCursor
+          acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+
+          onEntered: {
+            if (modelData.isStart) return
+            if (modelData.isTaskView) {
+              root.showTaskViewPreview(itemBox, false)
+            } else if (itemBox.appRunning) {
+              root.showAppPreview(itemBox, false)
+            } else {
+              root.showTooltipFor(itemBox, modelData.name || "")
+            }
+          }
+
+          onExited: {
+            root.scheduleHidePreview()
+          }
+
+          onWheel: function(wheel) {
+            root.seekWorkspace(wheel.angleDelta.y)
+          }
+
+          onClicked: function(mouse) {
+            itemBox.handleClick(mouse.button)
+          }
+        }
+      }
+    }
+  }
+
+  // ------------------------------------------------------------ External Floating PopupCard
+  PopupCard {
+    id: previewPopup
+    anchorItem: previewAnchor
+    bar: previewBar
+    triggerMode: root.previewPinned ? "click" : "hover"
+    open: root.previewOpen
+    contentWidth: previewPopup.fittedContentWidth(root.calcPopupWidth())
+    contentHeight: previewPopup.fittedContentHeight(root.calcPopupHeight())
+
+    onContainsMouseChanged: {
+      if (containsMouse) {
+        previewHideTimer.stop()
+      } else {
+        if (!root.previewPinned) previewHideTimer.restart()
+      }
+    }
+
+    Rectangle {
+      anchors.fill: parent
+      anchors.margins: -Math.max(0, previewPopup.padding - Style.space(2))
+      radius: Math.max(0, Style.cornerRadius - Style.space(2))
+      color: root.isDark ? Qt.rgba(0.12, 0.13, 0.17, 0.98) : Qt.rgba(0.96, 0.96, 0.98, 0.98)
+      border.color: root.isDark ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(0, 0, 0, 0.12)
+      border.width: 1
+    }
+
+    // 1. Tooltip Content for Unlaunched Apps
+    Item {
+      id: tooltipContent
+      visible: root.previewMode === "tooltip"
+      anchors.fill: parent
+
+      Text {
+        id: tooltipText
+        anchors.centerIn: parent
+        text: root.tooltipString
+        font.family: "Segoe UI"
+        font.pixelSize: 11
+        color: root.isDark ? "#ffffff" : "#1a1a1a"
+      }
+    }
+
+    // 2. Application Instances Live Preview Content
+    Item {
+      id: appPreviewContent
+      visible: root.previewMode === "app" && root.previewTargetClients.length > 0
+      anchors.fill: parent
+
+      ColumnLayout {
+        id: appCol
+        anchors.fill: parent
+        spacing: 4
+
+        // Multi-instance Header
+        RowLayout {
+          visible: root.previewTargetClients.length > 1
+          Layout.fillWidth: true
+          Layout.preferredHeight: 18
+          spacing: 6
+
+          Image {
+            Layout.preferredWidth: 14
+            Layout.preferredHeight: 14
+            sourceSize: Qt.size(14, 14)
+            source: (root.previewTargetItem && root.previewTargetItem.itemData && root.previewTargetItem.itemData.iconFile)
+                    ? ("file://" + root.configDir + "/assets/icons/win11/" + root.previewTargetItem.itemData.iconFile)
+                    : (root.previewTargetItem && root.previewTargetItem.itemData ? (root.previewTargetItem.itemData.iconUrl || "") : "")
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+          }
 
           Text {
-            id: unlaunchText
-            anchors.centerIn: parent
-            text: modelData.name || ""
+            text: ((root.previewTargetItem && root.previewTargetItem.itemData && root.previewTargetItem.itemData.name) ? root.previewTargetItem.itemData.name : "Application") + " — " + root.previewTargetClients.length + " windows open"
             font.family: "Segoe UI"
             font.pixelSize: 11
+            font.bold: true
             color: root.isDark ? "#ffffff" : "#1a1a1a"
+            Layout.fillWidth: true
+            elide: Text.ElideRight
+          }
+
+          Text {
+            text: "Click an instance to switch"
+            font.family: "Segoe UI"
+            font.pixelSize: 9
+            color: root.isDark ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.5)
           }
         }
 
-        // 6b. Windows 11 Live Window Preview Card(s) with Quickshell.Wayland ScreencopyView
-        Rectangle {
-          id: previewCard
-          property bool hovered: false
-          visible: Boolean(itemBox.previewActive && !modelData.isStart && !modelData.isTaskView && itemBox.appRunning)
-          anchors.bottom: parent.top
-          anchors.bottomMargin: 8
-          anchors.horizontalCenter: parent.horizontalCenter
-          implicitWidth: previewCardRow.implicitWidth + 12
-          implicitHeight: previewCardRow.implicitHeight + 12
-          radius: 8
-          color: root.isDark ? Qt.rgba(0.12, 0.13, 0.17, 0.98) : Qt.rgba(0.96, 0.96, 0.98, 0.98)
-          border.color: root.isDark ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(0, 0, 0, 0.12)
-          border.width: 1
-          z: 120
+        Flickable {
+          id: previewFlickable
+          Layout.alignment: Qt.AlignHCenter
+          Layout.fillWidth: true
+          Layout.preferredHeight: 154
+          contentWidth: previewRow.implicitWidth
+          contentHeight: 154
+          boundsBehavior: Flickable.StopAtBounds
+          clip: true
 
           RowLayout {
-            id: previewCardRow
-            anchors.centerIn: parent
+            id: previewRow
             spacing: 8
 
             Repeater {
-              model: itemBox.activeClients
+              model: root.previewTargetClients
 
               Rectangle {
                 id: thumbTile
                 property var clientObj: modelData
                 property bool isThumbFocused: root.isClientFocused(clientObj)
                 property bool thumbHovered: thumbArea.containsMouse || closeM.containsMouse || minM.containsMouse
-                implicitWidth: 196
-                implicitHeight: 140
+                implicitWidth: 204
+                implicitHeight: 154
+                Layout.preferredWidth: 204
+                Layout.preferredHeight: 154
                 radius: 6
                 color: thumbHovered
                        ? (root.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08))
@@ -706,7 +1238,7 @@ BarWidget {
                   anchors.margins: 6
                   spacing: 4
 
-                  // Title Bar & Controls
+                  // Row 1: Title Bar & Controls
                   RowLayout {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 20
@@ -716,13 +1248,13 @@ BarWidget {
                       Layout.preferredWidth: 14
                       Layout.preferredHeight: 14
                       sourceSize: Qt.size(14, 14)
-                      source: root.resolveAppIcon(clientObj) || (itemBox.modelData.iconFile ? ("file://" + root.homeDir + "/.local/share/icons/win11/" + itemBox.modelData.iconFile) : "")
+                      source: root.resolveAppIcon(clientObj) || ((root.previewTargetItem && root.previewTargetItem.itemData && root.previewTargetItem.itemData.iconFile) ? ("file://" + root.configDir + "/assets/icons/win11/" + root.previewTargetItem.itemData.iconFile) : "")
                       fillMode: Image.PreserveAspectFit
                       smooth: true
                     }
 
                     Text {
-                      text: clientObj ? (clientObj.title || itemBox.modelData.name || "") : (itemBox.modelData.name || "")
+                      text: clientObj ? (clientObj.title || (root.previewTargetItem && root.previewTargetItem.itemData ? root.previewTargetItem.itemData.name : "") || "") : ""
                       font.family: "Segoe UI"
                       font.pixelSize: 11
                       font.bold: isThumbFocused
@@ -737,6 +1269,7 @@ BarWidget {
                       implicitHeight: 18
                       radius: 3
                       color: minM.containsMouse ? (root.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.10)) : "transparent"
+                      z: 10
 
                       Text {
                         anchors.centerIn: parent
@@ -750,14 +1283,6 @@ BarWidget {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onEntered: {
-                          previewCard.hovered = true
-                          previewHideTimer.stop()
-                        }
-                        onExited: {
-                          previewCard.hovered = false
-                          previewHideTimer.restart()
-                        }
                         onClicked: {
                           if (clientObj && clientObj.address) {
                             Quickshell.execDetached(["omarchy-undercover-minimize", clientObj.address])
@@ -772,6 +1297,7 @@ BarWidget {
                       implicitHeight: 18
                       radius: 3
                       color: closeM.containsMouse ? "#c42b1c" : "transparent"
+                      z: 10
 
                       Text {
                         anchors.centerIn: parent
@@ -785,22 +1311,105 @@ BarWidget {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onEntered: {
-                          previewCard.hovered = true
-                          previewHideTimer.stop()
-                        }
-                        onExited: {
-                          previewCard.hovered = false
-                          previewHideTimer.restart()
-                        }
                         onClicked: {
                           root.closeClient(clientObj)
+                          root.scheduleHidePreview()
                         }
                       }
                     }
                   }
 
-                  // Screencopy Live Visual Thumbnail Frame
+                  // Row 2: Screen & Workspace Badge
+                  RowLayout {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 18
+                    spacing: 4
+
+                    Rectangle {
+                      radius: 3
+                      color: isThumbFocused
+                             ? (root.isBarLight ? Qt.rgba(0, 0, 0.4, 0.18) : Qt.rgba(0.2, 0.6, 1.0, 0.25))
+                             : (root.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.06))
+                      border.color: isThumbFocused
+                                    ? (root.isBarLight ? "#0067c0" : "#60cdff")
+                                    : (root.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.10))
+                      border.width: 1
+                      implicitHeight: 18
+                      implicitWidth: monWsRow.implicitWidth + 8
+
+                      RowLayout {
+                        id: monWsRow
+                        anchors.centerIn: parent
+                        spacing: 4
+
+                        Item {
+                          implicitWidth: 10
+                          implicitHeight: 9
+                          Layout.alignment: Qt.AlignVCenter
+
+                          Rectangle {
+                            anchors.top: parent.top
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: 10
+                            height: 7
+                            radius: 1
+                            color: "transparent"
+                            border.width: 1
+                            border.color: isThumbFocused
+                                          ? (root.isBarLight ? "#0067c0" : "#60cdff")
+                                          : (root.isDark ? Qt.rgba(1, 1, 1, 0.75) : Qt.rgba(0, 0, 0, 0.65))
+                          }
+                          Rectangle {
+                            anchors.bottom: parent.bottom
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: 4
+                            height: 1
+                            color: isThumbFocused
+                                   ? (root.isBarLight ? "#0067c0" : "#60cdff")
+                                   : (root.isDark ? Qt.rgba(1, 1, 1, 0.75) : Qt.rgba(0, 0, 0, 0.65))
+                          }
+                        }
+
+                        Text {
+                          text: root.getMonitorLabel(clientObj ? clientObj.monitor : 0)
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 9
+                          font.bold: true
+                          color: isThumbFocused
+                                 ? (root.isBarLight ? "#0067c0" : "#60cdff")
+                                 : (root.isDark ? Qt.rgba(1, 1, 1, 0.85) : Qt.rgba(0, 0, 0, 0.75))
+                        }
+
+                        Text {
+                          text: "• Desktop " + ((clientObj && clientObj.workspace) ? (clientObj.workspace.name || clientObj.workspace.id) : "1")
+                          font.family: "Segoe UI, sans-serif"
+                          font.pixelSize: 9
+                          color: root.isDark ? Qt.rgba(1, 1, 1, 0.60) : Qt.rgba(0, 0, 0, 0.50)
+                        }
+                      }
+                    }
+
+                    Item { Layout.fillWidth: true }
+
+                    Rectangle {
+                      visible: isThumbFocused
+                      radius: 3
+                      color: root.isBarLight ? "#0067c0" : "#60cdff"
+                      implicitHeight: 16
+                      implicitWidth: focText.implicitWidth + 8
+                      Text {
+                        id: focText
+                        anchors.centerIn: parent
+                        text: "Active"
+                        font.family: "Segoe UI"
+                        font.pixelSize: 8
+                        font.bold: true
+                        color: "#ffffff"
+                      }
+                    }
+                  }
+
+                  // Row 3: Screencopy Live Visual Thumbnail Frame
                   Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -817,12 +1426,11 @@ BarWidget {
                       visible: scView.hasContent
                       captureSource: {
                         var addr = String((clientObj && clientObj.address) || "").toLowerCase().trim()
-                        return root.handleByAddress[addr] || null
+                        return clientObj.toplevel || root.toplevelByAddress[addr] || root.handleByAddress[addr] || null
                       }
                       live: true
                     }
 
-                    // Fallback visual when capture not yet active or minimized
                     Item {
                       anchors.fill: parent
                       visible: !scView.hasContent
@@ -836,7 +1444,7 @@ BarWidget {
                           Layout.preferredWidth: 32
                           Layout.preferredHeight: 32
                           sourceSize: Qt.size(32, 32)
-                          source: root.resolveAppIcon(clientObj) || (itemBox.modelData.iconFile ? ("file://" + root.homeDir + "/.local/share/icons/win11/" + itemBox.modelData.iconFile) : "")
+                          source: root.resolveAppIcon(clientObj) || ((root.previewTargetItem && root.previewTargetItem.itemData && root.previewTargetItem.itemData.iconFile) ? ("file://" + root.configDir + "/assets/icons/win11/" + root.previewTargetItem.itemData.iconFile) : "")
                           fillMode: Image.PreserveAspectFit
                         }
 
@@ -859,18 +1467,165 @@ BarWidget {
                   anchors.fill: parent
                   hoverEnabled: true
                   cursorShape: Qt.PointingHandCursor
-                  z: -1
-                  onEntered: {
-                    previewCard.hovered = true
-                    previewHideTimer.stop()
-                  }
-                  onExited: {
-                    previewCard.hovered = false
-                    previewHideTimer.restart()
-                  }
+                  z: 1
                   onClicked: {
                     root.shiftToClient(clientObj)
-                    itemBox.previewActive = false
+                    root.hidePreview(true)
+                  }
+                  onWheel: function(wheel) {
+                    previewFlickable.contentX = Math.max(0, Math.min(previewFlickable.contentWidth - previewFlickable.width, previewFlickable.contentX - wheel.angleDelta.y))
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // 3. Task View Overview Content
+    Item {
+      id: taskViewContent
+      visible: root.previewMode === "taskview"
+      anchors.fill: parent
+
+      ColumnLayout {
+        id: taskViewCol
+        anchors.fill: parent
+        spacing: 6
+
+        Item {
+          visible: root.hyprClients && root.hyprClients.length > 0
+          Layout.fillWidth: true
+          Layout.preferredHeight: 126
+
+          ColumnLayout {
+            anchors.fill: parent
+            spacing: 4
+
+            RowLayout {
+              Layout.fillWidth: true
+              Text {
+                text: "Open Windows"
+                font.family: "Segoe UI"
+                font.pixelSize: 11
+                font.bold: true
+                color: root.isDark ? "#ffffff" : "#1a1a1a"
+              }
+              Item { Layout.fillWidth: true }
+              Text {
+                text: "Click to switch"
+                font.family: "Segoe UI"
+                font.pixelSize: 9
+                color: root.isDark ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.5)
+              }
+            }
+
+            Flickable {
+              Layout.fillWidth: true
+              Layout.fillHeight: true
+              contentWidth: winRow.implicitWidth
+              contentHeight: 100
+              boundsBehavior: Flickable.StopAtBounds
+              clip: true
+
+              RowLayout {
+                id: winRow
+                spacing: 6
+
+                Repeater {
+                  model: root.hyprClients
+
+                  Rectangle {
+                    id: winThumb
+                    property var winObj: modelData
+                    property bool isWinFocused: root.isClientFocused(winObj)
+                    implicitWidth: 160
+                    implicitHeight: 96
+                    radius: 5
+                    color: winThumbM.containsMouse
+                           ? (root.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08))
+                           : (isWinFocused
+                              ? (root.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05))
+                              : (root.isDark ? Qt.rgba(0, 0, 0, 0.35) : Qt.rgba(1, 1, 1, 0.50)))
+                    border.color: isWinFocused
+                                  ? (root.isBarLight ? "#0067c0" : "#60cdff")
+                                  : (winThumbM.containsMouse ? (root.isDark ? Qt.rgba(1, 1, 1, 0.25) : Qt.rgba(0, 0, 0, 0.20)) : (root.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08)))
+                    border.width: isWinFocused ? 1.5 : 1
+
+                    ColumnLayout {
+                      anchors.fill: parent
+                      anchors.margins: 4
+                      spacing: 3
+
+                      RowLayout {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 14
+                        spacing: 4
+
+                        Image {
+                          Layout.preferredWidth: 12
+                          Layout.preferredHeight: 12
+                          sourceSize: Qt.size(12, 12)
+                          source: root.resolveAppIcon(winObj)
+                          fillMode: Image.PreserveAspectFit
+                        }
+
+                        Text {
+                          text: winObj ? (winObj.title || "") : ""
+                          font.family: "Segoe UI"
+                          font.pixelSize: 10
+                          font.bold: isWinFocused
+                          color: root.isDark ? "#ffffff" : "#1a1a1a"
+                          Layout.fillWidth: true
+                          elide: Text.ElideRight
+                        }
+                      }
+
+                      Rectangle {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        radius: 3
+                        clip: true
+                        color: root.isDark ? Qt.rgba(0, 0, 0, 0.5) : Qt.rgba(0, 0, 0, 0.06)
+
+                        ScreencopyView {
+                          id: winScView
+                          anchors.fill: parent
+                          visible: winScView.hasContent
+                          captureSource: {
+                            var addr = String((winObj && winObj.address) || "").toLowerCase().trim()
+                            return winObj.toplevel || root.toplevelByAddress[addr] || root.handleByAddress[addr] || null
+                          }
+                          live: true
+                        }
+
+                        Item {
+                          anchors.fill: parent
+                          visible: !winScView.hasContent
+
+                          Image {
+                            anchors.centerIn: parent
+                            width: 24
+                            height: 24
+                            sourceSize: Qt.size(24, 24)
+                            source: root.resolveAppIcon(winObj)
+                            fillMode: Image.PreserveAspectFit
+                          }
+                        }
+                      }
+                    }
+
+                    MouseArea {
+                      id: winThumbM
+                      anchors.fill: parent
+                      hoverEnabled: true
+                      cursorShape: Qt.PointingHandCursor
+                      onClicked: {
+                        root.shiftToClient(winObj)
+                        root.hidePreview(true)
+                      }
+                    }
                   }
                 }
               }
@@ -878,214 +1633,14 @@ BarWidget {
           }
         }
 
-        // 7. Windows 11 Task View Overview & Virtual Desktops Card
-        Rectangle {
-          id: taskViewCard
-          property bool hovered: false
-          visible: Boolean((itemBox.previewActive || taskViewCard.hovered) && modelData && modelData.isTaskView)
-          anchors.bottom: parent.top
-          anchors.bottomMargin: 8
-          anchors.horizontalCenter: parent.horizontalCenter
-          implicitWidth: Math.max(260, Math.max(deskRow.implicitWidth + 24, (root.hyprClients && root.hyprClients.length > 0 ? Math.min(4, root.hyprClients.length) * 168 + 24 : 0)))
-          implicitHeight: (root.hyprClients && root.hyprClients.length > 0) ? 214 : 76
-          radius: 8
-          color: root.isDark ? Qt.rgba(0.12, 0.13, 0.17, 0.98) : Qt.rgba(0.96, 0.96, 0.98, 0.98)
-          border.color: root.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.12)
-          border.width: 1
-          z: 120
-
-          MouseArea {
-            id: taskViewBgMouse
-            anchors.fill: parent
-            hoverEnabled: true
-            z: -1
-            onEntered: {
-              taskViewCard.hovered = true
-              previewHideTimer.stop()
-            }
-            onExited: {
-              taskViewCard.hovered = false
-              previewHideTimer.restart()
-            }
-          }
+        Item {
+          Layout.fillWidth: true
+          Layout.preferredHeight: 96
 
           ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 8
-            spacing: 6
+            spacing: 4
 
-            // Section 1: Open Windows Live Tiles (ScreencopyView)
-            Item {
-              visible: root.hyprClients && root.hyprClients.length > 0
-              Layout.fillWidth: true
-              Layout.preferredHeight: 126
-
-              ColumnLayout {
-                anchors.fill: parent
-                spacing: 4
-
-                RowLayout {
-                  Layout.fillWidth: true
-                  Text {
-                    text: "Open Windows"
-                    font.family: "Segoe UI"
-                    font.pixelSize: 11
-                    font.bold: true
-                    color: root.isDark ? "#ffffff" : "#1a1a1a"
-                  }
-                  Item { Layout.fillWidth: true }
-                  Text {
-                    text: "Click to switch"
-                    font.family: "Segoe UI"
-                    font.pixelSize: 9
-                    color: root.isDark ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.5)
-                  }
-                }
-
-                RowLayout {
-                  id: taskViewWinRow
-                  spacing: 6
-
-                  Repeater {
-                    model: (root.hyprClients || []).slice(0, 4)
-
-                    Rectangle {
-                      id: tvThumb
-                      property var tvClient: modelData
-                      property bool isTvFocused: root.isClientFocused(tvClient)
-                      implicitWidth: 160
-                      implicitHeight: 102
-                      radius: 5
-                      color: tvM.containsMouse
-                             ? (root.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.08))
-                             : (isTvFocused
-                                ? (root.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05))
-                                : (root.isDark ? Qt.rgba(0, 0, 0, 0.35) : Qt.rgba(1, 1, 1, 0.50)))
-                      border.color: isTvFocused
-                                    ? (root.isBarLight ? "#0067c0" : "#60cdff")
-                                    : (tvM.containsMouse ? (root.isDark ? Qt.rgba(1, 1, 1, 0.22) : Qt.rgba(0, 0, 0, 0.18)) : (root.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.06)))
-                      border.width: isTvFocused ? 1.5 : 1
-
-                      ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 4
-                        spacing: 2
-
-                        RowLayout {
-                          Layout.fillWidth: true
-                          Layout.preferredHeight: 16
-                          spacing: 4
-
-                          Image {
-                            Layout.preferredWidth: 12
-                            Layout.preferredHeight: 12
-                            sourceSize: Qt.size(12, 12)
-                            source: root.resolveAppIcon(tvClient)
-                            fillMode: Image.PreserveAspectFit
-                          }
-
-                          Text {
-                            text: tvClient ? (tvClient.title || tvClient.class || "") : ""
-                            font.family: "Segoe UI"
-                            font.pixelSize: 10
-                            font.bold: isTvFocused
-                            color: root.isDark ? "#ffffff" : "#1a1a1a"
-                            Layout.fillWidth: true
-                            elide: Text.ElideRight
-                          }
-
-                          Rectangle {
-                            implicitWidth: 14
-                            implicitHeight: 14
-                            radius: 2
-                            color: tvCloseM.containsMouse ? "#c42b1c" : "transparent"
-
-                            Text {
-                              anchors.centerIn: parent
-                              text: "✕"
-                              font.pixelSize: 8
-                              color: tvCloseM.containsMouse ? "#ffffff" : (root.isDark ? "#ffffff" : "#1a1a1a")
-                            }
-
-                            MouseArea {
-                              id: tvCloseM
-                              anchors.fill: parent
-                              hoverEnabled: true
-                              cursorShape: Qt.PointingHandCursor
-                              onEntered: {
-                                taskViewCard.hovered = true
-                                previewHideTimer.stop()
-                              }
-                              onExited: {
-                                taskViewCard.hovered = false
-                                previewHideTimer.restart()
-                              }
-                              onClicked: root.closeClient(tvClient)
-                            }
-                          }
-                        }
-
-                        // Screencopy Preview inside Task View
-                        Rectangle {
-                          Layout.fillWidth: true
-                          Layout.fillHeight: true
-                          radius: 3
-                          clip: true
-                          color: root.isDark ? Qt.rgba(0, 0, 0, 0.45) : Qt.rgba(0, 0, 0, 0.06)
-
-                          ScreencopyView {
-                            id: tvScView
-                            anchors.fill: parent
-                            visible: tvScView.hasContent
-                            captureSource: {
-                              var addr = String((tvClient && tvClient.address) || "").toLowerCase().trim()
-                              return root.handleByAddress[addr] || null
-                            }
-                            live: true
-                          }
-
-                          Item {
-                            anchors.fill: parent
-                            visible: !tvScView.hasContent
-
-                            Image {
-                              anchors.centerIn: parent
-                              width: 24
-                              height: 24
-                              sourceSize: Qt.size(24, 24)
-                              source: root.resolveAppIcon(tvClient)
-                              fillMode: Image.PreserveAspectFit
-                            }
-                          }
-                        }
-                      }
-
-                      MouseArea {
-                        id: tvM
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        z: -1
-                        onEntered: {
-                          taskViewCard.hovered = true
-                          previewHideTimer.stop()
-                        }
-                        onExited: {
-                          taskViewCard.hovered = false
-                          previewHideTimer.restart()
-                        }
-                        onClicked: {
-                          root.shiftToClient(tvClient)
-                          itemBox.previewActive = false
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-
-            // Section 2: Desktops Row
             RowLayout {
               Layout.fillWidth: true
               Text {
@@ -1106,38 +1661,106 @@ BarWidget {
 
             RowLayout {
               id: deskRow
-              spacing: 6
+              spacing: 8
 
               Repeater {
                 model: root.workspaceList
+
                 Rectangle {
-                  implicitWidth: 36
-                  implicitHeight: 36
-                  radius: 4
-                  color: (modelData === root.activeWorkspaceId)
-                         ? (root.isDark ? "#0078d4" : "#0067c0")
-                         : (deskM.containsMouse ? (root.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.08)) : (root.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04)))
-                  border.color: (modelData === root.activeWorkspaceId)
-                                ? (root.isDark ? "#60cdff" : "#004275")
-                                : (root.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08))
-                  border.width: 1
+                  id: deskCard
+                  property int wsNum: modelData
+                  property bool isCurrentWs: wsNum === root.activeWorkspaceId
+                  property var wsClients: root.getClientsForWorkspace(wsNum)
+                  property bool cardHovered: deskM.containsMouse || deskCloseM.containsMouse
+                  implicitWidth: 104
+                  implicitHeight: 68
+                  radius: 6
+                  color: cardHovered
+                         ? (root.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08))
+                         : (isCurrentWs
+                            ? (root.isDark ? Qt.rgba(1, 1, 1, 0.07) : Qt.rgba(0, 0, 0, 0.04))
+                            : (root.isDark ? Qt.rgba(0, 0, 0, 0.35) : Qt.rgba(1, 1, 1, 0.45)))
+                  border.color: isCurrentWs
+                                ? (root.isBarLight ? "#0067c0" : "#60cdff")
+                                : (cardHovered ? (root.isDark ? Qt.rgba(1, 1, 1, 0.20) : Qt.rgba(0, 0, 0, 0.15)) : (root.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08)))
+                  border.width: isCurrentWs ? 1.5 : 1
 
                   ColumnLayout {
-                    anchors.centerIn: parent
-                    spacing: 1
-                    Text {
-                      Layout.alignment: Qt.AlignHCenter
-                      text: "󰍹"
-                      font.pixelSize: 12
-                      color: (modelData === root.activeWorkspaceId) ? "#ffffff" : (root.isDark ? "#ffffff" : "#1a1a1a")
+                    anchors.fill: parent
+                    anchors.margins: 4
+                    spacing: 2
+
+                    Rectangle {
+                      Layout.fillWidth: true
+                      Layout.preferredHeight: 38
+                      radius: 4
+                      color: root.isDark ? Qt.rgba(0.08, 0.10, 0.14, 0.8) : Qt.rgba(0.90, 0.92, 0.95, 0.8)
+                      border.width: 1
+                      border.color: root.isDark ? Qt.rgba(1, 1, 1, 0.05) : Qt.rgba(0, 0, 0, 0.05)
+                      clip: true
+
+                      RowLayout {
+                        anchors.centerIn: parent
+                        spacing: 3
+                        visible: deskCard.wsClients.length > 0
+
+                        Repeater {
+                          model: deskCard.wsClients.slice(0, 3)
+                          Image {
+                            Layout.preferredWidth: 14
+                            Layout.preferredHeight: 14
+                            sourceSize: Qt.size(14, 14)
+                            source: root.resolveAppIcon(modelData)
+                            fillMode: Image.PreserveAspectFit
+                          }
+                        }
+                      }
+
+                      Text {
+                        anchors.centerIn: parent
+                        visible: deskCard.wsClients.length === 0
+                        text: "󰍹"
+                        font.pixelSize: 14
+                        color: root.isDark ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(0, 0, 0, 0.4)
+                      }
+
+                      Rectangle {
+                        visible: deskCard.cardHovered && root.workspaceList.length > 1
+                        anchors.top: parent.top
+                        anchors.right: parent.right
+                        anchors.margins: 2
+                        implicitWidth: 14
+                        implicitHeight: 14
+                        radius: 2
+                        color: deskCloseM.containsMouse ? "#c42b1c" : Qt.rgba(0, 0, 0, 0.6)
+                        z: 10
+
+                        Text {
+                          anchors.centerIn: parent
+                          text: "✕"
+                          font.pixelSize: 8
+                          color: "#ffffff"
+                        }
+
+                        MouseArea {
+                          id: deskCloseM
+                          anchors.fill: parent
+                          hoverEnabled: true
+                          cursorShape: Qt.PointingHandCursor
+                          onClicked: {
+                            root.closeWorkspace(deskCard.wsNum)
+                          }
+                        }
+                      }
                     }
+
                     Text {
                       Layout.alignment: Qt.AlignHCenter
-                      text: modelData.toString()
+                      text: "Desktop " + deskCard.wsNum
                       font.family: "Segoe UI"
-                      font.pixelSize: 9
-                      font.bold: true
-                      color: (modelData === root.activeWorkspaceId) ? "#ffffff" : (root.isDark ? "#ffffff" : "#1a1a1a")
+                      font.pixelSize: 10
+                      font.bold: deskCard.isCurrentWs
+                      color: deskCard.isCurrentWs ? (root.isBarLight ? "#0067c0" : "#60cdff") : (root.isDark ? "#ffffff" : "#1a1a1a")
                     }
                   }
 
@@ -1146,37 +1769,52 @@ BarWidget {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onEntered: {
-                      taskViewCard.hovered = true
-                      previewHideTimer.stop()
-                    }
-                    onExited: {
-                      taskViewCard.hovered = false
-                      previewHideTimer.restart()
-                    }
+                    z: -1
                     onClicked: {
-                      root.switchToWorkspace(modelData.toString())
-                      root.activeWorkspaceId = modelData
+                      root.switchToWorkspace(deskCard.wsNum.toString())
+                      root.activeWorkspaceId = deskCard.wsNum
+                      root.hidePreview(true)
                     }
                   }
                 }
               }
 
-              // + New Desktop Button
               Rectangle {
-                implicitWidth: 36
-                implicitHeight: 36
-                radius: 4
-                color: newDeskM.containsMouse ? (root.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
-                border.color: root.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.10)
+                implicitWidth: 84
+                implicitHeight: 68
+                radius: 6
+                color: newDeskM.containsMouse ? (root.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : (root.isDark ? Qt.rgba(0, 0, 0, 0.25) : Qt.rgba(1, 1, 1, 0.35))
+                border.color: newDeskM.containsMouse ? (root.isDark ? Qt.rgba(1, 1, 1, 0.25) : Qt.rgba(0, 0, 0, 0.18)) : (root.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08))
                 border.width: 1
 
-                Text {
+                ColumnLayout {
                   anchors.centerIn: parent
-                  text: "+"
-                  font.pixelSize: 16
-                  font.family: "Segoe UI"
-                  color: root.isDark ? "#ffffff" : "#1a1a1a"
+                  spacing: 4
+
+                  Rectangle {
+                    Layout.alignment: Qt.AlignHCenter
+                    implicitWidth: 26
+                    implicitHeight: 26
+                    radius: 13
+                    color: newDeskM.containsMouse ? (root.isBarLight ? "#0067c0" : "#60cdff") : (root.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08))
+
+                    Text {
+                      anchors.centerIn: parent
+                      text: "+"
+                      font.pixelSize: 16
+                      font.family: "Segoe UI"
+                      font.bold: true
+                      color: newDeskM.containsMouse ? "#ffffff" : (root.isDark ? "#ffffff" : "#1a1a1a")
+                    }
+                  }
+
+                  Text {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: "New desktop"
+                    font.family: "Segoe UI"
+                    font.pixelSize: 9
+                    color: root.isDark ? Qt.rgba(1, 1, 1, 0.75) : Qt.rgba(0, 0, 0, 0.75)
+                  }
                 }
 
                 MouseArea {
@@ -1184,101 +1822,11 @@ BarWidget {
                   anchors.fill: parent
                   hoverEnabled: true
                   cursorShape: Qt.PointingHandCursor
-                  onEntered: {
-                    taskViewCard.hovered = true
-                    previewHideTimer.stop()
-                  }
-                  onExited: {
-                    taskViewCard.hovered = false
-                    previewHideTimer.restart()
-                  }
                   onClicked: {
                     root.switchToWorkspace("empty")
+                    root.hidePreview(true)
                   }
                 }
-              }
-            }
-          }
-        }
-
-        // 8. Standard Tooltip for Start
-        Rectangle {
-          visible: Boolean(itemBox.previewActive && modelData && modelData.isStart)
-          anchors.bottom: parent.top
-          anchors.bottomMargin: 6
-          anchors.horizontalCenter: parent.horizontalCenter
-          implicitWidth: tooltipText.implicitWidth + 14
-          implicitHeight: 24
-          radius: 4
-          color: root.isDark ? Qt.rgba(0.13, 0.14, 0.18, 0.96) : Qt.rgba(0.96, 0.96, 0.98, 0.96)
-          border.color: root.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.12)
-          border.width: 1
-          z: 100
-
-          Text {
-            id: tooltipText
-            anchors.centerIn: parent
-            text: modelData.name
-            font.family: "Segoe UI"
-            font.pixelSize: 11
-            color: root.isDark ? "#ffffff" : "#1a1a1a"
-          }
-        }
-
-        MouseArea {
-          id: itemMouse
-          anchors.fill: parent
-          hoverEnabled: true
-          cursorShape: Qt.PointingHandCursor
-          acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
-
-          onEntered: {
-            previewHideTimer.stop()
-            itemBox.previewActive = true
-          }
-
-          onExited: {
-            previewHideTimer.restart()
-          }
-
-          onWheel: function(wheel) {
-            root.seekWorkspace(wheel.angleDelta.y)
-          }
-
-          onClicked: function(mouse) {
-            if (mouse.button === Qt.MiddleButton) {
-              root.closeClient(itemBox.activeClient)
-            } else if (mouse.button === Qt.RightButton) {
-              if (modelData.isStart) {
-                root.runCmd("omarchy-undercover-settings")
-              } else if (itemBox.appRunning && itemBox.activeClient) {
-                root.closeClient(itemBox.activeClient)
-              } else {
-                root.runCmd("rofi -show window -theme ~/.config/rofi/windows11.rasi")
-              }
-            } else {
-              // Left click
-              if (modelData.isStart) {
-                root.runCmd(modelData.exec)
-                return
-              }
-              if (modelData.isTaskView) {
-                root.runCmd(modelData.exec)
-                return
-              }
-              if (itemBox.appRunning && itemBox.activeClient && itemBox.activeClient.address) {
-                if (itemBox.appFocused) {
-                  root.runCmd("omarchy-undercover-minimize")
-                } else {
-                  root.shiftToClient(itemBox.activeClient)
-                }
-                return
-              }
-              if (modelData.matchers && modelData.matchers.length > 0) {
-                var activateCmd = "omarchy-undercover-activate " + root.shellQuote(modelData.matchers.join(",")) + " " + root.shellQuote(modelData.exec || "")
-                root.runCmd(activateCmd)
-              } else if (modelData.exec) {
-                root.runCmd(modelData.exec)
               }
             }
           }

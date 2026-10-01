@@ -10,6 +10,26 @@ BarWidget {
   implicitWidth: 40
   implicitHeight: root.bar ? root.bar.barSize : 44
 
+  property string homeDir: Quickshell.env("HOME")
+  property string configDir: homeDir + "/.config/omarchy/plugins/omarchy-undercover"
+
+  function resolveCmd(cmd) {
+    if (!cmd) return ""
+    var pluginScripts = root.configDir + "/scripts"
+    var devScripts = root.homeDir + "/omarchy-undercover/scripts"
+    return cmd.replace(/\b(omarchy-[a-zA-Z0-9_-]+)\b/g, function(match) {
+      return pluginScripts + "/" + match
+    })
+  }
+
+  function runCmd(cmd) {
+    var pluginScripts = root.configDir + "/scripts"
+    var devScripts = root.homeDir + "/omarchy-undercover/scripts"
+    var fullCmd = root.resolveCmd(cmd)
+    var wrapped = "export PATH=\"" + pluginScripts + ":" + devScripts + ":$PATH\"; " + fullCmd
+    Quickshell.execDetached(["bash", "-c", wrapped])
+  }
+
   Rectangle {
     id: startBtn
     anchors.centerIn: parent
@@ -86,17 +106,9 @@ BarWidget {
       acceptedButtons: Qt.LeftButton | Qt.RightButton
       onClicked: function(mouse) {
         if (mouse.button === Qt.RightButton) {
-          if (root.bar) {
-            root.bar.run("omarchy-undercover-settings")
-          } else {
-            Quickshell.execDetached(["omarchy-undercover-settings"])
-          }
+          root.runCmd("omarchy-undercover-settings")
         } else {
-          if (root.bar) {
-            root.bar.run("omarchy-win11-start")
-          } else {
-            Quickshell.execDetached(["omarchy-win11-start"])
-          }
+          root.runCmd("omarchy-win11-start")
         }
       }
     }

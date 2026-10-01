@@ -6,10 +6,11 @@ QtObject {
   id: root
 
   property string homeDir: Quickshell.env("HOME")
-  property string stateFile: homeDir + "/.config/omarchy-undercover/state"
-  property string settingsFile: homeDir + "/.config/omarchy-undercover/settings.conf"
+  property string pluginDir: homeDir + "/.config/omarchy/plugins/omarchy-undercover"
+  property string stateFile: pluginDir + "/state"
+  property string settingsFile: pluginDir + "/settings.conf"
 
-  // Raw state representation read from ~/.config/omarchy-undercover/state
+  // Raw state representation read from plugin state file
   property string rawState: "mac-dark"
 
   // Theme detection

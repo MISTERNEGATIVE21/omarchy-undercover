@@ -63,8 +63,8 @@ Panel {
   property int dockTransparency: 76
 
   property string homeDir: Quickshell.env("HOME")
-  property string configDir: homeDir + "/.config/omarchy-undercover"
-  property string iconBasePath: homeDir + "/.local/share/icons/mac-dock/"
+  property string configDir: homeDir + "/.config/omarchy/plugins/omarchy-undercover"
+  property string iconBasePath: configDir + "/assets/icons/mac-dock/"
   property bool isLight: false
   property bool isAutohide: false
   property bool isDockRevealed: true
@@ -193,7 +193,7 @@ Panel {
 
   FileView {
     id: stateWatcher
-    path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/omarchy/undercover/state"
+    path: dockWindow.configDir + "/state"
     watchChanges: true
     printErrors: false
     onLoaded: dockWindow.updateState(text())
@@ -205,7 +205,7 @@ Panel {
 
   FileView {
     id: settingsWatcher
-    path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/omarchy-undercover/settings.conf"
+    path: dockWindow.configDir + "/settings.conf"
     watchChanges: true
     printErrors: false
     onLoaded: dockWindow.updateSettings(text())
@@ -244,12 +244,30 @@ Panel {
     return "'" + String(val || "").replace(/'/g, "'\\''") + "'"
   }
 
+  function resolveCmd(cmd) {
+    if (!cmd) return ""
+    var pluginScripts = dockWindow.configDir + "/scripts"
+    var devScripts = dockWindow.homeDir + "/omarchy-undercover/scripts"
+    return cmd.replace(/\b(omarchy-[a-zA-Z0-9_-]+)\b/g, function(match) {
+      return pluginScripts + "/" + match
+    })
+  }
+
+  function runCmd(cmd) {
+    var pluginScripts = dockWindow.configDir + "/scripts"
+    var devScripts = dockWindow.homeDir + "/omarchy-undercover/scripts"
+    var fullCmd = dockWindow.resolveCmd(cmd)
+    var wrapped = "export PATH=\"" + pluginScripts + ":" + devScripts + ":$PATH\"; " + fullCmd
+    Quickshell.execDetached(["bash", "-c", wrapped])
+  }
+
   function shiftToClient(client) {
     if (!client || !client.address) return
     var rawAddr = String(client.address).trim()
     if (!/^0x[0-9a-fA-F]+$/.test(rawAddr)) return
     if (client.workspace && client.workspace.id < 0) {
-      Quickshell.execDetached(["omarchy-undercover-minimize", rawAddr])
+      var minScript = dockWindow.configDir + "/scripts/omarchy-undercover-minimize"
+      Quickshell.execDetached([minScript, rawAddr])
       refreshTimer.restart()
       return
     }
@@ -611,7 +629,7 @@ Panel {
             }
             if (appRunning && activeClient && activeClient.address) {
               if (appFocused) {
-                Quickshell.execDetached(["omarchy-undercover-minimize"])
+                dockWindow.runCmd("omarchy-undercover-minimize")
               } else {
                 dockWindow.shiftToClient(activeClient)
               }
@@ -620,9 +638,9 @@ Panel {
             if (appData && appData.exec) {
               if (appData.matchers && appData.matchers.length > 0) {
                 var activateCmd = "omarchy-undercover-activate " + dockWindow.shellQuote(appData.matchers.join(",")) + " " + dockWindow.shellQuote(appData.exec)
-                Quickshell.execDetached(["bash", "-c", activateCmd])
+                dockWindow.runCmd(activateCmd)
               } else {
-                Quickshell.execDetached(["bash", "-c", appData.exec])
+                dockWindow.runCmd(appData.exec)
               }
             }
           }
@@ -759,7 +777,7 @@ Panel {
 
         function launch() {
           bounce()
-          Quickshell.execDetached(["bash", "-c", "omarchy-undercover-filemanager trash:/// || flea trash:/// || thunar trash:/// || pcmanfm trash:/// || dolphin trash:///"])
+          dockWindow.runCmd("omarchy-undercover-filemanager trash:/// || flea trash:/// || thunar trash:/// || pcmanfm trash:/// || dolphin trash:///")
         }
 
         SequentialAnimation {

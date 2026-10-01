@@ -21,12 +21,15 @@ BarWidget {
     fixedWidth: root.contentWidth
     tooltipText: "Control Center"
 
+    property string homeDir: Quickshell.env("HOME")
+    property string configDir: homeDir + "/.config/omarchy/plugins/omarchy-undercover"
+
     onPressed: function() {
-      if (root.bar) {
-        root.bar.run("omarchy-mac-controlcenter")
-      } else {
-        Quickshell.execDetached(["omarchy-mac-controlcenter"])
-      }
+      var pluginScripts = button.configDir + "/scripts"
+      var devScripts = button.homeDir + "/omarchy-undercover/scripts"
+      var cmd = pluginScripts + "/omarchy-mac-controlcenter"
+      var wrapped = "export PATH=\"" + pluginScripts + ":" + devScripts + ":$PATH\"; " + cmd
+      Quickshell.execDetached(["bash", "-c", wrapped])
     }
 
     // Vector macOS Control Center Icon (Two horizontal toggle capsules)

@@ -17,6 +17,28 @@ BarWidget {
   implicitWidth: clockBox.implicitWidth + Math.round(20 * root.scaleFactor)
   implicitHeight: root.bar ? root.bar.barSize : 24
 
+  readonly property bool interactive: true
+  readonly property bool pressable: true
+  readonly property bool concealed: false
+
+  function triggerPress(button) {
+    if (button === Qt.RightButton) {
+      root.runCmd("omarchy-win11-settings")
+    } else {
+      root.runCmd("omarchy-win11-notifications")
+    }
+  }
+
+  property var registeredBar: null
+  function syncClickRegistration() {
+    if (registeredBar && registeredBar.unregisterClickTarget) registeredBar.unregisterClickTarget(root)
+    registeredBar = root.bar
+    if (registeredBar && registeredBar.registerClickTarget) registeredBar.registerClickTarget(root)
+  }
+  onBarChanged: syncClickRegistration()
+  Component.onCompleted: syncClickRegistration()
+  Component.onDestruction: if (registeredBar && registeredBar.unregisterClickTarget) registeredBar.unregisterClickTarget(root)
+
   Timer {
     interval: 1000
     running: true
@@ -54,12 +76,24 @@ BarWidget {
   readonly property color textColor: root.bar && root.bar.foreground !== undefined ? root.bar.foreground : (isBarLight ? "#111111" : "#ffffff")
   readonly property color textSecondaryColor: isBarLight ? "#4f4f4f" : Qt.rgba(1, 1, 1, 0.78)
 
+  property string homeDir: Quickshell.env("HOME")
+  property string configDir: homeDir + "/.config/omarchy/plugins/omarchy-undercover"
+
+  function resolveCmd(cmd) {
+    if (!cmd) return ""
+    var pluginScripts = root.configDir + "/scripts"
+    var devScripts = root.homeDir + "/omarchy-undercover/scripts"
+    return cmd.replace(/\b(omarchy-[a-zA-Z0-9_-]+)\b/g, function(match) {
+      return pluginScripts + "/" + match
+    })
+  }
+
   function runCmd(cmd) {
-    if (root.bar) {
-      root.bar.run(cmd)
-    } else {
-      Quickshell.execDetached(["bash", "-c", cmd])
-    }
+    var pluginScripts = root.configDir + "/scripts"
+    var devScripts = root.homeDir + "/omarchy-undercover/scripts"
+    var fullCmd = root.resolveCmd(cmd)
+    var wrapped = "export PATH=\"" + pluginScripts + ":" + devScripts + ":$PATH\"; " + fullCmd
+    Quickshell.execDetached(["bash", "-c", wrapped])
   }
 
   Rectangle {

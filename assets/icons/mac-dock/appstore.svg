@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="asBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1ea0f2"/>
+      <stop offset="100%" stop-color="#0870d8"/>
+    </linearGradient>
+    <filter id="asShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#000000" flood-opacity="0.30"/>
+    </filter>
+  </defs>
+  <rect x="32" y="32" width="448" height="448" rx="105" fill="url(#asBg)" filter="url(#asShadow)"/>
+  <!-- App Store 'A' emblem formed by sticks -->
+  <line x1="256" y1="120" x2="150" y2="360" stroke="#ffffff" stroke-width="36" stroke-linecap="round"/>
+  <line x1="256" y1="120" x2="362" y2="360" stroke="#ffffff" stroke-width="36" stroke-linecap="round"/>
+  <line x1="160" y1="290" x2="352" y2="290" stroke="#ffffff" stroke-width="36" stroke-linecap="round"/>
+</svg>

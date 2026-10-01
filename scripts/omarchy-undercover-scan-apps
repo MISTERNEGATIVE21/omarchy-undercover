@@ -15,10 +15,12 @@ def scan_apps():
     script_parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if os.path.isfile(os.path.join(script_parent, "manifest.json")):
         config_dir = script_parent
+    elif os.path.isdir(os.path.join(home, ".config", "omarchy", "plugins", "omarchy-undercover")):
+        config_dir = os.path.join(home, ".config", "omarchy", "plugins", "omarchy-undercover")
     elif os.path.isdir(os.path.join(home, ".config", "omarchy", "plugins", "undercover")):
         config_dir = os.path.join(home, ".config", "omarchy", "plugins", "undercover")
     else:
-        config_dir = os.path.join(home, ".config", "omarchy-undercover")
+        config_dir = os.path.join(home, ".config", "omarchy", "plugins", "omarchy-undercover")
     os.makedirs(config_dir, exist_ok=True)
     out_file = os.path.join(config_dir, "apps.json")
 
@@ -31,6 +33,9 @@ def scan_apps():
     ]
 
     icon_dirs = [
+        os.path.join(config_dir, "assets", "icons", "win11"),
+        os.path.join(config_dir, "assets", "icons", "mac-dock"),
+        os.path.join(config_dir, "assets", "icons"),
         os.path.join(home, ".local", "share", "icons", "win11"),
         os.path.join(home, ".local", "share", "icons", "hicolor"),
         os.path.join(home, ".local", "share", "icons"),
@@ -122,4 +127,4 @@ def scan_apps():
 
 if __name__ == "__main__":
     count = scan_apps()
-    print(f"Indexed {count} system applications into ~/.config/omarchy-undercover/apps.json")
+    print(f"Indexed {count} system applications into official plugin database")

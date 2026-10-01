@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# =============================================================================
+# 🪟 Windows 11 Native Quickshell Task View & Desktops Manager
+# =============================================================================
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REAL_SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+export PATH="${SCRIPT_DIR}:${REAL_SCRIPT_DIR}:$HOME/.config/omarchy/plugins/omarchy-undercover/scripts:$PATH"
+
+PID_FILE="${XDG_RUNTIME_DIR:-/tmp}/omarchy-win11-taskview.pid"
+
+# 1. Instant toggle if already running
+if [[ -f "$PID_FILE" ]]; then
+    PID=$(cat "$PID_FILE" 2>/dev/null)
+    if [[ -n "$PID" ]] && kill -0 "$PID" 2>/dev/null; then
+        kill "$PID" 2>/dev/null || true
+        rm -f "$PID_FILE"
+        exit 0
+    fi
+    rm -f "$PID_FILE"
+fi
+
+if pgrep -f "quickshell.*win11-taskview" >/dev/null 2>&1; then
+    pkill -f "quickshell.*win11-taskview" 2>/dev/null || true
+    rm -f "$PID_FILE"
+    exit 0
+fi
+
+# 2. Locate native Quickshell Task View dashboard
+QS_SRC=""
+for cand in \
+    "${REAL_SCRIPT_DIR}/../configs/quickshell/win11-taskview" \
+    "${SCRIPT_DIR}/../configs/quickshell/win11-taskview" \
+    "$HOME/.config/omarchy/plugins/omarchy-undercover/configs/quickshell/win11-taskview" \
+    "$HOME/omarchy-undercover/configs/quickshell/win11-taskview" \
+    "/usr/share/omarchy-undercover/configs/quickshell/win11-taskview"; do
+    if [[ -d "$cand" && -f "$cand/shell.qml" ]]; then
+        QS_SRC="$cand"
+        break
+    fi
+done
+
+# 3. Launch native Task View
+if [[ -n "$QS_SRC" ]] && command -v quickshell >/dev/null 2>&1; then
+    echo $$ > "$PID_FILE"
+    exec quickshell -p "$QS_SRC"
+else
+    # Fallback to rofi if quickshell is unavailable
+    exec rofi -show window -theme ~/.config/rofi/windows11.rasi
+fi

@@ -9,6 +9,24 @@ BarWidget {
   implicitWidth: 12
   implicitHeight: root.bar ? root.bar.barSize : 24
 
+  readonly property bool interactive: true
+  readonly property bool pressable: true
+  readonly property bool concealed: false
+
+  function triggerPress(button) {
+    root.runCmd("omarchy-undercover-show-desktop")
+  }
+
+  property var registeredBar: null
+  function syncClickRegistration() {
+    if (registeredBar && registeredBar.unregisterClickTarget) registeredBar.unregisterClickTarget(root)
+    registeredBar = root.bar
+    if (registeredBar && registeredBar.registerClickTarget) registeredBar.registerClickTarget(root)
+  }
+  onBarChanged: syncClickRegistration()
+  Component.onCompleted: syncClickRegistration()
+  Component.onDestruction: if (registeredBar && registeredBar.unregisterClickTarget) registeredBar.unregisterClickTarget(root)
+
   readonly property bool isBarLight: {
     if (root.bar && root.bar.foreground !== undefined) {
       var f = root.bar.foreground
@@ -16,6 +34,26 @@ BarWidget {
       return lumF < 0.5
     }
     return false
+  }
+
+  property string homeDir: Quickshell.env("HOME")
+  property string configDir: homeDir + "/.config/omarchy/plugins/omarchy-undercover"
+
+  function resolveCmd(cmd) {
+    if (!cmd) return ""
+    var pluginScripts = root.configDir + "/scripts"
+    var devScripts = root.homeDir + "/omarchy-undercover/scripts"
+    return cmd.replace(/\b(omarchy-[a-zA-Z0-9_-]+)\b/g, function(match) {
+      return pluginScripts + "/" + match
+    })
+  }
+
+  function runCmd(cmd) {
+    var pluginScripts = root.configDir + "/scripts"
+    var devScripts = root.homeDir + "/omarchy-undercover/scripts"
+    var fullCmd = root.resolveCmd(cmd)
+    var wrapped = "export PATH=\"" + pluginScripts + ":" + devScripts + ":$PATH\"; " + fullCmd
+    Quickshell.execDetached(["bash", "-c", wrapped])
   }
 
   Rectangle {
@@ -40,11 +78,7 @@ BarWidget {
       hoverEnabled: true
       cursorShape: Qt.ArrowCursor
       onClicked: {
-        if (root.bar) {
-          root.bar.run("omarchy-undercover-show-desktop")
-        } else {
-          Quickshell.execDetached(["omarchy-undercover-show-desktop"])
-        }
+        root.runCmd("omarchy-undercover-show-desktop")
       }
     }
   }

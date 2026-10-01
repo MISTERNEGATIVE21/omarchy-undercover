@@ -57,12 +57,15 @@ BarWidget {
     fixedWidth: root.contentWidth
     tooltipText: "Battery: " + root.batteryPct + "% (" + (root.isCharging ? "Power Source: Power Adapter" : "Power Source: Battery") + ")"
 
+    property string homeDir: Quickshell.env("HOME")
+    property string configDir: homeDir + "/.config/omarchy/plugins/omarchy-undercover"
+
     onPressed: function() {
-      if (root.bar) {
-        root.bar.run("omarchy-mac-widgets")
-      } else {
-        Quickshell.execDetached(["omarchy-mac-widgets"])
-      }
+      var pluginScripts = button.configDir + "/scripts"
+      var devScripts = button.homeDir + "/omarchy-undercover/scripts"
+      var cmd = pluginScripts + "/omarchy-mac-widgets"
+      var wrapped = "export PATH=\"" + pluginScripts + ":" + devScripts + ":$PATH\"; " + cmd
+      Quickshell.execDetached(["bash", "-c", wrapped])
     }
 
     Row {

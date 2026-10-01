@@ -1,0 +1,161 @@
+#!/usr/bin/env python3
+"""
+Windows 11 Native Task Manager Statistics Streamer for Quickshell
+Emits continuous JSON lines containing real-time CPU, RAM, Disk, Apps, and Processes.
+"""
+
+import sys
+import os
+import time
+import json
+import subprocess
+from pathlib import Path
+
+try:
+    import psutil
+except ImportError:
+    psutil = None
+
+def get_cpu_model():
+    model = "Processor"
+    try:
+        with open("/proc/cpuinfo") as f:
+            for line in f:
+                if "model name" in line:
+                    return line.split(":", 1)[1].strip()
+    except Exception:
+        pass
+    return model
+
+CPU_MODEL = get_cpu_model()
+
+def get_hyprland_clients():
+    try:
+        raw = subprocess.check_output(["hyprctl", "clients", "-j"], stderr=subprocess.DEVNULL)
+        return json.loads(raw)
+    except Exception:
+        return []
+
+def collect_stats():
+    if not psutil:
+        return {"error": "psutil not installed"}
+
+    # Overall CPU
+    cpu_pct = psutil.cpu_percent(interval=None)
+    freq = psutil.cpu_freq()
+    cpu_freq = round(freq.current / 1000, 2) if freq else 2.50
+
+    # Memory
+    mem = psutil.virtual_memory()
+    swap = psutil.swap_memory()
+
+    # Uptime & counts
+    uptime_sec = int(time.time() - psutil.boot_time())
+    pids = psutil.pids()
+    proc_count = len(pids)
+
+    # Hyprland graphical apps
+    clients = get_hyprland_clients()
+    app_pids = {}
+    for c in clients:
+        pid = c.get("pid")
+        if pid:
+            app_pids[pid] = c
+
+    apps = []
+    bg_procs = []
+
+    for p in psutil.process_iter(["pid", "name", "cpu_percent", "memory_info", "status", "cmdline"]):
+        try:
+            info = p.info
+            pid = info["pid"]
+            name = info["name"] or "process"
+            cpu = round(info["cpu_percent"] or 0.0, 1)
+            rss = info["memory_info"].rss if info["memory_info"] else 0
+            mem_mb = round(rss / (1024 * 1024), 1)
+            status = info["status"] or "running"
+
+            if pid in app_pids:
+                c = app_pids[pid]
+                title = c.get("title") or c.get("class") or name
+                cls = c.get("class") or name
+                apps.append({
+                    "pid": pid,
+                    "name": title,
+                    "class": cls,
+                    "address": c.get("address") or "",
+                    "workspace": c.get("workspace", {}).get("id", 1),
+                    "cpu": cpu,
+                    "mem_mb": mem_mb,
+                    "status": "Running",
+                    "is_app": True
+                })
+            else:
+                # Filter out idle 0% 0MB kernel threads if list is too large
+                bg_procs.append({
+                    "pid": pid,
+                    "name": name,
+                    "class": name,
+                    "address": "",
+                    "workspace": 0,
+                    "cpu": cpu,
+                    "mem_mb": mem_mb,
+                    "status": status.capitalize(),
+                    "is_app": False
+                })
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
+
+    apps.sort(key=lambda x: (x["cpu"], x["mem_mb"]), reverse=True)
+    bg_procs.sort(key=lambda x: (x["cpu"], x["mem_mb"]), reverse=True)
+
+    # Physical / Logical cores
+    cores = psutil.cpu_count(logical=False) or 4
+    threads = psutil.cpu_count(logical=True) or 8
+
+    return {
+        "cpu_pct": round(cpu_pct, 1),
+        "cpu_freq": cpu_freq,
+        "cpu_model": CPU_MODEL,
+        "cores": cores,
+        "threads": threads,
+        "uptime_sec": uptime_sec,
+        "proc_count": proc_count,
+        "mem_used_gb": round(mem.used / (1024**3), 2),
+        "mem_total_gb": round(mem.total / (1024**3), 2),
+        "mem_avail_gb": round(mem.available / (1024**3), 2),
+        "mem_pct": round(mem.percent, 1),
+        "swap_used_gb": round(swap.used / (1024**3), 2),
+        "swap_total_gb": round(swap.total / (1024**3), 2),
+        "apps": apps,
+        "bg_procs": bg_procs[:40]
+    }
+
+def main():
+    # Warm up CPU percent
+    if psutil:
+        psutil.cpu_percent(interval=None)
+
+    interval = 1.5
+    if len(sys.argv) > 1:
+        try:
+            interval = float(sys.argv[1])
+        except ValueError:
+            pass
+
+    while True:
+        try:
+            stats = collect_stats()
+            print(json.dumps(stats), flush=True)
+            time.sleep(interval)
+        except (KeyboardInterrupt, BrokenPipeError):
+            break
+        except Exception as e:
+            try:
+                print(json.dumps({"error": str(e)}), flush=True)
+            except BrokenPipeError:
+                break
+            time.sleep(interval)
+
+if __name__ == "__main__":
+    main()

@@ -357,35 +357,25 @@ undercover_plugin_dir() {
 }
 
 undercover_config_dir() {
-    local cdir="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy-undercover"
-    mkdir -p "$cdir" 2>/dev/null || true
-    echo "$cdir"
+    undercover_plugin_dir
 }
 
 undercover_state_dir() {
-    local sdir="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/undercover"
-    mkdir -p "$sdir" 2>/dev/null || true
-    echo "$sdir"
+    undercover_plugin_dir
 }
 
 undercover_state_file() {
-    local sdir
-    sdir=$(undercover_state_dir)
-    echo "$sdir/state"
+    local pdir
+    pdir=$(undercover_plugin_dir)
+    echo "$pdir/state"
 }
 
 undercover_settings_file() {
-    local cdir
-    cdir=$(undercover_config_dir)
-    local cfg="$cdir/settings.conf"
+    local pdir
+    pdir=$(undercover_plugin_dir)
+    local cfg="$pdir/settings.conf"
     if [[ ! -f "$cfg" ]]; then
-        local pdir
-        pdir=$(undercover_plugin_dir)
-        if [[ -f "$pdir/settings.conf" ]]; then
-            cp "$pdir/settings.conf" "$cfg" 2>/dev/null || true
-        else
-            touch "$cfg" 2>/dev/null || true
-        fi
+        touch "$cfg" 2>/dev/null || true
     fi
     echo "$cfg"
 }
@@ -430,8 +420,6 @@ enable_undercover_hyprland() {
         plugin_root="$HOME/.config/omarchy/plugins/omarchy-undercover"
     elif [[ -d "$HOME/.config/omarchy/plugins/undercover" ]]; then
         plugin_root="$HOME/.config/omarchy/plugins/undercover"
-    elif [[ -d "$HOME/.config/omarchy-undercover" ]]; then
-        plugin_root="$HOME/.config/omarchy-undercover"
     fi
 
     mkdir -p "$toggles_dir"
@@ -470,36 +458,6 @@ enable_undercover_hyprland() {
         chmod 644 "$undercover_conf"
     fi
 
-
-    # Ensure icons and asset themes are accessible (only create if missing)
-    local assets_icons="${plugin_root}/assets/icons"
-    if [[ -d "$assets_icons" ]]; then
-        mkdir -p "$HOME/.local/share/icons"
-        for ic in "$assets_icons"/*; do
-            if [[ -e "$ic" ]]; then
-                local ib
-                ib="$(basename "$ic")"
-                local target_ic="$HOME/.local/share/icons/$ib"
-                if [[ -d "$ic" ]]; then
-                    mkdir -p "$target_ic"
-                    cp -rn "$ic"/* "$target_ic/" 2>/dev/null || true
-                elif [[ ! -e "$target_ic" ]]; then
-                    ln -sfn "$ic" "$target_ic" 2>/dev/null || true
-                fi
-            fi
-        done
-    fi
-    if [[ -d "${plugin_root}/assets/mac-dock" && ! -e "$HOME/.local/share/icons/mac-dock" ]]; then
-        mkdir -p "$HOME/.local/share/icons"
-        ln -sfn "${plugin_root}/assets/mac-dock" "$HOME/.local/share/icons/mac-dock" 2>/dev/null || true
-    fi
-
-    # User configuration directory
-    local user_cfg="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy-undercover"
-    mkdir -p "$user_cfg"
-    if [[ ! -f "$user_cfg/settings.conf" && -f "$plugin_root/settings.conf" ]]; then
-        cp "$plugin_root/settings.conf" "$user_cfg/settings.conf" 2>/dev/null || true
-    fi
 
     # Reload hyprland cleanly so dynamic toggles take effect
     if command_exists hyprctl; then

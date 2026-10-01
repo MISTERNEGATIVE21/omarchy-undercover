@@ -12,7 +12,6 @@ for cand in \
     "${SCRIPT_DIR}/../configs/quickshell/win11-sound" \
     "$HOME/.config/omarchy/plugins/omarchy-undercover/configs/quickshell/win11-sound" \
     "$HOME/omarchy-undercover/configs/quickshell/win11-sound" \
-    "$HOME/.config/omarchy-undercover/quickshell/win11-sound" \
     "/usr/share/omarchy-undercover/configs/quickshell/win11-sound"; do
     if [[ -d "$cand" && -f "$cand/shell.qml" ]]; then
         QS_SRC="$cand"

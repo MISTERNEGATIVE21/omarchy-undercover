@@ -20,8 +20,8 @@ if pkill -x rofi 2>/dev/null; then
 fi
 
 # 2. Check current mode
-STATE_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/undercover/state"
-[[ ! -f "$STATE_FILE" && -f "$HOME/.config/omarchy-undercover/state" ]] && STATE_FILE="$HOME/.config/omarchy-undercover/state"
+STATE_FILE="$HOME/.config/omarchy/plugins/omarchy-undercover/state"
+[[ ! -f "$STATE_FILE" && -f "${SCRIPT_DIR}/../state" ]] && STATE_FILE="${SCRIPT_DIR}/../state"
 
 MODE="omarchy"
 if [[ -f "$STATE_FILE" ]]; then

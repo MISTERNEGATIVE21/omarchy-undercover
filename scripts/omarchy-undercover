@@ -37,15 +37,13 @@ else
     PLUGIN_DIR="${SCRIPT_DIR}/.."
 fi
 
-CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy-undercover"
-STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/undercover"
+CONFIG_DIR="$PLUGIN_DIR"
+STATE_DIR="$PLUGIN_DIR"
 
-mkdir -p "$CONFIG_DIR" "$STATE_DIR"
-
-STATE_FILE="$STATE_DIR/state"
-BACKUP_DIR="$STATE_DIR/backups"
-BASELINE_FILE="$STATE_DIR/baseline"
-SETTINGS_FILE="$CONFIG_DIR/settings.conf"
+STATE_FILE="$PLUGIN_DIR/state"
+BACKUP_DIR="$PLUGIN_DIR/backups"
+BASELINE_FILE="$PLUGIN_DIR/baseline"
+SETTINGS_FILE="$PLUGIN_DIR/settings.conf"
 
 WINDOWS_GTK_THEME="Win11-Dark"
 WINDOWS_ICON_THEME="Fluent-dark"
@@ -53,16 +51,6 @@ WINDOWS_CURSOR_THEME="Fluent-dark-cursors"
 WINDOWS_FONT_NAME="Roboto 10.5"
 
 mkdir -p "$BACKUP_DIR"
-
-# Seed default settings if missing
-if [[ ! -f "$SETTINGS_FILE" && -f "$PLUGIN_DIR/settings.conf" ]]; then
-    cp "$PLUGIN_DIR/settings.conf" "$SETTINGS_FILE" 2>/dev/null || true
-fi
-
-# Seed baseline if migrating from legacy plugin dir
-if [[ ! -f "$BASELINE_FILE" && -f "$PLUGIN_DIR/baseline" ]]; then
-    cp "$PLUGIN_DIR/baseline" "$BASELINE_FILE" 2>/dev/null || true
-fi
 
 if [[ -f "$PLUGIN_DIR/scripts/common.sh" ]]; then
     source "$PLUGIN_DIR/scripts/common.sh"
@@ -277,26 +265,6 @@ apply_wallpaper() {
 
 apply_gtk_windows_theme() {
     mkdir -p "$HOME/.config/gtk-3.0" "$HOME/.config/gtk-4.0"
-
-    local win11_gtk4="$HOME/.themes/Win11-Dark/gtk-4.0"
-    local win11_gtk3="$HOME/.themes/Win11-Dark/gtk-3.0"
-
-    if [[ -d "$win11_gtk4" ]]; then
-        cp -rL "$win11_gtk4/"* "$HOME/.config/gtk-4.0/" 2>/dev/null || true
-        cat <<EOF > "$HOME/.config/gtk-4.0/gtk.css"
-@import url("file://$win11_gtk4/gtk.css");
-EOF
-        cat <<EOF > "$HOME/.config/gtk-4.0/gtk-dark.css"
-@import url("file://$win11_gtk4/gtk-dark.css");
-EOF
-    fi
-
-    if [[ -d "$win11_gtk3" ]]; then
-        cp -rL "$win11_gtk3/"* "$HOME/.config/gtk-3.0/" 2>/dev/null || true
-        cat <<EOF > "$HOME/.config/gtk-3.0/gtk.css"
-@import url("file://$win11_gtk3/gtk.css");
-EOF
-    fi
 
     local cursor_size
     cursor_size=$(read_setting "CURSOR_SIZE" "24")
@@ -644,8 +612,7 @@ restore_gtk_from_baseline() {
         gsettings set org.gnome.desktop.interface color-scheme "prefer-dark" 2>/dev/null || true
         gsettings set org.gnome.desktop.interface font-name "Sans 10" 2>/dev/null || true
     fi
-    # Remove custom Undercover GTK styling and reset button layout
-    rm -f "$HOME/.config/gtk-3.0/gtk.css" "$HOME/.config/gtk-4.0/gtk.css" 2>/dev/null || true
+    # Reset button layout
     gsettings set org.gnome.desktop.wm.preferences button-layout ":close" 2>/dev/null || true
 }
 
@@ -766,37 +733,8 @@ EOF
 
     apply_flea_mac
 
-    # Deploy macOS Finder file manager icon
-    if [[ -f "$HOME/.local/share/icons/hicolor/scalable/apps/mac-finder.svg" ]]; then
-        cp -f "$HOME/.local/share/icons/hicolor/scalable/apps/system-file-manager.svg" 2>/dev/null || true
-        cp -f "$HOME/.local/share/icons/hicolor/scalable/apps/mac-finder.svg" "$HOME/.local/share/icons/mac-dock/finder.svg" 2>/dev/null || true
-        gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
-    fi
-
-    # Deploy macOS traffic light GTK CSS
-    if [[ -f "$CONFIG_DIR/gtk/mac-style.css" ]]; then
-        cp -f "$CONFIG_DIR/gtk/mac-style.css" "$HOME/.config/gtk-4.0/gtk.css" 2>/dev/null || true
-        cp -f "$CONFIG_DIR/gtk/mac-style.css" "$HOME/.config/gtk-3.0/gtk.css" 2>/dev/null || true
-    fi
-
     # Deploy shell configuration (Quickshell or Waybar)
     apply_shell_mac
-
-    # Deploy mac Rofi theme
-    mkdir -p "$HOME/.config/rofi"
-    local mac_rofi_src=""
-    for rsrc in \
-        "$PLUGIN_DIR/configs/rofi/mac.rasi" \
-        "${SCRIPT_DIR}/../configs/rofi/mac.rasi" \
-        "$CONFIG_DIR/rofi/mac.rasi"; do
-        if [[ -f "$rsrc" ]]; then
-            mac_rofi_src="$rsrc"
-            break
-        fi
-    done
-    if [[ -n "$mac_rofi_src" ]]; then
-        cp -f "$mac_rofi_src" "$HOME/.config/rofi/mac.rasi" 2>/dev/null || true
-    fi
 
     # Apply wallpaper
     if [[ -f "$CONFIG_DIR/wallpapers/$wall_img" ]]; then
@@ -919,42 +857,8 @@ EOF
 
     apply_flea_windows
 
-    # Deploy Windows 11 Fluent File Explorer icon
-    if [[ -f "$HOME/.local/share/icons/hicolor/scalable/apps/win11-explorer.svg" ]]; then
-        cp -f "$HOME/.local/share/icons/hicolor/scalable/apps/win11-explorer.svg" "$HOME/.local/share/icons/hicolor/scalable/apps/system-file-manager.svg" 2>/dev/null || true
-        gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
-    fi
-
-    # Deploy Windows 11 Fluent GTK CSS
-    if [[ -f "$CONFIG_DIR/gtk/win11-style.css" ]]; then
-        cp -f "$CONFIG_DIR/gtk/win11-style.css" "$HOME/.config/gtk-4.0/gtk.css" 2>/dev/null || true
-        cp -f "$CONFIG_DIR/gtk/win11-style.css" "$HOME/.config/gtk-3.0/gtk.css" 2>/dev/null || true
-    fi
-
     # Deploy shell configuration (Quickshell or Waybar)
     apply_shell_windows
-
-    # Deploy win11 Rofi theme
-    mkdir -p "$HOME/.config/rofi"
-    local win_rofi_name="win11.rasi"
-    if [[ "$variant" == "light" ]]; then
-        win_rofi_name="win11-light.rasi"
-    fi
-    local rofi_src=""
-    for rsrc in \
-        "$PLUGIN_DIR/configs/rofi/$win_rofi_name" \
-        "${SCRIPT_DIR}/../configs/rofi/$win_rofi_name" \
-        "$CONFIG_DIR/rofi/$win_rofi_name" \
-        "$PLUGIN_DIR/configs/rofi/win11.rasi"; do
-        if [[ -f "$rsrc" ]]; then
-            rofi_src="$rsrc"
-            break
-        fi
-    done
-    if [[ -n "$rofi_src" ]]; then
-        cp -f "$rofi_src" "$HOME/.config/rofi/windows11.rasi" 2>/dev/null || true
-        cp -f "$rofi_src" "$HOME/.config/rofi/win11.rasi" 2>/dev/null || true
-    fi
 
     # Apply wallpaper
     if [[ -f "$CONFIG_DIR/wallpapers/$wall_img" ]]; then
@@ -1114,15 +1018,8 @@ Gtk/DecorationLayout "$button_layout"
 EOF
     killall -HUP xsettingsd 2>/dev/null || true
 
-    # Clean up custom Undercover GTK overrides
-    rm -f "$HOME/.config/gtk-4.0/gtk.css" "$HOME/.config/gtk-3.0/gtk.css" 2>/dev/null || true
-
-    # Clean up custom Undercover file manager icon so it restores to native icon
-    rm -f "$HOME/.local/share/icons/hicolor/scalable/apps/system-file-manager.svg" 2>/dev/null || true
-    gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
-
     # Clean up sound overrides
-    rm -f "$CONFIG_DIR/sounds/current-notify.wav" 2>/dev/null || true
+    rm -f "$CONFIG_DIR/assets/sounds/current-notify.wav" "$CONFIG_DIR/sounds/current-notify.wav" 2>/dev/null || true
 
     # 5. Restore background if a custom background was recorded
     local prev_bg=""
@@ -1202,14 +1099,9 @@ uninstall_undercover() {
     # 2. Uninstall Hyprland toggle files completely
     uninstall_undercover_hyprland
 
-    # 3. Clean up icons and symlinks created by undercover in ~/.local/share/icons
+    # 3. Clean up legacy icons and files created by older undercover versions
     rm -rf "$HOME/.local/share/icons/mac-dock" 2>/dev/null || true
-    rm -rf "$HOME/.local/share/icons/Fluent-dark" "$HOME/.local/share/icons/Fluent-light" 2>/dev/null || true
-    rm -rf "$HOME/.local/share/icons/WhiteSur" "$HOME/.local/share/icons/WhiteSur-dark" 2>/dev/null || true
-    rm -rf "$HOME/.local/share/icons/Fluent-dark-cursors" 2>/dev/null || true
-    rm -rf "$HOME/.local/share/icons/WhiteSur-cursors" 2>/dev/null || true
-    rm -f "$HOME/.local/share/icons/hicolor/scalable/apps/system-file-manager.svg" 2>/dev/null || true
-    gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
+    rm -rf "$HOME/.config/omarchy-undercover" 2>/dev/null || true
 
     # 4. Remove custom flea wrapper if created by undercover
     if [[ -f "$HOME/.local/bin/flea" ]]; then
@@ -1218,9 +1110,9 @@ uninstall_undercover() {
         fi
     fi
 
-    # 5. Clear state, backup, and undercover config directories
+    # 5. Clear state, backup, and undercover runtime directories
     clear_state
-    rm -rf "$STATE_DIR" "$CONFIG_DIR" "${XDG_CACHE_HOME:-$HOME/.cache}/omarchy-undercover" 2>/dev/null || true
+    rm -rf "$STATE_DIR/state" "$STATE_DIR/backups" "$STATE_DIR/baseline.json" "$STATE_DIR/previous_*" "${XDG_CACHE_HOME:-$HOME/.cache}/omarchy-undercover" 2>/dev/null || true
 
     # 6. Final reload of Omarchy bar and Hyprland
     omarchy_reload_bar

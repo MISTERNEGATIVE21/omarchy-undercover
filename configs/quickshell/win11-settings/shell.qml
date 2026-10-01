@@ -85,18 +85,19 @@ ShellRoot {
     property string taskbarAlign: "center"
     property int windowGaps: 8
     property int windowRounding: 10
+    property string pluginDir: Quickshell.env("OMARCHY_PLUGIN_DIR") || (settingsWin.homeDir + "/.config/omarchy/plugins/omarchy-undercover")
 
     function runCmd(cmd) {
       Quickshell.execDetached(["bash", "-c", cmd])
     }
 
     function saveSetting(key, val) {
-      var cmd = "mkdir -p " + homeDir + "/.config/omarchy-undercover && " +
-                "touch " + homeDir + "/.config/omarchy-undercover/settings.conf && " +
-                "if grep -q '^" + key + "=' " + homeDir + "/.config/omarchy-undercover/settings.conf; then " +
-                "  sed -i 's/^" + key + "=.*/" + key + "=" + val + "/' " + homeDir + "/.config/omarchy-undercover/settings.conf; " +
+      var cmd = "mkdir -p " + settingsWin.pluginDir + " && " +
+                "touch " + settingsWin.pluginDir + "/settings.conf && " +
+                "if grep -q '^" + key + "=' " + settingsWin.pluginDir + "/settings.conf; then " +
+                "  sed -i 's/^" + key + "=.*/" + key + "=" + val + "/' " + settingsWin.pluginDir + "/settings.conf; " +
                 "else " +
-                "  echo '" + key + "=" + val + "' >> " + homeDir + "/.config/omarchy-undercover/settings.conf; " +
+                "  echo '" + key + "=" + val + "' >> " + settingsWin.pluginDir + "/settings.conf; " +
                 "fi"
       runCmd(cmd)
     }
@@ -104,7 +105,7 @@ ShellRoot {
     // Reactive Watcher on State
     FileView {
       id: stateWatcher
-      path: settingsWin.homeDir + "/.config/omarchy-undercover/state"
+      path: settingsWin.pluginDir + "/state"
       watchChanges: true
       onLoaded: {
         var s = text().trim()
@@ -122,7 +123,7 @@ ShellRoot {
     // Reactive Watcher on settings.conf
     FileView {
       id: settingsWatcher
-      path: settingsWin.homeDir + "/.config/omarchy-undercover/settings.conf"
+      path: settingsWin.pluginDir + "/settings.conf"
       watchChanges: true
       onLoaded: {
         var s = text()
@@ -153,7 +154,7 @@ ShellRoot {
 
     FileView {
       id: defaultsWatcher
-      path: settingsWin.homeDir + "/.config/omarchy-undercover/defaults.json"
+      path: settingsWin.pluginDir + "/defaults.json"
       watchChanges: true
       onLoaded: {
         try {
@@ -197,7 +198,7 @@ ShellRoot {
       var next = Object.assign({}, settingsWin.winPins)
       next[pinId] = enabled
       settingsWin.winPins = next
-      var cmd = "python3 -c \"import json, os; p = os.path.expanduser('~/.config/omarchy-undercover/defaults.json'); os.makedirs(os.path.dirname(p), exist_ok=True); d = json.load(open(p)) if os.path.exists(p) else {}; d['win11_pins'] = d.get('win11_pins', {}); d['win11_pins']['" + pinId + "'] = " + (enabled ? "True" : "False") + "; json.dump(d, open(p, 'w'), indent=2)\""
+      var cmd = "python3 -c \"import json, os; p = os.path.expanduser('~/.config/omarchy/plugins/omarchy-undercover/defaults.json'); os.makedirs(os.path.dirname(p), exist_ok=True); d = json.load(open(p)) if os.path.exists(p) else {}; d['win11_pins'] = d.get('win11_pins', {}); d['win11_pins']['" + pinId + "'] = " + (enabled ? "True" : "False") + "; json.dump(d, open(p, 'w'), indent=2)\""
       runCmd(cmd)
     }
 
@@ -283,7 +284,7 @@ ShellRoot {
                 Layout.preferredWidth: 16
                 Layout.preferredHeight: 16
                 width: 16; height: 16
-                source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11/settings.svg"
+                source: "file://" + settingsWin.pluginDir + "/assets/icons/win11/settings.svg"
                 fillMode: Image.PreserveAspectFit
               }
               Text {
@@ -442,7 +443,7 @@ ShellRoot {
                     Layout.preferredWidth: 14
                     Layout.preferredHeight: 14
                     width: 14; height: 14
-                    source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11-settings/search.svg"
+                    source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/search.svg"
                     fillMode: Image.PreserveAspectFit
                     opacity: 0.8
                   }
@@ -509,7 +510,7 @@ ShellRoot {
                       Layout.preferredWidth: 18
                       Layout.preferredHeight: 18
                       width: 18; height: 18
-                      source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11-settings/" + modelData.icon
+                      source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/" + modelData.icon
                       fillMode: Image.PreserveAspectFit
                     }
 
@@ -527,7 +528,7 @@ ShellRoot {
                       Layout.preferredWidth: 10
                       Layout.preferredHeight: 10
                       width: 10; height: 10
-                      source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11-settings/chevron.svg"
+                      source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/chevron.svg"
                       fillMode: Image.PreserveAspectFit
                       opacity: 0.4
                     }
@@ -665,7 +666,7 @@ ShellRoot {
                       Layout.preferredWidth: 44
                       Layout.preferredHeight: 44
                       width: 44; height: 44
-                      source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11-settings/system.svg"
+                      source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/system.svg"
                       fillMode: Image.PreserveAspectFit
                     }
 
@@ -733,7 +734,7 @@ ShellRoot {
                       Layout.preferredWidth: 22
                       Layout.preferredHeight: 22
                       width: 22; height: 22
-                      source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11-settings/sun.svg"
+                      source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/sun.svg"
                       fillMode: Image.PreserveAspectFit
                     }
                     ColumnLayout {
@@ -771,7 +772,7 @@ ShellRoot {
                       Layout.preferredWidth: 22
                       Layout.preferredHeight: 22
                       width: 22; height: 22
-                      source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11-settings/volume.svg"
+                      source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/volume.svg"
                       fillMode: Image.PreserveAspectFit
                     }
                     ColumnLayout {
@@ -809,7 +810,7 @@ ShellRoot {
                       Layout.preferredWidth: 22
                       Layout.preferredHeight: 22
                       width: 22; height: 22
-                      source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11-settings/gaps.svg"
+                      source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/gaps.svg"
                       fillMode: Image.PreserveAspectFit
                     }
                     ColumnLayout {
@@ -848,7 +849,7 @@ ShellRoot {
                       Layout.preferredWidth: 22
                       Layout.preferredHeight: 22
                       width: 22; height: 22
-                      source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11-settings/rounding.svg"
+                      source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/rounding.svg"
                       fillMode: Image.PreserveAspectFit
                     }
                     ColumnLayout {
@@ -893,7 +894,7 @@ ShellRoot {
                       Layout.preferredWidth: 22
                       Layout.preferredHeight: 22
                       width: 22; height: 22
-                      source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11-settings/devices.svg"
+                      source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/devices.svg"
                       fillMode: Image.PreserveAspectFit
                     }
                     Text { text: "Bluetooth Radio Power"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary; Layout.fillWidth: true }
@@ -948,7 +949,7 @@ ShellRoot {
                       Layout.preferredWidth: 22
                       Layout.preferredHeight: 22
                       width: 22; height: 22
-                      source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11-settings/network.svg"
+                      source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/network.svg"
                       fillMode: Image.PreserveAspectFit
                     }
                     ColumnLayout {
@@ -1068,7 +1069,7 @@ ShellRoot {
                               Image {
                                 anchors.centerIn: parent
                                 width: 22; height: 22
-                                source: "file://" + settingsWin.homeDir + "/.local/share/icons/" + (modelData.isWin ? "win11/" : (modelData.icon === "apple-logo.svg" ? "" : "win11-settings/")) + modelData.icon
+                                source: "file://" + settingsWin.pluginDir + "/assets/icons/" + (modelData.isWin ? "win11/" : (modelData.icon === "apple-logo.svg" ? "" : "win11-settings/")) + modelData.icon
                                 fillMode: Image.PreserveAspectFit
                               }
                             }
@@ -1140,7 +1141,7 @@ ShellRoot {
                       Layout.preferredWidth: 22
                       Layout.preferredHeight: 22
                       width: 22; height: 22
-                      source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11-settings/personalization.svg"
+                      source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/personalization.svg"
                       fillMode: Image.PreserveAspectFit
                     }
                     ColumnLayout {
@@ -1221,7 +1222,7 @@ ShellRoot {
                       Layout.preferredWidth: 22
                       Layout.preferredHeight: 22
                       width: 22; height: 22
-                      source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11-settings/system.svg"
+                      source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/system.svg"
                       fillMode: Image.PreserveAspectFit
                     }
                     ColumnLayout {
@@ -1272,7 +1273,7 @@ ShellRoot {
                       Layout.preferredWidth: 22
                       Layout.preferredHeight: 22
                       width: 22; height: 22
-                      source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11-settings/system.svg"
+                      source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/system.svg"
                       fillMode: Image.PreserveAspectFit
                     }
                     ColumnLayout {
@@ -1307,7 +1308,7 @@ ShellRoot {
                       Layout.preferredWidth: 22
                       Layout.preferredHeight: 22
                       width: 22; height: 22
-                      source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11-settings/personalization.svg"
+                      source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/personalization.svg"
                       fillMode: Image.PreserveAspectFit
                     }
                     ColumnLayout {
@@ -1349,7 +1350,7 @@ ShellRoot {
                         Layout.preferredWidth: 22
                         Layout.preferredHeight: 22
                         width: 22; height: 22
-                        source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11-settings/personalization.svg"
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/personalization.svg"
                         fillMode: Image.PreserveAspectFit
                       }
                       ColumnLayout {
@@ -1382,7 +1383,7 @@ ShellRoot {
                           Layout.preferredWidth: 20
                           Layout.preferredHeight: 20
                           width: 20; height: 20
-                          source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11/" + modelData.icon
+                          source: "file://" + settingsWin.pluginDir + "/assets/icons/win11/" + modelData.icon
                           fillMode: Image.PreserveAspectFit
                         }
 
@@ -1429,7 +1430,7 @@ ShellRoot {
                       Layout.preferredWidth: 22
                       Layout.preferredHeight: 22
                       width: 22; height: 22
-                      source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11-settings/gaps.svg"
+                      source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/gaps.svg"
                       fillMode: Image.PreserveAspectFit
                     }
                     ColumnLayout {
@@ -1468,7 +1469,7 @@ ShellRoot {
                       Layout.preferredWidth: 22
                       Layout.preferredHeight: 22
                       width: 22; height: 22
-                      source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11-settings/sun.svg"
+                      source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/sun.svg"
                       fillMode: Image.PreserveAspectFit
                     }
                     ColumnLayout {
@@ -1502,7 +1503,7 @@ ShellRoot {
                       Layout.preferredWidth: 22
                       Layout.preferredHeight: 22
                       width: 22; height: 22
-                      source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11-settings/personalization.svg"
+                      source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/personalization.svg"
                       fillMode: Image.PreserveAspectFit
                     }
                     ColumnLayout {
@@ -1541,7 +1542,7 @@ ShellRoot {
                       Layout.preferredWidth: 22
                       Layout.preferredHeight: 22
                       width: 22; height: 22
-                      source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11-settings/tools.svg"
+                      source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/tools.svg"
                       fillMode: Image.PreserveAspectFit
                     }
                     ColumnLayout {
@@ -1580,7 +1581,7 @@ ShellRoot {
                       Layout.preferredWidth: 22
                       Layout.preferredHeight: 22
                       width: 22; height: 22
-                      source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11-settings/tools.svg"
+                      source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/tools.svg"
                       fillMode: Image.PreserveAspectFit
                     }
                     ColumnLayout {
@@ -1638,7 +1639,7 @@ ShellRoot {
                       Image {
                         Layout.preferredWidth: 24; Layout.preferredHeight: 24
                         width: 24; height: 24
-                        source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11/start.svg"
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/win11/start.svg"
                         fillMode: Image.PreserveAspectFit
                       }
                       ColumnLayout {
@@ -1674,7 +1675,7 @@ ShellRoot {
                       Image {
                         Layout.preferredWidth: 24; Layout.preferredHeight: 24
                         width: 24; height: 24
-                        source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11-settings/sun.svg"
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/sun.svg"
                         fillMode: Image.PreserveAspectFit
                       }
                       ColumnLayout {
@@ -1710,7 +1711,7 @@ ShellRoot {
                       Image {
                         Layout.preferredWidth: 24; Layout.preferredHeight: 24
                         width: 24; height: 24
-                        source: "file://" + settingsWin.homeDir + "/.local/share/icons/apple-logo.svg"
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/apple-logo.svg"
                         fillMode: Image.PreserveAspectFit
                       }
                       ColumnLayout {
@@ -1746,7 +1747,7 @@ ShellRoot {
                       Image {
                         Layout.preferredWidth: 24; Layout.preferredHeight: 24
                         width: 24; height: 24
-                        source: "file://" + settingsWin.homeDir + "/.local/share/icons/apple-logo.svg"
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/apple-logo.svg"
                         fillMode: Image.PreserveAspectFit
                       }
                       ColumnLayout {
@@ -1781,7 +1782,7 @@ ShellRoot {
                       Image {
                         Layout.preferredWidth: 24; Layout.preferredHeight: 24
                         width: 24; height: 24
-                        source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11-settings/disguise.svg"
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/disguise.svg"
                         fillMode: Image.PreserveAspectFit
                       }
                       ColumnLayout {
@@ -1824,7 +1825,7 @@ ShellRoot {
                       Layout.preferredWidth: 28
                       Layout.preferredHeight: 28
                       width: 28; height: 28
-                      source: "file://" + settingsWin.homeDir + "/.local/share/icons/win11-settings/shield.svg"
+                      source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/shield.svg"
                       fillMode: Image.PreserveAspectFit
                     }
                     ColumnLayout {
