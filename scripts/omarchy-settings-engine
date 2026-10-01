@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Copyright (C) 2026 misternegative21
+# Omarchy Undercover - Unified Settings Engine (adapted from OmaSettings)
+# License: GPL-3.0-or-later
+# ==============================================================================
+
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REAL_SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+
+for cand in \
+    "${REAL_SCRIPT_DIR}/../lib/settings" \
+    "${SCRIPT_DIR}/../lib/settings" \
+    "/usr/share/omarchy-undercover/lib/settings" \
+    "$HOME/.config/omarchy/plugins/omarchy-undercover/lib/settings"; do
+    if [[ -d "$cand" ]]; then
+        OMASETTINGS_LIB="$cand"
+        break
+    fi
+done
+
+OMASETTINGS_LIB="${OMASETTINGS_LIB:-${SCRIPT_DIR}/../lib/settings}"
+OMASETTINGS_BIN="${BASH_SOURCE[0]}"
+
+for module in core store hypr devices monitors workspaces shell_config compose plugins menu herdr tmux neovim bindings wifi bluetooth power audio setters state; do
+  if [[ -f "$OMASETTINGS_LIB/$module.sh" ]]; then
+    # shellcheck source=/dev/null
+    source "$OMASETTINGS_LIB/$module.sh"
+  fi
+done
+unset module
+
+monitors_cmd() {
+  case ${1:-state} in
+    state) monitor_state ;;
+    scale) shift; monitor_set "${1:?missing monitor}" scale "${2:?missing scale}" ;;
+    mode) shift; monitor_set "${1:?missing monitor}" mode "${2:?missing mode}" ;;
+    *) die "usage: omarchy-settings-engine monitors state | scale <display> <val> | mode <display> <val>" ;;
+  esac
+}
+
+main() {
+case ${1:-state} in
+  state) shift; state "$@" ;;
+  set) shift; set_key "$@" ;;
+  reset) shift; setting_reset "${1:-}" ;;
+  monitors) shift; monitors_cmd "$@" ;;
+  devices) shift; devices_cmd "$@" ;;
+  wifi) shift; wifi_cmd "$@" ;;
+  bluetooth) shift; bluetooth_cmd "$@" ;;
+  power) shift; power_cmd "$@" ;;
+  audio) shift; audio_cmd "$@" ;;
+  hypr) shift; hypr_eval "$@" ;;
+  keys) shift; keys_cmd "$@" ;;
+  workspaces) shift; workspaces_cmd "$@" ;;
+  *)
+    cat >&2 <<'USAGE'
+usage:
+  omarchy-settings-engine state
+  omarchy-settings-engine set <key> <value>
+  omarchy-settings-engine reset <key>|--all
+  omarchy-settings-engine monitors state | scale <display> <val> | mode <display> <val>
+  omarchy-settings-engine devices state | set <device> <option> <value> keyboard|pointer
+  omarchy-settings-engine wifi list | rescan | connect <ssid> [password] | disconnect | radio on|off
+  omarchy-settings-engine bluetooth state | power on|off | scan | pair|connect|disconnect <address>
+  omarchy-settings-engine power state | profile ac|battery <power-saver|balanced|performance>
+  omarchy-settings-engine audio state | default output|input <device> | volume output|input <pct>
+USAGE
+    exit 1 ;;
+esac
+}
+
+main "$@" | head -c "$OMASETTINGS_READ_MAX"
