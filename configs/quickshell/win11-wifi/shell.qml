@@ -258,7 +258,7 @@ ShellRoot {
           spacing: 10
 
           Text {
-            text: "󰤨"
+            text: !wifiWindow.wifiEnabled ? "󰤮" : (wifiWindow.activeSsid.length > 0 ? "󰤨" : "󰤭")
             font.pixelSize: 18
             color: wifiWindow.accentColor
           }

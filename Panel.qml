@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
 import qs.Commons
@@ -30,53 +29,37 @@ Panel {
   readonly property real activeOpacity: widget ? widget.activeOpacity : 0.95
 
   function runCmd(cmd) {
+    var pluginScripts = root.pluginDir + "/scripts"
+    var devScripts = root.homeDir + "/omarchy-undercover/scripts"
     var fullCmd = cmd.replace(/^omarchy-([a-zA-Z0-9_-]+)/, function(match) {
-      return root.pluginDir + "/scripts/" + match
+      return pluginScripts + "/" + match
     })
-    if (root.bar) {
-      root.bar.run(fullCmd)
+    var wrapped = "export PATH=\"" + pluginScripts + ":" + devScripts + ":$PATH\"; " + fullCmd
+    if (root.bar && typeof root.bar.run === "function") {
+      root.bar.run(wrapped)
     } else {
-      Quickshell.execDetached(["bash", "-c", fullCmd])
+      Quickshell.execDetached(["bash", "-c", wrapped])
     }
   }
 
   KeyboardPanel {
     id: panel
-    anchorItem: root.anchorItem
+    anchorItem: root.anchorItem || root
     owner: root.barIdentity
     bar: root.bar
     open: root.opened
     centerOnBar: false
-    contentWidth: Style.space(420)
-    contentHeight: Style.space(580)
+    contentWidth: typeof panel.fittedContentWidth === "function" ? panel.fittedContentWidth(Style.space(420)) : Style.space(420)
+    contentHeight: typeof panel.fittedContentHeight === "function" ? panel.fittedContentHeight(Style.space(560)) : Style.space(560)
 
     Rectangle {
       anchors.fill: parent
-      color: Color.background
-      radius: 16
+      color: "transparent"
       clip: true
-
-      // Specular Top Border Highlight
-      Rectangle {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        height: 1
-        color: Qt.rgba(1, 1, 1, 0.25)
-      }
-
-      // Outer Accent Border
-      Rectangle {
-        anchors.fill: parent
-        color: "transparent"
-        radius: 16
-        border.color: Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.35)
-        border.width: 1
-      }
 
       Flickable {
         anchors.fill: parent
-        anchors.margins: Style.space(16)
+        contentWidth: width
         contentHeight: contentCol.implicitHeight
         clip: true
         boundsBehavior: Flickable.StopAtBounds
@@ -84,7 +67,7 @@ Panel {
         ColumnLayout {
           id: contentCol
           width: parent.width
-          spacing: Style.space(14)
+          spacing: Style.space(12)
 
           // 1. Header Section
           RowLayout {
@@ -130,6 +113,7 @@ Panel {
 
             // Quick Toggle / Close
             Button {
+              bordered: true
               text: root.currentMode === "omarchy" ? "Camouflage" : "Restore"
               onClicked: {
                 root.runCmd("omarchy-undercover --toggle")
@@ -148,7 +132,7 @@ Panel {
           Text {
             text: "TRANSFORMATION PRESETS"
             font.family: Style.font.family
-            font.pixelSize: Style.font.caption - 1
+            font.pixelSize: Style.font.caption
             font.bold: true
             color: Color.muted
           }
@@ -158,7 +142,7 @@ Panel {
             Layout.fillWidth: true
             implicitHeight: Style.space(72)
             radius: 10
-            color: root.currentMode === "mac" ? Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.12) : Qt.rgba(1, 1, 1, 0.04)
+            color: root.currentMode === "mac" ? Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.14) : Qt.rgba(1, 1, 1, 0.04)
             border.color: root.currentMode === "mac" ? Color.accent : Qt.rgba(1, 1, 1, 0.08)
             border.width: 1
 
@@ -176,17 +160,35 @@ Panel {
                 Layout.fillWidth: true
                 spacing: 1
 
-                Text {
-                  text: "Apple macOS Sequoia"
-                  font.family: "SF Pro Text, -apple-system, sans-serif"
-                  font.pixelSize: Style.font.caption + 1
-                  font.bold: true
-                  color: Color.foreground
+                RowLayout {
+                  spacing: 6
+                  Text {
+                    text: "Apple macOS Sequoia"
+                    font.family: "SF Pro Text, -apple-system, sans-serif"
+                    font.pixelSize: Style.font.caption + 1
+                    font.bold: true
+                    color: Color.foreground
+                  }
+                  Rectangle {
+                    visible: root.currentMode === "mac"
+                    implicitWidth: 48
+                    implicitHeight: 16
+                    radius: 8
+                    color: Color.accent
+                    Text {
+                      anchors.centerIn: parent
+                      text: "ACTIVE"
+                      font.pixelSize: 9
+                      font.bold: true
+                      color: "#ffffff"
+                    }
+                  }
                 }
+
                 Text {
                   text: "Frosted Menu Bar • Dynamic Dock • SF Fonts"
                   font.family: "SF Pro Text, -apple-system, sans-serif"
-                  font.pixelSize: Style.font.caption - 1
+                  font.pixelSize: Style.font.caption
                   color: Color.muted
                 }
               }
@@ -194,10 +196,12 @@ Panel {
               RowLayout {
                 spacing: 6
                 Button {
+                  bordered: true
                   text: "🌙 Dark"
                   onClicked: { root.runCmd("omarchy-undercover -mac"); root.close() }
                 }
                 Button {
+                  bordered: true
                   text: "☀️ Light"
                   onClicked: { root.runCmd("omarchy-undercover -mac-light"); root.close() }
                 }
@@ -210,7 +214,7 @@ Panel {
             Layout.fillWidth: true
             implicitHeight: Style.space(72)
             radius: 10
-            color: root.currentMode === "win11" ? Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.12) : Qt.rgba(1, 1, 1, 0.04)
+            color: root.currentMode === "win11" ? Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.14) : Qt.rgba(1, 1, 1, 0.04)
             border.color: root.currentMode === "win11" ? Color.accent : Qt.rgba(1, 1, 1, 0.08)
             border.width: 1
 
@@ -228,17 +232,35 @@ Panel {
                 Layout.fillWidth: true
                 spacing: 1
 
-                Text {
-                  text: "Windows 11 Fluent"
-                  font.family: "Segoe UI, sans-serif"
-                  font.pixelSize: Style.font.caption + 1
-                  font.bold: true
-                  color: Color.foreground
+                RowLayout {
+                  spacing: 6
+                  Text {
+                    text: "Windows 11 Fluent"
+                    font.family: "Segoe UI, sans-serif"
+                    font.pixelSize: Style.font.caption + 1
+                    font.bold: true
+                    color: Color.foreground
+                  }
+                  Rectangle {
+                    visible: root.currentMode === "win11"
+                    implicitWidth: 48
+                    implicitHeight: 16
+                    radius: 8
+                    color: Color.accent
+                    Text {
+                      anchors.centerIn: parent
+                      text: "ACTIVE"
+                      font.pixelSize: 9
+                      font.bold: true
+                      color: "#ffffff"
+                    }
+                  }
                 }
+
                 Text {
                   text: "Centered Mica Taskbar • Start Menu • Segoe UI"
                   font.family: "Segoe UI, sans-serif"
-                  font.pixelSize: Style.font.caption - 1
+                  font.pixelSize: Style.font.caption
                   color: Color.muted
                 }
               }
@@ -246,10 +268,12 @@ Panel {
               RowLayout {
                 spacing: 6
                 Button {
+                  bordered: true
                   text: "🌙 Dark"
                   onClicked: { root.runCmd("omarchy-undercover -w11"); root.close() }
                 }
                 Button {
+                  bordered: true
                   text: "☀️ Light"
                   onClicked: { root.runCmd("omarchy-undercover -w11-light"); root.close() }
                 }
@@ -262,7 +286,7 @@ Panel {
             Layout.fillWidth: true
             implicitHeight: Style.space(52)
             radius: 10
-            color: root.currentMode === "omarchy" ? Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.12) : Qt.rgba(1, 1, 1, 0.04)
+            color: root.currentMode === "omarchy" ? Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.14) : Qt.rgba(1, 1, 1, 0.04)
             border.color: root.currentMode === "omarchy" ? Color.accent : Qt.rgba(1, 1, 1, 0.08)
             border.width: 1
 
@@ -285,6 +309,7 @@ Panel {
               }
 
               Button {
+                bordered: true
                 text: "Restore"
                 onClicked: { root.runCmd("omarchy-undercover --disable"); root.close() }
               }
@@ -297,11 +322,11 @@ Panel {
             color: Qt.rgba(1, 1, 1, 0.12)
           }
 
-          // 3. Desktop Feature Toggles
+          // 3. Desktop Engine Controls
           Text {
             text: "DESKTOP ENGINE CONTROLS"
             font.family: Style.font.family
-            font.pixelSize: Style.font.caption - 1
+            font.pixelSize: Style.font.caption
             font.bold: true
             color: Color.muted
           }
@@ -314,6 +339,7 @@ Panel {
 
             Button {
               Layout.fillWidth: true
+              bordered: true
               text: "Alignment: " + (root.currentMode === "win11" ? "Center / Left" : "Top Bar")
               onClicked: {
                 root.runCmd("omarchy-undercover-settings -a")
@@ -322,7 +348,8 @@ Panel {
 
             Button {
               Layout.fillWidth: true
-              text: "Auto-hide: " + (root.isAutohide ? "ON (Edge-sensing)" : "OFF (Pinned)")
+              bordered: true
+              text: "Auto-hide: " + (root.isAutohide ? "ON (Edge)" : "OFF (Pinned)")
               onClicked: {
                 root.runCmd("omarchy-undercover --autohide")
               }
@@ -330,6 +357,7 @@ Panel {
 
             Button {
               Layout.fillWidth: true
+              bordered: true
               text: "Frosted Glass: " + (root.isTransparent ? "Blur / Mica" : "Solid")
               onClicked: {
                 root.runCmd("omarchy-undercover --transparency " + (root.isTransparent ? "off" : "on"))
@@ -338,7 +366,8 @@ Panel {
 
             Button {
               Layout.fillWidth: true
-              text: "Full Settings GUI"
+              bordered: true
+              text: "⚙️ System Settings"
               onClicked: {
                 root.runCmd("omarchy-undercover-settings")
                 root.close()
@@ -356,27 +385,38 @@ Panel {
           Text {
             text: "QUICK PRODUCTIVITY UTILITIES"
             font.family: Style.font.family
-            font.pixelSize: Style.font.caption - 1
+            font.pixelSize: Style.font.caption
             font.bold: true
             color: Color.muted
           }
 
-          RowLayout {
+          GridLayout {
             Layout.fillWidth: true
-            spacing: Style.space(8)
+            columns: 2
+            rowSpacing: 8
+            columnSpacing: 8
 
             Button {
               Layout.fillWidth: true
+              bordered: true
               text: "📐 Snap Assist"
               onClicked: { root.runCmd("omarchy-undercover-snap --assist"); root.close() }
             }
             Button {
               Layout.fillWidth: true
+              bordered: true
+              text: "🖥️ Identify Displays"
+              onClicked: { root.runCmd("omarchy-display-identify"); root.close() }
+            }
+            Button {
+              Layout.fillWidth: true
+              bordered: true
               text: "🖥️ Show Desktop"
               onClicked: { root.runCmd("omarchy-undercover-show-desktop"); root.close() }
             }
             Button {
               Layout.fillWidth: true
+              bordered: true
               text: "⚙️ Win11 Settings"
               onClicked: { root.runCmd("omarchy-win11-settings"); root.close() }
             }
@@ -392,7 +432,7 @@ Panel {
           Text {
             text: "AUTHENTIC 6K WALLPAPERS"
             font.family: Style.font.family
-            font.pixelSize: Style.font.caption - 1
+            font.pixelSize: Style.font.caption
             font.bold: true
             color: Color.muted
           }
@@ -403,21 +443,25 @@ Panel {
 
             Button {
               Layout.fillWidth: true
+              bordered: true
               text: "Sequoia"
               onClicked: root.runCmd("omarchy-undercover-wallpaper -s 'macOS-Sequoia-Dark.jpg'")
             }
             Button {
               Layout.fillWidth: true
+              bordered: true
               text: "Sonoma"
               onClicked: root.runCmd("omarchy-undercover-wallpaper -s 'Sonoma-dark.jpg'")
             }
             Button {
               Layout.fillWidth: true
+              bordered: true
               text: "Ventura"
               onClicked: root.runCmd("omarchy-undercover-wallpaper -s 'Ventura-dark.jpg'")
             }
             Button {
               Layout.fillWidth: true
+              bordered: true
               text: "Win 11 Bloom"
               onClicked: root.runCmd("omarchy-undercover-wallpaper -s 'win11_bloom_dark.jpg'")
             }

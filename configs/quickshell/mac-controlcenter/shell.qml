@@ -181,27 +181,29 @@ ShellRoot {
         "mic=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@ 2>/dev/null | awk '{print int($2*100)}' || echo '70'); " +
         "micmut=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@ 2>/dev/null | grep -qi 'MUTED' && echo '1' || echo '0'); " +
         "bri=$(brightnessctl -m 2>/dev/null | cut -d, -f4 | tr -d '%' || echo '85'); " +
-        "ssid=$(nmcli -t -f active,ssid dev wifi 2>/dev/null | grep '^yes:' | cut -d: -f2 || echo 'Wi-Fi'); " +
+        "ssid=$(nmcli -t -f active,ssid dev wifi 2>/dev/null | grep '^yes:' | cut -d: -f2 || echo ''); " +
         "track=$(playerctl metadata title 2>/dev/null || echo 'No Track Playing'); " +
         "artist=$(playerctl metadata artist 2>/dev/null || echo 'Media Player'); " +
         "mstatus=$(playerctl status 2>/dev/null || echo 'Stopped'); " +
-        "echo \"$wifi|$bt|$vol|$bri|$ssid|$track|$artist|$mstatus|$mic|$micmut\""
+        "btdev=$(bluetoothctl devices Connected 2>/dev/null | head -1 | cut -d' ' -f3- || echo ''); " +
+        "echo \"$wifi|$bt|$vol|$bri|$ssid|$track|$artist|$mstatus|$mic|$micmut|$btdev\""
       ]
       stdout: SplitParser {
         onRead: function(line) {
           if (!line) return
           var p = line.trim().split("|")
-          if (p.length >= 10) {
+          if (p.length >= 11) {
             controlCenterWindow.wifiOn = (p[0].indexOf("enabled") !== -1)
             controlCenterWindow.btOn = (p[1] === "1")
             var v = parseInt(p[2]); if (!isNaN(v)) controlCenterWindow.masterVolume = Math.max(0, Math.min(100, v))
             var b = parseInt(p[3]); if (!isNaN(b)) controlCenterWindow.displayBrightness = Math.max(5, Math.min(100, b))
-            if (p[4]) controlCenterWindow.wifiSsid = p[4]
+            controlCenterWindow.wifiSsid = p[4] ? p[4].trim() : ""
             if (p[5]) controlCenterWindow.musicTitle = p[5]
             if (p[6]) controlCenterWindow.musicArtist = p[6]
             controlCenterWindow.musicPlaying = (p[7].toLowerCase() === "playing")
             var m = parseInt(p[8]); if (!isNaN(m)) controlCenterWindow.micLevel = Math.max(0, Math.min(100, m))
             controlCenterWindow.micMuted = (p[9] === "1")
+            controlCenterWindow.btDeviceName = p[10] ? p[10].trim() : ""
           }
         }
       }
@@ -415,7 +417,7 @@ ShellRoot {
 
                   Text {
                     anchors.centerIn: parent
-                    text: "󰤨"
+                    text: !controlCenterWindow.wifiOn ? "󰤮" : (controlCenterWindow.wifiSsid.length > 0 ? "󰤨" : "󰤭")
                     font.pixelSize: 16
                     color: controlCenterWindow.wifiOn ? "#ffffff" : (controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff")
                   }
@@ -502,7 +504,7 @@ ShellRoot {
 
                   Text {
                     anchors.centerIn: parent
-                    text: "󰂯"
+                    text: !controlCenterWindow.btOn ? "󰂲" : (controlCenterWindow.btDeviceName.length > 0 ? "󰂱" : "󰂯")
                     font.pixelSize: 16
                     color: controlCenterWindow.btOn ? "#ffffff" : (controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff")
                   }

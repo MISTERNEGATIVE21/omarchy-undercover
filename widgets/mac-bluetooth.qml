@@ -14,14 +14,27 @@ BarWidget {
   implicitHeight: root.bar ? root.bar.barSize : 28
 
   property bool btEnabled: true
+  property bool btConnected: false
+  property string connectedDevice: ""
 
   Process {
     id: btPoller
     running: true
-    command: ["bash", "-c", "bluetoothctl show 2>/dev/null | grep -q 'Powered: yes' && echo '1' || echo '0'"]
+    command: ["bash", "-c", "p=$(bluetoothctl show 2>/dev/null | grep -q 'Powered: yes' && echo '1' || echo '0'); c=$(bluetoothctl devices Connected 2>/dev/null | head -1); echo \"$p|$c\""]
     stdout: SplitParser {
       onRead: function(line) {
-        root.btEnabled = (String(line).trim() === "1")
+        if (!line) return
+        var parts = String(line).trim().split("|")
+        root.btEnabled = (parts[0] === "1")
+        var dev = parts.length > 1 ? parts[1].trim() : ""
+        if (dev.length > 0) {
+          root.btConnected = true
+          var devParts = dev.split(" ")
+          root.connectedDevice = devParts.length > 2 ? devParts.slice(2).join(" ") : dev
+        } else {
+          root.btConnected = false
+          root.connectedDevice = ""
+        }
       }
     }
   }
@@ -50,8 +63,8 @@ BarWidget {
     id: button
     anchors.fill: parent
     bar: root.bar
-    text: root.btEnabled ? "󰂯" : "󰂲"
-    tooltipText: root.btEnabled ? "Bluetooth: On (Click to Open Bluetooth Menu)" : "Bluetooth: Off (Click to Open Bluetooth Menu)"
+    text: !root.btEnabled ? "󰂲" : (root.btConnected ? "󰂱" : "󰂯")
+    tooltipText: !root.btEnabled ? "Bluetooth: Off (Click to Open Bluetooth Menu)" : (root.btConnected ? "Bluetooth: Connected (" + root.connectedDevice + ") (Click to Open Bluetooth Menu)" : "Bluetooth: On (Click to Open Bluetooth Menu)")
     onPressed: function(btn) {
       root.launchFlyout()
     }

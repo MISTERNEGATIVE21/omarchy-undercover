@@ -33,6 +33,12 @@ ShellRoot {
     property bool isScanning: false
     property string searchText: ""
     property bool hasEntered: false
+    readonly property bool hasConnectedDevice: {
+      for (var i = 0; i < pairedDevices.length; i++) {
+        if (pairedDevices[i].connected) return true
+      }
+      return false
+    }
 
     function closePopup() {
       btWindow.visible = false
@@ -273,7 +279,7 @@ ShellRoot {
           spacing: 10
 
           Text {
-            text: "󰂯"
+            text: !btWindow.btEnabled ? "󰂲" : (btWindow.hasConnectedDevice ? "󰂱" : "󰂯")
             font.pixelSize: 18
             color: btWindow.accentColor
           }

@@ -13,18 +13,22 @@ BarWidget {
   implicitWidth: contentWidth
   implicitHeight: root.bar ? root.bar.barSize : 28
 
-  property bool wifiEnabled: true
+  property bool wifiRadioOn: true
+  property bool wifiConnected: false
   property string activeSsid: ""
 
   Process {
     id: wifiPoller
     running: true
-    command: ["bash", "-c", "nmcli -t -f active,ssid dev wifi 2>/dev/null | grep '^yes:' | cut -d: -f2 || echo ''"]
+    command: ["bash", "-c", "r=$(nmcli radio wifi 2>/dev/null || echo 'disabled'); s=$(nmcli -t -f active,ssid dev wifi 2>/dev/null | grep '^yes:' | cut -d: -f2 || echo ''); echo \"$r|$s\""]
     stdout: SplitParser {
       onRead: function(line) {
-        var s = String(line).trim()
+        if (!line) return
+        var parts = String(line).trim().split("|")
+        root.wifiRadioOn = (parts[0] === "enabled")
+        var s = parts.length > 1 ? parts[1].trim() : ""
         root.activeSsid = s
-        root.wifiEnabled = (s.length > 0)
+        root.wifiConnected = (s.length > 0)
       }
     }
   }
@@ -53,8 +57,8 @@ BarWidget {
     id: button
     anchors.fill: parent
     bar: root.bar
-    text: root.wifiEnabled ? "󰤨" : "󰤭"
-    tooltipText: root.activeSsid.length > 0 ? "Wi-Fi: " + root.activeSsid + " (Click to Open Wi-Fi Menu)" : (root.wifiEnabled ? "Wi-Fi: Connected (Click to Open Wi-Fi Menu)" : "Wi-Fi: Disconnected (Click to Open Wi-Fi Menu)")
+    text: !root.wifiRadioOn ? "󰤮" : (root.wifiConnected ? "󰤨" : "󰤭")
+    tooltipText: !root.wifiRadioOn ? "Wi-Fi: Off (Click to Open Wi-Fi Menu)" : (root.wifiConnected ? "Wi-Fi: " + root.activeSsid + " (Click to Open Wi-Fi Menu)" : "Wi-Fi: Disconnected (Click to Open Wi-Fi Menu)")
     onPressed: function(btn) {
       root.launchFlyout()
     }

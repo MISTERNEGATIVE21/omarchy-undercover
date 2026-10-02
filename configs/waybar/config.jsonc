@@ -67,6 +67,7 @@
     "format-wifi": "󰤨",
     "format-ethernet": "󰈀",
     "format-disconnected": "󰤭",
+    "format-disabled": "󰤮",
     "tooltip-format": "Network: {essid}",
     "on-click": "omarchy-launch-wifi || nm-connection-editor || nmtui"
   },

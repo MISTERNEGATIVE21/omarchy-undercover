@@ -33,7 +33,9 @@ BarWidget {
   Component.onCompleted: syncClickRegistration()
   Component.onDestruction: if (registeredBar && registeredBar.unregisterClickTarget) registeredBar.unregisterClickTarget(root)
 
-  property bool wifiOn: true
+  property bool wifiRadioOn: true
+  property bool wifiConnected: false
+  property string activeSsid: ""
   property real volumeLevel: 0.7
   property bool isMuted: false
   property int batteryPct: 90
@@ -64,27 +66,31 @@ BarWidget {
     command: [
       "bash", "-c",
       "wifi=$(nmcli radio wifi 2>/dev/null || echo 'disabled'); " +
+      "ssid=$(nmcli -t -f active,ssid dev wifi 2>/dev/null | grep '^yes:' | cut -d: -f2 || echo ''); " +
       "vol=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null || echo 'Volume: 0.70'); " +
       "bat=$(cat /sys/class/power_supply/BAT*/capacity 2>/dev/null | head -1 || echo '90'); " +
       "chg=$(cat /sys/class/power_supply/BAT*/status 2>/dev/null | head -1 || echo 'Discharging'); " +
-      "echo \"$wifi|$vol|$bat|$chg\""
+      "echo \"$wifi|$ssid|$vol|$bat|$chg\""
     ]
     stdout: SplitParser {
       onRead: function(line) {
         if (!line) return
         var parts = line.trim().split("|")
-        if (parts.length >= 4) {
-          root.wifiOn = (parts[0].indexOf("enabled") !== -1)
-          var vStr = parts[1]
+        if (parts.length >= 5) {
+          root.wifiRadioOn = (parts[0].indexOf("enabled") !== -1)
+          var s = parts[1].trim()
+          root.activeSsid = s
+          root.wifiConnected = (s.length > 0)
+          var vStr = parts[2]
           root.isMuted = (vStr.indexOf("[MUTED]") !== -1)
           var vParts = vStr.replace("[MUTED]", "").trim().split(" ")
           if (vParts.length >= 2) {
             var v = parseFloat(vParts[1])
             if (!isNaN(v)) root.volumeLevel = v
           }
-          var b = parseInt(parts[2])
+          var b = parseInt(parts[3])
           if (!isNaN(b)) root.batteryPct = b
-          root.isCharging = (parts[3].toLowerCase().indexOf("charg") !== -1)
+          root.isCharging = (parts[4].toLowerCase().indexOf("charg") !== -1)
         }
       }
     }
@@ -115,7 +121,7 @@ BarWidget {
       spacing: 8
 
       Text {
-        text: root.wifiOn ? "󰤨" : "󰤭"
+        text: !root.wifiRadioOn ? "󰤮" : (root.wifiConnected ? "󰤨" : "󰤭")
         font.pixelSize: 13
         color: root.bar && root.bar.foreground !== undefined ? root.bar.foreground : "#ffffff"
       }

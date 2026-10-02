@@ -32,7 +32,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio, GLib, Gdk
 
 APP_ID = "org.omarchy.undercover.settings"
-VERSION = "6.1.0"
+VERSION = "6.1.1"
 
 _script_parent = Path(__file__).resolve().parent.parent
 if (_script_parent / "manifest.json").exists():
@@ -1340,7 +1340,7 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         def on_active_op_changed(s):
             val = s.get_value() / 100.0
             write_setting("ACTIVE_OPACITY", f"{val:.2f}")
-            subprocess.run(["hyprctl", "keyword", "decoration:active_opacity", f"{val:.2f}"], check=False)
+            self.apply_hypr_live("active-opacity", "decoration:active_opacity", f"{val:.2f}")
         scale_active_op.connect("value-changed", on_active_op_changed)
         row_active_op.add_suffix(scale_active_op)
         group_opacity.add(row_active_op)
@@ -1354,7 +1354,7 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         def on_inact_op_changed(s):
             val = s.get_value() / 100.0
             write_setting("INACTIVE_OPACITY", f"{val:.2f}")
-            subprocess.run(["hyprctl", "keyword", "decoration:inactive_opacity", f"{val:.2f}"], check=False)
+            self.apply_hypr_live("inactive-opacity", "decoration:inactive_opacity", f"{val:.2f}")
         scale_inact_op.connect("value-changed", on_inact_op_changed)
         row_inact_op.add_suffix(scale_inact_op)
         group_opacity.add(row_inact_op)
@@ -1384,8 +1384,9 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         blur_enabled = read_setting("BLUR_ENABLED", "true").lower() == "true"
         row_blur_en.set_active(blur_enabled)
         def on_blur_en_toggled(r, p):
-            write_setting("BLUR_ENABLED", "true" if r.get_active() else "false")
-            subprocess.run(["hyprctl", "keyword", "decoration:blur:enabled", "true" if r.get_active() else "false"], check=False)
+            is_en = r.get_active()
+            write_setting("BLUR_ENABLED", "true" if is_en else "false")
+            self.apply_hypr_live("blur", "decoration:blur:enabled", is_en, is_bool=True)
         row_blur_en.connect("notify::active", on_blur_en_toggled)
         group_blur.add(row_blur_en)
 
@@ -1419,29 +1420,48 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         page.add(group_blur)
         self.stack.add_titled(page, "effects", "Effects & Transparency")
 
+    def apply_hypr_live(self, key, keyword, val, is_bool=False):
+        engine = shutil.which("omarchy-settings-engine") or str(Path(__file__).resolve().parent / "omarchy-settings-engine")
+        arg = ("true" if val else "false") if is_bool else str(val)
+        res = subprocess.run([engine, "set", key, arg], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+        if res.returncode == 0:
+            return
+
+        hypr_lua = Path.home() / ".config/hypr/hyprland.lua"
+        if hypr_lua.exists():
+            parts = keyword.split(":")
+            lua_val = ("true" if val else "false") if is_bool else str(val)
+            out = lua_val
+            for p in reversed(parts):
+                out = f"{{ {p} = {out} }}"
+            subprocess.run(["hyprctl", "eval", f"hl.config({out})"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+        else:
+            applied = ("1" if val else "0") if is_bool else str(val)
+            subprocess.run(["hyprctl", "keyword", keyword, applied], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+
     def on_blur_changed(self, val):
         write_setting("BLUR_SIZE", str(val))
-        subprocess.run(["hyprctl", "keyword", "decoration:blur:size", str(val)], check=False)
+        self.apply_hypr_live("blur-size", "decoration:blur:size", str(val))
 
     def on_passes_changed(self, val):
         write_setting("BLUR_PASSES", str(val))
-        subprocess.run(["hyprctl", "keyword", "decoration:blur:passes", str(val)], check=False)
+        self.apply_hypr_live("blur-passes", "decoration:blur:passes", str(val))
 
     def on_rounding_changed(self, val):
         write_setting("ROUNDING", str(val))
-        subprocess.run(["hyprctl", "keyword", "decoration:rounding", str(val)], check=False)
+        self.apply_hypr_live("rounding", "decoration:rounding", str(val))
 
     def apply_transparency_live(self, is_trans):
         if is_trans:
             active_op = read_setting("ACTIVE_OPACITY", "0.96")
             inact_op = read_setting("INACTIVE_OPACITY", "0.88")
-            subprocess.run(["hyprctl", "keyword", "decoration:blur:enabled", "true"], check=False)
-            subprocess.run(["hyprctl", "keyword", "decoration:active_opacity", active_op], check=False)
-            subprocess.run(["hyprctl", "keyword", "decoration:inactive_opacity", inact_op], check=False)
+            self.apply_hypr_live("blur", "decoration:blur:enabled", True, is_bool=True)
+            self.apply_hypr_live("active-opacity", "decoration:active_opacity", active_op)
+            self.apply_hypr_live("inactive-opacity", "decoration:inactive_opacity", inact_op)
         else:
-            subprocess.run(["hyprctl", "keyword", "decoration:blur:enabled", "false"], check=False)
-            subprocess.run(["hyprctl", "keyword", "decoration:active_opacity", "1.00"], check=False)
-            subprocess.run(["hyprctl", "keyword", "decoration:inactive_opacity", "1.00"], check=False)
+            self.apply_hypr_live("blur", "decoration:blur:enabled", False, is_bool=True)
+            self.apply_hypr_live("active-opacity", "decoration:active_opacity", "1.00")
+            self.apply_hypr_live("inactive-opacity", "decoration:inactive_opacity", "1.00")
 
         # Update shell.json
         shell_json = Path.home() / ".config/omarchy/shell.json"
@@ -1529,6 +1549,80 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         group_media.add(row_bri)
 
         page.add(group_media)
+
+        # Displays & Multi-Monitor Management
+        group_displays = Adw.PreferencesGroup(
+            title="Displays & Multi-Monitor Management",
+            description="Manage display arrangement, screen projection, and monitor identification."
+        )
+
+        # Identify Displays Button
+        row_identify = Adw.ActionRow(
+            title="Identify Displays",
+            subtitle="Flash display labels, connector IDs, and active resolutions on each monitor"
+        )
+        btn_identify = Gtk.Button(label="Identify")
+        btn_identify.set_valign(Gtk.Align.CENTER)
+        def on_identify_clicked(b):
+            engine = shutil.which("omarchy-settings-engine") or str(Path(__file__).resolve().parent / "omarchy-settings-engine")
+            subprocess.run([engine, "monitors", "identify"], check=False)
+            self.show_toast("Identifying displays...")
+        btn_identify.connect("clicked", on_identify_clicked)
+        row_identify.add_suffix(btn_identify)
+        group_displays.add(row_identify)
+
+        # Projection Mode ComboRow
+        row_proj = Adw.ComboRow(
+            title="Multi-Monitor Projection",
+            subtitle="Choose multi-display layout and mirroring mode"
+        )
+        proj_model = Gtk.StringList()
+        proj_model.append("Extend (Multi-Screen Desktop)")
+        proj_model.append("Duplicate (Mirror Primary Screen)")
+        proj_model.append("Second Screen Only (External Only)")
+        proj_model.append("PC Screen Only (Internal Only)")
+        row_proj.set_model(proj_model)
+
+        proj_modes = ["extend", "duplicate", "second", "pc"]
+        curr_proj = "extend"
+        try:
+            engine = shutil.which("omarchy-settings-engine") or str(Path(__file__).resolve().parent / "omarchy-settings-engine")
+            out = subprocess.check_output([engine, "monitors", "projection"], text=True).strip()
+            if out in proj_modes:
+                curr_proj = out
+        except Exception:
+            pass
+        row_proj.set_selected(proj_modes.index(curr_proj) if curr_proj in proj_modes else 0)
+
+        def on_proj_selected(combo, param):
+            idx = combo.get_selected()
+            if 0 <= idx < len(proj_modes):
+                mode = proj_modes[idx]
+                engine = shutil.which("omarchy-settings-engine") or str(Path(__file__).resolve().parent / "omarchy-settings-engine")
+                subprocess.run([engine, "monitors", "project", mode], check=False)
+                self.show_toast(f"Projection set to {mode.capitalize()}")
+        row_proj.connect("notify::selected", on_proj_selected)
+        group_displays.add(row_proj)
+
+        # Connected Monitors List Summary
+        try:
+            engine = shutil.which("omarchy-settings-engine") or str(Path(__file__).resolve().parent / "omarchy-settings-engine")
+            mons_json = subprocess.check_output([engine, "monitors", "state"], text=True)
+            mons_list = json.loads(mons_json)
+            for m in mons_list:
+                m_name = m.get("output", m.get("name", "Unknown"))
+                m_desc = m.get("description", m_name)
+                m_res = f"{m.get('width', 0)}x{m.get('height', 0)}@{m.get('refreshRate', 60)}Hz"
+                m_scale = f"Scale {m.get('scale', 1.0)}x"
+                row_mon = Adw.ActionRow(
+                    title=f"󰍹  {m_desc} ({m_name})",
+                    subtitle=f"Active: {m_res} • {m_scale}"
+                )
+                group_displays.add(row_mon)
+        except Exception:
+            pass
+
+        page.add(group_displays)
         self.stack.add_titled(page, "hardware", "Hardware")
 
     # ==================== PAGE 5: SYSTEM DIAGNOSTICS ====================

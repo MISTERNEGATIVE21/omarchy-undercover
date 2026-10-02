@@ -58,6 +58,7 @@
       "format-wifi": "󰤨",
       "format-ethernet": "󰈀",
       "format-disconnected": "󰤭",
+      "format-disabled": "󰤮",
       "tooltip-format": "{ifname}: {ipaddr}"
     },
     "pulseaudio": {

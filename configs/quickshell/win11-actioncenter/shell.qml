@@ -61,8 +61,10 @@ ShellRoot {
     property int brightnessVal: 80
     property int batteryPct: 90
     property bool isCharging: false
-    property string wifiSsid: "Connected"
-    property string btDevice: "Connected"
+    property string wifiSsid: ""
+    property string btDevice: ""
+    readonly property bool wifiConnected: wifiEnabled && wifiSsid.length > 0 && wifiSsid !== "Disconnected"
+    readonly property bool btConnected: btEnabled && btDevice.length > 0 && btDevice !== "Off"
 
     // Wi-Fi Sub-Page State
     property var networks: []
@@ -218,14 +220,15 @@ ShellRoot {
         "bri=$(brightnessctl -m 2>/dev/null | cut -d, -f4 | tr -d '%' || echo '80'); " +
         "bat=$(cat /sys/class/power_supply/BAT*/capacity 2>/dev/null | head -1 || echo '90'); " +
         "chg=$(cat /sys/class/power_supply/BAT*/status 2>/dev/null | head -1 || echo 'Discharging'); " +
-        "ssid=$(nmcli -t -f active,ssid dev wifi 2>/dev/null | grep '^yes:' | cut -d: -f2 || echo 'Connected'); " +
-        "echo \"$wifi|$bt|$vol|$mic|$micmut|$bri|$bat|$chg|$ssid\""
+        "ssid=$(nmcli -t -f active,ssid dev wifi 2>/dev/null | grep '^yes:' | cut -d: -f2 || echo ''); " +
+        "btdev=$(bluetoothctl devices Connected 2>/dev/null | head -1 | cut -d' ' -f3- || echo ''); " +
+        "echo \"$wifi|$bt|$vol|$mic|$micmut|$bri|$bat|$chg|$ssid|$btdev\""
       ]
       stdout: SplitParser {
         onRead: function(line) {
           if (!line) return
           var p = line.trim().split("|")
-          if (p.length >= 9) {
+          if (p.length >= 10) {
             actionCenterWindow.wifiEnabled = (p[0].indexOf("enabled") !== -1)
             actionCenterWindow.btEnabled = (p[1] === "1")
             var v = parseInt(p[2]); if (!isNaN(v)) actionCenterWindow.volumeVal = Math.max(0, Math.min(100, v))
@@ -234,7 +237,8 @@ ShellRoot {
             var b = parseInt(p[5]); if (!isNaN(b)) actionCenterWindow.brightnessVal = Math.max(5, Math.min(100, b))
             var bt = parseInt(p[6]); if (!isNaN(bt)) actionCenterWindow.batteryPct = Math.max(1, Math.min(100, bt))
             actionCenterWindow.isCharging = (p[7].toLowerCase().indexOf("charg") !== -1)
-            if (p[8]) actionCenterWindow.wifiSsid = p[8]
+            actionCenterWindow.wifiSsid = p[8] ? p[8].trim() : ""
+            actionCenterWindow.btDevice = p[9] ? p[9].trim() : ""
           }
         }
       }
@@ -455,7 +459,7 @@ ShellRoot {
                   spacing: 8
 
                   Text {
-                    text: "󰤨"
+                    text: !actionCenterWindow.wifiEnabled ? "󰤮" : (actionCenterWindow.wifiConnected ? "󰤨" : "󰤭")
                     font.pixelSize: 16
                     color: actionCenterWindow.wifiEnabled ? "#ffffff" : actionCenterWindow.textPrimary
                   }
@@ -471,7 +475,7 @@ ShellRoot {
                       color: actionCenterWindow.wifiEnabled ? "#ffffff" : actionCenterWindow.textPrimary
                     }
                     Text {
-                      text: actionCenterWindow.wifiEnabled ? actionCenterWindow.wifiSsid : "Disconnected"
+                      text: !actionCenterWindow.wifiEnabled ? "Off" : (actionCenterWindow.wifiConnected ? actionCenterWindow.wifiSsid : "Disconnected")
                       textFormat: Text.PlainText
                       font.family: "Segoe UI"
                       font.pixelSize: 9
@@ -558,7 +562,7 @@ ShellRoot {
                   spacing: 8
 
                   Text {
-                    text: "󰂯"
+                    text: !actionCenterWindow.btEnabled ? "󰂲" : (actionCenterWindow.btConnected ? "󰂱" : "󰂯")
                     font.pixelSize: 16
                     color: actionCenterWindow.btEnabled ? "#ffffff" : actionCenterWindow.textPrimary
                   }
@@ -574,7 +578,7 @@ ShellRoot {
                       color: actionCenterWindow.btEnabled ? "#ffffff" : actionCenterWindow.textPrimary
                     }
                     Text {
-                      text: actionCenterWindow.btEnabled ? actionCenterWindow.btDevice : "Off"
+                      text: !actionCenterWindow.btEnabled ? "Off" : (actionCenterWindow.btConnected ? actionCenterWindow.btDevice : "Not Connected")
                       font.family: "Segoe UI"
                       font.pixelSize: 9
                       color: actionCenterWindow.btEnabled ? Qt.rgba(1, 1, 1, 0.85) : actionCenterWindow.textSecondary

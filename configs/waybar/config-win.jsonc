@@ -63,6 +63,7 @@
       "format-wifi": "󰤨",
       "format-ethernet": "󰈀",
       "format-disconnected": "󰤭",
+      "format-disabled": "󰤮",
       "tooltip-format": "{ifname}: {ipaddr}",
       "on-click": "omarchy-win11-wifi"
     },

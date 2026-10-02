@@ -54,21 +54,22 @@ class WifiManagerWindow(Adw.Window):
         pwr_box.set_margin_bottom(6)
         pwr_box.add_css_class("wifi-card")
 
-        lbl_pwr = Gtk.Label(label="<b>Wi-Fi Radio</b>")
-        lbl_pwr.set_use_markup(True)
-        lbl_pwr.set_hexpand(True)
-        lbl_pwr.set_halign(Gtk.Align.START)
-
-        self.sw_pwr = Gtk.Switch()
         wifi_on = False
         try:
             wifi_on = "enabled" in subprocess.check_output(["nmcli", "radio", "wifi"], text=True)
         except Exception:
             pass
+
+        self.lbl_pwr = Gtk.Label(label="<b>󰤨 Wi-Fi Radio</b>" if wifi_on else "<b>󰤮 Wi-Fi Radio</b>")
+        self.lbl_pwr.set_use_markup(True)
+        self.lbl_pwr.set_hexpand(True)
+        self.lbl_pwr.set_halign(Gtk.Align.START)
+
+        self.sw_pwr = Gtk.Switch()
         self.sw_pwr.set_active(wifi_on)
         self.sw_pwr.connect("notify::active", self.on_pwr_toggled)
 
-        pwr_box.append(lbl_pwr)
+        pwr_box.append(self.lbl_pwr)
         pwr_box.append(self.sw_pwr)
         vbox.append(pwr_box)
 
@@ -95,6 +96,7 @@ class WifiManagerWindow(Adw.Window):
 
     def on_pwr_toggled(self, sw, param):
         act = sw.get_active()
+        self.lbl_pwr.set_label("<b>󰤨 Wi-Fi Radio</b>" if act else "<b>󰤮 Wi-Fi Radio</b>")
         subprocess.run(["nmcli", "radio", "wifi", "on" if act else "off"], check=False)
         self.scan_networks()
 

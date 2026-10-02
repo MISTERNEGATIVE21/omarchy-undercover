@@ -50,21 +50,22 @@ class BluetoothManagerWindow(Adw.Window):
         top_bar.set_margin_start(14)
         top_bar.set_margin_end(14)
 
-        lbl_power = Gtk.Label(label="Bluetooth Adapter Power")
-        lbl_power.set_hexpand(True)
-        lbl_power.set_halign(Gtk.Align.START)
-
-        self.sw_power = Gtk.Switch()
         is_powered = False
         try:
             out = subprocess.check_output(["bluetoothctl", "show"], text=True)
             is_powered = "Powered: yes" in out
         except Exception:
             pass
+
+        self.lbl_power = Gtk.Label(label="󰂯  Bluetooth Adapter Power" if is_powered else "󰂲  Bluetooth Adapter Power")
+        self.lbl_power.set_hexpand(True)
+        self.lbl_power.set_halign(Gtk.Align.START)
+
+        self.sw_power = Gtk.Switch()
         self.sw_power.set_active(is_powered)
         self.sw_power.connect("notify::active", self.on_power_toggled)
 
-        top_bar.append(lbl_power)
+        top_bar.append(self.lbl_power)
         top_bar.append(self.sw_power)
         vbox.append(top_bar)
 
@@ -91,6 +92,7 @@ class BluetoothManagerWindow(Adw.Window):
 
     def on_power_toggled(self, sw, param):
         act = sw.get_active()
+        self.lbl_power.set_label("󰂯  Bluetooth Adapter Power" if act else "󰂲  Bluetooth Adapter Power")
         subprocess.run(["bluetoothctl", "power", "on" if act else "off"], check=False)
         self.scan_devices()
 
@@ -121,8 +123,9 @@ class BluetoothManagerWindow(Adw.Window):
             card = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
             card.add_css_class("bt-card")
 
-            lbl_icon = Gtk.Label(label="󰂯")
-            lbl_icon.set_markup('<span size="large">󰂯</span>')
+            bt_glyph = "󰂱" if conn else "󰂯"
+            lbl_icon = Gtk.Label(label=bt_glyph)
+            lbl_icon.set_markup(f'<span size="large" color="{"#007aff" if conn else "#ffffff"}">{bt_glyph}</span>')
 
             info_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
             lbl_name = Gtk.Label()
