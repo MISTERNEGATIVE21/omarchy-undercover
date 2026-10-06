@@ -1,7 +1,7 @@
-# Omarchy Undercover (v6.1.1)
+# Omarchy Undercover (v7.0.0)
 
 [![Omarchy Verified](https://img.shields.io/badge/omarchy-verified_plugin-00c853?style=flat-square&logo=archlinux)](https://github.com/MISTERNEGATIVE21/omarchy-undercover)
-[![Version](https://img.shields.io/badge/version-v6.1.1?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases/tag/v6.1.1)
+[![Version](https://img.shields.io/badge/version-v7.0.0?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases/tag/v7.0.0)
 [![Release](https://img.shields.io/github/v/release/MISTERNEGATIVE21/omarchy-undercover?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases)
 [![Compositor](https://img.shields.io/badge/compositor-Hyprland-00f2fe?style=flat-square)](https://hyprland.org)
 [![Engine](https://img.shields.io/badge/engine-Quickshell%20%7C%20Waybar-ff2d55?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover)
@@ -9,7 +9,7 @@
 
 ![Omarchy Undercover Preview](preview.png)
 
-An official **verified Omarchy plugin** that brings a complete desktop camouflage and transformation suite to [Omarchy](https://omarchy.org) Hyprland. Switch between an authentic Apple macOS Sequoia interface, a Windows 11 Fluent environment, and your baseline Omarchy desktop on demand with zero configuration conflicts.
+An official **verified Omarchy plugin** that brings a complete desktop camouflage and transformation suite to [Omarchy](https://omarchy.org) Hyprland. Switch between an authentic Apple macOS Tahoe (or Sequoia) interface, a Windows 11 Fluent environment, and your baseline Omarchy desktop on demand with zero configuration conflicts.
 
 Designed for presentations, shared screen privacy, or personal preference, Omarchy Undercover dynamically reconfigures status bars, docks, application launchers, window rules, compositor animations, and typography across both Quickshell (Omarchy 4.0+) and Waybar environments.
 
@@ -19,11 +19,14 @@ Designed for presentations, shared screen privacy, or personal preference, Omarc
 
 - **Single bar icon & popup panel**: Multi-state status bar tray widget (`Widget.qml`) that displays the active disguise emblem and opens the native Quickshell Undercover Control Center (`Panel.qml`).
   - **Left-Click**: Opens the Undercover Control Center flyout.
-  - **Right-Click**: Fast-cycles between macOS, Windows 11, and baseline Omarchy.
+  - **Right-Click**: Fast-cycles between macOS Tahoe, macOS Sequoia, Windows 11, and baseline Omarchy.
   - **Middle-Click**: Toggles between the active disguise and baseline Omarchy.
   - **Scroll Wheel**: Steps forward or backward through available presets.
 - **One-touch camouflage toggle**: Switch between your chosen disguise and baseline Omarchy instantly via <kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>U</kbd> or CLI.
-- **Apple macOS Sequoia Mode**: Frosted glass top menu bar with Apple menu, global application menu, polygraph monitor, Control Center, auto-magnifying dock with active app running indicators, Spotlight search (<kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>Space</kbd> or Top Bar / Dock icon), Mission Control window switcher (<kbd>Super</kbd> + <kbd>Tab</kbd>), and authentic SF Pro typography.
+- **Apple macOS Tahoe Mode (Flagship Default)**: High-altitude alpine vistas in 4K UHD, modern GTK3 & GTK4 themes, frosted glass top menu bar with Apple menu, global application menu, polygraph monitor, Control Center, auto-magnifying dock with active app running indicators, Spotlight search (<kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>Space</kbd>), and authentic SF Pro typography.
+- **Apple macOS Sequoia Mode**: Preserved classic redwood theme available via `-mac-sequoia` or System Settings disguise switcher.
+- **macOS Stage Manager**: Native-feeling window organizer and task viewer camouflaged as macOS Stage Manager. Groups open windows by application with live Wayland `ScreencopyView` thumbnails, multi-window stack depth layers, active application icons and window count badges, accessible from the top bar widget, Control Center, or <kbd>Super</kbd> + <kbd>`</kbd> / <kbd>Super</kbd> + <kbd>Tab</kbd>.
+- **Apple Aerial Video Screen Savers**: Official Apple CDN 1080p/4K cinematic aerial drone footage (Sonoma Horizon, Yosemite Valley, Patagonia, Greenland, Grand Canyon, Dubai Night). Active exclusively in macOS mode with smooth overlay playback, 1-click downloads, and live video previews in System Settings.
 - **Windows 11 Fluent Mode**: Centered taskbar with Start menu, search integration, live weather widget flyout, Quick Settings & Action Center (<kbd>Super</kbd> + <kbd>A</kbd>), Task View overview (<kbd>Super</kbd> + <kbd>Tab</kbd>), Snap Assist tiling (<kbd>Super</kbd> + <kbd>Z</kbd>), and authentic Segoe UI typography.
 - **Transparent Taskbar Preset**: Zero-border acrylic glass taskbar mode seamlessly blending desktop wallpaper with floating centered icons.
 - **Zero configuration conflicts**: Completely non-destructive configuration management. Backs up user baseline upon initial activation and restores cleanly without deleting custom dotfiles or polluting global paths.
@@ -40,12 +43,17 @@ Designed for presentations, shared screen privacy, or personal preference, Omarc
 | `Panel.qml` | Native Quickshell popup control center, mode cards, and quick settings |
 | `Service.qml` | Background service synchronizing Hyprland state files and dynamic layer rules |
 | `settings.conf` | User configuration file (`~/.config/omarchy/plugins/omarchy-undercover/settings.conf`) |
+| `configs/quickshell/mac-stagemanager/` | macOS Stage Manager overlay with live Wayland ScreencopyView app groups |
+| `widgets/mac-stagemanager.qml` | Top bar Stage Manager toggle widget |
+| `scripts/omarchy-mac-stagemanager` | Stage Manager CLI controller (`--toggle`, `--show`, `--hide`, `--status`) |
+| `scripts/omarchy-mac-screensaver` | Apple Aerial screensaver controller and 1-click CDN video downloader |
+| `MacScreensaverOverlay.qml` | Fullscreen Wayland overlay playing looping Apple Aerial drone footage |
 | `scripts/omarchy-undercover` | Primary CLI switcher, hotkey handler, and IPC controller |
 | `scripts/backup-baseline` | Automated non-destructive backup of baseline compositor settings |
 | `scripts/restore-baseline` | Clean restoration of user's original desktop environment |
 | `scripts/generate_preview.py` | Automated high-resolution showcase preview generator |
 | `configs/` | Hyprland window rules, rofi themes, and Waybar fallback configurations |
-| `assets/` | Authentic SF Pro & Segoe UI fonts, wallpapers, and SVG icon sets |
+| `assets/` | Authentic SF Pro & Segoe UI fonts, 4K wallpapers, and SVG icon sets |
 
 ---
 
@@ -125,11 +133,23 @@ omarchy plugin enable omarchy-undercover --section right
 ### Switching Modes via CLI
 
 ```bash
-# macOS Sequoia (Dark)
+# Apple macOS Tahoe Flagship (Dark)
 omarchy-undercover -mac
 
-# macOS Sequoia (Light)
+# Apple macOS Tahoe (Light)
 omarchy-undercover -mac-light
+
+# Apple macOS Sequoia (Dark)
+omarchy-undercover -mac-sequoia
+
+# Apple macOS Sequoia (Light)
+omarchy-undercover -mac-sequoia-light
+
+# Toggle macOS Stage Manager window rail & organizer
+omarchy-mac-stagemanager --toggle
+
+# Test Apple Aerial Screensaver
+omarchy-mac-screensaver --preview
 
 # Windows 11 Fluent (Dark)
 omarchy-undercover -w11

@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "omarchy-undercover",
   "name": "Omarchy Undercover",
-  "version": "6.1.1",
+  "version": "7.0.0",
   "author": "misternegative21",
   "license": "GPL-3.0-or-later",
-  "description": "Verified Omarchy desktop camouflage & transformation suite replicating Apple macOS Sequoia and Windows 11 Fluent for Omarchy Hyprland",
+  "description": "Flagship Omarchy desktop camouflage suite replicating Apple macOS Tahoe & Sequoia (with Stage Manager and Apple Aerial Screensavers) and Windows 11 Fluent for Omarchy Hyprland",
   "kinds": [
     "bar-widget",
     "panel",
