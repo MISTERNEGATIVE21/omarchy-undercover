@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- Center Main Window -->
+  <rect x="9" y="3.5" width="13.5" height="17" rx="2.5" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+  <!-- Left Stacked Windows (Stage) -->
+  <rect x="1.5" y="4" width="4.5" height="4" rx="1.2" fill="currentColor" fill-opacity="0.9"/>
+  <rect x="1.5" y="10" width="4.5" height="4" rx="1.2" fill="currentColor" fill-opacity="0.9"/>
+  <rect x="1.5" y="16" width="4.5" height="4" rx="1.2" fill="currentColor" fill-opacity="0.9"/>
+</svg>

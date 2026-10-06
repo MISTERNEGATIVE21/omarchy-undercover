@@ -4,7 +4,7 @@ Omarchy Undercover - Long Showcase Preview Generator
 Generates a comprehensive, ultra-high-resolution showcase banner (preview.png)
 incorporating the signature half-macOS / half-Windows split hero banner on top,
 native typography, anti-aliased geometry, realistic screenshot drop shadows,
-feature badges, and v6.1.0 release highlights.
+feature badges, and v7.0.0 release highlights.
 """
 
 import os
@@ -183,7 +183,7 @@ def create_split_hero_backdrop(hero_w, hero_h):
     Creates the half macOS Sequoia, half Windows 11 Bloom banner
     with a perfectly anti-aliased diagonal glass divider line, ambient glow, and bottom fade.
     """
-    mac_wp = os.path.join(ROOT_DIR, "assets/wallpapers/macOS-Sequoia-Dark.jpg")
+    mac_wp = os.path.join(ROOT_DIR, "assets/wallpapers/macOS-Tahoe-Dark.jpg")
     win_wp = os.path.join(ROOT_DIR, "assets/wallpapers/win11_bloom_dark.jpg")
     
     im_mac = Image.open(mac_wp).resize((hero_w, hero_h), Image.Resampling.LANCZOS)
@@ -348,15 +348,14 @@ def build_showcase():
     draw_centered_text(draw, y, "Desktop Camouflage & Transformation Suite for Omarchy Hyprland", f_hero_sub, (224, 231, 255))
     y += 68
     
-    # Hero Badges Row (Updated for v6.1.0 and Verified Plugin)
+    # Hero Badges Row (Updated for v7.0.0 and Verified Plugin)
     hero_badges = [
         ("✓ Verified Omarchy Plugin", (6, 78, 59), (110, 231, 183), (16, 185, 129)),
-        ("v6.1.0 Release", (30, 58, 138), (147, 197, 253), (59, 130, 246)),
-        ("Hyprland Wayland", (19, 78, 74), (94, 234, 212), (20, 184, 166)),
-        ("Native Lua Dispatchers", (88, 28, 135), (216, 180, 254), (168, 85, 247)),
+        ("v7.0.0 Release", (30, 58, 138), (147, 197, 253), (59, 130, 246)),
+        ("macOS Tahoe & Sequoia", (19, 78, 74), (94, 234, 212), (20, 184, 166)),
+        ("macOS Stage Manager", (88, 28, 135), (216, 180, 254), (168, 85, 247)),
+        ("Apple Aerial Screensavers", (120, 53, 15), (254, 243, 199), (217, 119, 6)),
         ("Quickshell 4.0+ & Waybar", (67, 56, 202), (199, 210, 254), (99, 102, 241)),
-        ("Pixel-Accurate Snapping", (120, 53, 15), (254, 243, 199), (217, 119, 6)),
-        ("Safe State Rollback", (20, 83, 45), (134, 239, 172), (34, 197, 94))
     ]
     total_badge_w = 0
     badge_widths = []
@@ -375,7 +374,7 @@ def build_showcase():
     
     # Description lines
     draw = ImageDraw.Draw(canvas)
-    draw_centered_text(draw, y, "Instantly transform your Omarchy Hyprland desktop into a native Apple macOS Sequoia or Windows 11 Fluent environment.", f_hero_p, (241, 245, 249))
+    draw_centered_text(draw, y, "Instantly transform your Omarchy Hyprland desktop into Apple macOS Tahoe / Sequoia or Windows 11 Fluent.", f_hero_p, (241, 245, 249))
     y += 38
     draw_centered_text(draw, y, "Engineered for presentation disguise and privacy with authentic typography, physics, and seamless rollback protection.", f_hero_p, (203, 213, 225))
     y += 120
@@ -384,8 +383,8 @@ def build_showcase():
     draw.line([(MARGIN_X, y), (WIDTH - MARGIN_X, y)], fill=(40, 52, 78), width=1)
     y += 60
     
-    # 3. Apple macOS Sequoia Section
-    print("Rendering Apple macOS Sequoia section...")
+    # 3. Apple macOS Tahoe & Sequoia Section
+    print("Rendering Apple macOS Tahoe & Sequoia section...")
     f_sec_title = get_font("sf_bold", 44)
     f_sec_desc = get_font("sf_regular", 22)
     f_chip = get_font("sf_semibold", 16)
@@ -393,18 +392,18 @@ def build_showcase():
     sec_x = MARGIN_X
     with Image.open(apple_path) as a_img:
         canvas.paste(a_img, (sec_x, y + 2), a_img)
-    draw.text((sec_x + 68, y), "Apple macOS Sequoia Mode", font=f_sec_title, fill=TEXT_TITLE)
+    draw.text((sec_x + 68, y), "Apple macOS Tahoe & Sequoia Mode", font=f_sec_title, fill=TEXT_TITLE)
     y += 58
-    draw.text((sec_x, y), "Authentic Cupertino desktop experience featuring frosted menu bar, dynamic spring-physics dock, Spotlight search, and Control Center.", font=f_sec_desc, fill=TEXT_MUTED)
+    draw.text((sec_x, y), "Authentic Cupertino desktop experience featuring macOS Tahoe 4K alpine vistas, Stage Manager window organizer, Apple Aerial screensavers, and dynamic dock.", font=f_sec_desc, fill=TEXT_MUTED)
     y += 48
     
     mac_chips = [
+        ("macOS Tahoe 4K Alpine", (30, 41, 59), (226, 232, 240), (51, 65, 85)),
+        ("Stage Manager Window Rail", (30, 41, 59), (226, 232, 240), (51, 65, 85)),
+        ("Apple Aerial Screensavers", (30, 41, 59), (226, 232, 240), (51, 65, 85)),
         ("Frosted Glass Top Bar", (30, 41, 59), (226, 232, 240), (51, 65, 85)),
         ("Dynamic Magnifying Dock", (30, 41, 59), (226, 232, 240), (51, 65, 85)),
         ("Apple Control Center", (30, 41, 59), (226, 232, 240), (51, 65, 85)),
-        ("Spotlight Search", (30, 41, 59), (226, 232, 240), (51, 65, 85)),
-        ("SF Pro Typography", (30, 41, 59), (226, 232, 240), (51, 65, 85)),
-        ("Spring Physics Animations", (30, 41, 59), (226, 232, 240), (51, 65, 85)),
     ]
     cx = sec_x
     for text, bg, fg, border in mac_chips:
@@ -419,12 +418,12 @@ def build_showcase():
         screenshot_rel_path="assets/screenshots/MacOS_Dark.png",
         badge_text="DARK PRESET",
         badge_bg=(59, 7, 100), badge_fg=(233, 213, 255), badge_border=(147, 51, 234),
-        title_text="macOS Sequoia — Dark Mode",
-        subtitle_text="Night-mode frosted menu bar with polygraph monitor, control center, and dynamic floating dock",
+        title_text="macOS Tahoe & Sequoia — Dark Mode",
+        subtitle_text="Night-mode frosted menu bar with Stage Manager live window rail, control center, and dynamic floating dock",
         callouts=[
-            ("TOP BAR", "Global menus, polygraph monitor, volume & clock"),
-            ("DOCK", "Dynamic magnification, active app dots & trash"),
-            ("SHORTCUTS", "Super+Space Spotlight, Super+Tab Mission Control")
+            ("STAGE MANAGER", "Live window previews, app grouping, Super+` / Super+Tab"),
+            ("TOP BAR", "Global menus, polygraph monitor, Stage Manager & clock"),
+            ("AERIAL SCREENSAVER", "Official 1080p/4K Apple CDN drone footage & live preview")
         ],
         font_family="sf"
     )
@@ -639,7 +638,7 @@ def build_showcase():
         
     f_foot_title = get_font("sf_bold", 26)
     f_foot_sub = get_font("sf_regular", 17)
-    draw.text((rx + 110, ry + 10), "Omarchy Undercover v6.1.0", font=f_foot_title, fill=TEXT_TITLE)
+    draw.text((rx + 110, ry + 10), "Omarchy Undercover v7.0.0", font=f_foot_title, fill=TEXT_TITLE)
     draw.text((rx + 110, ry + 48), "Verified Omarchy Plugin • GPL-3.0 • misternegative21", font=f_foot_sub, fill=TEXT_MUTED)
     
     actual_bottom = y + foot_h + 90

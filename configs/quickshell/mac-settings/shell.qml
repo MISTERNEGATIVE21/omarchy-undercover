@@ -5,6 +5,7 @@ import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import QtMultimedia
 
 ShellRoot {
   FloatingWindow {
@@ -18,6 +19,7 @@ ShellRoot {
 
     Component.onCompleted: {
       raiseTimer.start()
+      screensaverStatusProc.running = true
     }
 
     Timer {
@@ -102,6 +104,68 @@ ShellRoot {
                 "  echo '" + key + "=" + val + "' >> " + settingsWin.pluginDir + "/settings.conf; " +
                 "fi"
       runCmd(cmd)
+    }
+
+    // macOS Aerial Screensaver Integration
+    property bool screensaverEnabled: true
+    property int screensaverTimeout: 300
+    property string screensaverActiveVideo: ""
+    property var screensaverInstalledClips: []
+    property var screensaverCatalog: []
+    property string screensaverDownloadingId: ""
+    property string screensaverStatusText: ""
+
+    Process {
+      id: screensaverStatusProc
+      command: [settingsWin.pluginDir + "/scripts/omarchy-mac-screensaver", "--status"]
+      stdout: StdioCollector {
+        onStreamFinished: {
+          try {
+            var data = JSON.parse(text)
+            settingsWin.screensaverEnabled = data.enabled
+            settingsWin.screensaverTimeout = data.timeout
+            settingsWin.screensaverActiveVideo = data.active_clip || ""
+            settingsWin.screensaverInstalledClips = data.installed_clips || []
+            settingsWin.screensaverCatalog = data.catalog || []
+          } catch(e) {
+            console.warn("mac-settings: screensaver status parse error:", e)
+          }
+        }
+      }
+    }
+
+    Process {
+      id: screensaverDownloadProc
+      onExited: function(code) {
+        settingsWin.screensaverDownloadingId = ""
+        screensaverStatusProc.running = true
+      }
+    }
+
+    function refreshScreensaverData() {
+      screensaverStatusProc.running = true
+    }
+
+    function downloadScreensaverClip(cid) {
+      settingsWin.screensaverDownloadingId = cid
+      screensaverDownloadProc.command = [settingsWin.pluginDir + "/scripts/omarchy-mac-screensaver", "--download", cid]
+      screensaverDownloadProc.running = true
+    }
+
+    function setScreensaverActiveClip(path) {
+      settingsWin.screensaverActiveVideo = path
+      runCmd(settingsWin.pluginDir + "/scripts/omarchy-mac-screensaver --set '" + path + "'")
+      screensaverStatusProc.running = true
+    }
+
+    function setScreensaverTimeoutSec(sec) {
+      settingsWin.screensaverTimeout = sec
+      runCmd(settingsWin.pluginDir + "/scripts/omarchy-mac-screensaver --timeout " + sec)
+    }
+
+    function toggleScreensaver(on) {
+      settingsWin.screensaverEnabled = on
+      runCmd(settingsWin.pluginDir + "/scripts/omarchy-mac-screensaver --toggle " + (on ? "on" : "off"))
     }
 
     AudioService {
@@ -451,7 +515,7 @@ ShellRoot {
                   fillMode: Image.PreserveAspectFit
                 }
                 Text {
-                  text: "macOS Sequoia"
+                  text: "macOS Tahoe"
                   font.family: "SF Pro Text, -apple-system, sans-serif"
                   font.pixelSize: 11
                   font.weight: Font.Medium
@@ -593,6 +657,7 @@ ShellRoot {
                 { id: 1, iconBg: "#5856d6", icon: "dock.svg", name: "Desktop & Dock" },
                 { id: 8, iconBg: "#007aff", icon: "display.svg", name: "Displays" },
                 { id: 2, iconBg: "#34c759", icon: "wallpaper.svg", name: "Wallpaper" },
+                { id: 11, iconBg: "#ff9500", icon: "display.svg", name: "Screen Saver" },
                 { id: 3, iconBg: "#007aff", icon: "wifi.svg", name: "Wi-Fi" },
                 { id: 4, iconBg: "#007aff", icon: "bluetooth.svg", name: "Bluetooth" },
                 { id: 5, iconBg: "#ff2d55", icon: "sound.svg", name: "Sound" },
@@ -1398,6 +1463,8 @@ ShellRoot {
                   columnSpacing: 14
 
                   property var walls: [
+                    { name: "macOS Tahoe Dark", file: "macOS-Tahoe-Dark.jpg" },
+                    { name: "macOS Tahoe Light", file: "macOS-Tahoe-Light.jpg" },
                     { name: "macOS Sequoia Dark", file: "macOS-Sequoia-Dark.jpg" },
                     { name: "macOS Sequoia Light", file: "macOS-Sequoia-Light.jpg" },
                     { name: "macOS Sonoma Dark", file: "Sonoma-dark.jpg" },
@@ -1454,6 +1521,501 @@ ShellRoot {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: settingsWin.runCmd("omarchy-undercover-wallpaper -s '" + modelData.file + "'")
+                      }
+                    }
+                  }
+                }
+              }
+
+              // ==========================================
+              // TAB 11: SCREEN SAVER (macOS Aerial Video)
+              // ==========================================
+              ColumnLayout {
+                visible: settingsWin.currentCategory === 11
+                Layout.fillWidth: true
+                spacing: 16
+
+                // Header
+                ColumnLayout {
+                  spacing: 4
+                  Text {
+                    text: "Screen Saver"
+                    font.family: "SF Pro Display, -apple-system, sans-serif"
+                    font.pixelSize: 22
+                    font.weight: Font.Bold
+                    color: settingsWin.textPrimary
+                  }
+                  Text {
+                    text: "Authentic Apple aerial drone video screen saver with real-time preview and 1-click downloads."
+                    font.family: "SF Pro Text, -apple-system, sans-serif"
+                    font.pixelSize: 13
+                    color: settingsWin.textSecondary
+                  }
+                }
+
+                // Hero Video Preview Viewport
+                Rectangle {
+                  Layout.fillWidth: true
+                  Layout.preferredHeight: Math.min(300, Math.round(width * 9 / 16))
+                  radius: 12
+                  color: "#0a0a0c"
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+                  clip: true
+
+                  VideoOutput {
+                    id: previewVideoOut
+                    anchors.fill: parent
+                    fillMode: VideoOutput.PreserveAspectCrop
+                  }
+
+                  MediaPlayer {
+                    id: previewPlayer
+                    videoOutput: previewVideoOut
+                    loops: MediaPlayer.Infinite
+                    audioOutput: null
+                    source: settingsWin.screensaverActiveVideo
+
+                    Component.onCompleted: {
+                      if (settingsWin.screensaverActiveVideo !== "") play()
+                    }
+                  }
+
+                  // Placeholder when no video
+                  ColumnLayout {
+                    anchors.centerIn: parent
+                    visible: settingsWin.screensaverActiveVideo === ""
+                    spacing: 8
+                    Text {
+                      Layout.alignment: Qt.AlignHCenter
+                      text: "🎬"
+                      font.pixelSize: 36
+                    }
+                    Text {
+                      Layout.alignment: Qt.AlignHCenter
+                      text: "No screensaver video selected"
+                      font.family: "SF Pro Text, -apple-system, sans-serif"
+                      font.pixelSize: 13
+                      color: settingsWin.textSecondary
+                    }
+                  }
+
+                  // Floating bottom toolbar
+                  Rectangle {
+                    anchors.bottom: parent.bottom
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 48
+                    color: Qt.rgba(0, 0, 0, 0.72)
+
+                    RowLayout {
+                      anchors.fill: parent
+                      anchors.margins: 10
+                      spacing: 12
+
+                      Rectangle {
+                        width: 30; height: 30; radius: 15
+                        color: Qt.rgba(1, 1, 1, 0.18)
+                        Text {
+                          anchors.centerIn: parent
+                          text: previewPlayer.playbackState === MediaPlayer.PlayingState ? "⏸" : "▶"
+                          font.pixelSize: 12
+                          color: "#ffffff"
+                        }
+                        MouseArea {
+                          anchors.fill: parent
+                          cursorShape: Qt.PointingHandCursor
+                          onClicked: {
+                            if (previewPlayer.playbackState === MediaPlayer.PlayingState) {
+                              previewPlayer.pause()
+                            } else {
+                              previewPlayer.play()
+                            }
+                          }
+                        }
+                      }
+
+                      Text {
+                        Layout.fillWidth: true
+                        text: {
+                          if (!settingsWin.screensaverActiveVideo) return "Select or download an aerial video below"
+                          var parts = settingsWin.screensaverActiveVideo.split("/")
+                          var filename = parts[parts.length - 1].replace(/\.(mp4|webm)$/, "").replace(/_/g, " ")
+                          return "Playing: " + filename
+                        }
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 12
+                        font.weight: Font.DemiBold
+                        color: "#ffffff"
+                        elide: Text.ElideRight
+                      }
+
+                      Rectangle {
+                        implicitWidth: 140; implicitHeight: 30
+                        radius: 15
+                        color: settingsWin.accentColor
+
+                        Text {
+                          anchors.centerIn: parent
+                          text: "Preview Fullscreen"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 11
+                          font.weight: Font.Bold
+                          color: "#ffffff"
+                        }
+
+                        MouseArea {
+                          anchors.fill: parent
+                          cursorShape: Qt.PointingHandCursor
+                          onClicked: {
+                            settingsWin.runCmd("qs ipc call omarchy-undercover-service previewScreensaver 2>/dev/null || " + settingsWin.pluginDir + "/scripts/omarchy-mac-screensaver --preview")
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+
+                // Preferences Card (Enable Toggle & Inactivity Timeout)
+                Rectangle {
+                  Layout.fillWidth: true
+                  radius: 10
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 14
+                    spacing: 14
+
+                    // Row 1: Enable Toggle
+                    RowLayout {
+                      Layout.fillWidth: true
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+                        Text {
+                          text: "Enable Screen Saver"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 13
+                          font.weight: Font.DemiBold
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: "Plays fullscreen aerial video when system is idle in macOS mode"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+
+                      Rectangle {
+                        width: 38; height: 22; radius: 11
+                        color: settingsWin.screensaverEnabled ? "#34c759" : (settingsWin.isDark ? "#39393d" : "#e5e5ea")
+                        Rectangle {
+                          width: 18; height: 18; radius: 9; y: 2
+                          x: settingsWin.screensaverEnabled ? 18 : 2
+                          color: "#ffffff"
+                          Behavior on x { NumberAnimation { duration: 150 } }
+                        }
+                        MouseArea {
+                          anchors.fill: parent
+                          cursorShape: Qt.PointingHandCursor
+                          onClicked: settingsWin.toggleScreensaver(!settingsWin.screensaverEnabled)
+                        }
+                      }
+                    }
+
+                    Rectangle {
+                      Layout.fillWidth: true
+                      height: 1
+                      color: settingsWin.separatorColor
+                    }
+
+                    // Row 2: Inactivity Timeout
+                    RowLayout {
+                      Layout.fillWidth: true
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+                        Text {
+                          text: "Start After Inactivity"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 13
+                          font.weight: Font.DemiBold
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: "Inactivity time threshold before screensaver starts (" + Math.round(settingsWin.screensaverTimeout / 60) + " min)"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+
+                      RowLayout {
+                        spacing: 4
+                        Repeater {
+                          model: [
+                            { label: "1m", sec: 60 },
+                            { label: "2m", sec: 120 },
+                            { label: "5m", sec: 300 },
+                            { label: "10m", sec: 600 },
+                            { label: "15m", sec: 900 },
+                            { label: "30m", sec: 1800 }
+                          ]
+
+                          Rectangle {
+                            width: 38; height: 26; radius: 6
+                            readonly property bool isCur: settingsWin.screensaverTimeout === modelData.sec
+                            color: isCur ? settingsWin.accentColor : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05))
+
+                            Text {
+                              anchors.centerIn: parent
+                              text: modelData.label
+                              font.family: "SF Pro Text, -apple-system, sans-serif"
+                              font.pixelSize: 11
+                              font.weight: isCur ? Font.Bold : Font.Normal
+                              color: isCur ? "#ffffff" : settingsWin.textPrimary
+                            }
+
+                            MouseArea {
+                              anchors.fill: parent
+                              cursorShape: Qt.PointingHandCursor
+                              onClicked: settingsWin.setScreensaverTimeoutSec(modelData.sec)
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+
+                // Installed Aerial Videos Section
+                ColumnLayout {
+                  Layout.fillWidth: true
+                  spacing: 10
+
+                  RowLayout {
+                    Layout.fillWidth: true
+                    Text {
+                      Layout.fillWidth: true
+                      text: "Installed Aerial Videos"
+                      font.family: "SF Pro Text, -apple-system, sans-serif"
+                      font.pixelSize: 14
+                      font.weight: Font.DemiBold
+                      color: settingsWin.textPrimary
+                    }
+
+                    Rectangle {
+                      implicitWidth: 150; implicitHeight: 28; radius: 6
+                      color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05)
+                      border.color: settingsWin.cardBorder
+
+                      Text {
+                        anchors.centerIn: parent
+                        text: "📁 Custom Video..."
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 11
+                        font.weight: Font.Medium
+                        color: settingsWin.textPrimary
+                      }
+
+                      MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                          settingsWin.runCmd("if command -v zenity &>/dev/null; then f=$(zenity --file-selection --title='Select Screensaver Video' --file-filter='Video Files | *.mp4 *.webm *.mkv'); [[ -n \"$f\" ]] && " + settingsWin.pluginDir + "/scripts/omarchy-mac-screensaver --set \"$f\"; fi")
+                        }
+                      }
+                    }
+                  }
+
+                  GridLayout {
+                    Layout.fillWidth: true
+                    columns: rightScroller.width > 650 ? 3 : 2
+                    rowSpacing: 10
+                    columnSpacing: 10
+
+                    Repeater {
+                      model: settingsWin.screensaverInstalledClips
+
+                      Rectangle {
+                        Layout.fillWidth: true
+                        implicitHeight: 68
+                        radius: 8
+                        color: settingsWin.cardBg
+                        readonly property bool isSelected: settingsWin.screensaverActiveVideo === modelData.path
+                        border.color: isSelected ? settingsWin.accentColor : (clipMouse.containsMouse ? settingsWin.accentColor : settingsWin.cardBorder)
+                        border.width: isSelected ? 2 : 1
+
+                        RowLayout {
+                          anchors.fill: parent
+                          anchors.margins: 10
+                          spacing: 10
+
+                          Rectangle {
+                            width: 44; height: 44; radius: 6
+                            color: Qt.rgba(settingsWin.accentColor.r, settingsWin.accentColor.g, settingsWin.accentColor.b, 0.15)
+                            Text {
+                              anchors.centerIn: parent
+                              text: "🎬"
+                              font.pixelSize: 20
+                            }
+                          }
+
+                          ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 2
+                            Text {
+                              Layout.fillWidth: true
+                              text: modelData.name || "Aerial Clip"
+                              font.family: "SF Pro Text, -apple-system, sans-serif"
+                              font.pixelSize: 12
+                              font.weight: Font.DemiBold
+                              color: settingsWin.textPrimary
+                              elide: Text.ElideRight
+                            }
+                            Text {
+                              text: isSelected ? "Active Screen Saver" : "Click to select"
+                              font.family: "SF Pro Text, -apple-system, sans-serif"
+                              font.pixelSize: 10
+                              color: isSelected ? settingsWin.accentColor : settingsWin.textSecondary
+                            }
+                          }
+
+                          Text {
+                            visible: isSelected
+                            text: "✔"
+                            font.pixelSize: 14
+                            font.weight: Font.Bold
+                            color: settingsWin.accentColor
+                          }
+                        }
+
+                        MouseArea {
+                          id: clipMouse
+                          anchors.fill: parent
+                          hoverEnabled: true
+                          cursorShape: Qt.PointingHandCursor
+                          onClicked: {
+                            settingsWin.setScreensaverActiveClip(modelData.path)
+                            previewPlayer.source = modelData.path
+                            previewPlayer.play()
+                          }
+                        }
+                      }
+                    }
+                  }
+
+                  Text {
+                    visible: settingsWin.screensaverInstalledClips.length === 0
+                    text: "No videos downloaded yet. Select a clip below to download from Apple's CDN."
+                    font.family: "SF Pro Text, -apple-system, sans-serif"
+                    font.pixelSize: 12
+                    color: settingsWin.textSecondary
+                  }
+                }
+
+                // Apple Aerial CDN Downloader Section
+                ColumnLayout {
+                  Layout.fillWidth: true
+                  spacing: 10
+
+                  Text {
+                    text: "Apple Aerial CDN Catalog (Official)"
+                    font.family: "SF Pro Text, -apple-system, sans-serif"
+                    font.pixelSize: 14
+                    font.weight: Font.DemiBold
+                    color: settingsWin.textPrimary
+                  }
+
+                  Rectangle {
+                    Layout.fillWidth: true
+                    radius: 10
+                    color: settingsWin.cardBg
+                    border.color: settingsWin.cardBorder
+                    border.width: 1
+
+                    ColumnLayout {
+                      anchors.fill: parent
+                      anchors.margins: 12
+                      spacing: 8
+
+                      Repeater {
+                        model: settingsWin.screensaverCatalog
+
+                        ColumnLayout {
+                          Layout.fillWidth: true
+                          spacing: 8
+
+                          RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 12
+
+                            Rectangle {
+                              width: 36; height: 36; radius: 8
+                              color: Qt.rgba(settingsWin.accentColor.r, settingsWin.accentColor.g, settingsWin.accentColor.b, 0.12)
+                              Text {
+                                anchors.centerIn: parent
+                                text: "🌐"
+                                font.pixelSize: 18
+                              }
+                            }
+
+                            ColumnLayout {
+                              Layout.fillWidth: true
+                              spacing: 2
+                              Text {
+                                text: modelData.name
+                                font.family: "SF Pro Text, -apple-system, sans-serif"
+                                font.pixelSize: 13
+                                font.weight: Font.DemiBold
+                                color: settingsWin.textPrimary
+                              }
+                              Text {
+                                text: modelData.location + " • " + modelData.res + " • " + modelData.size
+                                font.family: "SF Pro Text, -apple-system, sans-serif"
+                                font.pixelSize: 11
+                                color: settingsWin.textSecondary
+                              }
+                            }
+
+                            Rectangle {
+                              implicitWidth: modelData.installed ? 85 : 95
+                              implicitHeight: 28
+                              radius: 14
+                              color: modelData.installed ? Qt.rgba(0.2, 0.78, 0.35, 0.15) : (settingsWin.screensaverDownloadingId === modelData.id ? Qt.rgba(1, 0.58, 0, 0.15) : settingsWin.accentColor)
+                              border.color: modelData.installed ? "#34c759" : (settingsWin.screensaverDownloadingId === modelData.id ? "#ff9500" : "transparent")
+
+                              Text {
+                                anchors.centerIn: parent
+                                text: modelData.installed ? "✔ Installed" : (settingsWin.screensaverDownloadingId === modelData.id ? "Downloading…" : "Download")
+                                font.family: "SF Pro Text, -apple-system, sans-serif"
+                                font.pixelSize: 11
+                                font.weight: Font.DemiBold
+                                color: modelData.installed ? "#34c759" : (settingsWin.screensaverDownloadingId === modelData.id ? "#ff9500" : "#ffffff")
+                              }
+
+                              MouseArea {
+                                anchors.fill: parent
+                                enabled: !modelData.installed && settingsWin.screensaverDownloadingId !== modelData.id
+                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                onClicked: {
+                                  settingsWin.downloadScreensaverClip(modelData.id)
+                                }
+                              }
+                            }
+                          }
+
+                          Rectangle {
+                            Layout.fillWidth: true
+                            height: 1
+                            visible: index < (settingsWin.screensaverCatalog.length - 1)
+                            color: settingsWin.separatorColor
+                          }
+                        }
                       }
                     }
                   }
@@ -2812,14 +3374,14 @@ ShellRoot {
                   rowSpacing: 12
                   columnSpacing: 12
 
-                  // macOS Dark
+                  // macOS Tahoe Dark (Flagship Default)
                   Rectangle {
                     Layout.fillWidth: true
                     implicitHeight: 74
                     radius: 8
                     color: settingsWin.cardBg
-                    border.color: (settingsWin.currentDisguise === "mac-dark") ? settingsWin.accentColor : settingsWin.cardBorder
-                    border.width: (settingsWin.currentDisguise === "mac-dark") ? 2 : 1
+                    border.color: (settingsWin.currentDisguise === "mac-dark" || settingsWin.currentDisguise === "mac-tahoe-dark") ? settingsWin.accentColor : settingsWin.cardBorder
+                    border.width: (settingsWin.currentDisguise === "mac-dark" || settingsWin.currentDisguise === "mac-tahoe-dark") ? 2 : 1
 
                     RowLayout {
                       anchors.fill: parent
@@ -2833,8 +3395,8 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "macOS Sequoia (Dark)" + (settingsWin.currentDisguise === "mac-dark" ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary }
-                        Text { text: "Dark menu bar, dynamic dock & SF Pro fonts"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
+                        Text { text: "macOS Tahoe (Dark)" + ((settingsWin.currentDisguise === "mac-dark" || settingsWin.currentDisguise === "mac-tahoe-dark") ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary }
+                        Text { text: "Alpine vista, frosted glass menu bar, Stage Manager & SF Pro fonts"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
                       }
                     }
                     MouseArea {
@@ -2844,14 +3406,14 @@ ShellRoot {
                     }
                   }
 
-                  // macOS Light
+                  // macOS Tahoe Light
                   Rectangle {
                     Layout.fillWidth: true
                     implicitHeight: 74
                     radius: 8
                     color: settingsWin.cardBg
-                    border.color: (settingsWin.currentDisguise === "mac-light") ? settingsWin.accentColor : settingsWin.cardBorder
-                    border.width: (settingsWin.currentDisguise === "mac-light") ? 2 : 1
+                    border.color: (settingsWin.currentDisguise === "mac-light" || settingsWin.currentDisguise === "mac-tahoe-light") ? settingsWin.accentColor : settingsWin.cardBorder
+                    border.width: (settingsWin.currentDisguise === "mac-light" || settingsWin.currentDisguise === "mac-tahoe-light") ? 2 : 1
 
                     RowLayout {
                       anchors.fill: parent
@@ -2865,14 +3427,78 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "macOS Sequoia (Light)" + (settingsWin.currentDisguise === "mac-light" ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary }
-                        Text { text: "Solar light glass menu bar & high vibrancy dock"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
+                        Text { text: "macOS Tahoe (Light)" + ((settingsWin.currentDisguise === "mac-light" || settingsWin.currentDisguise === "mac-tahoe-light") ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary }
+                        Text { text: "Solar alpine glass menu bar, high vibrancy dock & Stage Manager"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
                       }
                     }
                     MouseArea {
                       anchors.fill: parent
                       cursorShape: Qt.PointingHandCursor
                       onClicked: settingsWin.runCmd("omarchy-undercover -mac-light")
+                    }
+                  }
+
+                  // macOS Sequoia Dark
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 74
+                    radius: 8
+                    color: settingsWin.cardBg
+                    border.color: (settingsWin.currentDisguise === "mac-sequoia-dark" || settingsWin.currentDisguise === "mac-sequoia") ? settingsWin.accentColor : settingsWin.cardBorder
+                    border.width: (settingsWin.currentDisguise === "mac-sequoia-dark" || settingsWin.currentDisguise === "mac-sequoia") ? 2 : 1
+
+                    RowLayout {
+                      anchors.fill: parent
+                      anchors.margins: 14
+                      spacing: 12
+                      Image {
+                        Layout.preferredWidth: 24; Layout.preferredHeight: 24
+                        width: 24; height: 24
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/apple-logo.svg"
+                        fillMode: Image.PreserveAspectFit
+                      }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        Text { text: "macOS Sequoia (Dark)" + ((settingsWin.currentDisguise === "mac-sequoia-dark" || settingsWin.currentDisguise === "mac-sequoia") ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary }
+                        Text { text: "Classic Sequoia dark redwood theme, menu bar & dynamic dock"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
+                      }
+                    }
+                    MouseArea {
+                      anchors.fill: parent
+                      cursorShape: Qt.PointingHandCursor
+                      onClicked: settingsWin.runCmd("omarchy-undercover -mac-sequoia")
+                    }
+                  }
+
+                  // macOS Sequoia Light
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 74
+                    radius: 8
+                    color: settingsWin.cardBg
+                    border.color: (settingsWin.currentDisguise === "mac-sequoia-light") ? settingsWin.accentColor : settingsWin.cardBorder
+                    border.width: (settingsWin.currentDisguise === "mac-sequoia-light") ? 2 : 1
+
+                    RowLayout {
+                      anchors.fill: parent
+                      anchors.margins: 14
+                      spacing: 12
+                      Image {
+                        Layout.preferredWidth: 24; Layout.preferredHeight: 24
+                        width: 24; height: 24
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/apple-logo.svg"
+                        fillMode: Image.PreserveAspectFit
+                      }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        Text { text: "macOS Sequoia (Light)" + (settingsWin.currentDisguise === "mac-sequoia-light" ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary }
+                        Text { text: "Classic Sequoia solar redwood light glass theme"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
+                      }
+                    }
+                    MouseArea {
+                      anchors.fill: parent
+                      cursorShape: Qt.PointingHandCursor
+                      onClicked: settingsWin.runCmd("omarchy-undercover -mac-sequoia-light")
                     }
                   }
 

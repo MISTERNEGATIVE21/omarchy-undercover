@@ -69,6 +69,11 @@
           "source": "~/.config/omarchy/plugins/omarchy-undercover/widgets/mac-siri.qml"
         },
         {
+          "id": "mac-stagemanager",
+          "type": "qml",
+          "source": "~/.config/omarchy/plugins/omarchy-undercover/widgets/mac-stagemanager.qml"
+        },
+        {
           "id": "mac-controlcenter",
           "type": "qml",
           "source": "~/.config/omarchy/plugins/omarchy-undercover/widgets/mac-controlcenter.qml"

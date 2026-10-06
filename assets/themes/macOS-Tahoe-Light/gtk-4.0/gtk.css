@@ -1,0 +1,51 @@
+/* ==============================================================================
+ * macOS Tahoe Light GTK4 / Libadwaita Theme
+ * ============================================================================== */
+
+@define-color accent_color #007aff;
+@define-color accent_bg_color #007aff;
+@define-color window_bg_color #f5f5f7;
+@define-color window_fg_color #1d1d1f;
+@define-color headerbar_bg_color rgba(245, 245, 247, 0.90);
+@define-color headerbar_fg_color #1d1d1f;
+@define-color card_bg_color #ffffff;
+@define-color card_border_color rgba(0, 0, 0, 0.12);
+
+* {
+  font-family: "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+window {
+  border-radius: 12px;
+}
+
+headerbar {
+  background-color: @headerbar_bg_color;
+  color: @headerbar_fg_color;
+  border-bottom: 1px solid @card_border_color;
+  min-height: 38px;
+}
+
+headerbar windowhandle windowcontrols button.close {
+  background-color: #ff5f57;
+  border-radius: 50%;
+  min-width: 12px;
+  min-height: 12px;
+  margin: 0 4px;
+}
+
+headerbar windowhandle windowcontrols button.minimize {
+  background-color: #febc2e;
+  border-radius: 50%;
+  min-width: 12px;
+  min-height: 12px;
+  margin: 0 4px;
+}
+
+headerbar windowhandle windowcontrols button.maximize {
+  background-color: #28c840;
+  border-radius: 50%;
+  min-width: 12px;
+  min-height: 12px;
+  margin: 0 4px;
+}
