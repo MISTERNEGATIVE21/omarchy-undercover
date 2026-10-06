@@ -515,7 +515,7 @@ ShellRoot {
                   fillMode: Image.PreserveAspectFit
                 }
                 Text {
-                  text: "macOS Sequoia"
+                  text: "macOS Tahoe"
                   font.family: "SF Pro Text, -apple-system, sans-serif"
                   font.pixelSize: 11
                   font.weight: Font.Medium
@@ -1463,6 +1463,8 @@ ShellRoot {
                   columnSpacing: 14
 
                   property var walls: [
+                    { name: "macOS Tahoe Dark", file: "macOS-Tahoe-Dark.jpg" },
+                    { name: "macOS Tahoe Light", file: "macOS-Tahoe-Light.jpg" },
                     { name: "macOS Sequoia Dark", file: "macOS-Sequoia-Dark.jpg" },
                     { name: "macOS Sequoia Light", file: "macOS-Sequoia-Light.jpg" },
                     { name: "macOS Sonoma Dark", file: "Sonoma-dark.jpg" },
@@ -3372,14 +3374,14 @@ ShellRoot {
                   rowSpacing: 12
                   columnSpacing: 12
 
-                  // macOS Dark
+                  // macOS Tahoe Dark (Flagship Default)
                   Rectangle {
                     Layout.fillWidth: true
                     implicitHeight: 74
                     radius: 8
                     color: settingsWin.cardBg
-                    border.color: (settingsWin.currentDisguise === "mac-dark") ? settingsWin.accentColor : settingsWin.cardBorder
-                    border.width: (settingsWin.currentDisguise === "mac-dark") ? 2 : 1
+                    border.color: (settingsWin.currentDisguise === "mac-dark" || settingsWin.currentDisguise === "mac-tahoe-dark") ? settingsWin.accentColor : settingsWin.cardBorder
+                    border.width: (settingsWin.currentDisguise === "mac-dark" || settingsWin.currentDisguise === "mac-tahoe-dark") ? 2 : 1
 
                     RowLayout {
                       anchors.fill: parent
@@ -3393,8 +3395,8 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "macOS Sequoia (Dark)" + (settingsWin.currentDisguise === "mac-dark" ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary }
-                        Text { text: "Dark menu bar, dynamic dock & SF Pro fonts"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
+                        Text { text: "macOS Tahoe (Dark)" + ((settingsWin.currentDisguise === "mac-dark" || settingsWin.currentDisguise === "mac-tahoe-dark") ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary }
+                        Text { text: "Alpine vista, frosted glass menu bar, Stage Manager & SF Pro fonts"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
                       }
                     }
                     MouseArea {
@@ -3404,14 +3406,14 @@ ShellRoot {
                     }
                   }
 
-                  // macOS Light
+                  // macOS Tahoe Light
                   Rectangle {
                     Layout.fillWidth: true
                     implicitHeight: 74
                     radius: 8
                     color: settingsWin.cardBg
-                    border.color: (settingsWin.currentDisguise === "mac-light") ? settingsWin.accentColor : settingsWin.cardBorder
-                    border.width: (settingsWin.currentDisguise === "mac-light") ? 2 : 1
+                    border.color: (settingsWin.currentDisguise === "mac-light" || settingsWin.currentDisguise === "mac-tahoe-light") ? settingsWin.accentColor : settingsWin.cardBorder
+                    border.width: (settingsWin.currentDisguise === "mac-light" || settingsWin.currentDisguise === "mac-tahoe-light") ? 2 : 1
 
                     RowLayout {
                       anchors.fill: parent
@@ -3425,14 +3427,78 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "macOS Sequoia (Light)" + (settingsWin.currentDisguise === "mac-light" ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary }
-                        Text { text: "Solar light glass menu bar & high vibrancy dock"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
+                        Text { text: "macOS Tahoe (Light)" + ((settingsWin.currentDisguise === "mac-light" || settingsWin.currentDisguise === "mac-tahoe-light") ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary }
+                        Text { text: "Solar alpine glass menu bar, high vibrancy dock & Stage Manager"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
                       }
                     }
                     MouseArea {
                       anchors.fill: parent
                       cursorShape: Qt.PointingHandCursor
                       onClicked: settingsWin.runCmd("omarchy-undercover -mac-light")
+                    }
+                  }
+
+                  // macOS Sequoia Dark
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 74
+                    radius: 8
+                    color: settingsWin.cardBg
+                    border.color: (settingsWin.currentDisguise === "mac-sequoia-dark" || settingsWin.currentDisguise === "mac-sequoia") ? settingsWin.accentColor : settingsWin.cardBorder
+                    border.width: (settingsWin.currentDisguise === "mac-sequoia-dark" || settingsWin.currentDisguise === "mac-sequoia") ? 2 : 1
+
+                    RowLayout {
+                      anchors.fill: parent
+                      anchors.margins: 14
+                      spacing: 12
+                      Image {
+                        Layout.preferredWidth: 24; Layout.preferredHeight: 24
+                        width: 24; height: 24
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/apple-logo.svg"
+                        fillMode: Image.PreserveAspectFit
+                      }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        Text { text: "macOS Sequoia (Dark)" + ((settingsWin.currentDisguise === "mac-sequoia-dark" || settingsWin.currentDisguise === "mac-sequoia") ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary }
+                        Text { text: "Classic Sequoia dark redwood theme, menu bar & dynamic dock"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
+                      }
+                    }
+                    MouseArea {
+                      anchors.fill: parent
+                      cursorShape: Qt.PointingHandCursor
+                      onClicked: settingsWin.runCmd("omarchy-undercover -mac-sequoia")
+                    }
+                  }
+
+                  // macOS Sequoia Light
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 74
+                    radius: 8
+                    color: settingsWin.cardBg
+                    border.color: (settingsWin.currentDisguise === "mac-sequoia-light") ? settingsWin.accentColor : settingsWin.cardBorder
+                    border.width: (settingsWin.currentDisguise === "mac-sequoia-light") ? 2 : 1
+
+                    RowLayout {
+                      anchors.fill: parent
+                      anchors.margins: 14
+                      spacing: 12
+                      Image {
+                        Layout.preferredWidth: 24; Layout.preferredHeight: 24
+                        width: 24; height: 24
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/apple-logo.svg"
+                        fillMode: Image.PreserveAspectFit
+                      }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        Text { text: "macOS Sequoia (Light)" + (settingsWin.currentDisguise === "mac-sequoia-light" ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary }
+                        Text { text: "Classic Sequoia solar redwood light glass theme"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
+                      }
+                    }
+                    MouseArea {
+                      anchors.fill: parent
+                      cursorShape: Qt.PointingHandCursor
+                      onClicked: settingsWin.runCmd("omarchy-undercover -mac-sequoia-light")
                     }
                   }
 

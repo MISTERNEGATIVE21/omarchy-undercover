@@ -609,39 +609,83 @@ sync_undercover_themes() {
             fi
         done
     fi
+
+    # Sync GTK themes from assets/themes to ~/.themes and ~/.local/share/themes
+    for theme_dir in "$CONFIG_DIR/assets/themes"/* "$PLUGIN_DIR/assets/themes"/* "${SCRIPT_DIR}/../assets/themes"/*; do
+        if [[ -d "$theme_dir" ]]; then
+            local t_name
+            t_name="$(basename "$theme_dir")"
+            mkdir -p "$HOME/.themes/$t_name" "$HOME/.local/share/themes/$t_name"
+            cp -r "$theme_dir/"* "$HOME/.themes/$t_name/" 2>/dev/null || true
+            cp -r "$theme_dir/"* "$HOME/.local/share/themes/$t_name/" 2>/dev/null || true
+        fi
+    done
+
+    # Sync wallpapers to CONFIG_DIR/wallpapers
+    for wall in "$CONFIG_DIR/assets/wallpapers"/* "$PLUGIN_DIR/assets/wallpapers"/* "${SCRIPT_DIR}/../assets/wallpapers"/*; do
+        if [[ -f "$wall" ]]; then
+            local w_name
+            w_name="$(basename "$wall")"
+            mkdir -p "$CONFIG_DIR/wallpapers"
+            cp -f "$wall" "$CONFIG_DIR/wallpapers/$w_name" 2>/dev/null || true
+        fi
+    done
 }
 
 switch_to_mac() {
     local variant="dark"
-    if [[ "${1:-}" == "light" || "${1:-}" == "--light" || "${2:-}" == "light" || "${2:-}" == "--light" ]]; then
-        variant="light"
+    local flavor="tahoe"
+
+    for arg in "$@"; do
+        case "$arg" in
+            light|--light|-light) variant="light" ;;
+            dark|--dark|-dark) variant="dark" ;;
+            sequoia|--sequoia|-sequoia) flavor="sequoia" ;;
+            tahoe|--tahoe|-tahoe) flavor="tahoe" ;;
+        esac
+    done
+
+    local flavor_title="macOS Tahoe"
+    local wall_img="macOS-Tahoe-Dark.jpg"
+    local gtk_theme="macOS-Tahoe-Dark"
+    local gtk_icon="WhiteSur-dark"
+    local color_scheme="prefer-dark"
+
+    if [[ "$flavor" == "sequoia" ]]; then
+        flavor_title="macOS Sequoia"
+        wall_img="macOS-Sequoia-Dark.jpg"
+        gtk_theme="macOS-Tahoe-Dark"
+        if [[ "$variant" == "light" ]]; then
+            wall_img="macOS-Sequoia-Light.jpg"
+            gtk_theme="macOS-Tahoe-Light"
+            gtk_icon="WhiteSur-light"
+            color_scheme="prefer-light"
+        fi
+    else
+        # Tahoe (Flagship Default)
+        if [[ "$variant" == "light" ]]; then
+            wall_img="macOS-Tahoe-Light.jpg"
+            gtk_theme="macOS-Tahoe-Light"
+            gtk_icon="WhiteSur-light"
+            color_scheme="prefer-light"
+        fi
     fi
 
-    msg "Switching to Apple macOS Sequoia ($variant)..."
+    msg "Switching to Apple $flavor_title ($variant)..."
     save_previous_desktop_state
     if [[ ! -f "$BASELINE_FILE" ]]; then
         backup_original_configs
     fi
     set_state "mac-$variant"
     write_setting "MODE" "mac"
+    write_setting "MAC_FLAVOR" "$flavor"
     write_setting "THEME_VARIANT" "$variant"
-    write_setting "LAST_UNDERCOVER_MODE" "mac-$variant"
+    write_setting "LAST_UNDERCOVER_MODE" "mac-$flavor-$variant"
     rm -f "$HOME/.local/state/omarchy/toggles/bar-off" 2>/dev/null || true
 
     sync_undercover_themes
     if command_exists omarchy-theme-set; then
         omarchy-theme-set "macos-$variant" 2>/dev/null || true
-    fi
-
-    local gtk_icon="WhiteSur-dark"
-    local gtk_theme="WhiteSur-Dark"
-    local wall_img="macOS-Sequoia-Dark.jpg"
-    local color_scheme="prefer-dark"
-    if [[ "$variant" == "light" ]]; then
-        gtk_icon="WhiteSur-light"
-        gtk_theme="WhiteSur-Light"
-        wall_img="macOS-Sequoia-Light.jpg"
-        color_scheme="prefer-light"
     fi
 
     # 1. GSettings (GNOME / GTK / Flatpak / Libadwaita)
@@ -697,9 +741,16 @@ EOF
     apply_shell_mac
 
     # Apply wallpaper
-    if [[ -f "$CONFIG_DIR/wallpapers/$wall_img" ]]; then
+    local target_wall=""
+    for wcand in "$CONFIG_DIR/wallpapers/$wall_img" "$CONFIG_DIR/assets/wallpapers/$wall_img" "$PLUGIN_DIR/assets/wallpapers/$wall_img" "${SCRIPT_DIR}/../assets/wallpapers/$wall_img"; do
+        if [[ -f "$wcand" ]]; then
+            target_wall="$wcand"
+            break
+        fi
+    done
+    if [[ -n "$target_wall" ]]; then
         killall swaybg 2>/dev/null || true
-        nohup swaybg -i "$CONFIG_DIR/wallpapers/$wall_img" -m fill >/dev/null 2>&1 &
+        nohup swaybg -i "$target_wall" -m fill >/dev/null 2>&1 &
         disown 2>/dev/null || true
     fi
 
@@ -727,7 +778,7 @@ EOF
         setsid -f quickshell -p "$dock_dir" >/dev/null 2>&1 || (nohup quickshell -p "$dock_dir" >/dev/null 2>&1 &)
     fi
 
-    msg "Switched to Apple macOS Sequoia ($variant) — done!"
+    msg "Switched to Apple $flavor_title ($variant) — done!"
 }
 
 switch_to_win11() {
@@ -1141,8 +1192,10 @@ show_help() {
     echo "Usage: omarchy-undercover [OPTIONS]"
     echo ""
     echo "Options:"
-    echo "  -mac, --mac, --macOS, -apple, --apple  Switch to Apple macOS Sequoia (dark by default)"
-    echo "  -mac-light, --mac-light                 Switch to Apple macOS Sequoia Light mode"
+    echo "  -mac, --mac, -tahoe, --tahoe            Switch to Apple macOS Tahoe (dark by default)"
+    echo "  -mac-light, --mac-light, --tahoe-light   Switch to Apple macOS Tahoe Light mode"
+    echo "  -mac-sequoia, --sequoia                 Switch to Apple macOS Sequoia (dark)"
+    echo "  -mac-sequoia-light, --sequoia-light     Switch to Apple macOS Sequoia Light mode"
     echo "  -w11, --w11, --win11, --enable          Switch to Windows 11 (dark by default)"
     echo "  -w11-light, --win11-light               Switch to Windows 11 Light mode"
     echo "  --backend [auto|quickshell|waybar]      Select or show desktop status bar engine"
@@ -1170,9 +1223,11 @@ toggle_mode() {
         *)
             # Currently in default Omarchy mode -> restore the chosen undercover preset
             local target
-            target=$(read_setting "LAST_UNDERCOVER_MODE" "mac-dark")
+            target=$(read_setting "LAST_UNDERCOVER_MODE" "mac-tahoe-dark")
             case "$target" in
-                mac-light) switch_to_mac "light" ;;
+                mac*light) switch_to_mac "light" ;;
+                mac*sequoia*dark) switch_to_mac "dark" "sequoia" ;;
+                mac*sequoia*light) switch_to_mac "light" "sequoia" ;;
                 mac*|apple*|ios*) switch_to_mac "dark" ;;
                 win11-light|windows-light) switch_to_win11 "light" ;;
                 win11*|windows*) switch_to_win11 "dark" ;;
@@ -1207,15 +1262,25 @@ case "$1" in
             echo "Current backend preference: $(read_setting "SHELL_BACKEND" "auto") (Active: $(detect_shell_backend))"
         fi
         ;;
-    -mac|--mac|--macOS|-apple|--apple|-app|-ios|--ios)
+    -mac|--mac|--macOS|-apple|--apple|-app|-ios|--ios|-tahoe|--tahoe)
         if [[ "${2:-}" == "--light" || "${2:-}" == "light" ]]; then
-            switch_to_mac "light"
+            switch_to_mac "light" "tahoe"
         else
-            switch_to_mac "dark"
+            switch_to_mac "dark" "tahoe"
         fi
         ;;
-    -mac-light|--mac-light)
-        switch_to_mac "light"
+    -mac-light|--mac-light|-tahoe-light|--tahoe-light)
+        switch_to_mac "light" "tahoe"
+        ;;
+    -mac-sequoia|--mac-sequoia|-sequoia|--sequoia)
+        if [[ "${2:-}" == "--light" || "${2:-}" == "light" ]]; then
+            switch_to_mac "light" "sequoia"
+        else
+            switch_to_mac "dark" "sequoia"
+        fi
+        ;;
+    -mac-sequoia-light|--mac-sequoia-light|-sequoia-light|--sequoia-light)
+        switch_to_mac "light" "sequoia"
         ;;
     -w11|--w11|--win11|--enable)
         if [[ "${2:-}" == "--light" || "${2:-}" == "light" ]]; then

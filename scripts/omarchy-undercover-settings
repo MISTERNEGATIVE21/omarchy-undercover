@@ -63,6 +63,8 @@ WALLPAPER_DIR = PLUGIN_DIR / "assets" / "wallpapers" if (PLUGIN_DIR / "assets" /
 ICON_PATH = PLUGIN_DIR / "assets" / "icons" / "omarchy-undercover" / "scalable" / "apps" / "omarchy-undercover.svg"
 
 WALLPAPERS = [
+    ("macOS-Tahoe-Dark.jpg", "macOS Tahoe Dark (4K)", "mac"),
+    ("macOS-Tahoe-Light.jpg", "macOS Tahoe Light (4K)", "mac"),
     ("macOS-Sequoia-Dark.jpg", "macOS Sequoia Dark (6K)", "mac"),
     ("macOS-Sequoia-Light.jpg", "macOS Sequoia Light (6K)", "mac"),
     ("Sonoma-dark.jpg", "macOS Sonoma Dark (4K)", "mac"),
@@ -450,8 +452,10 @@ class SplashScreenWindow(Gtk.Window):
         # 3. Active Mode Badge
         curr_state = read_state()
         state_names = {
-            "mac-dark": "🍏 Apple macOS Sequoia (Dark)",
-            "mac-light": "☀️ Apple macOS Sequoia (Light)",
+            "mac-dark": "🏔️ Apple macOS Tahoe (Dark)",
+            "mac-light": "☀️ Apple macOS Tahoe (Light)",
+            "mac-sequoia-dark": "🍏 Apple macOS Sequoia (Dark)",
+            "mac-sequoia-light": "🌅 Apple macOS Sequoia (Light)",
             "win11-dark": "🪟 Windows 11 Fluent (Dark)",
             "win11-light": "🌅 Windows 11 Fluent (Light)",
         }
@@ -612,8 +616,10 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
 
         prev_theme = get_previous_theme_name()
         presets = [
-            ("mac-dark", "-mac", "🍏 Apple macOS Sequoia (Dark)", "Frosted dark menu bar, dynamic auto-sizing dock, traffic lights & SF Pro fonts."),
-            ("mac-light", "-mac-light", "☀️ Apple macOS Sequoia (Light)", "Solar light frosted glass theme with high-vibrancy dock."),
+            ("mac-dark", "-mac", "🏔️ Apple macOS Tahoe (Dark)", "Flagship macOS Tahoe alpine vista, frosted menu bar, Stage Manager, dynamic dock & SF Pro fonts."),
+            ("mac-light", "-mac-light", "☀️ Apple macOS Tahoe (Light)", "Solar light alpine glass theme with high-vibrancy dock and Stage Manager."),
+            ("mac-sequoia-dark", "-mac-sequoia", "🍏 Apple macOS Sequoia (Dark)", "Classic macOS Sequoia frosted dark menu bar, dock & redwood aesthetics."),
+            ("mac-sequoia-light", "-mac-sequoia-light", "🌅 Apple macOS Sequoia (Light)", "Classic macOS Sequoia solar redwood light theme."),
             ("win11-dark", "-w11", "🪟 Windows 11 Fluent (Dark)", "Centered Mica acrylic taskbar, Start menu, Action Center & Segoe UI fonts."),
             ("win11-light", "-w11-light", "🌅 Windows 11 Fluent (Light)", "Fluent Light taskbar, Bloom light background & bright Mica accents."),
             ("omarchy", "--disable", "🐧 Original Omarchy Desktop", f"Restore default Omarchy status bar layout, GTK styling, and desktop theme (Theme: {prev_theme})."),
