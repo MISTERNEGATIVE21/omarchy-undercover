@@ -2150,6 +2150,17 @@ ShellRoot {
                   border.width: 1
                   clip: true
 
+                  // High-Res Poster Backdrop Fallback
+                  Image {
+                    anchors.fill: parent
+                    source: "file://" + settingsWin.pluginDir + "/assets/wallpapers/macOS-Tahoe-Dark.jpg"
+                    fillMode: Image.PreserveAspectCrop
+                    visible: settingsWin.screensaverActiveVideo === "" || previewPlayer.playbackState !== MediaPlayer.PlayingState
+                    opacity: (settingsWin.screensaverActiveVideo === "") ? 1.0 : 0.75
+                    asynchronous: true
+                    smooth: true
+                  }
+
                   // Video Output Component
                   VideoOutput {
                     id: previewVideoOut
@@ -2163,22 +2174,24 @@ ShellRoot {
                     videoOutput: previewVideoOut
                     loops: MediaPlayer.Infinite
                     audioOutput: null
-                    source: settingsWin.screensaverActiveVideo
+                    source: {
+                      if (!settingsWin.screensaverActiveVideo) return ""
+                      var s = settingsWin.screensaverActiveVideo
+                      if (!s.startsWith("file://") && !s.startsWith("http://") && !s.startsWith("https://")) {
+                        return "file://" + s
+                      }
+                      return s
+                    }
+
+                    onSourceChanged: {
+                      if (source.toString() !== "") {
+                        play()
+                      }
+                    }
 
                     Component.onCompleted: {
                       if (settingsWin.screensaverActiveVideo !== "") play()
                     }
-                  }
-
-                  // High-Res Poster Backdrop Fallback
-                  Image {
-                    anchors.fill: parent
-                    source: "file://" + settingsWin.pluginDir + "/assets/wallpapers/macOS-Tahoe-Dark.jpg"
-                    fillMode: Image.PreserveAspectCrop
-                    visible: settingsWin.screensaverActiveVideo === "" || previewPlayer.playbackState !== MediaPlayer.PlayingState
-                    opacity: (settingsWin.screensaverActiveVideo === "") ? 1.0 : 0.75
-                    asynchronous: true
-                    smooth: true
                   }
 
                   // Live Status Pill Tag
@@ -2232,7 +2245,13 @@ ShellRoot {
                             if (previewPlayer.playbackState === MediaPlayer.PlayingState) {
                               previewPlayer.pause()
                             } else {
-                              if (settingsWin.screensaverActiveVideo !== "") previewPlayer.play()
+                              if (settingsWin.screensaverActiveVideo !== "") {
+                                if (previewPlayer.source.toString() === "") {
+                                  var s = settingsWin.screensaverActiveVideo
+                                  previewPlayer.source = s.startsWith("file://") ? s : "file://" + s
+                                }
+                                previewPlayer.play()
+                              }
                             }
                           }
                         }
@@ -2271,7 +2290,7 @@ ShellRoot {
                           anchors.fill: parent
                           cursorShape: Qt.PointingHandCursor
                           onClicked: {
-                            settingsWin.runCmd("qs ipc call omarchy-undercover-service previewScreensaver 2>/dev/null || " + settingsWin.pluginDir + "/scripts/omarchy-mac-screensaver --preview")
+                            settingsWin.runCmd("qs -p /usr/share/omarchy/shell ipc call omarchy-undercover-service previewScreensaver 2>/dev/null || qs ipc call omarchy-undercover-service previewScreensaver 2>/dev/null || " + settingsWin.pluginDir + "/scripts/omarchy-mac-screensaver --preview")
                           }
                         }
                       }
@@ -2710,7 +2729,8 @@ ShellRoot {
                                   onClicked: {
                                     if (modelData.installed) {
                                       settingsWin.setScreensaverActiveClip(modelData.path)
-                                      previewPlayer.source = modelData.path
+                                      var src = modelData.path.startsWith("file://") ? modelData.path : "file://" + modelData.path
+                                      previewPlayer.source = src
                                       previewPlayer.play()
                                     } else {
                                       settingsWin.downloadScreensaverClip(modelData.id)
@@ -2730,7 +2750,8 @@ ShellRoot {
                           onClicked: {
                             if (modelData.installed) {
                               settingsWin.setScreensaverActiveClip(modelData.path)
-                              previewPlayer.source = modelData.path
+                              var src = modelData.path.startsWith("file://") ? modelData.path : "file://" + modelData.path
+                              previewPlayer.source = src
                               previewPlayer.play()
                             }
                           }

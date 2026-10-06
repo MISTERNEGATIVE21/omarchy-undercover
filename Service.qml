@@ -58,12 +58,16 @@ Item {
         root.screensaverVideo = v
       }
     }
+    if (!root.screensaverVideo || root.screensaverVideo === "") {
+      root.screensaverVideo = root.homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.mp4"
+    }
   }
 
   function triggerScreensaverPreview() {
-    if (root.isMacMode) {
-      root.screensaverActive = true
+    if (!root.screensaverVideo || root.screensaverVideo === "") {
+      root.screensaverVideo = root.homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.mp4"
     }
+    root.screensaverActive = true
   }
 
   function dismissScreensaver() {
@@ -74,6 +78,9 @@ Item {
     var s = stateFile.text().trim()
     if (s) root.currentState = s
     reloadScreensaverConfig()
+    if (!root.screensaverVideo || root.screensaverVideo === "") {
+      root.screensaverVideo = root.homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.mp4"
+    }
   }
 
   onCurrentStateChanged: {
@@ -143,7 +150,7 @@ Item {
       owner: root
       modelData: modelData
       clipUrl: root.screensaverVideo
-      active: root.screensaverEngineActive && root.screensaverActive
+      active: root.screensaverActive
     }
   }
 

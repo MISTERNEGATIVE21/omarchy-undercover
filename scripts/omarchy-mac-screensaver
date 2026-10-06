@@ -14,9 +14,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Config file locations
-SETTINGS_FILE="$PLUGIN_DIR/settings.conf"
-if [[ ! -f "$SETTINGS_FILE" ]] && [[ -f "$HOME/.config/omarchy/plugins/omarchy-undercover/settings.conf" ]]; then
-    SETTINGS_FILE="$HOME/.config/omarchy/plugins/omarchy-undercover/settings.conf"
+# Config file locations (prioritize active plugin configuration)
+SETTINGS_FILE="$HOME/.config/omarchy/plugins/omarchy-undercover/settings.conf"
+if [[ ! -f "$SETTINGS_FILE" ]] && [[ -f "$PLUGIN_DIR/settings.conf" ]]; then
+    SETTINGS_FILE="$PLUGIN_DIR/settings.conf"
 fi
 
 SCREENSAVER_DIR="$HOME/.local/share/omarchy-undercover/screensavers"
@@ -79,33 +80,46 @@ read_setting() {
     echo "$default_val"
 }
 
+_update_conf() {
+    local conf="$1"
+    local key="$2"
+    local val="$3"
+    mkdir -p "$(dirname "$conf")"
+    touch "$conf"
+    if grep -q "^${key}=" "$conf"; then
+        sed -i "s|^${key}=.*|${key}=${val}|" "$conf"
+    else
+        echo "${key}=${val}" >> "$conf"
+    fi
+}
+
 write_setting() {
     local key="$1"
     local val="$2"
-    mkdir -p "$(dirname "$SETTINGS_FILE")"
-    touch "$SETTINGS_FILE"
-    if grep -q "^${key}=" "$SETTINGS_FILE"; then
-        sed -i "s|^${key}=.*|${key}=${val}|" "$SETTINGS_FILE"
-    else
-        echo "${key}=${val}" >> "$SETTINGS_FILE"
+    _update_conf "$SETTINGS_FILE" "$key" "$val"
+    if [[ -f "$PLUGIN_DIR/settings.conf" && "$PLUGIN_DIR/settings.conf" != "$SETTINGS_FILE" ]]; then
+        _update_conf "$PLUGIN_DIR/settings.conf" "$key" "$val"
     fi
 }
 
 notify_quickshell() {
     # Notify omarchy-undercover-service via Quickshell IPC if running
     if command -v qs &>/dev/null; then
+        qs -p /usr/share/omarchy/shell ipc call omarchy-undercover-service reloadScreensaverConfig &>/dev/null || \
         qs ipc call omarchy-undercover-service reloadScreensaverConfig &>/dev/null || true
     fi
 }
 
 dispatch_preview() {
     if command -v qs &>/dev/null; then
+        qs -p /usr/share/omarchy/shell ipc call omarchy-undercover-service previewScreensaver &>/dev/null || \
         qs ipc call omarchy-undercover-service previewScreensaver &>/dev/null || true
     fi
 }
 
 dispatch_dismiss() {
     if command -v qs &>/dev/null; then
+        qs -p /usr/share/omarchy/shell ipc call omarchy-undercover-service dismissScreensaver &>/dev/null || \
         qs ipc call omarchy-undercover-service dismissScreensaver &>/dev/null || true
     fi
 }
@@ -118,12 +132,16 @@ get_status_json() {
     local active_clip
     active_clip="$(read_setting "SCREENSAVER_VIDEO" "")"
 
-    # If no active clip set, default to first available downloaded clip or default placeholder
-    if [[ -z "$active_clip" || ! -f "$active_clip" ]]; then
+    # If no active clip set, clip does not exist, or points to incidental screenrecording, default to aerial clip
+    if [[ -z "$active_clip" || ! -f "$active_clip" || "$active_clip" == *screenrecording* ]]; then
         local first_found
-        first_found="$(find "$SCREENSAVER_DIR" "$PLUGIN_DIR/assets/screensavers" -maxdepth 1 -type f \( -name "*.mp4" -o -name "*.webm" \) 2>/dev/null | head -n1 || true)"
+        first_found="$(find "$SCREENSAVER_DIR" "$PLUGIN_DIR/assets/screensavers" -maxdepth 1 -type f \( -name "*.mp4" -o -name "*.webm" \) 2>/dev/null | grep -E "sonoma_horizon|aerial" | head -n1 || true)"
+        if [[ -z "$first_found" ]]; then
+            first_found="$(find "$SCREENSAVER_DIR" "$PLUGIN_DIR/assets/screensavers" -maxdepth 1 -type f \( -name "*.mp4" -o -name "*.webm" \) 2>/dev/null | head -n1 || true)"
+        fi
         if [[ -n "$first_found" ]]; then
             active_clip="$first_found"
+            write_setting "SCREENSAVER_VIDEO" "$active_clip"
         fi
     fi
 

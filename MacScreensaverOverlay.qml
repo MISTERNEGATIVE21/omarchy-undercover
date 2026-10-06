@@ -18,6 +18,7 @@ PanelWindow {
     readonly property bool shouldPlay: active && clipUrl !== ""
     property int pendingSeek: -1
     property bool primed: false
+    property bool canDismiss: false
     property bool mapped: false
 
     screen: modelData
@@ -37,10 +38,23 @@ PanelWindow {
         right: true
     }
 
+    Timer {
+        id: dismissGraceTimer
+        interval: 800
+        repeat: false
+        onTriggered: {
+            surface.canDismiss = true;
+        }
+    }
+
     function sync() {
         if (shouldPlay) {
-            if (player.source !== clipUrl) {
-                player.source = clipUrl;
+            var src = clipUrl;
+            if (src && !src.startsWith("file://") && !src.startsWith("http://") && !src.startsWith("https://")) {
+                src = "file://" + src;
+            }
+            if (player.source.toString() !== src && player.source.toString() !== clipUrl) {
+                player.source = src;
             }
             if (player.playbackState !== MediaPlayer.PlayingState) {
                 player.play();
@@ -61,16 +75,23 @@ PanelWindow {
             player.stop();
             player.source = "";
         } else if (active) {
-            player.source = clipUrl;
+            var src = clipUrl;
+            if (src && !src.startsWith("file://") && !src.startsWith("http://") && !src.startsWith("https://")) {
+                src = "file://" + src;
+            }
+            player.source = src;
             sync();
         }
     }
 
     onActiveChanged: {
         surface.primed = false;
+        surface.canDismiss = false;
+        dismissGraceTimer.stop();
         if (surface.active) {
             surface.mapped = true;
             unmapTimer.stop();
+            dismissGraceTimer.start();
             sync();
         } else {
             sync();
@@ -149,8 +170,10 @@ PanelWindow {
         focus: surface.active
 
         Keys.onPressed: function(event) {
-            surface.requestDismiss();
-            event.accepted = true;
+            if (surface.canDismiss) {
+                surface.requestDismiss();
+                event.accepted = true;
+            }
         }
 
         MouseArea {
@@ -160,22 +183,31 @@ PanelWindow {
             property real lastY: 0
 
             onPositionChanged: function(mouse) {
+                if (!surface.canDismiss) {
+                    lastX = mouse.x;
+                    lastY = mouse.y;
+                    return;
+                }
                 if (!surface.primed) {
                     surface.primed = true;
                     lastX = mouse.x;
                     lastY = mouse.y;
                     return;
                 }
-                // 4px jitter filter to avoid false triggers
-                if (Math.abs(mouse.x - lastX) > 4 || Math.abs(mouse.y - lastY) > 4) {
+                // 15px jitter filter to avoid false triggers
+                if (Math.abs(mouse.x - lastX) > 15 || Math.abs(mouse.y - lastY) > 15) {
                     surface.requestDismiss();
                 }
                 lastX = mouse.x;
                 lastY = mouse.y;
             }
 
-            onPressed: surface.requestDismiss()
-            onClicked: surface.requestDismiss()
+            onPressed: {
+                if (surface.canDismiss) surface.requestDismiss();
+            }
+            onClicked: {
+                if (surface.canDismiss) surface.requestDismiss();
+            }
         }
     }
 }
