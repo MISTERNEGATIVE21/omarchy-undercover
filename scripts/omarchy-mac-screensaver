@@ -301,8 +301,8 @@ download_clip() {
     if [[ "$success" == "false" ]] && command -v yt-dlp &>/dev/null; then
         echo "Downloading video stream via yt-dlp..."
         if yt-dlp --no-playlist \
-                  -f "bv*[height<=1080]+ba/b[height<=1080]/b" \
-                  --merge-output-format mp4 \
+                  -f "bv*[vcodec^=avc1][height<=1080]+ba[ext=m4a]/bv*[vcodec^=avc1]+ba/bv*[height<=1080]+ba/b" \
+                  --recode-video mp4 \
                   -o "${target}.part.%(ext)s" \
                   "$url"; then
             local ytdl_file
@@ -333,6 +333,20 @@ download_clip() {
     fi
 
     if [[ "$success" == "true" && -f "$target" && -s "$target" ]]; then
+        # Ensure video is H.264 for hardware playback compatibility in Qt Quick
+        if command -v ffprobe &>/dev/null && command -v ffmpeg &>/dev/null; then
+            local vcodec
+            vcodec="$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "$target" 2>/dev/null || true)"
+            if [[ "$vcodec" != "h264" ]]; then
+                echo "Optimizing video codec ($vcodec -> h264) for smooth Wayland playback..."
+                local tmp_transcode="${target}.h264.mp4"
+                if ffmpeg -y -i "$target" -t 300 -c:v libx264 -profile:v main -preset veryfast -crf 20 -pix_fmt yuv420p -movflags +faststart -an "$tmp_transcode" 2>/dev/null; then
+                    mv -f "$tmp_transcode" "$target"
+                else
+                    rm -f "$tmp_transcode"
+                fi
+            fi
+        fi
         echo "Successfully downloaded ${title}!"
         write_setting "SCREENSAVER_VIDEO" "$target"
         echo "Set as active screensaver: $target"

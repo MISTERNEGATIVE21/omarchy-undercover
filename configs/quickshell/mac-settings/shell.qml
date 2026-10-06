@@ -2301,12 +2301,14 @@ ShellRoot {
                 // Preferences Card (Enable Toggle & Inactivity Timeout)
                 Rectangle {
                   Layout.fillWidth: true
+                  implicitHeight: prefCol.implicitHeight + 28
                   radius: 10
                   color: settingsWin.cardBg
                   border.color: settingsWin.cardBorder
                   border.width: 1
 
                   ColumnLayout {
+                    id: prefCol
                     anchors.fill: parent
                     anchors.margins: 14
                     spacing: 12
@@ -2417,12 +2419,14 @@ ShellRoot {
                 // YouTube & Video URL Downloader Card
                 Rectangle {
                   Layout.fillWidth: true
+                  implicitHeight: dlCol.implicitHeight + 28
                   radius: 10
                   color: settingsWin.cardBg
                   border.color: settingsWin.cardBorder
                   border.width: 1
 
                   ColumnLayout {
+                    id: dlCol
                     anchors.fill: parent
                     anchors.margins: 14
                     spacing: 12
@@ -2517,25 +2521,26 @@ ShellRoot {
                       }
 
                       Rectangle {
+                        id: dlBtn
                         implicitWidth: 120; implicitHeight: 34
                         radius: 6
                         readonly property bool isBusy: settingsWin.screensaverDownloadingId !== ""
-                        readonly property bool canDownload: urlInput.text.trim().length > 5 && !isBusy
-                        color: canDownload ? settingsWin.accentColor : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.06))
+                        readonly property bool canDownload: urlInput.text.trim().length > 5 && !dlBtn.isBusy
+                        color: dlBtn.canDownload ? settingsWin.accentColor : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.06))
 
                         Text {
                           anchors.centerIn: parent
-                          text: isBusy ? "Downloading…" : "Download & Set"
+                          text: dlBtn.isBusy ? "Downloading…" : "Download & Set"
                           font.family: "SF Pro Text, -apple-system, sans-serif"
                           font.pixelSize: 11
                           font.weight: Font.DemiBold
-                          color: canDownload ? "#ffffff" : settingsWin.textSecondary
+                          color: dlBtn.canDownload ? "#ffffff" : settingsWin.textSecondary
                         }
 
                         MouseArea {
                           anchors.fill: parent
-                          enabled: parent.canDownload
-                          cursorShape: parent.canDownload ? Qt.PointingHandCursor : Qt.ArrowCursor
+                          enabled: dlBtn.canDownload
+                          cursorShape: dlBtn.canDownload ? Qt.PointingHandCursor : Qt.ArrowCursor
                           onClicked: {
                             var u = urlInput.text.trim()
                             if (u) {

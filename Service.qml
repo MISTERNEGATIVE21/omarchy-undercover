@@ -23,6 +23,7 @@ Item {
   property int screensaverTimeout: 300
   property string screensaverVideo: homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.mp4"
   property bool screensaverActive: false
+  property bool screensaverPreviewMode: false
   readonly property bool screensaverEngineActive: root.isMacMode && root.screensaverEnabled
 
   function runCmd(cmd) {
@@ -69,11 +70,13 @@ Item {
     if (!root.screensaverVideo || root.screensaverVideo === "") {
       root.screensaverVideo = root.homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.mp4"
     }
+    root.screensaverPreviewMode = true
     root.screensaverActive = true
   }
 
   function dismissScreensaver() {
     root.screensaverActive = false
+    root.screensaverPreviewMode = false
   }
 
   Component.onCompleted: {
@@ -136,10 +139,9 @@ Item {
     onIsIdleChanged: {
       if (idleMon.isIdle) {
         if (root.screensaverEngineActive) {
+          root.screensaverPreviewMode = false
           root.screensaverActive = true
         }
-      } else {
-        root.dismissScreensaver()
       }
     }
   }
@@ -151,10 +153,12 @@ Item {
     delegate: Component {
       MacScreensaverOverlay {
         required property var modelData
+
+        screen: modelData
         owner: root
-        modelData: modelData
         clipUrl: root.screensaverVideo
         active: root.screensaverActive
+        isPreview: root.screensaverPreviewMode
       }
     }
   }
