@@ -1,0 +1,108 @@
+/* ==============================================================================
+ * macOS Tahoe Dark GTK3 Theme
+ * Authentic Apple macOS Sequoia & Tahoe Camouflage for Omarchy Hyprland
+ * ============================================================================== */
+
+@define-color accent_color #0a84ff;
+@define-color accent_bg_color #0a84ff;
+@define-color window_bg_color #1e2028;
+@define-color window_fg_color #ffffff;
+@define-color headerbar_bg_color rgba(30, 32, 40, 0.88);
+@define-color headerbar_fg_color #ffffff;
+@define-color card_bg_color rgba(255, 255, 255, 0.08);
+@define-color card_border_color rgba(255, 255, 255, 0.12);
+
+* {
+  font-family: "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
+  -gtk-secondary-caret-color: @accent_color;
+}
+
+window.csd {
+  border-radius: 12px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+}
+
+headerbar {
+  background-color: @headerbar_bg_color;
+  color: @headerbar_fg_color;
+  border-bottom: 1px solid @card_border_color;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  min-height: 38px;
+  padding: 0 8px;
+}
+
+/* Authentic macOS Traffic Light Window Controls */
+headerbar button.titlebutton.close {
+  background-color: #ff5f57;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 50%;
+  min-width: 12px;
+  min-height: 12px;
+  padding: 0;
+  margin: 0 4px;
+}
+
+headerbar button.titlebutton.minimize {
+  background-color: #febc2e;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 50%;
+  min-width: 12px;
+  min-height: 12px;
+  padding: 0;
+  margin: 0 4px;
+}
+
+headerbar button.titlebutton.maximize {
+  background-color: #28c840;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 50%;
+  min-width: 12px;
+  min-height: 12px;
+  padding: 0;
+  margin: 0 4px;
+}
+
+headerbar button.titlebutton.close:hover {
+  background-color: #ff3b30;
+}
+
+headerbar button.titlebutton.minimize:hover {
+  background-color: #ffcc00;
+}
+
+headerbar button.titlebutton.maximize:hover {
+  background-color: #34c759;
+}
+
+button {
+  border-radius: 6px;
+  padding: 4px 10px;
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  transition: all 150ms ease;
+}
+
+button:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+button.suggested-action {
+  background-color: @accent_color;
+  border-color: @accent_color;
+  color: #ffffff;
+}
+
+entry {
+  border-radius: 6px;
+  padding: 4px 8px;
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+entry:focus {
+  border-color: @accent_color;
+  box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.35);
+}
