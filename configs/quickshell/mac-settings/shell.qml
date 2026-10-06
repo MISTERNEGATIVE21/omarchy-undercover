@@ -89,6 +89,7 @@ ShellRoot {
     property int windowGaps: 8
     property int windowRounding: 10
     property string currentDisguise: "mac-dark"
+    property string currentWallpaper: "macOS-Tahoe-Dark.jpg"
     property string pluginDir: Quickshell.env("OMARCHY_PLUGIN_DIR") || (settingsWin.homeDir + "/.config/omarchy/plugins/omarchy-undercover")
 
     function runCmd(cmd) {
@@ -104,6 +105,112 @@ ShellRoot {
                 "  echo '" + key + "=" + val + "' >> " + settingsWin.pluginDir + "/settings.conf; " +
                 "fi"
       runCmd(cmd)
+    }
+
+    // Dock Items Arrangement & Pinned Apps Management
+    property var defaultDockApps: [
+      { id: "finder", name: "Finder", icon: "finder.svg" },
+      { id: "launchpad", name: "Launchpad", icon: "launchpad.svg" },
+      { id: "safari", name: "Safari", icon: "safari.svg" },
+      { id: "messages", name: "Messages", icon: "messages.svg" },
+      { id: "mail", name: "Mail", icon: "mail.svg" },
+      { id: "maps", name: "Maps", icon: "maps.svg" },
+      { id: "photos", name: "Photos", icon: "photos.svg" },
+      { id: "calendar", name: "Calendar", icon: "calendar.svg" },
+      { id: "notes", name: "Notes", icon: "notes.svg" },
+      { id: "reminders", name: "Reminders", icon: "reminders.svg" },
+      { id: "music", name: "Music", icon: "music.svg" },
+      { id: "antigravity", name: "Antigravity IDE", icon: "antigravity-ide.svg" },
+      { id: "terminal", name: "Terminal", icon: "terminal.svg" },
+      { id: "settings", name: "System Settings", icon: "settings.svg" },
+      { id: "appstore", name: "App Store", icon: "appstore.svg" }
+    ]
+
+    property var dockAppsList: [
+      { id: "finder", name: "Finder", icon: "finder.svg" },
+      { id: "launchpad", name: "Launchpad", icon: "launchpad.svg" },
+      { id: "safari", name: "Safari", icon: "safari.svg" },
+      { id: "messages", name: "Messages", icon: "messages.svg" },
+      { id: "mail", name: "Mail", icon: "mail.svg" },
+      { id: "maps", name: "Maps", icon: "maps.svg" },
+      { id: "photos", name: "Photos", icon: "photos.svg" },
+      { id: "calendar", name: "Calendar", icon: "calendar.svg" },
+      { id: "notes", name: "Notes", icon: "notes.svg" },
+      { id: "reminders", name: "Reminders", icon: "reminders.svg" },
+      { id: "music", name: "Music", icon: "music.svg" },
+      { id: "antigravity", name: "Antigravity IDE", icon: "antigravity-ide.svg" },
+      { id: "terminal", name: "Terminal", icon: "terminal.svg" },
+      { id: "settings", name: "System Settings", icon: "settings.svg" },
+      { id: "appstore", name: "App Store", icon: "appstore.svg" }
+    ]
+    property var dockPinsState: ({})
+
+    function loadDockDefaults(jsonStr) {
+      try {
+        var d = JSON.parse(jsonStr)
+        if (d && d.mac_pins) dockPinsState = d.mac_pins
+        if (d && d.mac_dock_order && d.mac_dock_order.length > 0) {
+          var ordered = []
+          var map = {}
+          for (var i = 0; i < defaultDockApps.length; i++) {
+            map[defaultDockApps[i].id] = defaultDockApps[i]
+          }
+          for (var j = 0; j < d.mac_dock_order.length; j++) {
+            var item = map[d.mac_dock_order[j]]
+            if (item) {
+              ordered.push(item)
+              delete map[d.mac_dock_order[j]]
+            }
+          }
+          for (var k = 0; k < defaultDockApps.length; k++) {
+            if (map[defaultDockApps[k].id]) {
+              ordered.push(defaultDockApps[k])
+            }
+          }
+          dockAppsList = ordered
+        }
+      } catch(e) {}
+    }
+
+    function moveDockApp(fromIdx, toIdx) {
+      if (toIdx < 0 || toIdx >= dockAppsList.length) return
+      var arr = dockAppsList.slice()
+      var item = arr.splice(fromIdx, 1)[0]
+      arr.splice(toIdx, 0, item)
+      dockAppsList = arr
+      saveDockConfig()
+    }
+
+    function toggleDockApp(appId, enabled) {
+      var pins = Object.assign({}, dockPinsState)
+      pins[appId] = enabled
+      dockPinsState = pins
+      saveDockConfig()
+    }
+
+    function resetDockApps() {
+      dockAppsList = defaultDockApps.slice()
+      dockPinsState = {}
+      saveDockConfig()
+    }
+
+    function saveDockConfig() {
+      var order = []
+      for (var i = 0; i < dockAppsList.length; i++) {
+        order.push(dockAppsList[i].id)
+      }
+      var obj = { mac_dock_order: order, mac_pins: dockPinsState }
+      var jsonStr = JSON.stringify(obj)
+      var cmd = "mkdir -p '" + settingsWin.pluginDir + "' && printf '%s\\n' '" + jsonStr.replace(/'/g, "'\\''") + "' > '" + settingsWin.pluginDir + "/defaults.json'"
+      runCmd(cmd)
+    }
+
+    FileView {
+      id: settingsDefaultsFile
+      path: settingsWin.pluginDir + "/defaults.json"
+      watchChanges: true
+      onLoaded: settingsWin.loadDockDefaults(text())
+      onFileChanged: { reload(); settingsWin.loadDockDefaults(text()); }
     }
 
     // macOS Aerial Screensaver Integration
@@ -657,7 +764,7 @@ ShellRoot {
                 { id: 1, iconBg: "#5856d6", icon: "dock.svg", name: "Desktop & Dock" },
                 { id: 8, iconBg: "#007aff", icon: "display.svg", name: "Displays" },
                 { id: 2, iconBg: "#34c759", icon: "wallpaper.svg", name: "Wallpaper" },
-                { id: 11, iconBg: "#ff9500", icon: "display.svg", name: "Screen Saver" },
+                { id: 11, iconBg: "#ff9500", icon: "screensaver.svg", name: "Screen Saver" },
                 { id: 3, iconBg: "#007aff", icon: "wifi.svg", name: "Wi-Fi" },
                 { id: 4, iconBg: "#007aff", icon: "bluetooth.svg", name: "Bluetooth" },
                 { id: 5, iconBg: "#ff2d55", icon: "sound.svg", name: "Sound" },
@@ -939,8 +1046,10 @@ ShellRoot {
                       columnSpacing: 10
 
                       property var presets: [
-                        { id: "mac-dark", name: "macOS Sequoia (Dark)", icon: "apple-logo.svg", isWin: false, cmd: "omarchy-undercover -mac" },
-                        { id: "mac-light", name: "macOS Sequoia (Light)", icon: "apple-logo.svg", isWin: false, cmd: "omarchy-undercover -mac-light" },
+                        { id: "mac-dark", name: "macOS Tahoe (Dark)", icon: "apple-logo.svg", isWin: false, cmd: "omarchy-undercover -mac" },
+                        { id: "mac-light", name: "macOS Tahoe (Light)", icon: "apple-logo.svg", isWin: false, cmd: "omarchy-undercover -mac-light" },
+                        { id: "mac-sequoia-dark", name: "macOS Sequoia (Dark)", icon: "apple-logo.svg", isWin: false, cmd: "omarchy-undercover -mac-sequoia" },
+                        { id: "mac-sequoia-light", name: "macOS Sequoia (Light)", icon: "apple-logo.svg", isWin: false, cmd: "omarchy-undercover -mac-sequoia-light" },
                         { id: "win11-dark", name: "Windows 11 (Dark)", icon: "start.svg", isWin: true, cmd: "omarchy-undercover -w11" },
                         { id: "win11-light", name: "Windows 11 (Light)", icon: "start.svg", isWin: true, cmd: "omarchy-undercover -w11-light" },
                         { id: "omarchy", name: "Omarchy Default", icon: "disguise.svg", isWin: false, cmd: "omarchy-undercover --disable" }
@@ -1439,6 +1548,166 @@ ShellRoot {
                     }
                   }
                 }
+
+                // Dock Items & Arrangement Manager Card
+                Rectangle {
+                  Layout.fillWidth: true
+                  implicitHeight: dockItemsCol.implicitHeight + 28
+                  radius: 10
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  ColumnLayout {
+                    id: dockItemsCol
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 12
+
+                    RowLayout {
+                      Layout.fillWidth: true
+                      spacing: 12
+
+                      Image {
+                        Layout.preferredWidth: 20
+                        Layout.preferredHeight: 20
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/mac-settings/dock.svg"
+                        fillMode: Image.PreserveAspectFit
+                      }
+
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+                        Text {
+                          text: "Dock Applications & Arrangement"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 13
+                          font.weight: Font.DemiBold
+                          color: settingsWin.textPrimary
+                        }
+                        Text {
+                          text: "Arrange order with ▲ / ▼ or toggle switches to show, hide, or remove apps from the Dock"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 11
+                          color: settingsWin.textSecondary
+                        }
+                      }
+
+                      Button {
+                        text: "Reset Defaults"
+                        onClicked: settingsWin.resetDockApps()
+                      }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.separatorColor }
+
+                    Repeater {
+                      model: settingsWin.dockAppsList
+
+                      RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+
+                        // App Icon
+                        Rectangle {
+                          width: 28; height: 28; radius: 6
+                          color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04)
+
+                          Image {
+                            anchors.centerIn: parent
+                            width: 20; height: 20
+                            source: "file://" + settingsWin.pluginDir + "/assets/icons/mac-dock/" + modelData.icon
+                            fillMode: Image.PreserveAspectFit
+                          }
+                        }
+
+                        // App Name
+                        Text {
+                          Layout.fillWidth: true
+                          text: modelData.name
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 12
+                          font.weight: Font.Medium
+                          color: (settingsWin.dockPinsState[modelData.id] === false) ? settingsWin.textSecondary : settingsWin.textPrimary
+                          opacity: (settingsWin.dockPinsState[modelData.id] === false) ? 0.6 : 1.0
+                        }
+
+                        // Move Up Button
+                        Rectangle {
+                          width: 26; height: 26; radius: 5
+                          color: upMouse.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
+                          border.color: settingsWin.cardBorder
+                          border.width: 1
+                          enabled: index > 0
+
+                          Text {
+                            anchors.centerIn: parent
+                            text: "▲"
+                            font.pixelSize: 10
+                            color: parent.enabled ? settingsWin.textPrimary : settingsWin.textSecondary
+                            opacity: parent.enabled ? 1.0 : 0.3
+                          }
+
+                          MouseArea {
+                            id: upMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: settingsWin.moveDockApp(index, index - 1)
+                          }
+                        }
+
+                        // Move Down Button
+                        Rectangle {
+                          width: 26; height: 26; radius: 5
+                          color: dnMouse.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
+                          border.color: settingsWin.cardBorder
+                          border.width: 1
+                          enabled: index < (settingsWin.dockAppsList.length - 1)
+
+                          Text {
+                            anchors.centerIn: parent
+                            text: "▼"
+                            font.pixelSize: 10
+                            color: parent.enabled ? settingsWin.textPrimary : settingsWin.textSecondary
+                            opacity: parent.enabled ? 1.0 : 0.3
+                          }
+
+                          MouseArea {
+                            id: dnMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: settingsWin.moveDockApp(index, index + 1)
+                          }
+                        }
+
+                        // Toggle / Remove Pill Switch
+                        Rectangle {
+                          width: 38; height: 22; radius: 11
+                          color: (settingsWin.dockPinsState[modelData.id] !== false) ? "#34c759" : (settingsWin.isDark ? "#39393d" : "#e5e5ea")
+
+                          Rectangle {
+                            width: 18; height: 18; radius: 9
+                            x: (settingsWin.dockPinsState[modelData.id] !== false) ? 18 : 2
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: "#ffffff"
+                            Behavior on x { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+                          }
+
+                          MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                              var cur = (settingsWin.dockPinsState[modelData.id] !== false)
+                              settingsWin.toggleDockApp(modelData.id, !cur)
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
               }
 
               // ==========================================
@@ -1479,39 +1748,69 @@ ShellRoot {
                     model: parent.walls
                     Rectangle {
                       Layout.fillWidth: true
-                      implicitHeight: 104
+                      implicitHeight: 110
                       radius: 8
                       color: settingsWin.cardBg
-                      border.color: wallMouse.containsMouse ? settingsWin.accentColor : settingsWin.cardBorder
-                      border.width: wallMouse.containsMouse ? 2 : 1
+                      border.color: (settingsWin.currentWallpaper === modelData.file) ? settingsWin.accentColor : (wallMouse.containsMouse ? settingsWin.accentColor : settingsWin.cardBorder)
+                      border.width: (settingsWin.currentWallpaper === modelData.file) ? 2 : (wallMouse.containsMouse ? 2 : 1)
                       clip: true
 
                       ColumnLayout {
                         anchors.fill: parent
-                        spacing: 4
+                        spacing: 0
 
                         Rectangle {
                           Layout.fillWidth: true
                           Layout.fillHeight: true
-                          color: Qt.rgba(settingsWin.accentColor.r, settingsWin.accentColor.g, settingsWin.accentColor.b, 0.15)
+                          color: settingsWin.isDark ? "#18181b" : "#e5e5ea"
+                          clip: true
+
                           Image {
-                            anchors.centerIn: parent
-                            width: 24; height: 24
-                            source: "file://" + settingsWin.pluginDir + "/assets/icons/mac-settings/wallpaper.svg"
-                            fillMode: Image.PreserveAspectFit
-                            opacity: 0.75
+                            anchors.fill: parent
+                            source: "file://" + settingsWin.pluginDir + "/assets/wallpapers/" + modelData.file
+                            fillMode: Image.PreserveAspectCrop
+                            asynchronous: true
+                            smooth: true
+                          }
+
+                          // Active Wallpaper Checkmark Badge
+                          Rectangle {
+                            visible: settingsWin.currentWallpaper === modelData.file
+                            anchors.top: parent.top
+                            anchors.right: parent.right
+                            anchors.margins: 6
+                            width: 20; height: 20; radius: 10
+                            color: settingsWin.accentColor
+                            border.color: "#ffffff"
+                            border.width: 1.5
+
+                            Text {
+                              anchors.centerIn: parent
+                              text: "✓"
+                              font.pixelSize: 11
+                              font.bold: true
+                              color: "#ffffff"
+                            }
                           }
                         }
 
-                        Text {
+                        Rectangle {
                           Layout.fillWidth: true
-                          Layout.margins: 6
-                          text: modelData.name
-                          font.family: "SF Pro Text, -apple-system, sans-serif"
-                          font.pixelSize: 10
-                          font.weight: Font.DemiBold
-                          color: settingsWin.textPrimary
-                          elide: Text.ElideRight
+                          implicitHeight: 28
+                          color: settingsWin.cardBg
+
+                          Text {
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            verticalAlignment: Text.AlignVCenter
+                            text: modelData.name
+                            font.family: "SF Pro Text, -apple-system, sans-serif"
+                            font.pixelSize: 11
+                            font.weight: Font.DemiBold
+                            color: settingsWin.textPrimary
+                            elide: Text.ElideRight
+                          }
                         }
                       }
 
@@ -1520,7 +1819,11 @@ ShellRoot {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: settingsWin.runCmd("omarchy-undercover-wallpaper -s '" + modelData.file + "'")
+                        onClicked: {
+                          settingsWin.currentWallpaper = modelData.file
+                          settingsWin.saveSetting("WALLPAPER", modelData.file)
+                          settingsWin.runCmd("omarchy-undercover-wallpaper -s '" + modelData.file + "'")
+                        }
                       }
                     }
                   }

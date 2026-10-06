@@ -1,0 +1,5 @@
+singleton Style 1.0 Style.qml
+singleton Color 1.0 Color.qml
+singleton Border 1.0 Border.qml
+BorderOverlay 1.0 BorderOverlay.qml
+StageManager 1.0 StageManager.qml

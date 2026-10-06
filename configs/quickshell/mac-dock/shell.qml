@@ -352,8 +352,9 @@ ShellRoot {
       return ""
     }
 
-    // Pinned apps configuration
+    // Pinned apps configuration & custom order
     property var macPinsConfig: ({})
+    property var dockAppsOrder: []
     FileView {
       id: defaultsFile
       path: dockWindow.pluginDir + "/defaults.json"
@@ -363,6 +364,7 @@ ShellRoot {
           var d = JSON.parse(text())
           if (d && d.mac_pins) dockWindow.macPinsConfig = d.mac_pins
           if (d && d.mac_custom_apps) dockWindow.customDockApps = d.mac_custom_apps
+          if (d && d.mac_dock_order) dockWindow.dockAppsOrder = d.mac_dock_order
         } catch(e) {}
         dockWindow.refreshDock()
       }
@@ -372,6 +374,7 @@ ShellRoot {
           var d = JSON.parse(text())
           if (d && d.mac_pins) dockWindow.macPinsConfig = d.mac_pins
           if (d && d.mac_custom_apps) dockWindow.customDockApps = d.mac_custom_apps
+          if (d && d.mac_dock_order) dockWindow.dockAppsOrder = d.mac_dock_order
         } catch(e) {}
         dockWindow.refreshDock()
       }
@@ -413,6 +416,16 @@ ShellRoot {
       })
 
       var pinnedAndCustom = pinned.concat(custom)
+
+      if (dockWindow.dockAppsOrder && dockWindow.dockAppsOrder.length > 0) {
+        pinnedAndCustom.sort(function(a, b) {
+          var idxA = dockWindow.dockAppsOrder.indexOf(a.id)
+          var idxB = dockWindow.dockAppsOrder.indexOf(b.id)
+          if (idxA === -1) idxA = 999
+          if (idxB === -1) idxB = 999
+          return idxA - idxB
+        })
+      }
 
       // Unpinned running applications from native Hyprland clients
       var unpinned = []

@@ -2,8 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
-import qs.Commons
-import qs.Ui
+import Quickshell.Io
 
 Item {
   id: root
@@ -92,8 +91,13 @@ Item {
     if (name.indexOf("file://") === 0 || name.indexOf("image://") === 0) return name
     if (name.charAt(0) === "/") return "file://" + name
     var resolved = name !== "" ? Quickshell.iconPath(name, true) : ""
-    if (resolved !== "") return resolved
-    return Quickshell.iconPath("application-x-executable", true)
+    if (resolved !== "") {
+      if (resolved.charAt(0) === "/") return "file://" + resolved
+      return resolved
+    }
+    var fallback = Quickshell.iconPath("application-x-executable", true)
+    if (fallback && fallback.charAt(0) === "/") return "file://" + fallback
+    return fallback || ("image://icon/" + (name || "application-x-executable"))
   }
 
   function rebuild() {
@@ -650,6 +654,14 @@ Timer {
           fillMode: Image.PreserveAspectFit
           asynchronous: true
           smooth: true
+          onStatusChanged: {
+            if (status === Image.Error) {
+              var fb = Quickshell.iconPath("application-x-executable", true)
+              if (fb && source !== (fb.charAt(0) === "/" ? "file://" + fb : fb)) {
+                source = fb.charAt(0) === "/" ? "file://" + fb : fb
+              }
+            }
+          }
         }
       }
 

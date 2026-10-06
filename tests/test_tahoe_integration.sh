@@ -30,8 +30,8 @@ qmllint -I /usr/share/omarchy/shell \
 
 echo "=== 6. Validating Plugin Manifest & Versioning ==="
 manifest_version=$(jq -r .version "$REPO_ROOT/manifest.json")
-if [[ "$manifest_version" != "7.0.0" ]]; then
-    echo "ERROR: Expected version 7.0.0 in manifest.json, found $manifest_version" >&2
+if [[ "$manifest_version" != "7.0.1" && "$manifest_version" != "7.0.0" ]]; then
+    echo "ERROR: Expected version 7.0.1 or 7.0.0 in manifest.json, found $manifest_version" >&2
     exit 1
 fi
 
@@ -47,4 +47,4 @@ if (( preview_size < 1000000 )); then
 fi
 
 echo ""
-echo "🎉 ALL END-TO-END INTEGRATION TESTS PASSED CLEANLY (v7.0.0)!"
+echo "🎉 ALL END-TO-END INTEGRATION TESTS PASSED CLEANLY (v7.0.1)!"

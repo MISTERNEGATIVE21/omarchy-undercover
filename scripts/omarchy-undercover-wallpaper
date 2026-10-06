@@ -1,17 +1,15 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Copyright (C) 2026 misternegative21
-# Omarchy Undercover - Windows 11 Wallpaper Manager
+# Omarchy Undercover - Wallpaper Manager (Tahoe, Sequoia & Windows 11)
 # License: GPL-3.0-or-later
 #
-# omarchy:summary=Apply the configured Windows 11 wallpaper on the desktop
-# omarchy:args=[preset|custom]
-# omarchy:examples=omarchy-undercover-wallpaper
+# omarchy:summary=Apply wallpaper for macOS Tahoe, Sequoia, or Windows 11 modes
+# omarchy:args=[-s|--set <preset|path>]
+# omarchy:examples=omarchy-undercover-wallpaper -s macOS-Tahoe-Dark.jpg
 # ==============================================================================
-#
-# Reads the WALLPAPER setting from settings.conf in the plugin directory
-# and starts swaybg (or hyprpaper) with it. Runs automatically at Hyprland
-# startup via windows-mode.lua so the wallpaper survives relogin.
+
+set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ -f "${SCRIPT_DIR}/../manifest.json" ]]; then
@@ -26,19 +24,15 @@ fi
 
 CONFIG_DIR="$PLUGIN_DIR"
 SETTINGS_FILE="$CONFIG_DIR/settings.conf"
-if [[ -d "$CONFIG_DIR/assets/wallpapers" ]]; then
-    WP_DIR="$CONFIG_DIR/assets/wallpapers"
-elif [[ -d "$CONFIG_DIR/wallpapers" ]]; then
-    WP_DIR="$CONFIG_DIR/wallpapers"
-else
-    WP_DIR="${SCRIPT_DIR}/../assets/wallpapers"
-fi
 
-# Preset wallpapers shipped with omarchy-undercover
-declare -A PRESETS=(
-  ["win11_bloom_dark.jpg"]="Bloom Dark"
-  ["win11_bloom_light.jpg"]="Bloom Light"
-  ["win11_flow_dark.jpg"]="Flow Dark"
+WP_SEARCH_DIRS=(
+    "$CONFIG_DIR/assets/wallpapers"
+    "$CONFIG_DIR/wallpapers"
+    "${SCRIPT_DIR}/../assets/wallpapers"
+    "$HOME/.config/omarchy/themes/macos-dark/backgrounds"
+    "$HOME/.config/omarchy/themes/macos-light/backgrounds"
+    "$HOME/.config/omarchy/themes/windows11-dark/backgrounds"
+    "/usr/share/omarchy-undercover/assets/wallpapers"
 )
 
 get_setting() {
@@ -51,41 +45,117 @@ get_setting() {
     printf '%s' "$value"
 }
 
-# Allow CLI override: omarchy-undercover-wallpaper <path-to-image>
-requested="${1:-}"
+write_setting() {
+    local key="$1" value="$2"
+    mkdir -p "$(dirname "$SETTINGS_FILE")"
+    if [[ -f "$SETTINGS_FILE" ]]; then
+        if grep -qE "^${key}=" "$SETTINGS_FILE" 2>/dev/null; then
+            sed -i "s|^${key}=.*|${key}=${value}|" "$SETTINGS_FILE"
+        else
+            printf '%s=%s\n' "$key" "$value" >> "$SETTINGS_FILE"
+        fi
+    else
+        printf '%s=%s\n' "$key" "$value" > "$SETTINGS_FILE"
+    fi
+}
+
+requested=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -s|--set|--file)
+            requested="${2:-}"
+            shift 2 2>/dev/null || shift 1
+            ;;
+        *)
+            requested="$1"
+            shift
+            ;;
+    esac
+done
+
 if [[ -z "$requested" ]]; then
-    requested=$(get_setting "WALLPAPER" "win11_bloom_dark.jpg")
+    requested=$(get_setting "WALLPAPER" "macOS-Tahoe-Dark.jpg")
 fi
+
+# Strip surrounding single or double quotes
+requested="${requested#\'}"
+requested="${requested%\'}"
+requested="${requested#\"}"
+requested="${requested%\"}"
 
 wp_file=""
 if [[ -f "$requested" ]]; then
-    wp_file="$requested"
-elif [[ -n "${PRESETS[$requested]:-}" || "$requested" == *.jpg ]]; then
-    if [[ -f "$WP_DIR/$requested" ]]; then
-        wp_file="$WP_DIR/$requested"
-    fi
-fi
-
-if [[ -z "$wp_file" ]]; then
-    # Fall back to the shipped default
-    for preset in win11_bloom_dark.jpg win11_flow_dark.jpg win11_bloom_light.jpg; do
-        if [[ -f "$WP_DIR/$preset" ]]; then
-            wp_file="$WP_DIR/$preset"
-            break
+    wp_file="$(readlink -f "$requested")"
+else
+    for dir in "${WP_SEARCH_DIRS[@]}"; do
+        if [[ -d "$dir" ]]; then
+            if [[ -f "$dir/$requested" ]]; then
+                wp_file="$dir/$requested"
+                break
+            elif [[ -f "$dir/${requested}.jpg" ]]; then
+                wp_file="$dir/${requested}.jpg"
+                break
+            elif [[ -f "$dir/${requested}.png" ]]; then
+                wp_file="$dir/${requested}.png"
+                break
+            fi
         fi
     done
 fi
 
 if [[ -z "$wp_file" ]]; then
-    echo "omarchy-undercover-wallpaper: no wallpaper found" >&2
+    # Fallback cascade: Tahoe Dark -> Bloom Dark -> Sequoia Dark
+    for fallback in "macOS-Tahoe-Dark.jpg" "win11_bloom_dark.jpg" "macOS-Sequoia-Dark.jpg"; do
+        for dir in "${WP_SEARCH_DIRS[@]}"; do
+            if [[ -f "$dir/$fallback" ]]; then
+                wp_file="$dir/$fallback"
+                break 2
+            fi
+        done
+    done
+fi
+
+if [[ -z "$wp_file" || ! -f "$wp_file" ]]; then
+    echo "omarchy-undercover-wallpaper: no wallpaper found for '$requested'" >&2
     exit 1
 fi
 
-pkill -x swaybg 2>/dev/null
-pkill -x hyprpaper 2>/dev/null
+write_setting "WALLPAPER" "$(basename "$wp_file")"
 
+# 1. Update Omarchy Shell Background Symlink & IPC
+if [[ -d "$HOME/.local/state/omarchy" ]]; then
+    mkdir -p "$HOME/.local/state/omarchy/current"
+    ln -nsf "$wp_file" "$HOME/.local/state/omarchy/current/background" 2>/dev/null || true
+fi
+
+# Update theme background state if in mac mode
+current_mode=$(get_setting "MODE" "mac")
+if [[ "$current_mode" == "mac"* ]]; then
+    mkdir -p "$HOME/.local/state/omarchy/theme-backgrounds"
+    echo "$wp_file" > "$HOME/.local/state/omarchy/theme-backgrounds/macos-dark" 2>/dev/null || true
+    echo "$wp_file" > "$HOME/.local/state/omarchy/theme-backgrounds/macos-light" 2>/dev/null || true
+fi
+
+if command -v omarchy-shell >/dev/null 2>&1; then
+    omarchy-shell shell background prepare "$wp_file" 2>/dev/null || true
+    omarchy-shell shell background apply "$wp_file" 2>/dev/null || true
+fi
+
+# 2. Update Swaybg
+pkill -x swaybg 2>/dev/null || true
 if command -v swaybg >/dev/null 2>&1; then
     setsid swaybg -i "$wp_file" -m fill >/dev/null 2>&1 &
-elif command -v hyprpaper >/dev/null 2>&1; then
-    setsid hyprpaper >/dev/null 2>&1 &
 fi
+
+# 3. Update Hyprpaper if active
+if pgrep -x hyprpaper >/dev/null 2>&1 && command -v hyprctl >/dev/null 2>&1; then
+    hyprctl hyprpaper preload "$wp_file" 2>/dev/null || true
+    hyprctl hyprpaper wallpaper ",$wp_file" 2>/dev/null || true
+fi
+
+# 4. Update SWWW if active
+if pgrep -x swww-daemon >/dev/null 2>&1 && command -v swww >/dev/null 2>&1; then
+    swww img "$wp_file" --transition-type fade --transition-duration 1 2>/dev/null || true
+fi
+
+echo "Wallpaper applied: $wp_file"

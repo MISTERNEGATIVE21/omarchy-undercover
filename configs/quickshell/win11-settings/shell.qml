@@ -3149,8 +3149,10 @@ ShellRoot {
                       property var themes: [
                         { id: "win11-dark", name: "Windows 11 (Dark)", sub: "Mica Dark & Centered Taskbar", icon: "start.svg", isWin: true, cmd: "omarchy-undercover -w11" },
                         { id: "win11-light", name: "Windows 11 (Light)", sub: "Fluent Light & Solar Taskbar", icon: "sun.svg", isWin: false, cmd: "omarchy-undercover -w11-light" },
-                        { id: "mac-dark", name: "macOS Sequoia (Dark)", sub: "Dark Menu Bar & Frosted Dock", icon: "apple-logo.svg", isWin: false, cmd: "omarchy-undercover -mac" },
-                        { id: "mac-light", name: "macOS Sequoia (Light)", sub: "Light Glass Bar & Solar Dock", icon: "apple-logo.svg", isWin: false, cmd: "omarchy-undercover -mac-light" },
+                        { id: "mac-dark", name: "macOS Tahoe (Dark)", sub: "Dark Alpine Bar & Frosted Dock", icon: "apple-logo.svg", isWin: false, cmd: "omarchy-undercover -mac" },
+                        { id: "mac-light", name: "macOS Tahoe (Light)", sub: "Light Alpine Glass Bar & Solar Dock", icon: "apple-logo.svg", isWin: false, cmd: "omarchy-undercover -mac-light" },
+                        { id: "mac-sequoia-dark", name: "macOS Sequoia (Dark)", sub: "Classic Redwood Dark Menu Bar", icon: "apple-logo.svg", isWin: false, cmd: "omarchy-undercover -mac-sequoia" },
+                        { id: "mac-sequoia-light", name: "macOS Sequoia (Light)", sub: "Classic Redwood Solar Light Glass", icon: "apple-logo.svg", isWin: false, cmd: "omarchy-undercover -mac-sequoia-light" },
                         { id: "omarchy", name: "Omarchy Default", sub: "Linux Baseline Hyprland Bar", icon: "disguise.svg", isWin: false, cmd: "omarchy-undercover --disable" }
                       ]
 
@@ -3268,6 +3270,84 @@ ShellRoot {
                       onToggled: {
                         settingsWin.isDark = checked
                         settingsWin.runCmd("omarchy-undercover " + (checked ? "-w11" : "-w11-light"))
+                      }
+                    }
+                  }
+                }
+
+                // Desktop Background & Wallpaper Gallery
+                Rectangle {
+                  Layout.fillWidth: true
+                  implicitHeight: 164
+                  radius: 8
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 12
+
+                    RowLayout {
+                      spacing: 12
+                      Image {
+                        Layout.preferredWidth: 22
+                        Layout.preferredHeight: 22
+                        width: 22; height: 22
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/win11-settings/personalization.svg"
+                        fillMode: Image.PreserveAspectFit
+                      }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        Text { text: "Desktop Background & Wallpapers"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { text: "Choose from Windows 11 Fluent Bloom, macOS Tahoe 4K alpine, and Sequoia vistas"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                      }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: settingsWin.cardBorder }
+
+                    RowLayout {
+                      Layout.fillWidth: true
+                      spacing: 10
+
+                      property var walls: [
+                        { name: "Win11 Bloom Dark", file: "win11_bloom_dark.jpg" },
+                        { name: "Win11 Bloom Light", file: "win11_bloom_light.jpg" },
+                        { name: "macOS Tahoe Dark", file: "macOS-Tahoe-Dark.jpg" },
+                        { name: "macOS Tahoe Light", file: "macOS-Tahoe-Light.jpg" },
+                        { name: "macOS Sequoia Dark", file: "macOS-Sequoia-Dark.jpg" },
+                        { name: "macOS Sequoia Light", file: "macOS-Sequoia-Light.jpg" }
+                      ]
+
+                      Repeater {
+                        model: parent.walls
+                        Rectangle {
+                          Layout.fillWidth: true
+                          implicitHeight: 68
+                          radius: 6
+                          clip: true
+                          color: settingsWin.isDark ? "#202020" : "#e5e5ea"
+                          border.color: wallMouse.containsMouse ? settingsWin.accentColor : settingsWin.cardBorder
+                          border.width: wallMouse.containsMouse ? 2 : 1
+
+                          Image {
+                            anchors.fill: parent
+                            source: "file://" + settingsWin.pluginDir + "/assets/wallpapers/" + modelData.file
+                            fillMode: Image.PreserveAspectCrop
+                            asynchronous: true
+                          }
+
+                          MouseArea {
+                            id: wallMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                              settingsWin.runCmd("omarchy-undercover-wallpaper -s '" + modelData.file + "'")
+                            }
+                          }
+                        }
                       }
                     }
                   }
@@ -3917,16 +3997,16 @@ ShellRoot {
                     }
                   }
 
-                  // macOS Sequoia Dark
+                  // macOS Tahoe Dark (Flagship Default)
                   Rectangle {
                     Layout.fillWidth: true
                     implicitHeight: 74
                     radius: 8
-                    color: (settingsWin.currentDisguise === "mac-dark")
+                    color: (settingsWin.currentDisguise === "mac-dark" || settingsWin.currentDisguise === "mac-tahoe-dark" || settingsWin.currentDisguise === "mac")
                            ? (settingsWin.isDark ? Qt.rgba(0.38, 0.80, 1.0, 0.12) : Qt.rgba(0, 0.40, 0.75, 0.08))
                            : (macDarkM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.04)) : settingsWin.cardBg)
-                    border.color: (settingsWin.currentDisguise === "mac-dark") ? settingsWin.accentColor : settingsWin.cardBorder
-                    border.width: (settingsWin.currentDisguise === "mac-dark") ? 2 : 1
+                    border.color: (settingsWin.currentDisguise === "mac-dark" || settingsWin.currentDisguise === "mac-tahoe-dark" || settingsWin.currentDisguise === "mac") ? settingsWin.accentColor : settingsWin.cardBorder
+                    border.width: (settingsWin.currentDisguise === "mac-dark" || settingsWin.currentDisguise === "mac-tahoe-dark" || settingsWin.currentDisguise === "mac") ? 2 : 1
 
                     RowLayout {
                       anchors.fill: parent
@@ -3940,8 +4020,8 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "macOS Sequoia (Dark)" + (settingsWin.currentDisguise === "mac-dark" ? " — Active" : ""); font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
-                        Text { text: "Dark menu bar, dynamic dock & SF Pro typography"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                        Text { text: "macOS Tahoe (Dark)" + ((settingsWin.currentDisguise === "mac-dark" || settingsWin.currentDisguise === "mac-tahoe-dark" || settingsWin.currentDisguise === "mac") ? " — Active" : ""); font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { text: "Flagship dark alpine vista, Stage Manager & Tahoe glassmorphism"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
                       }
                     }
                     MouseArea {
@@ -3953,16 +4033,16 @@ ShellRoot {
                     }
                   }
 
-                  // macOS Sequoia Light
+                  // macOS Tahoe Light (Flagship Light)
                   Rectangle {
                     Layout.fillWidth: true
                     implicitHeight: 74
                     radius: 8
-                    color: (settingsWin.currentDisguise === "mac-light")
+                    color: (settingsWin.currentDisguise === "mac-light" || settingsWin.currentDisguise === "mac-tahoe-light")
                            ? (settingsWin.isDark ? Qt.rgba(0.38, 0.80, 1.0, 0.12) : Qt.rgba(0, 0.40, 0.75, 0.08))
                            : (macLightM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.04)) : settingsWin.cardBg)
-                    border.color: (settingsWin.currentDisguise === "mac-light") ? settingsWin.accentColor : settingsWin.cardBorder
-                    border.width: (settingsWin.currentDisguise === "mac-light") ? 2 : 1
+                    border.color: (settingsWin.currentDisguise === "mac-light" || settingsWin.currentDisguise === "mac-tahoe-light") ? settingsWin.accentColor : settingsWin.cardBorder
+                    border.width: (settingsWin.currentDisguise === "mac-light" || settingsWin.currentDisguise === "mac-tahoe-light") ? 2 : 1
 
                     RowLayout {
                       anchors.fill: parent
@@ -3976,8 +4056,8 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "macOS Sequoia (Light)" + (settingsWin.currentDisguise === "mac-light" ? " — Active" : ""); font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
-                        Text { text: "Solar light glass menu bar & high vibrancy dock"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                        Text { text: "macOS Tahoe (Light)" + ((settingsWin.currentDisguise === "mac-light" || settingsWin.currentDisguise === "mac-tahoe-light") ? " — Active" : ""); font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { text: "Light alpine glass theme, solar dock & crisp white-sur icons"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
                       }
                     }
                     MouseArea {
@@ -3986,6 +4066,78 @@ ShellRoot {
                       hoverEnabled: true
                       cursorShape: Qt.PointingHandCursor
                       onClicked: settingsWin.runCmd("omarchy-undercover -mac-light")
+                    }
+                  }
+
+                  // macOS Sequoia Dark (Classic)
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 74
+                    radius: 8
+                    color: (settingsWin.currentDisguise === "mac-sequoia-dark" || settingsWin.currentDisguise === "mac-sequoia")
+                           ? (settingsWin.isDark ? Qt.rgba(0.38, 0.80, 1.0, 0.12) : Qt.rgba(0, 0.40, 0.75, 0.08))
+                           : (macSeqDarkM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.04)) : settingsWin.cardBg)
+                    border.color: (settingsWin.currentDisguise === "mac-sequoia-dark" || settingsWin.currentDisguise === "mac-sequoia") ? settingsWin.accentColor : settingsWin.cardBorder
+                    border.width: (settingsWin.currentDisguise === "mac-sequoia-dark" || settingsWin.currentDisguise === "mac-sequoia") ? 2 : 1
+
+                    RowLayout {
+                      anchors.fill: parent
+                      anchors.margins: 14
+                      spacing: 12
+                      Image {
+                        Layout.preferredWidth: 24; Layout.preferredHeight: 24
+                        width: 24; height: 24
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/apple-logo.svg"
+                        fillMode: Image.PreserveAspectFit
+                      }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        Text { text: "macOS Sequoia (Dark)" + ((settingsWin.currentDisguise === "mac-sequoia-dark" || settingsWin.currentDisguise === "mac-sequoia") ? " — Active" : ""); font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { text: "Classic Sequoia dark redwood theme, menu bar & dynamic dock"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                      }
+                    }
+                    MouseArea {
+                      id: macSeqDarkM
+                      anchors.fill: parent
+                      hoverEnabled: true
+                      cursorShape: Qt.PointingHandCursor
+                      onClicked: settingsWin.runCmd("omarchy-undercover -mac-sequoia")
+                    }
+                  }
+
+                  // macOS Sequoia Light (Classic)
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 74
+                    radius: 8
+                    color: (settingsWin.currentDisguise === "mac-sequoia-light")
+                           ? (settingsWin.isDark ? Qt.rgba(0.38, 0.80, 1.0, 0.12) : Qt.rgba(0, 0.40, 0.75, 0.08))
+                           : (macSeqLightM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.04)) : settingsWin.cardBg)
+                    border.color: (settingsWin.currentDisguise === "mac-sequoia-light") ? settingsWin.accentColor : settingsWin.cardBorder
+                    border.width: (settingsWin.currentDisguise === "mac-sequoia-light") ? 2 : 1
+
+                    RowLayout {
+                      anchors.fill: parent
+                      anchors.margins: 14
+                      spacing: 12
+                      Image {
+                        Layout.preferredWidth: 24; Layout.preferredHeight: 24
+                        width: 24; height: 24
+                        source: "file://" + settingsWin.pluginDir + "/assets/icons/apple-logo.svg"
+                        fillMode: Image.PreserveAspectFit
+                      }
+                      ColumnLayout {
+                        Layout.fillWidth: true
+                        Text { text: "macOS Sequoia (Light)" + (settingsWin.currentDisguise === "mac-sequoia-light" ? " — Active" : ""); font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { text: "Classic Sequoia solar redwood light glass theme"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                      }
+                    }
+                    MouseArea {
+                      id: macSeqLightM
+                      anchors.fill: parent
+                      hoverEnabled: true
+                      cursorShape: Qt.PointingHandCursor
+                      onClicked: settingsWin.runCmd("omarchy-undercover -mac-sequoia-light")
                     }
                   }
 

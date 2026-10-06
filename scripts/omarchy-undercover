@@ -684,6 +684,11 @@ switch_to_mac() {
     rm -f "$HOME/.local/state/omarchy/toggles/bar-off" 2>/dev/null || true
 
     sync_undercover_themes
+    mkdir -p "$HOME/.local/state/omarchy/theme-backgrounds"
+    local theme_bg_file="$HOME/.config/omarchy/themes/macos-$variant/backgrounds/$wall_img"
+    if [[ -f "$theme_bg_file" ]]; then
+        echo -n "$theme_bg_file" > "$HOME/.local/state/omarchy/theme-backgrounds/macos-$variant" 2>/dev/null || true
+    fi
     if command_exists omarchy-theme-set; then
         omarchy-theme-set "macos-$variant" 2>/dev/null || true
     fi
@@ -741,17 +746,21 @@ EOF
     apply_shell_mac
 
     # Apply wallpaper
-    local target_wall=""
-    for wcand in "$CONFIG_DIR/wallpapers/$wall_img" "$CONFIG_DIR/assets/wallpapers/$wall_img" "$PLUGIN_DIR/assets/wallpapers/$wall_img" "${SCRIPT_DIR}/../assets/wallpapers/$wall_img"; do
-        if [[ -f "$wcand" ]]; then
-            target_wall="$wcand"
-            break
+    if command_exists omarchy-undercover-wallpaper; then
+        omarchy-undercover-wallpaper -s "$wall_img" 2>/dev/null || true
+    else
+        local target_wall=""
+        for wcand in "$CONFIG_DIR/wallpapers/$wall_img" "$CONFIG_DIR/assets/wallpapers/$wall_img" "$PLUGIN_DIR/assets/wallpapers/$wall_img" "${SCRIPT_DIR}/../assets/wallpapers/$wall_img"; do
+            if [[ -f "$wcand" ]]; then
+                target_wall="$wcand"
+                break
+            fi
+        done
+        if [[ -n "$target_wall" ]]; then
+            killall swaybg 2>/dev/null || true
+            nohup swaybg -i "$target_wall" -m fill >/dev/null 2>&1 &
+            disown 2>/dev/null || true
         fi
-    done
-    if [[ -n "$target_wall" ]]; then
-        killall swaybg 2>/dev/null || true
-        nohup swaybg -i "$target_wall" -m fill >/dev/null 2>&1 &
-        disown 2>/dev/null || true
     fi
 
     # Dispatch macOS sound effects

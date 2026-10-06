@@ -109,7 +109,7 @@ do_open() {
     local src
     if src=$(find_qs_src); then
         if command -v quickshell &>/dev/null; then
-            quickshell -I /usr/share/omarchy/shell -p "$src" &
+            quickshell -p "$src" &
             local new_pid=$!
             echo "$new_pid" > "$PID_FILE"
             return 0
