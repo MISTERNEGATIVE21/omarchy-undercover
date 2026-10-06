@@ -1,0 +1,156 @@
+#!/usr/bin/env bash
+# =============================================================================
+# 🍏 macOS Stage Manager / Task Viewer Dispatcher
+#
+# Controls the native macOS Stage Manager overlay and window organizer
+# for Omarchy Undercover (Tahoe & Sequoia Camouflage modes).
+# =============================================================================
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REAL_SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+export PATH="${SCRIPT_DIR}:${REAL_SCRIPT_DIR}:$HOME/.config/omarchy/plugins/omarchy-undercover/scripts:$PATH"
+
+PID_FILE="${XDG_RUNTIME_DIR:-/tmp}/omarchy-mac-stagemanager.pid"
+
+# Locate Quickshell Stage Manager source directory
+find_qs_src() {
+    for cand in \
+        "${REAL_SCRIPT_DIR}/../configs/quickshell/mac-stagemanager" \
+        "${SCRIPT_DIR}/../configs/quickshell/mac-stagemanager" \
+        "$HOME/.config/omarchy/plugins/omarchy-undercover/configs/quickshell/mac-stagemanager" \
+        "$HOME/omarchy-undercover/configs/quickshell/mac-stagemanager" \
+        "/usr/share/omarchy-undercover/configs/quickshell/mac-stagemanager"; do
+        if [[ -d "$cand" && -f "$cand/StageManager.qml" ]]; then
+            echo "$cand"
+            return 0
+        fi
+    done
+    return 1
+}
+
+is_running() {
+    if [[ -f "$PID_FILE" ]]; then
+        local pid
+        pid=$(cat "$PID_FILE" 2>/dev/null || true)
+        if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
+            return 0
+        fi
+        rm -f "$PID_FILE"
+    fi
+    if pgrep -f "quickshell.*mac-stagemanager" >/dev/null 2>&1; then
+        return 0
+    fi
+    return 1
+}
+
+get_status() {
+    local running=false
+    local status_str="inactive"
+    if is_running; then
+        running=true
+        status_str="active"
+    fi
+
+    local win_count=0
+    local grp_count=0
+    if command -v hyprctl &>/dev/null && command -v jq &>/dev/null; then
+        local clients_json
+        clients_json=$(hyprctl clients -j 2>/dev/null || echo "[]")
+        win_count=$(echo "$clients_json" | jq 'map(select(.mapped == true and (.workspace.id // 0) > 0)) | length' 2>/dev/null || echo 0)
+        grp_count=$(echo "$clients_json" | jq 'map(select(.mapped == true and (.workspace.id // 0) > 0)) | map(.class) | unique | length' 2>/dev/null || echo 0)
+    fi
+
+    jq -n \
+        --argjson opened "$running" \
+        --arg status "$status_str" \
+        --argjson groups "$grp_count" \
+        --argjson windows "$win_count" \
+        --arg mode "macOS Stage Manager" \
+        '{opened: $opened, status: $status, groups: $groups, windows: $windows, mode: $mode}'
+}
+
+do_close() {
+    if [[ -f "$PID_FILE" ]]; then
+        local pid
+        pid=$(cat "$PID_FILE" 2>/dev/null || true)
+        if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
+            kill "$pid" 2>/dev/null || true
+        fi
+        rm -f "$PID_FILE"
+    fi
+    pkill -f "quickshell.*mac-stagemanager" 2>/dev/null || true
+
+    if command -v qs &>/dev/null; then
+        qs ipc call mac-stagemanager close &>/dev/null || true
+    fi
+    if command -v omarchy-shell &>/dev/null; then
+        omarchy-shell shell call debba.stage-manager close '{}' &>/dev/null || true
+    fi
+}
+
+do_open() {
+    if is_running; then
+        if command -v qs &>/dev/null; then
+            qs ipc call mac-stagemanager open &>/dev/null || true
+        fi
+        return 0
+    fi
+
+    # Try omarchy-shell first if available
+    if command -v omarchy-shell &>/dev/null && omarchy-shell shell ping &>/dev/null; then
+        if omarchy plugin list --json 2>/dev/null | jq -e 'any(.[]; .id == "debba.stage-manager")' >/dev/null 2>&1; then
+            omarchy-shell shell toggle debba.stage-manager '{}' &>/dev/null && return 0
+        fi
+    fi
+
+    # Launch standalone quickshell instance
+    local src
+    if src=$(find_qs_src); then
+        if command -v quickshell &>/dev/null; then
+            quickshell -I /usr/share/omarchy/shell -p "$src" &
+            local new_pid=$!
+            echo "$new_pid" > "$PID_FILE"
+            return 0
+        fi
+    fi
+
+    notify-send "macOS Stage Manager" "Could not locate Stage Manager quickshell bundle" -u low 2>/dev/null || true
+    return 1
+}
+
+do_toggle() {
+    if is_running; then
+        do_close
+    else
+        do_open
+    fi
+}
+
+# Command dispatch
+action="${1:---toggle}"
+
+case "$action" in
+    --status)
+        get_status
+        ;;
+    --toggle)
+        do_toggle
+        ;;
+    --show|--open)
+        do_open
+        ;;
+    --hide|--close)
+        do_close
+        ;;
+    -h|--help)
+        echo "Usage: omarchy-mac-stagemanager [--toggle|--show|--hide|--status]"
+        echo "Controls the native macOS Stage Manager overlay and window organizer."
+        ;;
+    *)
+        echo "Unknown option: $action" >&2
+        echo "Usage: omarchy-mac-stagemanager [--toggle|--show|--hide|--status]" >&2
+        exit 1
+        ;;
+esac
