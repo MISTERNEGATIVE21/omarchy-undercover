@@ -170,6 +170,15 @@ sizes = {
     "dubai_night": "~150MB"
 }
 
+thumbnails = {
+    "sonoma_horizon": "Sonoma-dark.jpg",
+    "yosemite": "Ventura-dark.jpg",
+    "patagonia": "Monterey-dark.jpg",
+    "greenland": "WhiteSur-dark.jpg",
+    "grand_canyon": "redsand-default.jpg",
+    "dubai_night": "linux-wp14.jpg"
+}
+
 screensaver_dir = os.path.expanduser("~/.local/share/omarchy-undercover/screensavers")
 items = []
 for cid in catalog_ids:
@@ -181,6 +190,7 @@ for cid in catalog_ids:
         "location": locations[cid],
         "res": "1080p",
         "size": sizes[cid],
+        "thumbnail": thumbnails.get(cid, "macOS-Tahoe-Dark.jpg"),
         "installed": installed,
         "path": target_file if installed else ""
     })

@@ -940,7 +940,7 @@ ShellRoot {
                 // Light / Dark Theme Selection
                 Rectangle {
                   Layout.fillWidth: true
-                  implicitHeight: 150
+                  implicitHeight: 160
                   radius: 10
                   color: settingsWin.cardBg
                   border.color: settingsWin.cardBorder
@@ -956,24 +956,81 @@ ShellRoot {
                       Layout.alignment: Qt.AlignHCenter
 
                       Rectangle {
-                        width: 128; height: 80; radius: 8
+                        width: 140; height: 92; radius: 8
                         color: "#f5f5f7"
                         border.color: !settingsWin.isDark ? settingsWin.accentColor : Qt.rgba(0, 0, 0, 0.15)
                         border.width: !settingsWin.isDark ? 2.5 : 1
-                        Rectangle { width: 108; height: 18; radius: 4; color: "#ffffff"; anchors.centerIn: parent }
+                        clip: true
+
+                        // Light Desktop Preview
+                        Image {
+                          anchors.fill: parent
+                          source: "file://" + settingsWin.pluginDir + "/assets/wallpapers/macOS-Tahoe-Light.jpg"
+                          fillMode: Image.PreserveAspectCrop
+                          opacity: 0.85
+                        }
+
+                        // Mini Light Window
+                        Rectangle {
+                          width: 110; height: 56; radius: 5
+                          color: Qt.rgba(1, 1, 1, 0.94)
+                          border.color: Qt.rgba(0, 0, 0, 0.1)
+                          anchors.centerIn: parent
+
+                          // Traffic Lights
+                          Row {
+                            anchors.top: parent.top; anchors.left: parent.left; anchors.margins: 4
+                            spacing: 3
+                            Rectangle { width: 4; height: 4; radius: 2; color: "#ff5f57" }
+                            Rectangle { width: 4; height: 4; radius: 2; color: "#febc2e" }
+                            Rectangle { width: 4; height: 4; radius: 2; color: "#28c840" }
+                          }
+                          // Mini Sidebar
+                          Rectangle {
+                            anchors.top: parent.top; anchors.bottom: parent.bottom; anchors.left: parent.left
+                            anchors.topMargin: 12
+                            width: 24
+                            color: Qt.rgba(0, 0, 0, 0.05)
+                          }
+                        }
+
+                        // Mini Dock
+                        Rectangle {
+                          anchors.bottom: parent.bottom; anchors.bottomMargin: 2
+                          anchors.horizontalCenter: parent.horizontalCenter
+                          width: 50; height: 5; radius: 2.5
+                          color: Qt.rgba(255, 255, 255, 0.75)
+                        }
+
                         MouseArea {
                           anchors.fill: parent
                           cursorShape: Qt.PointingHandCursor
                           onClicked: settingsWin.runCmd("omarchy-undercover -mac-light")
                         }
                       }
-                      Text {
-                        text: "Light"
-                        font.family: "SF Pro Text, -apple-system, sans-serif"
-                        font.pixelSize: 12
-                        font.bold: !settingsWin.isDark
-                        color: settingsWin.textPrimary
+
+                      RowLayout {
                         Layout.alignment: Qt.AlignHCenter
+                        spacing: 4
+                        Rectangle {
+                          width: 12; height: 12; radius: 6
+                          color: !settingsWin.isDark ? settingsWin.accentColor : "transparent"
+                          border.color: !settingsWin.isDark ? settingsWin.accentColor : settingsWin.textSecondary
+                          border.width: 1.5
+                          Rectangle {
+                            anchors.centerIn: parent
+                            width: 4; height: 4; radius: 2
+                            color: "#ffffff"
+                            visible: !settingsWin.isDark
+                          }
+                        }
+                        Text {
+                          text: "Light"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 12
+                          font.bold: !settingsWin.isDark
+                          color: settingsWin.textPrimary
+                        }
                       }
                     }
 
@@ -983,24 +1040,81 @@ ShellRoot {
                       Layout.alignment: Qt.AlignHCenter
 
                       Rectangle {
-                        width: 128; height: 80; radius: 8
+                        width: 140; height: 92; radius: 8
                         color: "#1e1e24"
                         border.color: settingsWin.isDark ? settingsWin.accentColor : Qt.rgba(255, 255, 255, 0.15)
                         border.width: settingsWin.isDark ? 2.5 : 1
-                        Rectangle { width: 108; height: 18; radius: 4; color: "#2d2d34"; anchors.centerIn: parent }
+                        clip: true
+
+                        // Dark Desktop Preview
+                        Image {
+                          anchors.fill: parent
+                          source: "file://" + settingsWin.pluginDir + "/assets/wallpapers/macOS-Tahoe-Dark.jpg"
+                          fillMode: Image.PreserveAspectCrop
+                          opacity: 0.85
+                        }
+
+                        // Mini Dark Window
+                        Rectangle {
+                          width: 110; height: 56; radius: 5
+                          color: Qt.rgba(0.12, 0.12, 0.15, 0.94)
+                          border.color: Qt.rgba(255, 255, 255, 0.1)
+                          anchors.centerIn: parent
+
+                          // Traffic Lights
+                          Row {
+                            anchors.top: parent.top; anchors.left: parent.left; anchors.margins: 4
+                            spacing: 3
+                            Rectangle { width: 4; height: 4; radius: 2; color: "#ff5f57" }
+                            Rectangle { width: 4; height: 4; radius: 2; color: "#febc2e" }
+                            Rectangle { width: 4; height: 4; radius: 2; color: "#28c840" }
+                          }
+                          // Mini Sidebar
+                          Rectangle {
+                            anchors.top: parent.top; anchors.bottom: parent.bottom; anchors.left: parent.left
+                            anchors.topMargin: 12
+                            width: 24
+                            color: Qt.rgba(1, 1, 1, 0.05)
+                          }
+                        }
+
+                        // Mini Dock
+                        Rectangle {
+                          anchors.bottom: parent.bottom; anchors.bottomMargin: 2
+                          anchors.horizontalCenter: parent.horizontalCenter
+                          width: 50; height: 5; radius: 2.5
+                          color: Qt.rgba(0, 0, 0, 0.65)
+                        }
+
                         MouseArea {
                           anchors.fill: parent
                           cursorShape: Qt.PointingHandCursor
                           onClicked: settingsWin.runCmd("omarchy-undercover -mac")
                         }
                       }
-                      Text {
-                        text: "Dark"
-                        font.family: "SF Pro Text, -apple-system, sans-serif"
-                        font.pixelSize: 12
-                        font.bold: settingsWin.isDark
-                        color: settingsWin.textPrimary
+
+                      RowLayout {
                         Layout.alignment: Qt.AlignHCenter
+                        spacing: 4
+                        Rectangle {
+                          width: 12; height: 12; radius: 6
+                          color: settingsWin.isDark ? settingsWin.accentColor : "transparent"
+                          border.color: settingsWin.isDark ? settingsWin.accentColor : settingsWin.textSecondary
+                          border.width: 1.5
+                          Rectangle {
+                            anchors.centerIn: parent
+                            width: 4; height: 4; radius: 2
+                            color: "#ffffff"
+                            visible: settingsWin.isDark
+                          }
+                        }
+                        Text {
+                          text: "Dark"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 12
+                          font.bold: settingsWin.isDark
+                          color: settingsWin.textPrimary
+                        }
                       }
                     }
                   }
@@ -1716,13 +1830,180 @@ ShellRoot {
               ColumnLayout {
                 visible: settingsWin.currentCategory === 2
                 Layout.fillWidth: true
-                spacing: 14
+                spacing: 16
+
+                // Hero Desktop Display Preview Card
+                Rectangle {
+                  Layout.fillWidth: true
+                  implicitHeight: 240
+                  radius: 12
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 18
+                    spacing: 24
+
+                    // Display Mockup
+                    ColumnLayout {
+                      spacing: 0
+                      Layout.alignment: Qt.AlignVCenter
+
+                      // Monitor Bezel
+                      Rectangle {
+                        width: 240
+                        height: 150
+                        radius: 8
+                        color: settingsWin.isDark ? "#141418" : "#242429"
+                        border.color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.25)
+                        border.width: 4
+                        clip: true
+
+                        // Screen Inner
+                        Rectangle {
+                          anchors.fill: parent
+                          anchors.margins: 3
+                          radius: 5
+                          clip: true
+
+                          Image {
+                            anchors.fill: parent
+                            source: "file://" + settingsWin.pluginDir + "/assets/wallpapers/" + settingsWin.currentWallpaper
+                            fillMode: Image.PreserveAspectCrop
+                            asynchronous: true
+                            smooth: true
+                          }
+
+                          // Mini macOS Menu Bar
+                          Rectangle {
+                            anchors.top: parent.top
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            height: 10
+                            color: Qt.rgba(0, 0, 0, 0.35)
+
+                            RowLayout {
+                              anchors.fill: parent
+                              anchors.leftMargin: 6
+                              anchors.rightMargin: 6
+
+                              Image {
+                                width: 6; height: 6
+                                source: "file://" + settingsWin.pluginDir + "/assets/icons/apple-logo.svg"
+                                fillMode: Image.PreserveAspectFit
+                              }
+                              Item { Layout.fillWidth: true }
+                              Text {
+                                text: "10:09"
+                                font.family: "SF Pro Text, -apple-system, sans-serif"
+                                font.pixelSize: 6
+                                font.weight: Font.Bold
+                                color: "#ffffff"
+                              }
+                            }
+                          }
+
+                          // Mini Frosted Glass Dock
+                          Rectangle {
+                            anchors.bottom: parent.bottom
+                            anchors.bottomMargin: 3
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: 80
+                            height: 10
+                            radius: 5
+                            color: Qt.rgba(1, 1, 1, 0.35)
+                            border.color: Qt.rgba(255, 255, 255, 0.5)
+                            border.width: 0.5
+
+                            Row {
+                              anchors.centerIn: parent
+                              spacing: 3
+                              Repeater {
+                                model: ["#007aff", "#34c759", "#ff9500", "#ff2d55", "#af52de", "#5856d6"]
+                                Rectangle {
+                                  width: 5; height: 5; radius: 2.5
+                                  color: modelData
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+
+                      // Display Stand
+                      Rectangle {
+                        Layout.alignment: Qt.AlignHCenter
+                        width: 40
+                        height: 10
+                        radius: 2
+                        color: settingsWin.isDark ? "#2c2c34" : "#b0b0b8"
+                      }
+                      Rectangle {
+                        Layout.alignment: Qt.AlignHCenter
+                        width: 68
+                        height: 3
+                        radius: 1.5
+                        color: settingsWin.isDark ? "#383842" : "#9c9ca4"
+                      }
+                    }
+
+                    // Metadata & Quick Actions
+                    ColumnLayout {
+                      Layout.fillWidth: true
+                      spacing: 8
+                      Layout.alignment: Qt.AlignVCenter
+
+                      Text {
+                        text: {
+                          var name = settingsWin.currentWallpaper.replace(/\.(jpg|jpeg|png)$/, "").replace(/_/g, " ").replace(/-/g, " ")
+                          return name
+                        }
+                        font.family: "SF Pro Display, -apple-system, sans-serif"
+                        font.pixelSize: 18
+                        font.weight: Font.Bold
+                        color: settingsWin.textPrimary
+                      }
+
+                      Text {
+                        text: "Authentic Ultra-High Dynamic Range 6K macOS & Windows vista wallpaper. Configured for your primary display."
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 12
+                        color: settingsWin.textSecondary
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
+                      }
+
+                      RowLayout {
+                        spacing: 6
+                        Rectangle {
+                          implicitWidth: 80; implicitHeight: 22; radius: 11
+                          color: Qt.rgba(settingsWin.accentColor.r, settingsWin.accentColor.g, settingsWin.accentColor.b, 0.15)
+                          border.color: settingsWin.accentColor
+                          Text { anchors.centerIn: parent; text: "6K HDR"; font.pixelSize: 10; font.bold: true; color: settingsWin.accentColor }
+                        }
+                        Rectangle {
+                          implicitWidth: 90; implicitHeight: 22; radius: 11
+                          color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05)
+                          Text { anchors.centerIn: parent; text: "P3 Wide Color"; font.pixelSize: 10; color: settingsWin.textPrimary }
+                        }
+                        Rectangle {
+                          implicitWidth: 100; implicitHeight: 22; radius: 11
+                          color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05)
+                          Text { anchors.centerIn: parent; text: "6016 × 3384"; font.pixelSize: 10; color: settingsWin.textSecondary }
+                        }
+                      }
+                    }
+                  }
+                }
 
                 Text {
-                  text: "Authentic 6K Apple & Windows Bloom Wallpapers"
+                  text: "All Wallpapers & Vistas"
                   font.family: "SF Pro Text, -apple-system, sans-serif"
-                  font.pixelSize: 13
-                  color: settingsWin.textSecondary
+                  font.pixelSize: 14
+                  font.weight: Font.DemiBold
+                  color: settingsWin.textPrimary
                 }
 
                 GridLayout {
@@ -1737,7 +2018,10 @@ ShellRoot {
                     { name: "macOS Sequoia Dark", file: "macOS-Sequoia-Dark.jpg" },
                     { name: "macOS Sequoia Light", file: "macOS-Sequoia-Light.jpg" },
                     { name: "macOS Sonoma Dark", file: "Sonoma-dark.jpg" },
+                    { name: "macOS Sonoma Light", file: "Sonoma-light.jpg" },
                     { name: "macOS Ventura Dark", file: "Ventura-dark.jpg" },
+                    { name: "macOS Monterey", file: "Monterey-dark.jpg" },
+                    { name: "macOS Big Sur", file: "WhiteSur-dark.jpg" },
                     { name: "Windows 11 Bloom Dark", file: "win11_bloom_dark.jpg" },
                     { name: "Windows 11 Bloom Light", file: "win11_bloom_light.jpg" },
                     { name: "iOS 18 Beams Dark", file: "ios18_dark.jpg" },
@@ -1748,11 +2032,11 @@ ShellRoot {
                     model: parent.walls
                     Rectangle {
                       Layout.fillWidth: true
-                      implicitHeight: 110
-                      radius: 8
+                      implicitHeight: 120
+                      radius: 9
                       color: settingsWin.cardBg
                       border.color: (settingsWin.currentWallpaper === modelData.file) ? settingsWin.accentColor : (wallMouse.containsMouse ? settingsWin.accentColor : settingsWin.cardBorder)
-                      border.width: (settingsWin.currentWallpaper === modelData.file) ? 2 : (wallMouse.containsMouse ? 2 : 1)
+                      border.width: (settingsWin.currentWallpaper === modelData.file) ? 2.5 : (wallMouse.containsMouse ? 2 : 1)
                       clip: true
 
                       ColumnLayout {
@@ -1856,125 +2140,183 @@ ShellRoot {
                   }
                 }
 
-                // Hero Video Preview Viewport
+                // Hero Studio Display Screen Saver Preview Frame
                 Rectangle {
                   Layout.fillWidth: true
-                  Layout.preferredHeight: Math.min(300, Math.round(width * 9 / 16))
+                  implicitHeight: 310
                   radius: 12
-                  color: "#0a0a0c"
+                  color: settingsWin.cardBg
                   border.color: settingsWin.cardBorder
                   border.width: 1
-                  clip: true
 
-                  VideoOutput {
-                    id: previewVideoOut
-                    anchors.fill: parent
-                    fillMode: VideoOutput.PreserveAspectCrop
-                  }
-
-                  MediaPlayer {
-                    id: previewPlayer
-                    videoOutput: previewVideoOut
-                    loops: MediaPlayer.Infinite
-                    audioOutput: null
-                    source: settingsWin.screensaverActiveVideo
-
-                    Component.onCompleted: {
-                      if (settingsWin.screensaverActiveVideo !== "") play()
-                    }
-                  }
-
-                  // Placeholder when no video
                   ColumnLayout {
                     anchors.centerIn: parent
-                    visible: settingsWin.screensaverActiveVideo === ""
-                    spacing: 8
-                    Text {
+                    spacing: 0
+
+                    // Studio Display Outer Bezel
+                    Rectangle {
                       Layout.alignment: Qt.AlignHCenter
-                      text: "🎬"
-                      font.pixelSize: 36
-                    }
-                    Text {
-                      Layout.alignment: Qt.AlignHCenter
-                      text: "No screensaver video selected"
-                      font.family: "SF Pro Text, -apple-system, sans-serif"
-                      font.pixelSize: 13
-                      color: settingsWin.textSecondary
-                    }
-                  }
+                      width: Math.min(460, rightScroller.width - 60)
+                      height: 230
+                      radius: 10
+                      color: settingsWin.isDark ? "#121216" : "#242429"
+                      border.color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(0, 0, 0, 0.25)
+                      border.width: 4
+                      clip: true
 
-                  // Floating bottom toolbar
-                  Rectangle {
-                    anchors.bottom: parent.bottom
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    height: 48
-                    color: Qt.rgba(0, 0, 0, 0.72)
-
-                    RowLayout {
-                      anchors.fill: parent
-                      anchors.margins: 10
-                      spacing: 12
-
+                      // Screen Inner Canvas
                       Rectangle {
-                        width: 30; height: 30; radius: 15
-                        color: Qt.rgba(1, 1, 1, 0.18)
-                        Text {
-                          anchors.centerIn: parent
-                          text: previewPlayer.playbackState === MediaPlayer.PlayingState ? "⏸" : "▶"
-                          font.pixelSize: 12
-                          color: "#ffffff"
-                        }
-                        MouseArea {
+                        anchors.fill: parent
+                        anchors.margins: 4
+                        radius: 6
+                        color: "#000000"
+                        clip: true
+
+                        // Video Output Component
+                        VideoOutput {
+                          id: previewVideoOut
                           anchors.fill: parent
-                          cursorShape: Qt.PointingHandCursor
-                          onClicked: {
-                            if (previewPlayer.playbackState === MediaPlayer.PlayingState) {
-                              previewPlayer.pause()
-                            } else {
-                              previewPlayer.play()
+                          fillMode: VideoOutput.PreserveAspectCrop
+                          visible: settingsWin.screensaverActiveVideo !== ""
+                        }
+
+                        MediaPlayer {
+                          id: previewPlayer
+                          videoOutput: previewVideoOut
+                          loops: MediaPlayer.Infinite
+                          audioOutput: null
+                          source: settingsWin.screensaverActiveVideo
+
+                          Component.onCompleted: {
+                            if (settingsWin.screensaverActiveVideo !== "") play()
+                          }
+                        }
+
+                        // Fallback High-Res Aerial Poster Backdrop
+                        Image {
+                          anchors.fill: parent
+                          source: "file://" + settingsWin.pluginDir + "/assets/wallpapers/macOS-Tahoe-Dark.jpg"
+                          fillMode: Image.PreserveAspectCrop
+                          visible: settingsWin.screensaverActiveVideo === "" || previewPlayer.playbackState !== MediaPlayer.PlayingState
+                          opacity: (settingsWin.screensaverActiveVideo === "") ? 1.0 : 0.8
+                          asynchronous: true
+                          smooth: true
+                        }
+
+                        // Live / Sample Badge
+                        Rectangle {
+                          anchors.top: parent.top
+                          anchors.left: parent.left
+                          anchors.margins: 8
+                          radius: 4
+                          color: Qt.rgba(0, 0, 0, 0.65)
+                          height: 20
+                          implicitWidth: scText.implicitWidth + 14
+
+                          Text {
+                            id: scText
+                            anchors.centerIn: parent
+                            text: settingsWin.screensaverActiveVideo !== "" ? "● AERIAL VIDEO ACTIVE" : "SAMPLE AERIAL PREVIEW"
+                            font.family: "SF Pro Text, -apple-system, sans-serif"
+                            font.pixelSize: 9
+                            font.weight: Font.Bold
+                            color: settingsWin.screensaverActiveVideo !== "" ? "#34c759" : "#ffffff"
+                          }
+                        }
+
+                        // Floating Glass Bottom Toolbar
+                        Rectangle {
+                          anchors.bottom: parent.bottom
+                          anchors.left: parent.left
+                          anchors.right: parent.right
+                          height: 40
+                          color: Qt.rgba(0, 0, 0, 0.75)
+
+                          RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 10
+                            spacing: 8
+
+                            Rectangle {
+                              width: 26; height: 26; radius: 13
+                              color: Qt.rgba(1, 1, 1, 0.22)
+                              Text {
+                                anchors.centerIn: parent
+                                text: (previewPlayer.playbackState === MediaPlayer.PlayingState && settingsWin.screensaverActiveVideo !== "") ? "⏸" : "▶"
+                                font.pixelSize: 11
+                                color: "#ffffff"
+                              }
+                              MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                  if (previewPlayer.playbackState === MediaPlayer.PlayingState) {
+                                    previewPlayer.pause()
+                                  } else {
+                                    if (settingsWin.screensaverActiveVideo !== "") previewPlayer.play()
+                                  }
+                                }
+                              }
+                            }
+
+                            Text {
+                              Layout.fillWidth: true
+                              text: {
+                                if (!settingsWin.screensaverActiveVideo) return "Sonoma Horizon Aerial (Official 1080p)"
+                                var parts = settingsWin.screensaverActiveVideo.split("/")
+                                var fn = parts[parts.length - 1].replace(/\.(mp4|webm)$/, "").replace(/_/g, " ")
+                                return fn.charAt(0).toUpperCase() + fn.slice(1)
+                              }
+                              font.family: "SF Pro Text, -apple-system, sans-serif"
+                              font.pixelSize: 11
+                              font.weight: Font.DemiBold
+                              color: "#ffffff"
+                              elide: Text.ElideRight
+                            }
+
+                            Rectangle {
+                              implicitWidth: 125; implicitHeight: 26
+                              radius: 13
+                              color: settingsWin.accentColor
+
+                              Text {
+                                anchors.centerIn: parent
+                                text: "Fullscreen Preview"
+                                font.family: "SF Pro Text, -apple-system, sans-serif"
+                                font.pixelSize: 10
+                                font.weight: Font.Bold
+                                color: "#ffffff"
+                              }
+
+                              MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                  settingsWin.runCmd("qs ipc call omarchy-undercover-service previewScreensaver 2>/dev/null || " + settingsWin.pluginDir + "/scripts/omarchy-mac-screensaver --preview")
+                                }
+                              }
                             }
                           }
                         }
                       }
+                    }
 
-                      Text {
-                        Layout.fillWidth: true
-                        text: {
-                          if (!settingsWin.screensaverActiveVideo) return "Select or download an aerial video below"
-                          var parts = settingsWin.screensaverActiveVideo.split("/")
-                          var filename = parts[parts.length - 1].replace(/\.(mp4|webm)$/, "").replace(/_/g, " ")
-                          return "Playing: " + filename
-                        }
-                        font.family: "SF Pro Text, -apple-system, sans-serif"
-                        font.pixelSize: 12
-                        font.weight: Font.DemiBold
-                        color: "#ffffff"
-                        elide: Text.ElideRight
-                      }
-
-                      Rectangle {
-                        implicitWidth: 140; implicitHeight: 30
-                        radius: 15
-                        color: settingsWin.accentColor
-
-                        Text {
-                          anchors.centerIn: parent
-                          text: "Preview Fullscreen"
-                          font.family: "SF Pro Text, -apple-system, sans-serif"
-                          font.pixelSize: 11
-                          font.weight: Font.Bold
-                          color: "#ffffff"
-                        }
-
-                        MouseArea {
-                          anchors.fill: parent
-                          cursorShape: Qt.PointingHandCursor
-                          onClicked: {
-                            settingsWin.runCmd("qs ipc call omarchy-undercover-service previewScreensaver 2>/dev/null || " + settingsWin.pluginDir + "/scripts/omarchy-mac-screensaver --preview")
-                          }
-                        }
-                      }
+                    // Display Stand Neck
+                    Rectangle {
+                      Layout.alignment: Qt.AlignHCenter
+                      width: 50
+                      height: 12
+                      radius: 2
+                      color: settingsWin.isDark ? "#2c2c34" : "#b0b0b8"
+                    }
+                    // Display Stand Base
+                    Rectangle {
+                      Layout.alignment: Qt.AlignHCenter
+                      width: 90
+                      height: 4
+                      radius: 2
+                      color: settingsWin.isDark ? "#383842" : "#9c9ca4"
                     }
                   }
                 }
@@ -2095,24 +2437,33 @@ ShellRoot {
                   }
                 }
 
-                // Installed Aerial Videos Section
+                // Apple Aerial CDN Video Catalog Section
                 ColumnLayout {
                   Layout.fillWidth: true
-                  spacing: 10
+                  spacing: 12
 
                   RowLayout {
                     Layout.fillWidth: true
-                    Text {
+                    ColumnLayout {
                       Layout.fillWidth: true
-                      text: "Installed Aerial Videos"
-                      font.family: "SF Pro Text, -apple-system, sans-serif"
-                      font.pixelSize: 14
-                      font.weight: Font.DemiBold
-                      color: settingsWin.textPrimary
+                      spacing: 2
+                      Text {
+                        text: "Apple Aerial Drone Videos (Official)"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 14
+                        font.weight: Font.DemiBold
+                        color: settingsWin.textPrimary
+                      }
+                      Text {
+                        text: "Official Apple Aerial 4K & 1080p footage across California, Patagonia, Greenland, and Dubai"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 11
+                        color: settingsWin.textSecondary
+                      }
                     }
 
                     Rectangle {
-                      implicitWidth: 150; implicitHeight: 28; radius: 6
+                      implicitWidth: 140; implicitHeight: 28; radius: 6
                       color: settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05)
                       border.color: settingsWin.cardBorder
 
@@ -2137,186 +2488,185 @@ ShellRoot {
 
                   GridLayout {
                     Layout.fillWidth: true
-                    columns: rightScroller.width > 650 ? 3 : 2
-                    rowSpacing: 10
-                    columnSpacing: 10
+                    columns: rightScroller.width > 620 ? 2 : 1
+                    rowSpacing: 12
+                    columnSpacing: 12
 
                     Repeater {
-                      model: settingsWin.screensaverInstalledClips
+                      model: settingsWin.screensaverCatalog
 
                       Rectangle {
                         Layout.fillWidth: true
-                        implicitHeight: 68
-                        radius: 8
+                        implicitHeight: 165
+                        radius: 10
                         color: settingsWin.cardBg
-                        readonly property bool isSelected: settingsWin.screensaverActiveVideo === modelData.path
-                        border.color: isSelected ? settingsWin.accentColor : (clipMouse.containsMouse ? settingsWin.accentColor : settingsWin.cardBorder)
-                        border.width: isSelected ? 2 : 1
-
-                        RowLayout {
-                          anchors.fill: parent
-                          anchors.margins: 10
-                          spacing: 10
-
-                          Rectangle {
-                            width: 44; height: 44; radius: 6
-                            color: Qt.rgba(settingsWin.accentColor.r, settingsWin.accentColor.g, settingsWin.accentColor.b, 0.15)
-                            Text {
-                              anchors.centerIn: parent
-                              text: "🎬"
-                              font.pixelSize: 20
-                            }
-                          }
-
-                          ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 2
-                            Text {
-                              Layout.fillWidth: true
-                              text: modelData.name || "Aerial Clip"
-                              font.family: "SF Pro Text, -apple-system, sans-serif"
-                              font.pixelSize: 12
-                              font.weight: Font.DemiBold
-                              color: settingsWin.textPrimary
-                              elide: Text.ElideRight
-                            }
-                            Text {
-                              text: isSelected ? "Active Screen Saver" : "Click to select"
-                              font.family: "SF Pro Text, -apple-system, sans-serif"
-                              font.pixelSize: 10
-                              color: isSelected ? settingsWin.accentColor : settingsWin.textSecondary
-                            }
-                          }
-
-                          Text {
-                            visible: isSelected
-                            text: "✔"
-                            font.pixelSize: 14
-                            font.weight: Font.Bold
-                            color: settingsWin.accentColor
-                          }
-                        }
-
-                        MouseArea {
-                          id: clipMouse
-                          anchors.fill: parent
-                          hoverEnabled: true
-                          cursorShape: Qt.PointingHandCursor
-                          onClicked: {
-                            settingsWin.setScreensaverActiveClip(modelData.path)
-                            previewPlayer.source = modelData.path
-                            previewPlayer.play()
-                          }
-                        }
-                      }
-                    }
-                  }
-
-                  Text {
-                    visible: settingsWin.screensaverInstalledClips.length === 0
-                    text: "No videos downloaded yet. Select a clip below to download from Apple's CDN."
-                    font.family: "SF Pro Text, -apple-system, sans-serif"
-                    font.pixelSize: 12
-                    color: settingsWin.textSecondary
-                  }
-                }
-
-                // Apple Aerial CDN Downloader Section
-                ColumnLayout {
-                  Layout.fillWidth: true
-                  spacing: 10
-
-                  Text {
-                    text: "Apple Aerial CDN Catalog (Official)"
-                    font.family: "SF Pro Text, -apple-system, sans-serif"
-                    font.pixelSize: 14
-                    font.weight: Font.DemiBold
-                    color: settingsWin.textPrimary
-                  }
-
-                  Rectangle {
-                    Layout.fillWidth: true
-                    radius: 10
-                    color: settingsWin.cardBg
-                    border.color: settingsWin.cardBorder
-                    border.width: 1
-
-                    ColumnLayout {
-                      anchors.fill: parent
-                      anchors.margins: 12
-                      spacing: 8
-
-                      Repeater {
-                        model: settingsWin.screensaverCatalog
+                        readonly property bool isSelected: settingsWin.screensaverActiveVideo === modelData.path && modelData.installed
+                        border.color: isSelected ? settingsWin.accentColor : (itemMouse.containsMouse ? settingsWin.accentColor : settingsWin.cardBorder)
+                        border.width: isSelected ? 2.5 : 1
+                        clip: true
 
                         ColumnLayout {
-                          Layout.fillWidth: true
-                          spacing: 8
+                          anchors.fill: parent
+                          spacing: 0
 
-                          RowLayout {
+                          // Landscape Thumbnail Banner
+                          Rectangle {
                             Layout.fillWidth: true
-                            spacing: 12
+                            Layout.fillHeight: true
+                            color: "#0a0a0c"
+                            clip: true
 
+                            Image {
+                              anchors.fill: parent
+                              source: "file://" + settingsWin.pluginDir + "/assets/wallpapers/" + (modelData.thumbnail || "Sonoma-dark.jpg")
+                              fillMode: Image.PreserveAspectCrop
+                              asynchronous: true
+                              smooth: true
+                            }
+
+                            // Location frosted tag
                             Rectangle {
-                              width: 36; height: 36; radius: 8
-                              color: Qt.rgba(settingsWin.accentColor.r, settingsWin.accentColor.g, settingsWin.accentColor.b, 0.12)
+                              anchors.top: parent.top
+                              anchors.left: parent.left
+                              anchors.margins: 8
+                              radius: 4
+                              color: Qt.rgba(0, 0, 0, 0.6)
+                              height: 20
+                              implicitWidth: locText.implicitWidth + 12
+
                               Text {
+                                id: locText
                                 anchors.centerIn: parent
-                                text: "🌐"
-                                font.pixelSize: 18
+                                text: modelData.location
+                                font.family: "SF Pro Text, -apple-system, sans-serif"
+                                font.pixelSize: 10
+                                color: "#ffffff"
                               }
                             }
 
-                            ColumnLayout {
-                              Layout.fillWidth: true
-                              spacing: 2
+                            // Resolution Tag
+                            Rectangle {
+                              anchors.top: parent.top
+                              anchors.right: parent.right
+                              anchors.margins: 8
+                              radius: 4
+                              color: Qt.rgba(0, 0, 0, 0.6)
+                              height: 20
+                              implicitWidth: resText.implicitWidth + 12
+
                               Text {
-                                text: modelData.name
+                                id: resText
+                                anchors.centerIn: parent
+                                text: modelData.res + " SDR"
                                 font.family: "SF Pro Text, -apple-system, sans-serif"
-                                font.pixelSize: 13
-                                font.weight: Font.DemiBold
-                                color: settingsWin.textPrimary
-                              }
-                              Text {
-                                text: modelData.location + " • " + modelData.res + " • " + modelData.size
-                                font.family: "SF Pro Text, -apple-system, sans-serif"
-                                font.pixelSize: 11
-                                color: settingsWin.textSecondary
+                                font.pixelSize: 10
+                                font.weight: Font.Bold
+                                color: "#34c759"
                               }
                             }
 
+                            // Active checkmark badge
                             Rectangle {
-                              implicitWidth: modelData.installed ? 85 : 95
-                              implicitHeight: 28
-                              radius: 14
-                              color: modelData.installed ? Qt.rgba(0.2, 0.78, 0.35, 0.15) : (settingsWin.screensaverDownloadingId === modelData.id ? Qt.rgba(1, 0.58, 0, 0.15) : settingsWin.accentColor)
-                              border.color: modelData.installed ? "#34c759" : (settingsWin.screensaverDownloadingId === modelData.id ? "#ff9500" : "transparent")
+                              visible: isSelected
+                              anchors.bottom: parent.bottom
+                              anchors.right: parent.right
+                              anchors.margins: 8
+                              width: 22; height: 22; radius: 11
+                              color: settingsWin.accentColor
+                              border.color: "#ffffff"
+                              border.width: 1.5
 
                               Text {
                                 anchors.centerIn: parent
-                                text: modelData.installed ? "✔ Installed" : (settingsWin.screensaverDownloadingId === modelData.id ? "Downloading…" : "Download")
-                                font.family: "SF Pro Text, -apple-system, sans-serif"
-                                font.pixelSize: 11
-                                font.weight: Font.DemiBold
-                                color: modelData.installed ? "#34c759" : (settingsWin.screensaverDownloadingId === modelData.id ? "#ff9500" : "#ffffff")
+                                text: "✓"
+                                font.pixelSize: 12
+                                font.bold: true
+                                color: "#ffffff"
+                              }
+                            }
+                          }
+
+                          // Card Bottom Caption & Actions
+                          Rectangle {
+                            Layout.fillWidth: true
+                            implicitHeight: 52
+                            color: settingsWin.cardBg
+
+                            RowLayout {
+                              anchors.fill: parent
+                              anchors.leftMargin: 12
+                              anchors.rightMargin: 12
+                              spacing: 8
+
+                              ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 1
+                                Text {
+                                  text: modelData.name
+                                  font.family: "SF Pro Text, -apple-system, sans-serif"
+                                  font.pixelSize: 13
+                                  font.weight: Font.DemiBold
+                                  color: settingsWin.textPrimary
+                                  elide: Text.ElideRight
+                                }
+                                Text {
+                                  text: modelData.size + (modelData.installed ? " • Ready to Play" : " • Apple CDN")
+                                  font.family: "SF Pro Text, -apple-system, sans-serif"
+                                  font.pixelSize: 10
+                                  color: settingsWin.textSecondary
+                                }
                               }
 
-                              MouseArea {
-                                anchors.fill: parent
-                                enabled: !modelData.installed && settingsWin.screensaverDownloadingId !== modelData.id
-                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                onClicked: {
-                                  settingsWin.downloadScreensaverClip(modelData.id)
+                              Rectangle {
+                                implicitWidth: modelData.installed ? (isSelected ? 75 : 85) : 95
+                                implicitHeight: 28
+                                radius: 14
+                                color: isSelected
+                                       ? Qt.rgba(settingsWin.accentColor.r, settingsWin.accentColor.g, settingsWin.accentColor.b, 0.15)
+                                       : (modelData.installed
+                                          ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(0, 0, 0, 0.08))
+                                          : (settingsWin.screensaverDownloadingId === modelData.id ? Qt.rgba(1, 0.58, 0, 0.15) : settingsWin.accentColor))
+                                border.color: isSelected ? settingsWin.accentColor : (settingsWin.screensaverDownloadingId === modelData.id ? "#ff9500" : "transparent")
+
+                                Text {
+                                  anchors.centerIn: parent
+                                  text: isSelected ? "Active" : (modelData.installed ? "Set Active" : (settingsWin.screensaverDownloadingId === modelData.id ? "Downloading…" : "Download"))
+                                  font.family: "SF Pro Text, -apple-system, sans-serif"
+                                  font.pixelSize: 11
+                                  font.weight: Font.DemiBold
+                                  color: isSelected ? settingsWin.accentColor : (modelData.installed ? settingsWin.textPrimary : (settingsWin.screensaverDownloadingId === modelData.id ? "#ff9500" : "#ffffff"))
+                                }
+
+                                MouseArea {
+                                  anchors.fill: parent
+                                  enabled: settingsWin.screensaverDownloadingId !== modelData.id
+                                  cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                  onClicked: {
+                                    if (modelData.installed) {
+                                      settingsWin.setScreensaverActiveClip(modelData.path)
+                                      previewPlayer.source = modelData.path
+                                      previewPlayer.play()
+                                    } else {
+                                      settingsWin.downloadScreensaverClip(modelData.id)
+                                    }
+                                  }
                                 }
                               }
                             }
                           }
+                        }
 
-                          Rectangle {
-                            Layout.fillWidth: true
-                            height: 1
-                            visible: index < (settingsWin.screensaverCatalog.length - 1)
-                            color: settingsWin.separatorColor
+                        MouseArea {
+                          id: itemMouse
+                          anchors.fill: parent
+                          hoverEnabled: true
+                          cursorShape: Qt.PointingHandCursor
+                          onClicked: {
+                            if (modelData.installed) {
+                              settingsWin.setScreensaverActiveClip(modelData.path)
+                              previewPlayer.source = modelData.path
+                              previewPlayer.play()
+                            }
                           }
                         }
                       }
@@ -4180,14 +4530,13 @@ ShellRoot {
                         color: settingsWin.isDark ? "#2c2c30" : "#d1d1d6"
                         clip: true
 
-                        // Wallpaper preview or desktop gradient
-                        Rectangle {
+                        // Wallpaper preview inside Display monitor
+                        Image {
                           anchors.fill: parent
-                          gradient: Gradient {
-                            GradientStop { position: 0.0; color: settingsWin.accentColor }
-                            GradientStop { position: 1.0; color: settingsWin.isDark ? "#0f0f14" : "#f0f0f5" }
-                          }
-                          opacity: 0.85
+                          source: "file://" + settingsWin.pluginDir + "/assets/wallpapers/" + settingsWin.currentWallpaper
+                          fillMode: Image.PreserveAspectCrop
+                          asynchronous: true
+                          smooth: true
                         }
 
                         // Mac Dock line simulation inside preview
