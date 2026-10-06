@@ -110,10 +110,110 @@ notify_quickshell() {
     fi
 }
 
+run_wlroots_screensaver() {
+    local mode="${1:---preview}"
+    local clip
+    clip="$(read_setting "SCREENSAVER_VIDEO" "")"
+
+    if [[ -z "$clip" || ! -f "$clip" || "$clip" == *screenrecording* ]]; then
+        clip="$(find "$SCREENSAVER_DIR" "$PLUGIN_DIR/assets/screensavers" -maxdepth 1 -type f \( -name "*.mp4" -o -name "*.webm" \) 2>/dev/null | grep -E "sonoma_horizon|aerial" | head -n1 || true)"
+        if [[ -z "$clip" ]]; then
+            clip="$(find "$SCREENSAVER_DIR" "$PLUGIN_DIR/assets/screensavers" -maxdepth 1 -type f \( -name "*.mp4" -o -name "*.webm" \) 2>/dev/null | head -n1 || true)"
+        fi
+    fi
+
+    # 1. Native Wayland / wlroots video playback via mpv
+    if [[ -n "$clip" && -f "$clip" ]] && command -v mpv &>/dev/null; then
+        echo "Launching wlroots video screensaver via mpv ($clip)..."
+        local tmp_input
+        tmp_input="$(mktemp --suffix=.conf 2>/dev/null || echo "/tmp/screensaver_input_$$.conf")"
+        cat << 'EOF' > "$tmp_input"
+ANY_UNICODE quit
+SPACE quit
+ESC quit
+q quit
+ENTER quit
+BS quit
+TAB quit
+DEL quit
+INS quit
+HOME quit
+END quit
+PGUP quit
+PGDWN quit
+UP quit
+DOWN quit
+LEFT quit
+RIGHT quit
+MBTN_LEFT quit
+MBTN_RIGHT quit
+MBTN_MID quit
+WHEEL_UP quit
+WHEEL_DOWN quit
+EOF
+
+        pkill -f 'omarchy-undercover-screensaver' 2>/dev/null || true
+
+        # Run mpv in fullscreen as a native Wayland client
+        mpv --title="omarchy-undercover-screensaver" \
+            --app-id="omarchy-undercover-screensaver" \
+            --fs \
+            --loop=inf \
+            --no-audio \
+            --no-osc \
+            --no-osd-bar \
+            --idle=no \
+            --input-default-bindings=no \
+            --input-vo-keyboard=yes \
+            --input-conf="$tmp_input" \
+            "$clip" >/dev/null 2>&1 || true
+
+        rm -f "$tmp_input" 2>/dev/null || true
+
+        if [[ "$mode" != "--preview" ]] && command -v omarchy-system-lock &>/dev/null; then
+            omarchy-system-lock &>/dev/null || true
+        fi
+        return 0
+
+    # 2. Native wlroots layer-shell overlay via mpvpaper
+    elif [[ -n "$clip" && -f "$clip" ]] && command -v mpvpaper &>/dev/null; then
+        echo "Launching wlroots screensaver via mpvpaper overlay..."
+        pkill -x mpvpaper 2>/dev/null || true
+        mpvpaper -l overlay -o "no-audio loop" '*' "$clip" &
+        local pid=$!
+        if [[ "$mode" == "--preview" ]]; then
+            sleep 5
+            kill "$pid" 2>/dev/null || true
+        fi
+        return 0
+
+    # 3. Fallback to Omarchy's terminal screensaver
+    elif command -v omarchy-launch-screensaver &>/dev/null; then
+        echo "Launching omarchy-launch-screensaver..."
+        omarchy-launch-screensaver force
+        return 0
+    elif command -v omarchy-screensaver &>/dev/null; then
+        echo "Launching omarchy-screensaver..."
+        omarchy-screensaver
+        return 0
+    else
+        echo "Error: No suitable wlroots screensaver engine found (mpv, mpvpaper, or omarchy-screensaver)." >&2
+        return 1
+    fi
+}
+
 dispatch_preview() {
+    local qs_ok=false
     if command -v qs &>/dev/null; then
-        qs -p /usr/share/omarchy/shell ipc call omarchy-undercover-service previewScreensaver &>/dev/null || \
-        qs ipc call omarchy-undercover-service previewScreensaver &>/dev/null || true
+        if qs -p /usr/share/omarchy/shell ipc call omarchy-undercover-service previewScreensaver &>/dev/null || \
+           qs ipc call omarchy-undercover-service previewScreensaver &>/dev/null; then
+            qs_ok=true
+        fi
+    fi
+
+    if [[ "$qs_ok" == "false" ]]; then
+        echo "Quickshell unavailable. Falling back to wlroots screensaver..."
+        run_wlroots_screensaver --preview
     fi
 }
 
@@ -122,6 +222,8 @@ dispatch_dismiss() {
         qs -p /usr/share/omarchy/shell ipc call omarchy-undercover-service dismissScreensaver &>/dev/null || \
         qs ipc call omarchy-undercover-service dismissScreensaver &>/dev/null || true
     fi
+    pkill -f 'omarchy-undercover-screensaver' 2>/dev/null || true
+    pkill -x mpvpaper 2>/dev/null || true
 }
 
 get_status_json() {
@@ -448,6 +550,28 @@ while [[ $# -gt 0 ]]; do
             dispatch_preview
             exit 0
             ;;
+        --run|--start)
+            # Try Quickshell first, fallback to wlroots
+            local qs_ok=false
+            if command -v qs &>/dev/null; then
+                if qs -p /usr/share/omarchy/shell ipc call omarchy-undercover-service previewScreensaver &>/dev/null || \
+                   qs ipc call omarchy-undercover-service previewScreensaver &>/dev/null; then
+                    qs_ok=true
+                fi
+            fi
+            if [[ "$qs_ok" == "false" ]]; then
+                run_wlroots_screensaver --run
+            fi
+            exit 0
+            ;;
+        --wlroots)
+            run_wlroots_screensaver --run
+            exit 0
+            ;;
+        --wlroots-preview)
+            run_wlroots_screensaver --preview
+            exit 0
+            ;;
         --dismiss)
             dispatch_dismiss
             exit 0
@@ -462,6 +586,9 @@ while [[ $# -gt 0 ]]; do
             echo "  --timeout <seconds>    Set idle timeout threshold"
             echo "  --toggle <on|off>      Enable or disable screensaver"
             echo "  --preview              Trigger fullscreen screensaver preview test"
+            echo "  --run, --start         Start screensaver (Quickshell with wlroots fallback)"
+            echo "  --wlroots              Directly launch wlroots video screensaver"
+            echo "  --wlroots-preview      Directly test wlroots screensaver preview"
             echo "  --dismiss              Dismiss active screensaver overlay"
             exit 0
             ;;
