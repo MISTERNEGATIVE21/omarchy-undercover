@@ -578,15 +578,15 @@ restore_gtk_from_baseline() {
 
 apply_flea_mac() {
     if command_exists flea; then
-        flea --ui-state '{"view":"columns","density":"comfortable","keys":"mac","addressBar":"breadcrumb","places":{"sidebarWidth":200,"showHome":true,"showNetwork":true,"showDevices":true,"showTrash":true,"driveSize":true,"trashCount":false,"rail":"shown"},"preview":{"column":true,"loadOn":"automatic","thumbnails":"media","thumbSize":"medium","ctrlZoom":true},"columns":["name","date","kind","size"],"foldersFirst":true,"hidden":false}' >/dev/null 2>&1 || true
-        msg "Configured Flea for Apple macOS Finder (Miller columns, comfortable density, Mac keymap, preview column)."
+        flea --ui-state '{"view":"columns","density":"normal","keys":"mac","addressBar":"breadcrumb","display":{"textSize":{"mode":"system"}},"places":{"sidebarWidth":192,"showHome":true,"showNetwork":true,"showDevices":true,"showTrash":true,"driveSize":true,"trashCount":false,"rail":"shown"},"preview":{"column":true,"loadOn":"automatic","thumbnails":"media","thumbSize":"medium","ctrlZoom":true},"columns":["name","date","kind","size"],"foldersFirst":true,"hidden":false}' >/dev/null 2>&1 || true
+        msg "Configured Flea for Apple macOS Finder (Miller columns, crisp normal density, Mac keymap, preview column)."
     fi
 }
 
 apply_flea_windows() {
     if command_exists flea; then
-        flea --ui-state '{"view":"list","density":"normal","keys":"windows","addressBar":"path","places":{"sidebarWidth":224,"showHome":true,"showNetwork":true,"showDevices":true,"showTrash":true,"driveSize":true,"trashCount":false,"rail":"shown"},"preview":{"column":false},"columns":["name","date","kind","size"],"foldersFirst":true,"hidden":false}' >/dev/null 2>&1 || true
-        msg "Configured Flea for Windows 11 File Explorer (Details list view, Windows keymap, path bar)."
+        flea --ui-state '{"view":"list","density":"normal","keys":"windows","addressBar":"path","display":{"textSize":{"mode":"system"}},"places":{"sidebarWidth":220,"showHome":true,"showNetwork":true,"showDevices":true,"showTrash":true,"driveSize":true,"trashCount":false,"rail":"shown"},"preview":{"column":false},"columns":["name","date","kind","size"],"foldersFirst":true,"hidden":false}' >/dev/null 2>&1 || true
+        msg "Configured Flea for Windows 11 File Explorer (Details list view, crisp normal density, Windows keymap, path bar)."
     fi
 }
 

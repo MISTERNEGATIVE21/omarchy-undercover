@@ -22,7 +22,7 @@ fi
 SCREENSAVER_DIR="$HOME/.local/share/omarchy-undercover/screensavers"
 mkdir -p "$SCREENSAVER_DIR"
 
-# Curated Apple Aerial CDN Catalog (H.264 1080p SDR for smooth decoding & performance)
+# Curated Drone & Aerial Video Catalog (YouTube 1080p / 4K / Open Web)
 declare -A CATALOG_NAMES
 declare -A CATALOG_LOCATIONS
 declare -A CATALOG_RES
@@ -32,38 +32,38 @@ declare -A CATALOG_URLS
 CATALOG_NAMES["sonoma_horizon"]="Sonoma Horizon"
 CATALOG_LOCATIONS["sonoma_horizon"]="California, USA"
 CATALOG_RES["sonoma_horizon"]="1080p"
-CATALOG_SIZES["sonoma_horizon"]="~120MB"
-CATALOG_URLS["sonoma_horizon"]="https://sylvan.apple.com/Videos/comp_GL_G004_C010_v03_6Mbps.mp4"
+CATALOG_SIZES["sonoma_horizon"]="~45MB"
+CATALOG_URLS["sonoma_horizon"]="https://www.youtube.com/watch?v=QOLTfZPp3Xs"
 
 CATALOG_NAMES["yosemite"]="Yosemite Valley"
 CATALOG_LOCATIONS["yosemite"]="California, USA"
 CATALOG_RES["yosemite"]="1080p"
-CATALOG_SIZES["yosemite"]="~180MB"
-CATALOG_URLS["yosemite"]="https://sylvan.apple.com/Videos/comp_C002_C005_0818SC_001_v01_SDR_PS_20180925_sdr_2K_AVC.mp4"
+CATALOG_SIZES["yosemite"]="~50MB"
+CATALOG_URLS["yosemite"]="https://www.youtube.com/watch?v=5BNnG_GxYVw"
 
 CATALOG_NAMES["patagonia"]="Patagonia Glaciers"
-CATALOG_LOCATIONS["patagonia"]="Chile / Argentina"
+CATALOG_LOCATIONS["patagonia"]="Patagonia, Argentina"
 CATALOG_RES["patagonia"]="1080p"
-CATALOG_SIZES["patagonia"]="~140MB"
-CATALOG_URLS["patagonia"]="https://sylvan.apple.com/Videos/comp_GL_G008_C007_v03_6Mbps.mp4"
+CATALOG_SIZES["patagonia"]="~65MB"
+CATALOG_URLS["patagonia"]="https://www.youtube.com/watch?v=TAgg3QptRtQ"
 
 CATALOG_NAMES["greenland"]="Greenland Icebergs"
-CATALOG_LOCATIONS["greenland"]="Greenland"
+CATALOG_LOCATIONS["greenland"]="Arctic & Greenland"
 CATALOG_RES["greenland"]="1080p"
-CATALOG_SIZES["greenland"]="~130MB"
-CATALOG_URLS["greenland"]="https://sylvan.apple.com/Videos/comp_GL_G002_C002_v03_6Mbps.mp4"
+CATALOG_SIZES["greenland"]="~40MB"
+CATALOG_URLS["greenland"]="https://www.youtube.com/watch?v=Pe9rMYYcv5E"
 
 CATALOG_NAMES["grand_canyon"]="Grand Canyon Dawn"
 CATALOG_LOCATIONS["grand_canyon"]="Arizona, USA"
 CATALOG_RES["grand_canyon"]="1080p"
-CATALOG_SIZES["grand_canyon"]="~160MB"
-CATALOG_URLS["grand_canyon"]="https://sylvan.apple.com/Videos/comp_C007_C004_0824AJ_001_v01_SDR_PS_20180925_sdr_2K_AVC.mp4"
+CATALOG_SIZES["grand_canyon"]="~55MB"
+CATALOG_URLS["grand_canyon"]="https://www.youtube.com/watch?v=5yZuaAQKnkY"
 
 CATALOG_NAMES["dubai_night"]="Dubai Night Skyline"
 CATALOG_LOCATIONS["dubai_night"]="Dubai, UAE"
 CATALOG_RES["dubai_night"]="1080p"
-CATALOG_SIZES["dubai_night"]="~150MB"
-CATALOG_URLS["dubai_night"]="https://sylvan.apple.com/Videos/comp_DB_D011_C010_v03_6Mbps.mp4"
+CATALOG_SIZES["dubai_night"]="~60MB"
+CATALOG_URLS["dubai_night"]="https://www.youtube.com/watch?v=K11iIAx3Uhc"
 
 read_setting() {
     local key="$1"
@@ -156,18 +156,18 @@ names = {
 locations = {
     "sonoma_horizon": "California, USA",
     "yosemite": "California, USA",
-    "patagonia": "Chile / Argentina",
-    "greenland": "Greenland",
+    "patagonia": "Patagonia, Argentina",
+    "greenland": "Arctic & Greenland",
     "grand_canyon": "Arizona, USA",
     "dubai_night": "Dubai, UAE"
 }
 sizes = {
-    "sonoma_horizon": "~120MB",
-    "yosemite": "~180MB",
-    "patagonia": "~140MB",
-    "greenland": "~130MB",
-    "grand_canyon": "~160MB",
-    "dubai_night": "~150MB"
+    "sonoma_horizon": "~45MB",
+    "yosemite": "~50MB",
+    "patagonia": "~65MB",
+    "greenland": "~40MB",
+    "grand_canyon": "~55MB",
+    "dubai_night": "~60MB"
 }
 
 thumbnails = {
@@ -177,6 +177,15 @@ thumbnails = {
     "greenland": "WhiteSur-dark.jpg",
     "grand_canyon": "redsand-default.jpg",
     "dubai_night": "linux-wp14.jpg"
+}
+
+urls = {
+    "sonoma_horizon": "https://www.youtube.com/watch?v=QOLTfZPp3Xs",
+    "yosemite": "https://www.youtube.com/watch?v=5BNnG_GxYVw",
+    "patagonia": "https://www.youtube.com/watch?v=TAgg3QptRtQ",
+    "greenland": "https://www.youtube.com/watch?v=Pe9rMYYcv5E",
+    "grand_canyon": "https://www.youtube.com/watch?v=5yZuaAQKnkY",
+    "dubai_night": "https://www.youtube.com/watch?v=K11iIAx3Uhc"
 }
 
 screensaver_dir = os.path.expanduser("~/.local/share/omarchy-undercover/screensavers")
@@ -190,6 +199,8 @@ for cid in catalog_ids:
         "location": locations[cid],
         "res": "1080p",
         "size": sizes[cid],
+        "source": "YouTube (1080p)",
+        "url": urls[cid],
         "thumbnail": thumbnails.get(cid, "macOS-Tahoe-Dark.jpg"),
         "installed": installed,
         "path": target_file if installed else ""
@@ -213,10 +224,10 @@ print(json.dumps(items))
 }
 
 list_clips() {
-    echo "=== Available Apple Aerial Screensaver Catalog ==="
+    echo "=== Available Aerial Screensaver Catalog (YouTube / High-Def) ==="
     for cid in "sonoma_horizon" "yosemite" "patagonia" "greenland" "grand_canyon" "dubai_night"; do
         local target="$SCREENSAVER_DIR/${cid}.mp4"
-        local status="[Available]"
+        local status="[Available on YouTube]"
         if [[ -f "$target" ]]; then
             status="[Installed: $target]"
         fi
@@ -228,35 +239,89 @@ list_clips() {
 }
 
 download_clip() {
-    local cid="$1"
-    local url="${CATALOG_URLS[$cid]:-}"
-    if [[ -z "$url" ]]; then
-        echo "Error: Unknown catalog clip ID '$cid'." >&2
-        echo "Run '$0 --list' to see available clip IDs." >&2
+    local target_arg="$1"
+    local url=""
+    local cid=""
+    local title=""
+
+    if [[ "$target_arg" =~ ^https?:// ]] || [[ "$target_arg" =~ (youtube\.com|youtu\.be) ]]; then
+        url="$target_arg"
+        cid="web_$(date +%s)"
+        title="Custom Web Video"
+    elif [[ -n "${CATALOG_URLS[$target_arg]:-}" ]]; then
+        cid="$target_arg"
+        url="${CATALOG_URLS[$cid]}"
+        title="${CATALOG_NAMES[$cid]}"
+    else
+        echo "Error: Unknown catalog clip ID or invalid URL '$target_arg'." >&2
+        echo "Run '$0 --list' to see available presets, or specify a YouTube / direct video URL." >&2
         exit 1
     fi
 
     local target="$SCREENSAVER_DIR/${cid}.mp4"
     local part="$SCREENSAVER_DIR/${cid}.part"
+    rm -f "$part"
 
-    echo "Downloading ${CATALOG_NAMES[$cid]} from Apple CDN..."
-    echo "URL: $url"
+    echo "Downloading ${title}..."
+    echo "Source: $url"
     echo "Destination: $target"
 
-    if curl -L --fail --progress-bar --max-time 600 -o "$part" "$url"; then
-        mv -f "$part" "$target"
-        echo "Successfully downloaded ${CATALOG_NAMES[$cid]}!"
-        # If no active clip set, set this one
-        local current
-        current="$(read_setting "SCREENSAVER_VIDEO" "")"
-        if [[ -z "$current" || ! -f "$current" ]]; then
-            write_setting "SCREENSAVER_VIDEO" "$target"
-            echo "Set as active screensaver: $target"
+    local success=false
+
+    # Direct mp4/webm link: try curl with -k (insecure) to ignore cert chain issues
+    if [[ "$url" =~ \.(mp4|webm)($|\?) ]] && command -v curl &>/dev/null; then
+        echo "Attempting direct download via curl..."
+        if curl -k -L --fail --progress-bar --max-time 600 -o "$part" "$url"; then
+            if [[ -f "$part" && -s "$part" ]]; then
+                mv -f "$part" "$target"
+                success=true
+            fi
         fi
+    fi
+
+    # YouTube or video platforms: use yt-dlp with mp4 muxing
+    if [[ "$success" == "false" ]] && command -v yt-dlp &>/dev/null; then
+        echo "Downloading video stream via yt-dlp..."
+        if yt-dlp --no-playlist \
+                  -f "bv*[height<=1080]+ba/b[height<=1080]/b" \
+                  --merge-output-format mp4 \
+                  -o "${target}.part.%(ext)s" \
+                  "$url"; then
+            local ytdl_file
+            ytdl_file="$(ls "${target}.part."* 2>/dev/null | head -n1 || true)"
+            if [[ -n "$ytdl_file" && -f "$ytdl_file" ]]; then
+                mv -f "$ytdl_file" "$target"
+                success=true
+            fi
+        elif yt-dlp --no-playlist -f "b" -o "${target}.part.%(ext)s" "$url"; then
+            local ytdl_file
+            ytdl_file="$(ls "${target}.part."* 2>/dev/null | head -n1 || true)"
+            if [[ -n "$ytdl_file" && -f "$ytdl_file" ]]; then
+                mv -f "$ytdl_file" "$target"
+                success=true
+            fi
+        fi
+    fi
+
+    # Fallback to curl with -k if yt-dlp is not present or failed
+    if [[ "$success" == "false" ]] && command -v curl &>/dev/null; then
+        echo "Falling back to curl..."
+        if curl -k -L --fail --progress-bar --max-time 600 -o "$part" "$url"; then
+            if [[ -f "$part" && -s "$part" ]]; then
+                mv -f "$part" "$target"
+                success=true
+            fi
+        fi
+    fi
+
+    if [[ "$success" == "true" && -f "$target" && -s "$target" ]]; then
+        echo "Successfully downloaded ${title}!"
+        write_setting "SCREENSAVER_VIDEO" "$target"
+        echo "Set as active screensaver: $target"
         notify_quickshell
     else
-        rm -f "$part"
-        echo "Error: Download failed." >&2
+        rm -f "$part" "${target}.part."*
+        echo "Error: Failed to download video from '$url'." >&2
         exit 1
     fi
 }
@@ -359,8 +424,8 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: omarchy-mac-screensaver [OPTIONS]"
             echo "Options:"
             echo "  --status               Print JSON status object"
-            echo "  --list                 List Apple CDN catalog and local installed videos"
-            echo "  --download <clip_id>   Download an official Apple Aerial clip"
+            echo "  --list                 List aerial preset catalog and local installed videos"
+            echo "  --download <id_or_url> Download a preset aerial clip or any YouTube / video URL"
             echo "  --set <path_or_id>     Set active screensaver video"
             echo "  --timeout <seconds>    Set idle timeout threshold"
             echo "  --toggle <on|off>      Enable or disable screensaver"

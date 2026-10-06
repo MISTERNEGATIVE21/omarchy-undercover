@@ -72,10 +72,12 @@ if command -v flea >/dev/null 2>&1; then
     export QSG_RHI_BACKEND="${QSG_RHI_BACKEND:-opengl}"
     case "$MODE" in
         mac)
-            flea --ui-state '{"view":"columns","density":"comfortable","keys":"mac","addressBar":"breadcrumb","places":{"sidebarWidth":200,"showHome":true,"showNetwork":true,"showDevices":true,"showTrash":true,"driveSize":true,"trashCount":false,"rail":"shown"},"preview":{"column":true,"loadOn":"automatic","thumbnails":"media","thumbSize":"medium","ctrlZoom":true},"columns":["name","date","kind","size"],"foldersFirst":true,"hidden":false}' >/dev/null 2>&1 || true
+            # Refined macOS Finder UI: crisp normal density, system font scale, breadcrumb address bar, preview column
+            flea --ui-state '{"density":"normal","keys":"mac","addressBar":"breadcrumb","display":{"textSize":{"mode":"system"}},"places":{"sidebarWidth":192,"showHome":true,"showNetwork":true,"showDevices":true,"showTrash":true,"driveSize":true,"trashCount":false,"rail":"shown"},"preview":{"column":true,"loadOn":"automatic","thumbnails":"media","thumbSize":"medium","ctrlZoom":true},"columns":["name","date","kind","size"],"foldersFirst":true,"hidden":false}' >/dev/null 2>&1 || true
             ;;
         windows)
-            flea --ui-state '{"view":"list","density":"normal","keys":"windows","addressBar":"path","places":{"sidebarWidth":224,"showHome":true,"showNetwork":true,"showDevices":true,"showTrash":true,"driveSize":true,"trashCount":false,"rail":"shown"},"preview":{"column":false},"columns":["name","date","kind","size"],"foldersFirst":true,"hidden":false}' >/dev/null 2>&1 || true
+            # Refined Windows 11 File Explorer UI: crisp normal density, system font scale, path address bar
+            flea --ui-state '{"density":"normal","keys":"windows","addressBar":"path","display":{"textSize":{"mode":"system"}},"places":{"sidebarWidth":220,"showHome":true,"showNetwork":true,"showDevices":true,"showTrash":true,"driveSize":true,"trashCount":false,"rail":"shown"},"preview":{"column":false},"columns":["name","date","kind","size"],"foldersFirst":true,"hidden":false}' >/dev/null 2>&1 || true
             ;;
         *)
             ;;
