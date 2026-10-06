@@ -21,7 +21,7 @@ Item {
   readonly property bool isMacMode: root.currentState.indexOf("mac") !== -1
   property bool screensaverEnabled: true
   property int screensaverTimeout: 300
-  property string screensaverVideo: ""
+  property string screensaverVideo: homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.mp4"
   property bool screensaverActive: false
   readonly property bool screensaverEngineActive: root.isMacMode && root.screensaverEnabled
 
@@ -55,7 +55,9 @@ Item {
         if (!isNaN(t) && t > 0) root.screensaverTimeout = t
       } else if (line.indexOf("SCREENSAVER_VIDEO=") === 0) {
         var v = line.substring(18).trim()
-        root.screensaverVideo = v
+        if (v && v.indexOf("screenrecording") === -1) {
+          root.screensaverVideo = v
+        }
       }
     }
     if (!root.screensaverVideo || root.screensaverVideo === "") {
@@ -146,11 +148,14 @@ Item {
   Variants {
     model: Quickshell.screens
 
-    MacScreensaverOverlay {
-      owner: root
-      modelData: modelData
-      clipUrl: root.screensaverVideo
-      active: root.screensaverActive
+    delegate: Component {
+      MacScreensaverOverlay {
+        required property var modelData
+        owner: root
+        modelData: modelData
+        clipUrl: root.screensaverVideo
+        active: root.screensaverActive
+      }
     }
   }
 
@@ -189,21 +194,33 @@ Item {
       root.runCmd("omarchy-undercover --transparency " + (val === "off" || val === "false" ? "off" : "on"))
     }
 
-    function status() {
+    function status(): string {
       return root.currentState
     }
 
-    function previewScreensaver() {
+    function debugScreensaver(): string {
+      return JSON.stringify({
+        currentState: root.currentState,
+        isMacMode: root.isMacMode,
+        screensaverEnabled: root.screensaverEnabled,
+        screensaverTimeout: root.screensaverTimeout,
+        screensaverVideo: root.screensaverVideo,
+        screensaverActive: root.screensaverActive,
+        screensaverEngineActive: root.screensaverEngineActive
+      })
+    }
+
+    function previewScreensaver(): string {
       root.triggerScreensaverPreview()
       return "ok"
     }
 
-    function dismissScreensaver() {
+    function dismissScreensaver(): string {
       root.dismissScreensaver()
       return "ok"
     }
 
-    function reloadScreensaverConfig() {
+    function reloadScreensaverConfig(): string {
       root.reloadScreensaverConfig()
       return "ok"
     }
@@ -244,21 +261,33 @@ Item {
       root.runCmd("omarchy-undercover --transparency " + (val === "off" || val === "false" ? "off" : "on"))
     }
 
-    function status() {
+    function status(): string {
       return root.currentState
     }
 
-    function previewScreensaver() {
+    function debugScreensaver(): string {
+      return JSON.stringify({
+        currentState: root.currentState,
+        isMacMode: root.isMacMode,
+        screensaverEnabled: root.screensaverEnabled,
+        screensaverTimeout: root.screensaverTimeout,
+        screensaverVideo: root.screensaverVideo,
+        screensaverActive: root.screensaverActive,
+        screensaverEngineActive: root.screensaverEngineActive
+      })
+    }
+
+    function previewScreensaver(): string {
       root.triggerScreensaverPreview()
       return "ok"
     }
 
-    function dismissScreensaver() {
+    function dismissScreensaver(): string {
       root.dismissScreensaver()
       return "ok"
     }
 
-    function reloadScreensaverConfig() {
+    function reloadScreensaverConfig(): string {
       root.reloadScreensaverConfig()
       return "ok"
     }

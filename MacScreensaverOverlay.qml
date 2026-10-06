@@ -11,7 +11,7 @@ import Quickshell.Wayland
 PanelWindow {
     id: surface
 
-    required property var modelData
+    property var modelData: null
     property var owner: null
     property string clipUrl: ""
     property bool active: false
@@ -21,7 +21,7 @@ PanelWindow {
     property bool canDismiss: false
     property bool mapped: false
 
-    screen: modelData
+    screen: modelData ? modelData : (Quickshell.screens[0] || null)
     visible: surface.mapped
     color: surface.active ? "black" : "transparent"
     updatesEnabled: true
@@ -49,13 +49,6 @@ PanelWindow {
 
     function sync() {
         if (shouldPlay) {
-            var src = clipUrl;
-            if (src && !src.startsWith("file://") && !src.startsWith("http://") && !src.startsWith("https://")) {
-                src = "file://" + src;
-            }
-            if (player.source.toString() !== src && player.source.toString() !== clipUrl) {
-                player.source = src;
-            }
             if (player.playbackState !== MediaPlayer.PlayingState) {
                 player.play();
             }
@@ -73,13 +66,7 @@ PanelWindow {
     onClipUrlChanged: {
         if (clipUrl === "") {
             player.stop();
-            player.source = "";
         } else if (active) {
-            var src = clipUrl;
-            if (src && !src.startsWith("file://") && !src.startsWith("http://") && !src.startsWith("https://")) {
-                src = "file://" + src;
-            }
-            player.source = src;
             sync();
         }
     }
@@ -107,7 +94,6 @@ PanelWindow {
 
     Component.onDestruction: {
         player.stop();
-        player.source = "";
     }
 
     Timer {
@@ -121,9 +107,10 @@ PanelWindow {
         }
     }
 
-    Item {
-        id: fadeRoot
+    VideoOutput {
+        id: videoOut
         anchors.fill: parent
+        fillMode: VideoOutput.PreserveAspectCrop
         opacity: surface.active ? 1.0 : 0.0
 
         Behavior on opacity {
@@ -132,12 +119,6 @@ PanelWindow {
                 easing.type: Easing.InOutQuad
             }
         }
-
-        VideoOutput {
-            id: videoOut
-            anchors.fill: parent
-            fillMode: VideoOutput.PreserveAspectCrop
-        }
     }
 
     MediaPlayer {
@@ -145,6 +126,14 @@ PanelWindow {
         videoOutput: videoOut
         loops: MediaPlayer.Infinite
         audioOutput: null // Always mute screensaver audio
+        source: {
+            var s = surface.clipUrl;
+            if (!s || s === "") return "";
+            if (!s.startsWith("file://") && !s.startsWith("http://") && !s.startsWith("https://")) {
+                return "file://" + s;
+            }
+            return s;
+        }
 
         onSeekableChanged: {
             if (player.seekable && surface.pendingSeek >= 0) {
@@ -154,8 +143,8 @@ PanelWindow {
         }
 
         onErrorOccurred: function(err, str) {
+            console.warn("omarchy-undercover: screensaver player error: " + err + " - " + str);
             if (err !== MediaPlayer.NoError) {
-                console.warn("omarchy-undercover: screensaver player error:", str);
                 if (surface.active) {
                     surface.requestDismiss();
                 }
