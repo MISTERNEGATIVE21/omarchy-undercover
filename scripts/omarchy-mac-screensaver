@@ -1,0 +1,366 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# omarchy-mac-screensaver — macOS Aerial Video Screen Saver Manager & Downloader
+#
+# Manages video screensaver preferences, official Apple Aerial 4K/1080p CDN assets,
+# and IPC interactions for Omarchy Undercover (macOS Sequoia Camouflage mode).
+#
+# License: GPL-3.0-or-later
+# ==============================================================================
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLUGIN_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Config file locations
+SETTINGS_FILE="$PLUGIN_DIR/settings.conf"
+if [[ ! -f "$SETTINGS_FILE" ]] && [[ -f "$HOME/.config/omarchy/plugins/omarchy-undercover/settings.conf" ]]; then
+    SETTINGS_FILE="$HOME/.config/omarchy/plugins/omarchy-undercover/settings.conf"
+fi
+
+SCREENSAVER_DIR="$HOME/.local/share/omarchy-undercover/screensavers"
+mkdir -p "$SCREENSAVER_DIR"
+
+# Curated Apple Aerial CDN Catalog (H.264 1080p SDR for smooth decoding & performance)
+declare -A CATALOG_NAMES
+declare -A CATALOG_LOCATIONS
+declare -A CATALOG_RES
+declare -A CATALOG_SIZES
+declare -A CATALOG_URLS
+
+CATALOG_NAMES["sonoma_horizon"]="Sonoma Horizon"
+CATALOG_LOCATIONS["sonoma_horizon"]="California, USA"
+CATALOG_RES["sonoma_horizon"]="1080p"
+CATALOG_SIZES["sonoma_horizon"]="~120MB"
+CATALOG_URLS["sonoma_horizon"]="https://sylvan.apple.com/Videos/comp_GL_G004_C010_v03_6Mbps.mp4"
+
+CATALOG_NAMES["yosemite"]="Yosemite Valley"
+CATALOG_LOCATIONS["yosemite"]="California, USA"
+CATALOG_RES["yosemite"]="1080p"
+CATALOG_SIZES["yosemite"]="~180MB"
+CATALOG_URLS["yosemite"]="https://sylvan.apple.com/Videos/comp_C002_C005_0818SC_001_v01_SDR_PS_20180925_sdr_2K_AVC.mp4"
+
+CATALOG_NAMES["patagonia"]="Patagonia Glaciers"
+CATALOG_LOCATIONS["patagonia"]="Chile / Argentina"
+CATALOG_RES["patagonia"]="1080p"
+CATALOG_SIZES["patagonia"]="~140MB"
+CATALOG_URLS["patagonia"]="https://sylvan.apple.com/Videos/comp_GL_G008_C007_v03_6Mbps.mp4"
+
+CATALOG_NAMES["greenland"]="Greenland Icebergs"
+CATALOG_LOCATIONS["greenland"]="Greenland"
+CATALOG_RES["greenland"]="1080p"
+CATALOG_SIZES["greenland"]="~130MB"
+CATALOG_URLS["greenland"]="https://sylvan.apple.com/Videos/comp_GL_G002_C002_v03_6Mbps.mp4"
+
+CATALOG_NAMES["grand_canyon"]="Grand Canyon Dawn"
+CATALOG_LOCATIONS["grand_canyon"]="Arizona, USA"
+CATALOG_RES["grand_canyon"]="1080p"
+CATALOG_SIZES["grand_canyon"]="~160MB"
+CATALOG_URLS["grand_canyon"]="https://sylvan.apple.com/Videos/comp_C007_C004_0824AJ_001_v01_SDR_PS_20180925_sdr_2K_AVC.mp4"
+
+CATALOG_NAMES["dubai_night"]="Dubai Night Skyline"
+CATALOG_LOCATIONS["dubai_night"]="Dubai, UAE"
+CATALOG_RES["dubai_night"]="1080p"
+CATALOG_SIZES["dubai_night"]="~150MB"
+CATALOG_URLS["dubai_night"]="https://sylvan.apple.com/Videos/comp_DB_D011_C010_v03_6Mbps.mp4"
+
+read_setting() {
+    local key="$1"
+    local default_val="$2"
+    if [[ -f "$SETTINGS_FILE" ]]; then
+        local val
+        val="$(grep -E "^${key}=" "$SETTINGS_FILE" | head -n1 | cut -d'=' -f2- | tr -d '\r' || true)"
+        if [[ -n "$val" ]]; then
+            echo "$val"
+            return
+        fi
+    fi
+    echo "$default_val"
+}
+
+write_setting() {
+    local key="$1"
+    local val="$2"
+    mkdir -p "$(dirname "$SETTINGS_FILE")"
+    touch "$SETTINGS_FILE"
+    if grep -q "^${key}=" "$SETTINGS_FILE"; then
+        sed -i "s|^${key}=.*|${key}=${val}|" "$SETTINGS_FILE"
+    else
+        echo "${key}=${val}" >> "$SETTINGS_FILE"
+    fi
+}
+
+notify_quickshell() {
+    # Notify omarchy-undercover-service via Quickshell IPC if running
+    if command -v qs &>/dev/null; then
+        qs ipc call omarchy-undercover-service reloadScreensaverConfig &>/dev/null || true
+    fi
+}
+
+dispatch_preview() {
+    if command -v qs &>/dev/null; then
+        qs ipc call omarchy-undercover-service previewScreensaver &>/dev/null || true
+    fi
+}
+
+dispatch_dismiss() {
+    if command -v qs &>/dev/null; then
+        qs ipc call omarchy-undercover-service dismissScreensaver &>/dev/null || true
+    fi
+}
+
+get_status_json() {
+    local enabled
+    enabled="$(read_setting "SCREENSAVER_ENABLED" "true")"
+    local timeout
+    timeout="$(read_setting "SCREENSAVER_TIMEOUT" "300")"
+    local active_clip
+    active_clip="$(read_setting "SCREENSAVER_VIDEO" "")"
+
+    # If no active clip set, default to first available downloaded clip or default placeholder
+    if [[ -z "$active_clip" || ! -f "$active_clip" ]]; then
+        local first_found
+        first_found="$(find "$SCREENSAVER_DIR" "$PLUGIN_DIR/assets/screensavers" -maxdepth 1 -type f \( -name "*.mp4" -o -name "*.webm" \) 2>/dev/null | head -n1 || true)"
+        if [[ -n "$first_found" ]]; then
+            active_clip="$first_found"
+        fi
+    fi
+
+    # Build installed clips JSON array
+    local installed_json="[]"
+    local files
+    files="$(find "$SCREENSAVER_DIR" "$PLUGIN_DIR/assets/screensavers" -maxdepth 1 -type f \( -name "*.mp4" -o -name "*.webm" \) 2>/dev/null || true)"
+    if [[ -n "$files" ]]; then
+        installed_json="$(echo "$files" | jq -R . | jq -s 'map({
+            path: .,
+            name: (split("/") | last | sub("\\.(mp4|webm)$"; "") | gsub("_"; " ") | capture("^(?<first>.)(?<rest>.*)$") | (.first | ascii_upcase) + .rest),
+            size_mb: (try (1) catch 0)
+        })')"
+    fi
+
+    # Build catalog JSON array
+    local catalog_json
+    catalog_json="$(python3 -c '
+import json, os
+
+catalog_ids = ["sonoma_horizon", "yosemite", "patagonia", "greenland", "grand_canyon", "dubai_night"]
+names = {
+    "sonoma_horizon": "Sonoma Horizon",
+    "yosemite": "Yosemite Valley",
+    "patagonia": "Patagonia Glaciers",
+    "greenland": "Greenland Icebergs",
+    "grand_canyon": "Grand Canyon Dawn",
+    "dubai_night": "Dubai Night Skyline"
+}
+locations = {
+    "sonoma_horizon": "California, USA",
+    "yosemite": "California, USA",
+    "patagonia": "Chile / Argentina",
+    "greenland": "Greenland",
+    "grand_canyon": "Arizona, USA",
+    "dubai_night": "Dubai, UAE"
+}
+sizes = {
+    "sonoma_horizon": "~120MB",
+    "yosemite": "~180MB",
+    "patagonia": "~140MB",
+    "greenland": "~130MB",
+    "grand_canyon": "~160MB",
+    "dubai_night": "~150MB"
+}
+
+screensaver_dir = os.path.expanduser("~/.local/share/omarchy-undercover/screensavers")
+items = []
+for cid in catalog_ids:
+    target_file = os.path.join(screensaver_dir, f"{cid}.mp4")
+    installed = os.path.isfile(target_file)
+    items.append({
+        "id": cid,
+        "name": names[cid],
+        "location": locations[cid],
+        "res": "1080p",
+        "size": sizes[cid],
+        "installed": installed,
+        "path": target_file if installed else ""
+    })
+print(json.dumps(items))
+')"
+
+    jq -n \
+        --argjson enabled "$([[ "$enabled" == "true" ]] && echo true || echo false)" \
+        --argjson timeout "$timeout" \
+        --arg active_clip "$active_clip" \
+        --argjson installed "$installed_json" \
+        --argjson catalog "$catalog_json" \
+        '{
+            enabled: $enabled,
+            timeout: $timeout,
+            active_clip: $active_clip,
+            installed_clips: $installed,
+            catalog: $catalog
+        }'
+}
+
+list_clips() {
+    echo "=== Available Apple Aerial Screensaver Catalog ==="
+    for cid in "sonoma_horizon" "yosemite" "patagonia" "greenland" "grand_canyon" "dubai_night"; do
+        local target="$SCREENSAVER_DIR/${cid}.mp4"
+        local status="[Available]"
+        if [[ -f "$target" ]]; then
+            status="[Installed: $target]"
+        fi
+        echo "  - ${cid}: ${CATALOG_NAMES[$cid]} (${CATALOG_LOCATIONS[$cid]}, ${CATALOG_SIZES[$cid]}) $status"
+    done
+    echo ""
+    echo "=== Local Screensaver Files in $SCREENSAVER_DIR ==="
+    find "$SCREENSAVER_DIR" -maxdepth 1 -type f \( -name "*.mp4" -o -name "*.webm" \) 2>/dev/null || echo "  (None found yet)"
+}
+
+download_clip() {
+    local cid="$1"
+    local url="${CATALOG_URLS[$cid]:-}"
+    if [[ -z "$url" ]]; then
+        echo "Error: Unknown catalog clip ID '$cid'." >&2
+        echo "Run '$0 --list' to see available clip IDs." >&2
+        exit 1
+    fi
+
+    local target="$SCREENSAVER_DIR/${cid}.mp4"
+    local part="$SCREENSAVER_DIR/${cid}.part"
+
+    echo "Downloading ${CATALOG_NAMES[$cid]} from Apple CDN..."
+    echo "URL: $url"
+    echo "Destination: $target"
+
+    if curl -L --fail --progress-bar --max-time 600 -o "$part" "$url"; then
+        mv -f "$part" "$target"
+        echo "Successfully downloaded ${CATALOG_NAMES[$cid]}!"
+        # If no active clip set, set this one
+        local current
+        current="$(read_setting "SCREENSAVER_VIDEO" "")"
+        if [[ -z "$current" || ! -f "$current" ]]; then
+            write_setting "SCREENSAVER_VIDEO" "$target"
+            echo "Set as active screensaver: $target"
+        fi
+        notify_quickshell
+    else
+        rm -f "$part"
+        echo "Error: Download failed." >&2
+        exit 1
+    fi
+}
+
+set_clip() {
+    local target="$1"
+    if [[ -n "${CATALOG_URLS[$target]:-}" ]]; then
+        target="$SCREENSAVER_DIR/${target}.mp4"
+    fi
+
+    if [[ ! -f "$target" ]]; then
+        echo "Error: Video file '$target' does not exist." >&2
+        exit 1
+    fi
+
+    write_setting "SCREENSAVER_VIDEO" "$target"
+    echo "Active screensaver set to: $target"
+    notify_quickshell
+}
+
+set_timeout() {
+    local t="$1"
+    if ! [[ "$t" =~ ^[0-9]+$ ]]; then
+        echo "Error: Timeout must be an integer (seconds)." >&2
+        exit 1
+    fi
+    write_setting "SCREENSAVER_TIMEOUT" "$t"
+    echo "Screensaver timeout set to: ${t}s"
+    notify_quickshell
+}
+
+set_toggle() {
+    local val="$1"
+    case "$val" in
+        on|true|1|enable)
+            write_setting "SCREENSAVER_ENABLED" "true"
+            echo "Screensaver enabled"
+            ;;
+        off|false|0|disable)
+            write_setting "SCREENSAVER_ENABLED" "false"
+            echo "Screensaver disabled"
+            ;;
+        *)
+            echo "Error: Invalid toggle value '$val'. Use 'on' or 'off'." >&2
+            exit 1
+            ;;
+    esac
+    notify_quickshell
+}
+
+# CLI Argument parsing
+if [[ $# -eq 0 ]]; then
+    get_status_json
+    exit 0
+fi
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --status)
+            get_status_json
+            exit 0
+            ;;
+        --list)
+            list_clips
+            exit 0
+            ;;
+        --set)
+            shift
+            if [[ $# -eq 0 ]]; then echo "Error: Missing argument for --set" >&2; exit 1; fi
+            set_clip "$1"
+            exit 0
+            ;;
+        --timeout)
+            shift
+            if [[ $# -eq 0 ]]; then echo "Error: Missing argument for --timeout" >&2; exit 1; fi
+            set_timeout "$1"
+            exit 0
+            ;;
+        --toggle)
+            shift
+            if [[ $# -eq 0 ]]; then echo "Error: Missing argument for --toggle" >&2; exit 1; fi
+            set_toggle "$1"
+            exit 0
+            ;;
+        --download)
+            shift
+            if [[ $# -eq 0 ]]; then echo "Error: Missing clip ID for --download" >&2; exit 1; fi
+            download_clip "$1"
+            exit 0
+            ;;
+        --preview)
+            dispatch_preview
+            exit 0
+            ;;
+        --dismiss)
+            dispatch_dismiss
+            exit 0
+            ;;
+        -h|--help)
+            echo "Usage: omarchy-mac-screensaver [OPTIONS]"
+            echo "Options:"
+            echo "  --status               Print JSON status object"
+            echo "  --list                 List Apple CDN catalog and local installed videos"
+            echo "  --download <clip_id>   Download an official Apple Aerial clip"
+            echo "  --set <path_or_id>     Set active screensaver video"
+            echo "  --timeout <seconds>    Set idle timeout threshold"
+            echo "  --toggle <on|off>      Enable or disable screensaver"
+            echo "  --preview              Trigger fullscreen screensaver preview test"
+            echo "  --dismiss              Dismiss active screensaver overlay"
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1" >&2
+            exit 1
+            ;;
+    esac
+done
