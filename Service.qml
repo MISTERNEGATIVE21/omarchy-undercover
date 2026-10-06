@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Wayland
 
 Item {
   id: root
@@ -12,8 +13,17 @@ Item {
     return homeDir + "/.config/omarchy/plugins/omarchy-undercover";
   }
   property string statePath: pluginDir + "/state"
+  property string settingsConfPath: pluginDir + "/settings.conf"
   property string currentState: "mac-dark"
   property string previousState: ""
+
+  // macOS Screensaver Properties
+  readonly property bool isMacMode: root.currentState.indexOf("mac") !== -1
+  property bool screensaverEnabled: true
+  property int screensaverTimeout: 300
+  property string screensaverVideo: ""
+  property bool screensaverActive: false
+  readonly property bool screensaverEngineActive: root.isMacMode && root.screensaverEnabled
 
   function runCmd(cmd) {
     var fullCmd = cmd.replace(/^omarchy-([a-zA-Z0-9_-]+)/, function(match) {
@@ -30,9 +40,47 @@ Item {
     Quickshell.execDetached([soundScript, soundFile])
   }
 
+  function reloadScreensaverConfig() {
+    var txt = settingsConfFile.text()
+    if (!txt) return
+
+    var lines = txt.split("\n")
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].trim()
+      if (line.indexOf("SCREENSAVER_ENABLED=") === 0) {
+        var en = line.substring(20).trim().toLowerCase()
+        root.screensaverEnabled = (en === "true" || en === "1" || en === "yes")
+      } else if (line.indexOf("SCREENSAVER_TIMEOUT=") === 0) {
+        var t = parseInt(line.substring(20).trim())
+        if (!isNaN(t) && t > 0) root.screensaverTimeout = t
+      } else if (line.indexOf("SCREENSAVER_VIDEO=") === 0) {
+        var v = line.substring(18).trim()
+        root.screensaverVideo = v
+      }
+    }
+  }
+
+  function triggerScreensaverPreview() {
+    if (root.isMacMode) {
+      root.screensaverActive = true
+    }
+  }
+
+  function dismissScreensaver() {
+    root.screensaverActive = false
+  }
+
   Component.onCompleted: {
     var s = stateFile.text().trim()
     if (s) root.currentState = s
+    reloadScreensaverConfig()
+  }
+
+  onCurrentStateChanged: {
+    // If transitioning away from macOS mode, immediately kill any active screensaver
+    if (!root.isMacMode && root.screensaverActive) {
+      root.dismissScreensaver()
+    }
   }
 
   FileView {
@@ -55,6 +103,47 @@ Item {
         root.currentState = s
         root.playSwitchSound(s)
       }
+    }
+  }
+
+  FileView {
+    id: settingsConfFile
+    path: root.settingsConfPath
+    watchChanges: true
+    printErrors: false
+    onLoaded: root.reloadScreensaverConfig()
+    onFileChanged: {
+      reload()
+      root.reloadScreensaverConfig()
+    }
+  }
+
+  // Wayland Idle Monitor for macOS Mode
+  IdleMonitor {
+    id: idleMon
+    enabled: root.screensaverEngineActive
+    timeout: root.screensaverTimeout
+    respectInhibitors: true
+    onIsIdleChanged: {
+      if (idleMon.isIdle) {
+        if (root.screensaverEngineActive) {
+          root.screensaverActive = true
+        }
+      } else {
+        root.dismissScreensaver()
+      }
+    }
+  }
+
+  // Multi-monitor Wayland Overlay Instances
+  Variants {
+    model: Quickshell.screens
+
+    MacScreensaverOverlay {
+      owner: root
+      modelData: modelData
+      clipUrl: root.screensaverVideo
+      active: root.screensaverEngineActive && root.screensaverActive
     }
   }
 
@@ -96,6 +185,21 @@ Item {
     function status() {
       return root.currentState
     }
+
+    function previewScreensaver() {
+      root.triggerScreensaverPreview()
+      return "ok"
+    }
+
+    function dismissScreensaver() {
+      root.dismissScreensaver()
+      return "ok"
+    }
+
+    function reloadScreensaverConfig() {
+      root.reloadScreensaverConfig()
+      return "ok"
+    }
   }
 
   IpcHandler {
@@ -135,6 +239,21 @@ Item {
 
     function status() {
       return root.currentState
+    }
+
+    function previewScreensaver() {
+      root.triggerScreensaverPreview()
+      return "ok"
+    }
+
+    function dismissScreensaver() {
+      root.dismissScreensaver()
+      return "ok"
+    }
+
+    function reloadScreensaverConfig() {
+      root.reloadScreensaverConfig()
+      return "ok"
     }
   }
 }
