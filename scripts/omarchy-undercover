@@ -43,14 +43,8 @@ else
     PLUGIN_DIR="${SCRIPT_DIR}/.."
 fi
 
-if [[ -w "$PLUGIN_DIR" && ! "$PLUGIN_DIR" =~ ^/usr ]]; then
-    CONFIG_DIR="$PLUGIN_DIR"
-    STATE_DIR="$PLUGIN_DIR"
-else
-    CONFIG_DIR="$(undercover_user_dir)"
-    STATE_DIR="$CONFIG_DIR"
-fi
-
+CONFIG_DIR="$PLUGIN_DIR"
+STATE_DIR="$(undercover_state_dir)"
 STATE_FILE="$(undercover_state_file)"
 BACKUP_DIR="$STATE_DIR/backups"
 BASELINE_FILE="$STATE_DIR/baseline"
@@ -408,18 +402,26 @@ restore_shell_from_baseline() {
     fi
 
     if [[ "$restored" == "false" ]]; then
-        local def_src="/usr/share/omarchy/config/omarchy/shell.json"
-        if [[ ! -f "$def_src" ]]; then
-            def_src=$(project_file "shell/shell-default.json")
-        fi
-        if [[ -z "$def_src" || ! -f "$def_src" ]]; then
-            def_src="${SCRIPT_DIR}/../configs/shell/shell-default.json"
-        fi
-        if [[ -f "$def_src" ]]; then
-            mkdir -p "$HOME/.config/omarchy"
-            cp -f "$def_src" "$HOME/.config/omarchy/shell.json"
-            msg "Restored default Omarchy Quickshell layout."
-            restored=true
+        if [[ -f "$HOME/.config/omarchy/shell.json" ]] && command_exists jq; then
+            # Surgically purge undercover items only, preserving user custom widgets
+            jq '
+              walk(
+                if type == "object" and has("id") and ((.id // "") | test("undercover")) then empty
+                elif type == "array" then map(select(. != "omarchy-undercover" and . != "undercover"))
+                else . end
+              )
+            ' "$HOME/.config/omarchy/shell.json" > "$HOME/.config/omarchy/shell.json.tmp" 2>/dev/null && \
+            mv "$HOME/.config/omarchy/shell.json.tmp" "$HOME/.config/omarchy/shell.json"
+            msg "Cleaned Undercover widgets from Quickshell layout."
+        else
+            local def_src="/usr/share/omarchy/config/omarchy/shell.json"
+            [[ ! -f "$def_src" ]] && def_src=$(project_file "shell/shell-default.json")
+            [[ -z "$def_src" || ! -f "$def_src" ]] && def_src="${SCRIPT_DIR}/../configs/shell/shell-default.json"
+            if [[ -f "$def_src" ]]; then
+                mkdir -p "$HOME/.config/omarchy"
+                cp -f "$def_src" "$HOME/.config/omarchy/shell.json"
+                msg "Restored default Omarchy Quickshell layout."
+            fi
         fi
     fi
 
@@ -521,6 +523,21 @@ backup_original_configs() {
     backup_config_dir "mako" "$cur_backup"
     backup_config_dir "alacritty" "$cur_backup"
     backup_config_dir "fontconfig" "$cur_backup"
+    backup_config_dir "xsettingsd" "$cur_backup"
+
+    if [[ -f "$HOME/.gtkrc-2.0" ]]; then
+        cp -a "$HOME/.gtkrc-2.0" "$cur_backup/gtkrc-2.0"
+    else
+        touch "$cur_backup/.absent_gtkrc-2.0"
+    fi
+
+    if command_exists omarchy; then
+        local cur_bg
+        cur_bg=$(omarchy theme bg current 2>/dev/null || true)
+        if [[ -n "$cur_bg" && -f "$cur_bg" ]]; then
+            echo "$cur_bg" > "$cur_backup/background"
+        fi
+    fi
 
     # Capture gtk settings
     local gtk_file="$cur_backup/gtk_settings.conf"
@@ -1018,6 +1035,7 @@ restore_desktop_state() {
     fi
 
     # 2. Restore baseline configuration directories if baseline exists
+    local restored_gtk=0
     if [[ -n "$baseline" && -d "$baseline" ]]; then
         restore_config_dir "waybar" "$baseline"
         restore_config_dir "rofi" "$baseline"
@@ -1025,6 +1043,26 @@ restore_desktop_state() {
         restore_config_dir "mako" "$baseline"
         restore_config_dir "alacritty" "$baseline"
         restore_config_dir "fontconfig" "$baseline"
+        restore_config_dir "gtk-3.0" "$baseline"
+        restore_config_dir "gtk-4.0" "$baseline"
+        restore_config_dir "xsettingsd" "$baseline"
+        if [[ -f "$baseline/gtkrc-2.0" ]]; then
+            cp -a "$baseline/gtkrc-2.0" "$HOME/.gtkrc-2.0"
+        elif [[ -f "$baseline/.absent_gtkrc-2.0" ]]; then
+            rm -f "$HOME/.gtkrc-2.0"
+        fi
+        if [[ -f "$baseline/hypr/hyprland.lua" ]]; then
+            mkdir -p "$HOME/.config/hypr"
+            cp -a "$baseline/hypr/hyprland.lua" "$HOME/.config/hypr/"
+        fi
+        if [[ -f "$baseline/hypr/hyprland.conf" ]]; then
+            mkdir -p "$HOME/.config/hypr"
+            cp -a "$baseline/hypr/hyprland.conf" "$HOME/.config/hypr/"
+        fi
+        if [[ -f "$baseline/gtk_settings.conf" ]]; then
+            restore_gtk_from_baseline "$baseline"
+            restored_gtk=1
+        fi
     fi
 
     # 3. Resolve target theme (never hardcode Krishna or Aether!)
@@ -1080,19 +1118,20 @@ restore_desktop_state() {
     [[ -z "$color_scheme" ]] && color_scheme="prefer-dark"
     [[ -z "$button_layout" ]] && button_layout="close:minimize,maximize"
 
-    if command_exists gsettings; then
-        gsettings set org.gnome.desktop.interface gtk-theme "$gtk_theme" 2>/dev/null || true
-        gsettings set org.gnome.desktop.interface icon-theme "$icon_theme" 2>/dev/null || true
-        gsettings set org.gnome.desktop.interface cursor-theme "$cursor_theme" 2>/dev/null || true
-        gsettings set org.gnome.desktop.interface font-name "$font_name" 2>/dev/null || true
-        gsettings set org.gnome.desktop.interface color-scheme "$color_scheme" 2>/dev/null || true
-        gsettings set org.gnome.desktop.wm.preferences button-layout "$button_layout" 2>/dev/null || true
-    fi
+    if [[ "$restored_gtk" -eq 0 ]]; then
+        if command_exists gsettings; then
+            gsettings set org.gnome.desktop.interface gtk-theme "$gtk_theme" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface icon-theme "$icon_theme" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface cursor-theme "$cursor_theme" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface font-name "$font_name" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface color-scheme "$color_scheme" 2>/dev/null || true
+            gsettings set org.gnome.desktop.wm.preferences button-layout "$button_layout" 2>/dev/null || true
+        fi
 
-    # Reset GTK 3.0 & 4.0 settings.ini
-    for gtk_dir in "gtk-3.0" "gtk-4.0"; do
-        mkdir -p "$HOME/.config/$gtk_dir"
-        cat > "$HOME/.config/$gtk_dir/settings.ini" << EOF
+        # Reset GTK 3.0 & 4.0 settings.ini
+        for gtk_dir in "gtk-3.0" "gtk-4.0"; do
+            mkdir -p "$HOME/.config/$gtk_dir"
+            cat > "$HOME/.config/$gtk_dir/settings.ini" << EOF
 [Settings]
 gtk-theme-name=$gtk_theme
 gtk-icon-theme-name=$icon_theme
@@ -1102,10 +1141,10 @@ gtk-font-name=$font_name
 gtk-application-prefer-dark-theme=$([ "$color_scheme" = "prefer-dark" ] && echo 1 || echo 0)
 gtk-decoration-layout=$button_layout
 EOF
-    done
+        done
 
-    # Reset GTK 2.0
-    cat > "$HOME/.gtkrc-2.0" << EOF
+        # Reset GTK 2.0
+        cat > "$HOME/.gtkrc-2.0" << EOF
 gtk-theme-name="$gtk_theme"
 gtk-icon-theme-name="$icon_theme"
 gtk-font-name="$font_name"
@@ -1113,9 +1152,9 @@ gtk-cursor-theme-name="$cursor_theme"
 gtk-cursor-theme-size=24
 EOF
 
-    # Reset xsettingsd
-    mkdir -p "$HOME/.config/xsettingsd"
-    cat > "$HOME/.config/xsettingsd/xsettingsd.conf" << EOF
+        # Reset xsettingsd
+        mkdir -p "$HOME/.config/xsettingsd"
+        cat > "$HOME/.config/xsettingsd/xsettingsd.conf" << EOF
 Net/ThemeName "$gtk_theme"
 Net/IconThemeName "$icon_theme"
 Gtk/FontName "$font_name"
@@ -1123,7 +1162,8 @@ Gtk/CursorThemeName "$cursor_theme"
 Gtk/CursorThemeSize 24
 Gtk/DecorationLayout "$button_layout"
 EOF
-    killall -HUP xsettingsd 2>/dev/null || true
+        killall -HUP xsettingsd 2>/dev/null || true
+    fi
 
     # Clean up sound overrides
     rm -f "$CONFIG_DIR/assets/sounds/current-notify.wav" "$CONFIG_DIR/sounds/current-notify.wav" 2>/dev/null || true
@@ -1132,6 +1172,7 @@ EOF
     local prev_bg=""
     [[ -f "$STATE_DIR/previous_background" ]] && prev_bg=$(cat "$STATE_DIR/previous_background" 2>/dev/null | tr -d '\r\n')
     [[ -z "$prev_bg" && -f "$CONFIG_DIR/previous_background" ]] && prev_bg=$(cat "$CONFIG_DIR/previous_background" 2>/dev/null | tr -d '\r\n')
+    [[ -z "$prev_bg" && -n "$baseline" && -f "$baseline/background" ]] && prev_bg=$(cat "$baseline/background" 2>/dev/null | tr -d '\r\n')
     if [[ -n "$prev_bg" && -f "$prev_bg" ]] && command_exists omarchy; then
         omarchy theme bg set "$prev_bg" 2>/dev/null || true
     fi
@@ -1194,6 +1235,7 @@ restore_baseline() {
 }
 
 uninstall_undercover() {
+    local purge="${1:-0}"
     msg "Uninstalling Omarchy Undercover and returning system to pristine normal settings..."
 
     # 1. Restore baseline desktop state (theme, background, GTK, icons, shell.json, etc.)
@@ -1203,25 +1245,49 @@ uninstall_undercover() {
     fi
     restore_desktop_state "$baseline"
 
-    # 2. Uninstall Hyprland toggle files completely
+    # 2. Re-enable official stock screensaver & idle plugins
+    rm -f "$HOME/.local/state/omarchy/toggles/screensaver-off" 2>/dev/null || true
+    if command_exists omarchy-toggle; then
+        omarchy-toggle screensaver-off off 2>/dev/null || true
+    fi
+    restore_stock_lock_and_idle
+
+    # 3. Uninstall Hyprland toggle files completely
     uninstall_undercover_hyprland
 
-    # 3. Clean up legacy icons and files created by older undercover versions
+    # 4. Clean up legacy icons and files created by older undercover versions
     rm -rf "$HOME/.local/share/icons/mac-dock" 2>/dev/null || true
     rm -rf "$HOME/.config/omarchy-undercover" 2>/dev/null || true
 
-    # 4. Remove custom flea wrapper if created by undercover
+    # 5. Remove custom flea wrapper if created by undercover
     if [[ -f "$HOME/.local/bin/flea" ]]; then
         if grep -q "QSG_RHI_BACKEND" "$HOME/.local/bin/flea" 2>/dev/null; then
             rm -f "$HOME/.local/bin/flea" 2>/dev/null || true
         fi
     fi
 
-    # 5. Clear state, backup, and undercover runtime directories
+    # 6. Clear state, backup, cache, and temporary runtime directories
     clear_state
-    rm -rf "$STATE_DIR/state" "$STATE_DIR/backups" "$STATE_DIR/baseline.json" "$STATE_DIR/previous_*" "${XDG_CACHE_HOME:-$HOME/.cache}/omarchy-undercover" 2>/dev/null || true
+    rm -rf "$STATE_DIR" "${XDG_CACHE_HOME:-$HOME/.cache}/omarchy-undercover" 2>/dev/null || true
+    rm -rf "${XDG_RUNTIME_DIR:-/run/user/$UID}/omarchy-undercover" 2>/dev/null || true
+    rm -rf "${XDG_CACHE_HOME:-$HOME/.cache}/omarchy/omasettings" 2>/dev/null || true
+    rm -rf /tmp/omarchy-undercover* /tmp/mac-dock* /tmp/mac-island* /tmp/mac-screensaver* 2>/dev/null || true
 
-    # 6. Final reload of Omarchy bar and Hyprland
+    # 7. Disable plugin on uninstall or completely remove and purge on --purge
+    if [[ "$purge" -eq 1 ]]; then
+        rm -rf "$HOME/.local/share/omarchy-undercover" 2>/dev/null || true
+        if command_exists omarchy; then
+            omarchy plugin remove omarchy-undercover --yes 2>/dev/null || true
+        fi
+        rm -rf "$HOME/.config/omarchy/plugins/.omarchy-undercover.bak"* 2>/dev/null || true
+        rm -rf "$HOME/.config/omarchy/plugins/omarchy-undercover" 2>/dev/null || true
+    else
+        if command_exists omarchy; then
+            omarchy plugin disable omarchy-undercover 2>/dev/null || true
+        fi
+    fi
+
+    # 8. Final reload of Omarchy bar and Hyprland
     omarchy_reload_bar
     omarchy_reload_hyprland
 
@@ -1302,7 +1368,8 @@ show_help() {
     echo "  --restore-stock-lock-idle               Restore official Omarchy stock lockscreen & idle plugins"
     echo "  --disable, --omarchy                    Switch to original Omarchy mode & theming"
     echo "  --restore                               Restore from baseline backup"
-    echo "  --uninstall                             Completely uninstall and restore original settings"
+    echo "  --uninstall                             Uninstall and restore original settings (clean cache & runtime)"
+    echo "  --purge                                 Completely purge all files, downloaded media, cache & unregister"
     echo "  --verify                                Verify integrity of config and state"
     echo "  --status                                Show current status"
     echo "  --help, -h                              Show this help message"
@@ -1478,7 +1545,10 @@ case "$1" in
         restore_baseline
         ;;
     --uninstall)
-        uninstall_undercover
+        uninstall_undercover 0
+        ;;
+    --purge)
+        uninstall_undercover 1
         ;;
     --sync-hyprland)
         cur_mode=$(read_setting "MODE" "windows")

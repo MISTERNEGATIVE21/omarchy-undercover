@@ -122,6 +122,13 @@ run_wlroots_screensaver() {
         fi
     fi
 
+    # Resolve dense-GOP 60fps hardware-accelerated clip if available
+    local opt_clip
+    opt_clip="$("$PLUGIN_DIR/scripts/omarchy-resolve-clip" "$clip" 2>/dev/null || true)"
+    if [[ -n "$opt_clip" && -f "$opt_clip" ]]; then
+        clip="$opt_clip"
+    fi
+
     # 1. Native Wayland / wlroots video playback via mpv
     if [[ -n "$clip" && -f "$clip" ]] && command -v mpv &>/dev/null; then
         echo "Launching wlroots video screensaver via mpv ($clip)..."
@@ -154,7 +161,7 @@ EOF
 
         pkill -f 'omarchy-undercover-screensaver' 2>/dev/null || true
 
-        # Run mpv in fullscreen as a native Wayland client
+        # Run mpv in fullscreen as a native Wayland client with hardware acceleration
         mpv --title="omarchy-undercover-screensaver" \
             --app-id="omarchy-undercover-screensaver" \
             --fs \
@@ -163,6 +170,8 @@ EOF
             --no-osc \
             --no-osd-bar \
             --idle=no \
+            --hwdec=auto-safe \
+            --video-sync=display-resample \
             --input-default-bindings=no \
             --input-vo-keyboard=yes \
             --input-conf="$tmp_input" \
@@ -247,10 +256,10 @@ get_status_json() {
         fi
     fi
 
-    # Build installed clips JSON array
+    # Build installed clips JSON array (excluding duplicate .opt.mp4 internal siblings)
     local installed_json="[]"
     local files
-    files="$(find "$SCREENSAVER_DIR" "$PLUGIN_DIR/assets/screensavers" -maxdepth 1 -type f \( -name "*.mp4" -o -name "*.webm" \) 2>/dev/null || true)"
+    files="$(find "$SCREENSAVER_DIR" "$PLUGIN_DIR/assets/screensavers" -maxdepth 1 -type f \( -name "*.mp4" -o -name "*.webm" \) ! -name "*.opt.mp4" 2>/dev/null || true)"
     if [[ -n "$files" ]]; then
         installed_json="$(echo "$files" | jq -R . | jq -s 'map({
             path: .,
@@ -435,29 +444,84 @@ download_clip() {
     fi
 
     if [[ "$success" == "true" && -f "$target" && -s "$target" ]]; then
-        # Ensure video is H.264 for hardware playback compatibility in Qt Quick
-        if command -v ffprobe &>/dev/null && command -v ffmpeg &>/dev/null; then
-            local vcodec
-            vcodec="$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "$target" 2>/dev/null || true)"
-            if [[ "$vcodec" != "h264" ]]; then
-                echo "Optimizing video codec ($vcodec -> h264) for smooth Wayland playback..."
-                local tmp_transcode="${target}.h264.mp4"
-                if ffmpeg -y -i "$target" -t 300 -c:v libx264 -profile:v main -preset veryfast -crf 20 -pix_fmt yuv420p -movflags +faststart -an "$tmp_transcode" 2>/dev/null; then
-                    mv -f "$tmp_transcode" "$target"
-                else
-                    rm -f "$tmp_transcode"
-                fi
-            fi
-        fi
         echo "Successfully downloaded ${title}!"
-        write_setting "SCREENSAVER_VIDEO" "$target"
-        echo "Set as active screensaver: $target"
+        optimize_clip "$target" || true
+        local final_clip
+        final_clip="$("$PLUGIN_DIR/scripts/omarchy-resolve-clip" "$target" 2>/dev/null || echo "$target")"
+        write_setting "SCREENSAVER_VIDEO" "$final_clip"
+        echo "Set as active screensaver: $final_clip"
         notify_quickshell
     else
         rm -f "$part" "${target}.part."*
         echo "Error: Failed to download video from '$url'." >&2
         exit 1
     fi
+}
+
+optimize_clip() {
+    local src="$1"
+    local force="${2:-0}"
+    if [[ -z "$src" || ! -f "$src" ]]; then
+        echo "Error: Source clip '$src' does not exist." >&2
+        return 1
+    fi
+    case "$src" in *.opt.mp4) return 0 ;; esac
+
+    local out="${src}.opt.mp4"
+    if [[ "$force" -ne 1 && -f "$out" && "$out" -nt "$src" ]]; then
+        echo "Clip is already optimized: $out"
+        return 0
+    fi
+
+    echo "Optimizing $(basename "$src") for 60fps hardware-accelerated playback..."
+    local dur
+    dur="$(ffprobe -v error -show_entries format=duration -of csv=p=0 -- "$src" 2>/dev/null)" || {
+        echo "Error: ffprobe failed for $src" >&2
+        return 1
+    }
+    dur="${dur%%,*}"
+    local xfade_len=0.8
+    local mid_end
+    mid_end="$(awk -v d="$dur" -v x="$xfade_len" 'BEGIN { printf "%.2f", d - x }')"
+
+    # Check encoder: NVENC preferred, fallback to libx264
+    local enc_flags=(-c:v libx264 -preset medium -crf 22)
+    if ffmpeg -f lavfi -i testsrc=duration=1:size=64x64:rate=30 -c:v h264_nvenc -f null - 2>/dev/null; then
+        echo "  [Hardware Acceleration: NVIDIA NVENC active]"
+        enc_flags=(-c:v h264_nvenc -preset p5 -rc:v vbr -cq 22 -b:v 3500k -maxrate 6000k -bufsize 8000k)
+    fi
+
+    local tmp_opt="${src}.tmp_opt.mp4"
+    rm -f "$tmp_opt"
+
+    # Tier 1: 60fps interpolation + baked seamless crossfade + 1s dense GOP (60 frames)
+    if ffmpeg -y -hide_banner -loglevel warning -stats -i "$src" -filter_complex "
+[0:v]framerate=fps=60[m];
+[m]split=3[a][b][c];
+[a]trim=duration=${xfade_len},setpts=PTS-STARTPTS[head];
+[b]trim=start=0:end=${mid_end},setpts=PTS-STARTPTS[mid];
+[c]trim=start=${mid_end},setpts=PTS-STARTPTS[tail];
+[tail][head]xfade=transition=fade:duration=${xfade_len}:offset=0[xf];
+[mid][xf]concat=n=2:v=1:a=0[out]
+" -map "[out]" "${enc_flags[@]}" -g 60 -keyint_min 60 -pix_fmt yuv420p -an -movflags +faststart "$tmp_opt"; then
+        mv -f "$tmp_opt" "$out"
+        ln -sf "$(basename "$out")" "${src%.mp4}.opt.mp4" 2>/dev/null || true
+        echo "Successfully optimized: $out"
+        return 0
+    fi
+
+    # Tier 2 fallback: interpolation only without crossfade
+    if ffmpeg -y -hide_banner -loglevel warning -stats -i "$src" -vf "framerate=fps=60" \
+        "${enc_flags[@]}" -g 60 -keyint_min 60 -pix_fmt yuv420p -an -movflags +faststart "$tmp_opt"; then
+        mv -f "$tmp_opt" "$out"
+        ln -sf "$(basename "$out")" "${src%.mp4}.opt.mp4" 2>/dev/null || true
+        echo "Successfully optimized (interpolated): $out"
+        return 0
+    fi
+
+    rm -f "$tmp_opt"
+    echo "Warning: Optimization failed, keeping original: $src" >&2
+    return 1
 }
 
 set_clip() {
@@ -467,12 +531,18 @@ set_clip() {
     fi
 
     if [[ ! -f "$target" ]]; then
-        echo "Error: Video file '$target' does not exist." >&2
-        exit 1
+        if [[ -f "$SCREENSAVER_DIR/$target" ]]; then
+            target="$SCREENSAVER_DIR/$target"
+        else
+            echo "Error: Video file '$target' does not exist." >&2
+            exit 1
+        fi
     fi
 
-    write_setting "SCREENSAVER_VIDEO" "$target"
-    echo "Active screensaver set to: $target"
+    local final_clip
+    final_clip="$("$PLUGIN_DIR/scripts/omarchy-resolve-clip" "$target" 2>/dev/null || echo "$target")"
+    write_setting "SCREENSAVER_VIDEO" "$final_clip"
+    echo "Active screensaver set to: $final_clip"
     notify_quickshell
 }
 
@@ -609,12 +679,30 @@ while [[ $# -gt 0 ]]; do
             dispatch_dismiss
             exit 0
             ;;
+        --optimize|-opt)
+            shift
+            local target_to_opt="${1:-$SCREENSAVER_DIR}"
+            if [[ -d "$target_to_opt" ]]; then
+                for f in "$target_to_opt"/*.mp4 "$target_to_opt"/*.webm "$target_to_opt"/*.mov; do
+                    [[ -f "$f" ]] || continue
+                    case "$f" in *.opt.mp4) continue ;; esac
+                    optimize_clip "$f" 1 || true
+                done
+            elif [[ -f "$target_to_opt" ]]; then
+                optimize_clip "$target_to_opt" 1 || true
+            else
+                echo "Error: Target '$target_to_opt' not found." >&2
+                exit 1
+            fi
+            exit 0
+            ;;
         -h|--help)
             echo "Usage: omarchy-mac-screensaver [OPTIONS]"
             echo "Options:"
             echo "  --status               Print JSON status object"
             echo "  --list                 List aerial preset catalog and local installed videos"
             echo "  --download <id_or_url> Download a preset aerial clip or any YouTube / video URL"
+            echo "  --optimize, -opt [f]   Transcode clip or dir to 60fps dense-GOP hardware-accelerated video"
             echo "  --set <path_or_id>     Set active screensaver video"
             echo "  --timeout <seconds>    Set idle timeout threshold"
             echo "  --toggle <on|off>      Enable or disable screensaver"

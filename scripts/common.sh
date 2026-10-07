@@ -370,25 +370,13 @@ undercover_user_dir() {
 }
 
 undercover_state_dir() {
-    local pdir
-    pdir=$(undercover_plugin_dir)
-    if [[ -w "$pdir" ]]; then
-        echo "$pdir"
-    else
-        undercover_user_dir
-    fi
+    local sdir="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/undercover"
+    mkdir -p "$sdir" 2>/dev/null || true
+    echo "$sdir"
 }
 
 undercover_state_file() {
-    local pdir
-    pdir=$(undercover_plugin_dir)
-    if [[ -w "$pdir" || ( ! -d "$pdir" && ! "$pdir" =~ ^/usr ) ]]; then
-        echo "$pdir/state"
-    else
-        local udir
-        udir=$(undercover_user_dir)
-        echo "$udir/state"
-    fi
+    echo "$(undercover_state_dir)/state"
 }
 
 undercover_settings_file() {

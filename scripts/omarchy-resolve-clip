@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Resolves a video clip path to its dense-GOP 60fps hardware-optimized sibling if present
+src="$1"
+if [[ -z "$src" ]]; then
+    exit 0
+fi
+
+if [[ "$src" == *.opt.mp4 && -f "$src" ]]; then
+    printf "%s" "$src"
+    exit 0
+fi
+
+# Check sibling variants
+for opt in "${src}.opt.mp4" "${src%.mp4}.opt.mp4"; do
+    if [[ -f "$opt" ]]; then
+        printf "%s" "$opt"
+        exit 0
+    fi
+done
+
+# Fallback to source
+printf "%s" "$src"

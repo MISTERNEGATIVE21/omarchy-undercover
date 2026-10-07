@@ -21,7 +21,8 @@ Item {
   readonly property bool isMacMode: root.currentState.indexOf("mac") !== -1
   property bool screensaverEnabled: true
   property int screensaverTimeout: 300
-  property string screensaverVideo: homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.mp4"
+  property string screensaverVideo: homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.opt.mp4"
+  property string effectiveScreensaverVideo: ""
   property bool screensaverActive: false
   property bool screensaverPreviewMode: false
   property bool screensaverStartLocked: false
@@ -64,14 +65,16 @@ Item {
       }
     }
     if (!root.screensaverVideo || root.screensaverVideo === "") {
-      root.screensaverVideo = root.homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.mp4"
+      root.screensaverVideo = root.homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.opt.mp4"
     }
+    clipResolverProc.running = true
   }
 
   function triggerScreensaverPreview() {
     if (!root.screensaverVideo || root.screensaverVideo === "") {
-      root.screensaverVideo = root.homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.mp4"
+      root.screensaverVideo = root.homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.opt.mp4"
     }
+    clipResolverProc.running = true
     root.screensaverPreviewMode = true
     root.screensaverStartLocked = false
     root.screensaverActive = true
@@ -79,8 +82,9 @@ Item {
 
   function triggerLockscreenPreview() {
     if (!root.screensaverVideo || root.screensaverVideo === "") {
-      root.screensaverVideo = root.homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.mp4"
+      root.screensaverVideo = root.homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.opt.mp4"
     }
+    clipResolverProc.running = true
     root.screensaverPreviewMode = true
     root.screensaverStartLocked = true
     root.screensaverActive = true
@@ -92,8 +96,9 @@ Item {
       return "ok"
     }
     if (!root.screensaverVideo || root.screensaverVideo === "") {
-      root.screensaverVideo = root.homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.mp4"
+      root.screensaverVideo = root.homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.opt.mp4"
     }
+    clipResolverProc.running = true
     root.screensaverPreviewMode = false
     root.screensaverStartLocked = true
     root.screensaverActive = true
@@ -106,13 +111,31 @@ Item {
     root.screensaverStartLocked = false
   }
 
+  Process {
+    id: clipResolverProc
+    command: [root.pluginDir + "/scripts/omarchy-resolve-clip", root.screensaverVideo]
+    stdout: StdioCollector {
+      onStreamFinished: {
+        var res = String(text || "").trim()
+        if (res && res !== "") {
+          root.effectiveScreensaverVideo = res
+        }
+      }
+    }
+  }
+
+  onScreensaverVideoChanged: {
+    clipResolverProc.running = true
+  }
+
   Component.onCompleted: {
     var s = stateFile.text().trim()
     if (s) root.currentState = s
     reloadScreensaverConfig()
     if (!root.screensaverVideo || root.screensaverVideo === "") {
-      root.screensaverVideo = root.homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.mp4"
+      root.screensaverVideo = root.homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.opt.mp4"
     }
+    clipResolverProc.running = true
   }
 
   onCurrentStateChanged: {
@@ -192,7 +215,7 @@ Item {
 
       screen: modelData
       owner: root
-      clipUrl: root.screensaverVideo
+      clipUrl: root.effectiveScreensaverVideo !== "" ? root.effectiveScreensaverVideo : root.screensaverVideo
       active: root.screensaverActive
       isPreview: root.screensaverPreviewMode
       startLocked: root.screensaverStartLocked

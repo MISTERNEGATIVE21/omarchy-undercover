@@ -224,8 +224,10 @@ PanelWindow {
                         player.play();
                     }
                 } else if (mediaStatus === MediaPlayer.EndOfMedia) {
-                    player.setPosition(0);
-                    player.play();
+                    if (player.loops !== MediaPlayer.Infinite) {
+                        player.setPosition(0);
+                        player.play();
+                    }
                 }
             }
         }
