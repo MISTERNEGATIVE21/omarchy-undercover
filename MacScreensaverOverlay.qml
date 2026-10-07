@@ -18,8 +18,17 @@ PanelWindow {
     property bool active: false
     property bool isPreview: false
     property bool locked: false
+    property bool startLocked: false
 
     readonly property bool shouldPlay: active && clipUrl !== ""
+    readonly property string effectiveSource: {
+        var s = surface.clipUrl;
+        if (!s || s === "") return "";
+        if (!s.startsWith("file://") && !s.startsWith("http://") && !s.startsWith("https://")) {
+            return "file://" + s;
+        }
+        return s;
+    }
     property string pendingPassword: ""
     property bool authenticating: false
     property string failureMessage: ""
@@ -154,10 +163,13 @@ PanelWindow {
             surface.failureMessage = "";
             surface.pendingPassword = "";
             surface.authenticating = false;
-            surface.locked = false;
+            surface.locked = surface.startLocked;
             surface.updateClock();
             player.play();
             sync();
+            if (surface.locked) {
+                Qt.callLater(function() { pwdInput.forceActiveFocus(); });
+            }
         } else {
             surface.locked = false;
             player.stop();
@@ -167,8 +179,12 @@ PanelWindow {
     Component.onCompleted: {
         surface.updateClock();
         if (surface.active) {
+            surface.locked = surface.startLocked;
             player.play();
             sync();
+            if (surface.locked) {
+                Qt.callLater(function() { pwdInput.forceActiveFocus(); });
+            }
         }
     }
 
@@ -176,11 +192,22 @@ PanelWindow {
         player.stop();
     }
 
+    // Instant Backdrop: Authentic macOS Tahoe HDR wallpaper (Prevents black flash while video decodes)
+    Image {
+        id: bgFallback
+        anchors.fill: parent
+        fillMode: Image.PreserveAspectCrop
+        source: "file://" + (surface.owner ? surface.owner.pluginDir : "") + "/assets/wallpapers/macOS-Tahoe-Dark.jpg"
+        asynchronous: true
+        smooth: true
+    }
+
     // Video Layer: Loops continuously
     VideoOutput {
         id: videoOut
         anchors.fill: parent
         fillMode: VideoOutput.PreserveAspectCrop
+        visible: player.playbackState === MediaPlayer.PlayingState
     }
 
     MediaPlayer {
@@ -188,23 +215,56 @@ PanelWindow {
         videoOutput: videoOut
         loops: MediaPlayer.Infinite
         audioOutput: null // Always mute screensaver audio
-        source: {
-            var s = surface.clipUrl;
-            if (!s || s === "") return "";
-            if (!s.startsWith("file://") && !s.startsWith("http://") && !s.startsWith("https://")) {
-                return "file://" + s;
-            }
-            return s;
-        }
+        source: surface.effectiveSource
 
         onMediaStatusChanged: {
-            if (mediaStatus === MediaPlayer.LoadedMedia && surface.shouldPlay) {
-                player.play();
+            if (surface.shouldPlay) {
+                if (mediaStatus === MediaPlayer.LoadedMedia || mediaStatus === MediaPlayer.BufferedMedia) {
+                    if (player.playbackState !== MediaPlayer.PlayingState) {
+                        player.play();
+                    }
+                } else if (mediaStatus === MediaPlayer.EndOfMedia) {
+                    player.setPosition(0);
+                    player.play();
+                }
+            }
+        }
+
+        onPlaybackStateChanged: {
+            if (surface.shouldPlay && playbackState === MediaPlayer.StoppedState) {
+                retryTimer.restart();
             }
         }
 
         onErrorOccurred: function(err, str) {
             console.warn("omarchy-undercover: screensaver player error: " + err + " - " + str);
+            retryTimer.restart();
+        }
+    }
+
+    Timer {
+        id: retryTimer
+        interval: 350
+        repeat: false
+        onTriggered: {
+            if (surface.shouldPlay) {
+                var src = surface.effectiveSource;
+                player.source = "";
+                player.source = src;
+                player.play();
+            }
+        }
+    }
+
+    Timer {
+        id: playWatchdog
+        interval: 1500
+        running: surface.active
+        repeat: true
+        onTriggered: {
+            if (surface.shouldPlay && player.playbackState !== MediaPlayer.PlayingState) {
+                player.play();
+            }
         }
     }
 
@@ -212,6 +272,7 @@ PanelWindow {
     Item {
         id: inputCatcher
         anchors.fill: parent
+        enabled: surface.active && !surface.locked
         visible: surface.active && !surface.locked
         focus: surface.active && !surface.locked
 
@@ -221,8 +282,10 @@ PanelWindow {
                 event.accepted = true;
                 return;
             }
-            surface.locked = true;
-            pwdInput.forceActiveFocus();
+            if (!surface.locked) {
+                surface.locked = true;
+                pwdInput.forceActiveFocus();
+            }
             event.accepted = true;
         }
 
@@ -242,16 +305,20 @@ PanelWindow {
                 }
                 // 15px motion threshold
                 if (Math.abs(mouse.x - lastX) > 15 || Math.abs(mouse.y - lastY) > 15) {
-                    surface.locked = true;
-                    pwdInput.forceActiveFocus();
+                    if (!surface.locked) {
+                        surface.locked = true;
+                        pwdInput.forceActiveFocus();
+                    }
                 }
                 lastX = mouse.x;
                 lastY = mouse.y;
             }
 
             onPressed: {
-                surface.locked = true;
-                pwdInput.forceActiveFocus();
+                if (!surface.locked) {
+                    surface.locked = true;
+                    pwdInput.forceActiveFocus();
+                }
             }
         }
 

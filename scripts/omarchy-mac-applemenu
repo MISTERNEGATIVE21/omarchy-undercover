@@ -123,7 +123,7 @@ class MacAppleMenuWindow(Gtk.Window):
 
     def action_lock(self):
         self.destroy()
-        subprocess.run(["loginctl", "lock-session"], check=False)
+        subprocess.run(["bash", "-c", "qs -p /usr/share/omarchy/shell ipc call omarchy-undercover-service lock 2>/dev/null || qs ipc call omarchy-undercover-service lock 2>/dev/null || omarchy-mac-screensaver --lock || hyprlock || loginctl lock-session"], check=False)
 
     def action_logout(self):
         self.destroy()

@@ -2107,6 +2107,7 @@ ShellRoot {
                         onClicked: {
                           settingsWin.currentWallpaper = modelData.file
                           settingsWin.saveSetting("WALLPAPER", modelData.file)
+                          settingsWin.runCmd(settingsWin.pluginDir + "/scripts/omarchy-undercover-wallpaper -s '" + modelData.file + "'")
                         }
                       }
                     }
@@ -2273,7 +2274,7 @@ ShellRoot {
                       }
 
                       Rectangle {
-                        implicitWidth: 128; implicitHeight: 26
+                        implicitWidth: 120; implicitHeight: 26
                         radius: 13
                         color: settingsWin.accentColor
 
@@ -2281,7 +2282,7 @@ ShellRoot {
                           anchors.centerIn: parent
                           text: "Fullscreen Preview"
                           font.family: "SF Pro Text, -apple-system, sans-serif"
-                          font.pixelSize: 11
+                          font.pixelSize: 10
                           font.weight: Font.Bold
                           color: "#ffffff"
                         }
@@ -2290,7 +2291,34 @@ ShellRoot {
                           anchors.fill: parent
                           cursorShape: Qt.PointingHandCursor
                           onClicked: {
+                            previewPlayer.pause()
                             settingsWin.runCmd("qs -p /usr/share/omarchy/shell ipc call omarchy-undercover-service previewScreensaver 2>/dev/null || qs ipc call omarchy-undercover-service previewScreensaver 2>/dev/null || " + settingsWin.pluginDir + "/scripts/omarchy-mac-screensaver --preview")
+                          }
+                        }
+                      }
+
+                      Rectangle {
+                        implicitWidth: 125; implicitHeight: 26
+                        radius: 13
+                        color: Qt.rgba(255, 255, 255, 0.2)
+                        border.color: Qt.rgba(255, 255, 255, 0.3)
+                        border.width: 1
+
+                        Text {
+                          anchors.centerIn: parent
+                          text: "Preview Lock Screen"
+                          font.family: "SF Pro Text, -apple-system, sans-serif"
+                          font.pixelSize: 10
+                          font.weight: Font.Bold
+                          color: "#ffffff"
+                        }
+
+                        MouseArea {
+                          anchors.fill: parent
+                          cursorShape: Qt.PointingHandCursor
+                          onClicked: {
+                            previewPlayer.pause()
+                            settingsWin.runCmd("qs -p /usr/share/omarchy/shell ipc call omarchy-undercover-service previewLockscreen 2>/dev/null || qs ipc call omarchy-undercover-service previewLockscreen 2>/dev/null || " + settingsWin.pluginDir + "/scripts/omarchy-mac-screensaver --preview-lock")
                           }
                         }
                       }

@@ -24,6 +24,7 @@ Item {
   property string screensaverVideo: homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.mp4"
   property bool screensaverActive: false
   property bool screensaverPreviewMode: false
+  property bool screensaverStartLocked: false
   readonly property bool screensaverEngineActive: root.isMacMode && root.screensaverEnabled
 
   function runCmd(cmd) {
@@ -71,12 +72,37 @@ Item {
       root.screensaverVideo = root.homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.mp4"
     }
     root.screensaverPreviewMode = true
+    root.screensaverStartLocked = false
     root.screensaverActive = true
+  }
+
+  function triggerLockscreenPreview() {
+    if (!root.screensaverVideo || root.screensaverVideo === "") {
+      root.screensaverVideo = root.homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.mp4"
+    }
+    root.screensaverPreviewMode = true
+    root.screensaverStartLocked = true
+    root.screensaverActive = true
+  }
+
+  function lock(): string {
+    if (!root.isMacMode) {
+      root.runCmd("hyprlock || loginctl lock-session")
+      return "ok"
+    }
+    if (!root.screensaverVideo || root.screensaverVideo === "") {
+      root.screensaverVideo = root.homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.mp4"
+    }
+    root.screensaverPreviewMode = false
+    root.screensaverStartLocked = true
+    root.screensaverActive = true
+    return "ok"
   }
 
   function dismissScreensaver() {
     root.screensaverActive = false
     root.screensaverPreviewMode = false
+    root.screensaverStartLocked = false
   }
 
   Component.onCompleted: {
@@ -159,6 +185,7 @@ Item {
         clipUrl: root.screensaverVideo
         active: root.screensaverActive
         isPreview: root.screensaverPreviewMode
+        startLocked: root.screensaverStartLocked
       }
     }
   }
@@ -217,6 +244,19 @@ Item {
     function previewScreensaver(): string {
       root.triggerScreensaverPreview()
       return "ok"
+    }
+
+    function previewLockscreen(): string {
+      root.triggerLockscreenPreview()
+      return "ok"
+    }
+
+    function lock(): string {
+      return root.lock()
+    }
+
+    function lockScreensaver(): string {
+      return root.lock()
     }
 
     function dismissScreensaver(): string {
@@ -284,6 +324,19 @@ Item {
     function previewScreensaver(): string {
       root.triggerScreensaverPreview()
       return "ok"
+    }
+
+    function previewLockscreen(): string {
+      root.triggerLockscreenPreview()
+      return "ok"
+    }
+
+    function lock(): string {
+      return root.lock()
+    }
+
+    function lockScreensaver(): string {
+      return root.lock()
     }
 
     function dismissScreensaver(): string {

@@ -235,7 +235,7 @@ BarWidget {
             font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12
             color: m8.containsMouse ? "#ffffff" : Color.foreground
           }
-          MouseArea { id: m8; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.runCmd("hyprlock || loginctl lock-session") }
+          MouseArea { id: m8; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.runCmd("qs -p /usr/share/omarchy/shell ipc call omarchy-undercover-service lock 2>/dev/null || qs ipc call omarchy-undercover-service lock 2>/dev/null || omarchy-mac-screensaver --lock || hyprlock || loginctl lock-session") }
         }
       }
     }

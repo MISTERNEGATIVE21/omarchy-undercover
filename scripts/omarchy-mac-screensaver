@@ -550,6 +550,32 @@ while [[ $# -gt 0 ]]; do
             dispatch_preview
             exit 0
             ;;
+        --preview-lock)
+            local qs_ok=false
+            if command -v qs &>/dev/null; then
+                if qs -p /usr/share/omarchy/shell ipc call omarchy-undercover-service previewLockscreen &>/dev/null || \
+                   qs ipc call omarchy-undercover-service previewLockscreen &>/dev/null; then
+                    qs_ok=true
+                fi
+            fi
+            if [[ "$qs_ok" == "false" ]]; then
+                run_wlroots_screensaver --preview
+            fi
+            exit 0
+            ;;
+        --lock)
+            local qs_ok=false
+            if command -v qs &>/dev/null; then
+                if qs -p /usr/share/omarchy/shell ipc call omarchy-undercover-service lock &>/dev/null || \
+                   qs ipc call omarchy-undercover-service lock &>/dev/null; then
+                    qs_ok=true
+                fi
+            fi
+            if [[ "$qs_ok" == "false" ]]; then
+                run_wlroots_screensaver --run
+            fi
+            exit 0
+            ;;
         --run|--start)
             # Try Quickshell first, fallback to wlroots
             local qs_ok=false
