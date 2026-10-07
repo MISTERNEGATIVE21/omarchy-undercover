@@ -633,7 +633,7 @@ sync_undercover_themes() {
 }
 
 disable_stock_lock_and_idle() {
-    msg "Toggling off official stock lock screen and idle daemon (undercover mode takeover)..."
+    echo -e "\e[32m✔\e[0m  Toggling off official stock lock screen and idle daemon (undercover mode takeover)..."
 
     # 1. Suppress official Omarchy screensaver (ttfx)
     if command_exists omarchy-toggle; then
@@ -672,11 +672,12 @@ disable_stock_lock_and_idle() {
         fi
     fi
 
-    touch "$STATE_DIR/stock_toggles_suppressed" 2>/dev/null || true
+    mkdir -p "$HOME/.local/state/omarchy"
+    touch "$HOME/.local/state/omarchy/undercover_stock_toggles_suppressed" 2>/dev/null || true
 }
 
 restore_stock_lock_and_idle() {
-    msg "Restoring official stock lock screen and idle daemon..."
+    echo -e "\e[32m✔\e[0m  Restoring official stock lock screen and idle daemon..."
 
     # 1. Re-enable official Omarchy screensaver
     if command_exists omarchy-toggle; then
@@ -709,7 +710,7 @@ restore_stock_lock_and_idle() {
         fi
     fi
 
-    rm -f "$STATE_DIR/stock_toggles_suppressed" 2>/dev/null || true
+    rm -f "$HOME/.local/state/omarchy/undercover_stock_toggles_suppressed" 2>/dev/null || true
 }
 
 switch_to_mac() {

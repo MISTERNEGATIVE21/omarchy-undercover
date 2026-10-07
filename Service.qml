@@ -113,20 +113,12 @@ Item {
     if (!root.screensaverVideo || root.screensaverVideo === "") {
       root.screensaverVideo = root.homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.mp4"
     }
-    if (root.isMacMode) {
-      root.runCmd("omarchy-undercover --disable-stock-lock-idle")
-    }
   }
 
   onCurrentStateChanged: {
     // If transitioning away from macOS mode, immediately kill any active screensaver
     if (!root.isMacMode && root.screensaverActive) {
       root.dismissScreensaver()
-    }
-    if (root.isMacMode) {
-      root.runCmd("omarchy-undercover --disable-stock-lock-idle")
-    } else {
-      root.runCmd("omarchy-undercover --restore-stock-lock-idle")
     }
   }
 
@@ -195,17 +187,15 @@ Item {
   Variants {
     model: Quickshell.screens
 
-    delegate: Component {
-      MacScreensaverOverlay {
-        required property var modelData
+    MacScreensaverOverlay {
+      required property var modelData
 
-        screen: modelData
-        owner: root
-        clipUrl: root.screensaverVideo
-        active: root.screensaverActive
-        isPreview: root.screensaverPreviewMode
-        startLocked: root.screensaverStartLocked
-      }
+      screen: modelData
+      owner: root
+      clipUrl: root.screensaverVideo
+      active: root.screensaverActive
+      isPreview: root.screensaverPreviewMode
+      startLocked: root.screensaverStartLocked
     }
   }
 
