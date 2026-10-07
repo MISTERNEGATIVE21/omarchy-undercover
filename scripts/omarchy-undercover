@@ -632,6 +632,86 @@ sync_undercover_themes() {
     done
 }
 
+disable_stock_lock_and_idle() {
+    msg "Toggling off official stock lock screen and idle daemon (undercover mode takeover)..."
+
+    # 1. Suppress official Omarchy screensaver (ttfx)
+    if command_exists omarchy-toggle; then
+        omarchy-toggle screensaver-off on 2>/dev/null || true
+    else
+        mkdir -p "$HOME/.local/state/omarchy/toggles"
+        touch "$HOME/.local/state/omarchy/toggles/screensaver-off"
+    fi
+
+    # 2. Terminate running idle daemons or terminal screensavers
+    pkill -x hypridle 2>/dev/null || true
+    pkill -x ttfx 2>/dev/null || true
+    pkill -f '[o]rg.omarchy.screensaver' 2>/dev/null || true
+
+    # 3. Cleanly toggle off official lock screen and idle plugins without modifying /usr/share files
+    if command_exists omarchy-shell; then
+        omarchy-shell shell setPluginEnabled omarchy.lock false 2>/dev/null || true
+        omarchy-shell shell setPluginEnabled omarchy.idle false 2>/dev/null || true
+    elif command_exists omarchy; then
+        omarchy plugin disable omarchy.lock 2>/dev/null || true
+        omarchy plugin disable omarchy.idle 2>/dev/null || true
+    fi
+
+    # 4. Directly check and ensure ~/.config/omarchy/shell.json has disabledPlugins if omarchy-shell was offline
+    local shell_json="$HOME/.config/omarchy/shell.json"
+    if [[ -f "$shell_json" ]] && command_exists jq; then
+        local modified=0
+        for p in "omarchy.lock" "omarchy.idle"; do
+            if ! jq -e --arg p "$p" '.disabledPlugins // [] | index($p)' "$shell_json" >/dev/null 2>&1; then
+                jq --arg p "$p" '.disabledPlugins = ((.disabledPlugins // []) + [$p] | unique)' "$shell_json" > "$shell_json.tmp" && mv "$shell_json.tmp" "$shell_json"
+                modified=1
+            fi
+        done
+        if (( modified )) && command_exists omarchy-shell; then
+            omarchy-shell shell reloadConfig 2>/dev/null || true
+        fi
+    fi
+
+    touch "$STATE_DIR/stock_toggles_suppressed" 2>/dev/null || true
+}
+
+restore_stock_lock_and_idle() {
+    msg "Restoring official stock lock screen and idle daemon..."
+
+    # 1. Re-enable official Omarchy screensaver
+    if command_exists omarchy-toggle; then
+        omarchy-toggle screensaver-off off 2>/dev/null || true
+    else
+        rm -f "$HOME/.local/state/omarchy/toggles/screensaver-off" 2>/dev/null || true
+    fi
+
+    # 2. Cleanly toggle back on official lock screen and idle plugins
+    if command_exists omarchy-shell; then
+        omarchy-shell shell setPluginEnabled omarchy.lock true 2>/dev/null || true
+        omarchy-shell shell setPluginEnabled omarchy.idle true 2>/dev/null || true
+    elif command_exists omarchy; then
+        omarchy plugin enable omarchy.lock 2>/dev/null || true
+        omarchy plugin enable omarchy.idle 2>/dev/null || true
+    fi
+
+    # 3. Directly check and remove disabledPlugins from ~/.config/omarchy/shell.json if needed
+    local shell_json="$HOME/.config/omarchy/shell.json"
+    if [[ -f "$shell_json" ]] && command_exists jq; then
+        local modified=0
+        for p in "omarchy.lock" "omarchy.idle"; do
+            if jq -e --arg p "$p" '.disabledPlugins // [] | index($p)' "$shell_json" >/dev/null 2>&1; then
+                jq --arg p "$p" '.disabledPlugins = ((.disabledPlugins // []) - [$p]) | if (.disabledPlugins | length) == 0 then del(.disabledPlugins) else . end' "$shell_json" > "$shell_json.tmp" && mv "$shell_json.tmp" "$shell_json"
+                modified=1
+            fi
+        done
+        if (( modified )) && command_exists omarchy-shell; then
+            omarchy-shell shell reloadConfig 2>/dev/null || true
+        fi
+    fi
+
+    rm -f "$STATE_DIR/stock_toggles_suppressed" 2>/dev/null || true
+}
+
 switch_to_mac() {
     local variant="dark"
     local flavor="tahoe"
@@ -682,6 +762,9 @@ switch_to_mac() {
     write_setting "THEME_VARIANT" "$variant"
     write_setting "LAST_UNDERCOVER_MODE" "mac-$flavor-$variant"
     rm -f "$HOME/.local/state/omarchy/toggles/bar-off" 2>/dev/null || true
+
+    # Toggle off official stock lock screen and idle daemon (so Undercover takes over)
+    disable_stock_lock_and_idle
 
     sync_undercover_themes
     mkdir -p "$HOME/.local/state/omarchy/theme-backgrounds"
@@ -921,6 +1004,9 @@ restore_desktop_state() {
     killall swaybg 2>/dev/null || true
     pkill -x swaybg 2>/dev/null || true
     disable_undercover_hyprland 2>/dev/null || true
+
+    # Restore official stock lock screen and idle daemon
+    restore_stock_lock_and_idle
 
     # Clear bar-off toggle to ensure default bar is visible
     rm -f "$HOME/.local/state/omarchy/toggles/bar-off" 2>/dev/null || true
@@ -1211,6 +1297,8 @@ show_help() {
     echo "  --transparency [on|off]                 Configure desktop frosted glass transparency"
     echo "  --taskbar-transparent [true|false|toggle] Toggle or set taskbar transparency"
     echo "  --toggle                                Toggle between Undercover mode and Default Omarchy"
+    echo "  --disable-stock-lock-idle               Toggle off official Omarchy stock lockscreen & idle plugins"
+    echo "  --restore-stock-lock-idle               Restore official Omarchy stock lockscreen & idle plugins"
     echo "  --disable, --omarchy                    Switch to original Omarchy mode & theming"
     echo "  --restore                               Restore from baseline backup"
     echo "  --uninstall                             Completely uninstall and restore original settings"
@@ -1375,6 +1463,12 @@ case "$1" in
             msg "Taskbar transparency enabled (Clear / Acrylic)."
         fi
         omarchy_reload_bar
+        ;;
+    --disable-stock-lock-idle)
+        disable_stock_lock_and_idle
+        ;;
+    --restore-stock-lock-idle)
+        restore_stock_lock_and_idle
         ;;
     --disable|--omarchy)
         switch_to_omarchy

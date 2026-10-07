@@ -12,6 +12,7 @@ backups/
 state
 baseline
 settings.conf
+stock_toggles_suppressed
 *.bak
 *.bak.*
 settings.conf.bak*

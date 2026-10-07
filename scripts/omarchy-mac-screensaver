@@ -567,7 +567,14 @@ while [[ $# -gt 0 ]]; do
             local qs_ok=false
             if command -v qs &>/dev/null; then
                 if qs -p /usr/share/omarchy/shell ipc call omarchy-undercover-service lock &>/dev/null || \
-                   qs ipc call omarchy-undercover-service lock &>/dev/null; then
+                   qs ipc call omarchy-undercover-service lock &>/dev/null || \
+                   qs -p /usr/share/omarchy/shell ipc call lock lock &>/dev/null || \
+                   qs ipc call lock lock &>/dev/null; then
+                    qs_ok=true
+                fi
+            fi
+            if [[ "$qs_ok" == "false" ]] && command -v omarchy-shell &>/dev/null; then
+                if omarchy-shell lock lock &>/dev/null; then
                     qs_ok=true
                 fi
             fi

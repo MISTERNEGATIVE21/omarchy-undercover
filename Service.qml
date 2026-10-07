@@ -25,7 +25,8 @@ Item {
   property bool screensaverActive: false
   property bool screensaverPreviewMode: false
   property bool screensaverStartLocked: false
-  readonly property bool screensaverEngineActive: root.isMacMode && root.screensaverEnabled
+  property bool stayAwake: false
+  readonly property bool screensaverEngineActive: root.isMacMode && root.screensaverEnabled && !root.stayAwake
 
   function runCmd(cmd) {
     var fullCmd = cmd.replace(/^omarchy-([a-zA-Z0-9_-]+)/, function(match) {
@@ -112,6 +113,9 @@ Item {
     if (!root.screensaverVideo || root.screensaverVideo === "") {
       root.screensaverVideo = root.homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.mp4"
     }
+    if (root.isMacMode) {
+      root.runCmd("omarchy-undercover --disable-stock-lock-idle")
+    }
   }
 
   onCurrentStateChanged: {
@@ -119,6 +123,21 @@ Item {
     if (!root.isMacMode && root.screensaverActive) {
       root.dismissScreensaver()
     }
+    if (root.isMacMode) {
+      root.runCmd("omarchy-undercover --disable-stock-lock-idle")
+    } else {
+      root.runCmd("omarchy-undercover --restore-stock-lock-idle")
+    }
+  }
+
+  FileView {
+    id: stayAwakeWatcher
+    path: root.homeDir + "/.local/state/omarchy/indicators/stay-awake"
+    watchChanges: true
+    printErrors: false
+    onLoaded: root.stayAwake = true
+    onLoadFailed: root.stayAwake = false
+    onFileChanged: reload()
   }
 
   FileView {
@@ -347,6 +366,27 @@ Item {
     function reloadScreensaverConfig(): string {
       root.reloadScreensaverConfig()
       return "ok"
+    }
+  }
+
+  IpcHandler {
+    target: "lock"
+    enabled: root.isMacMode
+
+    function lock(): string {
+      return root.lock()
+    }
+
+    function isLocked(): string {
+      return root.screensaverActive ? "true" : "false"
+    }
+
+    function status(): string {
+      return JSON.stringify({
+        locked: root.screensaverActive,
+        requested: root.screensaverActive,
+        undercover: true
+      })
     }
   }
 }
