@@ -80,7 +80,7 @@ ShellRoot {
     Process {
       id: powerPoller
       running: true
-      command: ["bash", "-c", "omarchy-bluetooth-dbus power"]
+      command: ["bash", "-c", "omarchy-bluetooth-power is-on 2>/dev/null && echo 'yes' || echo 'no'"]
       stdout: SplitParser {
         onRead: function(line) {
           macBtWindow.btEnabled = (String(line).trim().toLowerCase() === "yes")
@@ -279,7 +279,7 @@ ShellRoot {
               onClicked: {
                 var target = !macBtWindow.btEnabled
                 macBtWindow.btEnabled = target
-                Quickshell.execDetached(["omarchy-bluetooth-dbus", target ? "on" : "off"])
+                Quickshell.execDetached(["omarchy-bluetooth-power", target ? "on" : "off"])
                 if (!devicesPoller.running) devicesPoller.running = true
               }
             }
@@ -427,11 +427,14 @@ ShellRoot {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                  if (modelData.connected) {
-                    Quickshell.execDetached(["omarchy-bluetooth-dbus", "disconnect", modelData.mac])
+                acceptedButtons: Qt.LeftButton | Qt.RightButton
+                onClicked: function(mouse) {
+                  if (mouse.button === Qt.RightButton) {
+                    Quickshell.execDetached(["omarchy-bluetooth-device", "forget", modelData.mac])
+                  } else if (modelData.connected) {
+                    Quickshell.execDetached(["omarchy-bluetooth-device", "disconnect", modelData.mac])
                   } else {
-                    Quickshell.execDetached(["omarchy-bluetooth-dbus", "connect", modelData.mac])
+                    Quickshell.execDetached(["omarchy-bluetooth-device", "connect", modelData.mac])
                   }
                   macBtWindow.triggerScan()
                 }

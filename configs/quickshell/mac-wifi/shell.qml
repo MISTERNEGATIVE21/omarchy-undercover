@@ -34,6 +34,11 @@ ShellRoot {
     property string connectingSsid: ""
     property string searchText: ""
     property bool isScanning: false
+    property string wifiBand: "auto"
+    property string wifiBitrate: ""
+    property string wifiFreq: ""
+    property string wifiIp: ""
+    property int wifiPing: 0
 
     readonly property var filteredNetworks: {
       var q = macWifiWindow.searchText.toLowerCase().trim()
@@ -167,6 +172,41 @@ ShellRoot {
       }
     }
 
+    // Omarchy Network Telemetry Poller
+    Process {
+      id: netStatusPoller
+      running: true
+      command: ["omarchy-network-status", "--verbose"]
+      stdout: SplitParser {
+        onRead: function(line) {
+          if (!line) return
+          var parts = String(line).trim().split("\t")
+          if (parts.length >= 2) {
+            var k = parts[0].trim()
+            var v = parts[1].trim()
+            if (k === "ssid") macWifiWindow.activeSsid = v
+            else if (k === "freq") macWifiWindow.wifiFreq = v
+            else if (k === "bitrate") macWifiWindow.wifiBitrate = v
+            else if (k === "ip") macWifiWindow.wifiIp = v
+            else if (k === "router_ping_ms") macWifiWindow.wifiPing = parseFloat(v) || 0
+          }
+        }
+      }
+    }
+
+    // Omarchy Wi-Fi Band Poller
+    Process {
+      id: bandPoller
+      running: true
+      command: ["omarchy-network-band"]
+      stdout: SplitParser {
+        onRead: function(line) {
+          var b = String(line).trim()
+          if (b) macWifiWindow.wifiBand = b
+        }
+      }
+    }
+
     Timer {
       interval: 8000
       running: true
@@ -175,6 +215,8 @@ ShellRoot {
       onTriggered: {
         if (!scanPoller.running) scanPoller.running = true
         if (!radioPoller.running) radioPoller.running = true
+        if (!netStatusPoller.running) netStatusPoller.running = true
+        if (!bandPoller.running) bandPoller.running = true
       }
     }
 
@@ -274,6 +316,131 @@ ShellRoot {
               hoverEnabled: true
               cursorShape: Qt.PointingHandCursor
               onClicked: Qt.quit()
+            }
+          }
+        // Active Network Diagnostics Card
+        Rectangle {
+          visible: macWifiWindow.wifiEnabled && macWifiWindow.activeSsid.length > 0
+          Layout.fillWidth: true
+          implicitHeight: 70
+          radius: 10
+          color: macWifiWindow.isDark ? Qt.rgba(0, 122, 255, 0.16) : Qt.rgba(0, 122, 255, 0.08)
+          border.color: Qt.rgba(0, 122, 255, 0.3)
+          border.width: 1
+
+          ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 8
+            spacing: 6
+
+            RowLayout {
+              Layout.fillWidth: true
+              Text {
+                text: "󰤨  " + macWifiWindow.activeSsid
+                font.family: "SF Pro Text"
+                font.pixelSize: 12
+                font.bold: true
+                color: "#007aff"
+                Layout.fillWidth: true
+                elide: Text.ElideRight
+              }
+              Text {
+                text: (macWifiWindow.wifiFreq ? (parseFloat(macWifiWindow.wifiFreq) >= 5000 ? "5GHz" : "2.4GHz") : "") + (macWifiWindow.wifiBitrate ? (" · " + macWifiWindow.wifiBitrate) : "")
+                font.family: "SF Pro Text"
+                font.pixelSize: 10
+                color: macWifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.7) : "#515154"
+              }
+            }
+
+            RowLayout {
+              Layout.fillWidth: true
+              spacing: 6
+
+              Rectangle {
+                implicitHeight: 22
+                implicitWidth: copyPwText.implicitWidth + 14
+                radius: 4
+                color: copyPwM.containsMouse ? (macWifiWindow.isDark ? Qt.rgba(1,1,1,0.22) : Qt.rgba(0,0,0,0.12)) : (macWifiWindow.isDark ? Qt.rgba(1,1,1,0.12) : Qt.rgba(0,0,0,0.06))
+                Text {
+                  id: copyPwText
+                  anchors.centerIn: parent
+                  text: "Copy Password"
+                  font.family: "SF Pro Text"
+                  font.pixelSize: 10
+                  font.bold: true
+                  color: macWifiWindow.isDark ? "#ffffff" : "#1d1d1f"
+                }
+                MouseArea {
+                  id: copyPwM
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: {
+                    Quickshell.execDetached(["bash", "-c", "omarchy-network-password 2>/dev/null | tr -d '\\n' | wl-copy && notify-send -a 'Wi-Fi' 'Password Copied' 'Wi-Fi password copied to clipboard' 2>/dev/null || true"])
+                  }
+                }
+              }
+
+              Rectangle {
+                implicitHeight: 22
+                implicitWidth: qrText.implicitWidth + 14
+                radius: 4
+                color: qrM.containsMouse ? (macWifiWindow.isDark ? Qt.rgba(1,1,1,0.22) : Qt.rgba(0,0,0,0.12)) : (macWifiWindow.isDark ? Qt.rgba(1,1,1,0.12) : Qt.rgba(0,0,0,0.06))
+                Text {
+                  id: qrText
+                  anchors.centerIn: parent
+                  text: "Share QR"
+                  font.family: "SF Pro Text"
+                  font.pixelSize: 10
+                  font.bold: true
+                  color: macWifiWindow.isDark ? "#ffffff" : "#1d1d1f"
+                }
+                MouseArea {
+                  id: qrM
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: {
+                    Quickshell.execDetached(["omarchy-network-qr"])
+                  }
+                }
+              }
+
+              Item { Layout.fillWidth: true }
+
+              RowLayout {
+                spacing: 2
+                Repeater {
+                  model: ["auto", "2.4", "5"]
+                  Rectangle {
+                    required property string modelData
+                    implicitHeight: 22
+                    implicitWidth: 32
+                    radius: 4
+                    color: macWifiWindow.wifiBand === modelData ? "#007aff" : (bM.containsMouse ? Qt.rgba(1,1,1,0.15) : "transparent")
+                    border.width: 1
+                    border.color: macWifiWindow.wifiBand === modelData ? "#007aff" : Qt.rgba(1,1,1,0.12)
+                    Text {
+                      anchors.centerIn: parent
+                      text: modelData === "auto" ? "Auto" : modelData + "G"
+                      font.family: "SF Pro Text"
+                      font.pixelSize: 9
+                      font.bold: true
+                      color: macWifiWindow.wifiBand === modelData ? "#ffffff" : (macWifiWindow.isDark ? "#ffffff" : "#1d1d1f")
+                    }
+                    MouseArea {
+                      id: bM
+                      anchors.fill: parent
+                      hoverEnabled: true
+                      cursorShape: Qt.PointingHandCursor
+                      onClicked: {
+                        macWifiWindow.wifiBand = modelData
+                        Quickshell.execDetached(["omarchy-network-band", modelData])
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
         }
