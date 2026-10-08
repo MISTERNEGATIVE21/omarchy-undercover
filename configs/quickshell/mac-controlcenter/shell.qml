@@ -53,6 +53,11 @@ ShellRoot {
     property string wifiSearchText: ""
     property string connectingSsid: ""
     property string wifiPasswordInput: ""
+    property string wifiBand: "auto"
+    property string wifiBitrate: ""
+    property string wifiFreq: ""
+    property string wifiIp: ""
+    property int wifiPing: 0
 
     // Bluetooth Sub-Page State
     property var btDevices: []
@@ -176,7 +181,7 @@ ShellRoot {
       command: [
         "bash", "-c",
         "wifi=$(nmcli radio wifi 2>/dev/null || echo 'disabled'); " +
-        "bt=$(bluetoothctl show 2>/dev/null | grep -q 'Powered: yes' && echo '1' || echo '0'); " +
+        "bt=$( (omarchy-bluetooth-power is-on 2>/dev/null && echo '1') || (bluetoothctl show 2>/dev/null | grep -q 'Powered: yes' && echo '1') || echo '0'); " +
         "vol=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null | awk '{print int($2*100)}' || echo '70'); " +
         "mic=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@ 2>/dev/null | awk '{print int($2*100)}' || echo '70'); " +
         "micmut=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@ 2>/dev/null | grep -qi 'MUTED' && echo '1' || echo '0'); " +
@@ -205,6 +210,41 @@ ShellRoot {
             controlCenterWindow.micMuted = (p[9] === "1")
             controlCenterWindow.btDeviceName = p[10] ? p[10].trim() : ""
           }
+        }
+      }
+    }
+
+    // Omarchy Network Telemetry Poller
+    Process {
+      id: netStatusPoller
+      running: true
+      command: ["omarchy-network-status", "--verbose"]
+      stdout: SplitParser {
+        onRead: function(line) {
+          if (!line) return
+          var parts = String(line).trim().split("\t")
+          if (parts.length >= 2) {
+            var k = parts[0].trim()
+            var v = parts[1].trim()
+            if (k === "ssid") controlCenterWindow.wifiSsid = v
+            else if (k === "freq") controlCenterWindow.wifiFreq = v
+            else if (k === "bitrate") controlCenterWindow.wifiBitrate = v
+            else if (k === "ip") controlCenterWindow.wifiIp = v
+            else if (k === "router_ping_ms") controlCenterWindow.wifiPing = parseFloat(v) || 0
+          }
+        }
+      }
+    }
+
+    // Omarchy Wi-Fi Band Poller
+    Process {
+      id: bandPoller
+      running: true
+      command: ["omarchy-network-band"]
+      stdout: SplitParser {
+        onRead: function(line) {
+          var b = String(line).trim()
+          if (b) controlCenterWindow.wifiBand = b
         }
       }
     }
@@ -1067,6 +1107,135 @@ ShellRoot {
           color: controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff"
         }
 
+        // Active Network Diagnostics & Protocol Actions
+        Rectangle {
+          visible: controlCenterWindow.wifiOn && controlCenterWindow.wifiSsid.length > 0
+          Layout.fillWidth: true
+          implicitHeight: 74
+          radius: 10
+          color: controlCenterWindow.isLight ? Qt.rgba(0, 122, 255, 0.08) : Qt.rgba(0, 122, 255, 0.16)
+          border.color: Qt.rgba(0, 122, 255, 0.3)
+          border.width: 1
+
+          ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 8
+            spacing: 6
+
+            RowLayout {
+              Layout.fillWidth: true
+              Text {
+                text: "󰤨  " + controlCenterWindow.wifiSsid
+                font.family: "SF Pro Text"
+                font.pixelSize: 12
+                font.bold: true
+                color: "#007aff"
+                Layout.fillWidth: true
+                elide: Text.ElideRight
+              }
+              Text {
+                text: (controlCenterWindow.wifiFreq ? (parseFloat(controlCenterWindow.wifiFreq) >= 5000 ? "5GHz" : "2.4GHz") : "") + (controlCenterWindow.wifiBitrate ? (" · " + controlCenterWindow.wifiBitrate) : "")
+                font.family: "SF Pro Text"
+                font.pixelSize: 10
+                color: controlCenterWindow.isLight ? "#515154" : Qt.rgba(1, 1, 1, 0.7)
+              }
+            }
+
+            // Protocol Actions: Copy Password, Share QR, Band selector
+            RowLayout {
+              Layout.fillWidth: true
+              spacing: 6
+
+              Rectangle {
+                implicitHeight: 22
+                implicitWidth: copyPwText.implicitWidth + 14
+                radius: 4
+                color: copyPwM.containsMouse ? (controlCenterWindow.isLight ? Qt.rgba(0,0,0,0.12) : Qt.rgba(1,1,1,0.22)) : (controlCenterWindow.isLight ? Qt.rgba(0,0,0,0.06) : Qt.rgba(1,1,1,0.12))
+                Text {
+                  id: copyPwText
+                  anchors.centerIn: parent
+                  text: "Copy Password"
+                  font.family: "SF Pro Text"
+                  font.pixelSize: 10
+                  font.bold: true
+                  color: controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff"
+                }
+                MouseArea {
+                  id: copyPwM
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: {
+                    Quickshell.execDetached(["bash", "-c", "omarchy-network-password 2>/dev/null | tr -d '\\n' | wl-copy && notify-send -a 'Wi-Fi' 'Password Copied' 'Wi-Fi password copied to clipboard' 2>/dev/null || true"])
+                  }
+                }
+              }
+
+              Rectangle {
+                implicitHeight: 22
+                implicitWidth: qrText.implicitWidth + 14
+                radius: 4
+                color: qrM.containsMouse ? (controlCenterWindow.isLight ? Qt.rgba(0,0,0,0.12) : Qt.rgba(1,1,1,0.22)) : (controlCenterWindow.isLight ? Qt.rgba(0,0,0,0.06) : Qt.rgba(1,1,1,0.12))
+                Text {
+                  id: qrText
+                  anchors.centerIn: parent
+                  text: "Share QR"
+                  font.family: "SF Pro Text"
+                  font.pixelSize: 10
+                  font.bold: true
+                  color: controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff"
+                }
+                MouseArea {
+                  id: qrM
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: {
+                    Quickshell.execDetached(["omarchy-network-qr"])
+                  }
+                }
+              }
+
+              Item { Layout.fillWidth: true }
+
+              // Band selector pills
+              RowLayout {
+                spacing: 2
+                Repeater {
+                  model: ["auto", "2.4", "5"]
+                  Rectangle {
+                    required property string modelData
+                    implicitHeight: 22
+                    implicitWidth: 32
+                    radius: 4
+                    color: controlCenterWindow.wifiBand === modelData ? "#007aff" : (bM.containsMouse ? Qt.rgba(1,1,1,0.15) : "transparent")
+                    border.width: 1
+                    border.color: controlCenterWindow.wifiBand === modelData ? "#007aff" : Qt.rgba(1,1,1,0.12)
+                    Text {
+                      anchors.centerIn: parent
+                      text: modelData === "auto" ? "Auto" : modelData + "G"
+                      font.family: "SF Pro Text"
+                      font.pixelSize: 9
+                      font.bold: true
+                      color: controlCenterWindow.wifiBand === modelData ? "#ffffff" : (controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff")
+                    }
+                    MouseArea {
+                      id: bM
+                      anchors.fill: parent
+                      hoverEnabled: true
+                      cursorShape: Qt.PointingHandCursor
+                      onClicked: {
+                        controlCenterWindow.wifiBand = modelData
+                        Quickshell.execDetached(["omarchy-network-band", modelData])
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
         // Search Bar
         Rectangle {
           visible: controlCenterWindow.wifiOn
@@ -1416,7 +1585,7 @@ ShellRoot {
               onClicked: {
                 var target = !controlCenterWindow.btOn
                 controlCenterWindow.btOn = target
-                Quickshell.execDetached(["omarchy-bluetooth-dbus", target ? "on" : "off"])
+                Quickshell.execDetached(["omarchy-bluetooth-power", target ? "on" : "off"])
                 controlCenterWindow.triggerBtScan()
               }
             }
@@ -1574,9 +1743,9 @@ ShellRoot {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
                       if (modelData.connected) {
-                        Quickshell.execDetached(["omarchy-bluetooth-dbus", "disconnect", modelData.mac])
+                        Quickshell.execDetached(["omarchy-bluetooth-device", "disconnect", modelData.mac])
                       } else {
-                        Quickshell.execDetached(["omarchy-bluetooth-dbus", "connect", modelData.mac])
+                        Quickshell.execDetached(["omarchy-bluetooth-device", "connect", modelData.mac])
                       }
                       controlCenterWindow.triggerBtScan()
                     }
@@ -1591,10 +1760,8 @@ ShellRoot {
                 cursorShape: Qt.PointingHandCursor
                 acceptedButtons: Qt.RightButton
                 onClicked: {
-                  if (modelData.connected) {
-                    Quickshell.execDetached(["omarchy-bluetooth-dbus", "disconnect", modelData.mac])
-                    controlCenterWindow.triggerBtScan()
-                  }
+                  Quickshell.execDetached(["omarchy-bluetooth-device", "forget", modelData.mac])
+                  controlCenterWindow.triggerBtScan()
                 }
               }
             }
