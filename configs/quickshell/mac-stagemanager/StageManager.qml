@@ -219,6 +219,40 @@ Item {
     return -1
   }
 
+  function currentGroupIndex() {
+    for (var g = 0; g < root.groups.length; g++) {
+      for (var w = 0; w < root.groups[g].windows.length; w++) {
+        if (root.groups[g].windows[w].address === root.selectedAddress) return g
+      }
+    }
+    return -1
+  }
+
+  function selectGroup(delta) {
+    if (root.groups.length === 0) return
+    var cur = root.currentGroupIndex()
+    if (cur < 0) cur = delta < 0 ? 0 : -1
+    var next = (cur + delta + root.groups.length) % root.groups.length
+    var grp = root.groups[next]
+    if (grp && grp.windows.length > 0) {
+      root.selectedAddress = grp.windows[0].address
+    }
+  }
+
+  function cycleGroupWindow(delta) {
+    var curG = root.currentGroupIndex()
+    if (curG < 0 || root.groups.length === 0) return
+    var grp = root.groups[curG]
+    if (!grp || grp.windows.length <= 1) return
+    var winIdx = -1
+    for (var i = 0; i < grp.windows.length; i++) {
+      if (grp.windows[i].address === root.selectedAddress) { winIdx = i; break; }
+    }
+    if (winIdx < 0) winIdx = 0
+    var nextWin = (winIdx + delta + grp.windows.length) % grp.windows.length
+    root.selectedAddress = grp.windows[nextWin].address
+  }
+
   function select(delta) {
     if (root.flatWindows.length === 0) return
     var current = root.selectedIndex()
@@ -240,11 +274,21 @@ Item {
     if (!record) return
     var wayland = record.wayland
     var address = record.address
+    var wsId = record.workspaceId
     root.close()
-    if (root.shell && typeof root.shell.hide === "function") if (root.shell && typeof root.shell.hide === "function") { root.shell.hide("omarchy-mac-stagemanager"); root.shell.hide("debba.stage-manager"); }
+    if (root.shell && typeof root.shell.hide === "function") {
+      root.shell.hide("omarchy-mac-stagemanager")
+      root.shell.hide("debba.stage-manager")
+    }
     Qt.callLater(function() {
-      if (wayland && typeof wayland.activate === "function") wayland.activate()
-      else Quickshell.execDetached(["hyprctl", "dispatch", "focuswindow", "address:" + address])
+      if (wsId && wsId > 0) {
+        Quickshell.execDetached(["hyprctl", "dispatch", "workspace", String(wsId)])
+      }
+      if (wayland && typeof wayland.activate === "function") {
+        wayland.activate()
+      } else {
+        Quickshell.execDetached(["hyprctl", "dispatch", "focuswindow", "address:" + address])
+      }
     })
   }
 
@@ -337,10 +381,22 @@ Timer {
         if (event.key === Qt.Key_Escape) {
           root.close()
           event.accepted = true
-        } else if (event.key === Qt.Key_Up || (event.key === Qt.Key_Tab && (event.modifiers & Qt.ShiftModifier))) {
+        } else if (event.key === Qt.Key_Up) {
+          root.selectGroup(-1)
+          event.accepted = true
+        } else if (event.key === Qt.Key_Down) {
+          root.selectGroup(1)
+          event.accepted = true
+        } else if (event.key === Qt.Key_Left) {
+          root.cycleGroupWindow(-1)
+          event.accepted = true
+        } else if (event.key === Qt.Key_Right) {
+          root.cycleGroupWindow(1)
+          event.accepted = true
+        } else if (event.key === Qt.Key_Tab && (event.modifiers & Qt.ShiftModifier)) {
           root.select(-1)
           event.accepted = true
-        } else if (event.key === Qt.Key_Down || event.key === Qt.Key_Tab) {
+        } else if (event.key === Qt.Key_Tab) {
           root.select(1)
           event.accepted = true
         } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
@@ -523,6 +579,12 @@ Timer {
       root.selectedAddress = groupData.windows[index].address
     }
 
+    function cycle(delta) {
+      if (windowCount <= 1) return
+      var next = (currentIndex + delta + windowCount) % windowCount
+      selectWindow(next)
+    }
+
     function syncSelection() {
       // A delegate whose context is already torn down still receives the
       // selection signal, and `root` reads back as undefined there.
@@ -568,6 +630,19 @@ Timer {
 
     HoverHandler { id: groupHover }
 
+    WheelHandler {
+      id: groupWheel
+      onWheel: function(event) {
+        if (appGroup.windowCount > 1) {
+          if (event.angleDelta.y < 0 || event.angleDelta.x < 0) {
+            appGroup.cycle(1)
+          } else if (event.angleDelta.y > 0 || event.angleDelta.x > 0) {
+            appGroup.cycle(-1)
+          }
+        }
+      }
+    }
+
     Item {
       id: previewStack
       width: parent.width
@@ -606,6 +681,11 @@ Timer {
           height: root.previewHeight
           z: index + 1
           record: appGroup.stackedRecord(index)
+          onClicked: {
+            var targetIdx = (appGroup.currentIndex + index + 1) % appGroup.windowCount
+            appGroup.selectWindow(targetIdx)
+            if (record) root.activate(record)
+          }
         }
       }
 
@@ -771,11 +851,19 @@ Timer {
     id: stackLayer
 
     property var record: null
+    signal clicked()
 
     radius: root.cardRadius
     color: Qt.rgba(root.background.r, root.background.g, root.background.b, 0.96)
     border.width: 0
     clip: true
+
+    MouseArea {
+      anchors.fill: parent
+      hoverEnabled: true
+      cursorShape: Qt.PointingHandCursor
+      onClicked: stackLayer.clicked()
+    }
 
     Image {
       anchors.centerIn: parent
