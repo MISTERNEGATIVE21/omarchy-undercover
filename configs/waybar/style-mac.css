@@ -6,9 +6,10 @@
 }
 
 window#waybar.mac-topbar {
-    background-color: rgba(24, 24, 28, 0.76);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    background-color: rgba(24, 24, 28, 0.84);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
     color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.60);
     padding: 0 4px;
 }
 

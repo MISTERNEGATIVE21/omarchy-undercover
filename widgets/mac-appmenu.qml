@@ -83,6 +83,8 @@ BarWidget {
         font.pixelSize: 13
         font.weight: Font.Bold
         color: root.bar ? root.bar.foreground : "#ffffff"
+        style: Text.Outline
+        styleColor: Qt.rgba(0, 0, 0, 0.35)
       }
 
       MouseArea {
@@ -120,6 +122,8 @@ BarWidget {
           font.pixelSize: 13
           font.weight: Font.Normal
           color: root.bar ? root.bar.foreground : "#ffffff"
+          style: Text.Outline
+          styleColor: Qt.rgba(0, 0, 0, 0.35)
         }
 
         MouseArea {

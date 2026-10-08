@@ -5,8 +5,8 @@
 }
 
 window#waybar.win11-taskbar {
-    background-color: rgba(32, 32, 32, 0.82);
-    border-top: 1px solid rgba(255, 255, 255, 0.0837);
+    background-color: rgba(32, 32, 32, 0.96);
+    border-top: 1px solid rgba(255, 255, 255, 0.10);
     color: #ffffff;
 }
 
