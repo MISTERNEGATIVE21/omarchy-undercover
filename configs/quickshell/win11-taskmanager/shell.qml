@@ -33,6 +33,7 @@ ShellRoot {
     property string homeDir: Quickshell.env("HOME")
     property string pluginDir: Quickshell.env("OMARCHY_PLUGIN_DIR") || (taskManagerWindow.homeDir + "/.config/omarchy/plugins/omarchy-undercover")
     property bool isDark: true
+    property bool isMaximized: false
 
     // Navigation & State
     property string activeTab: "processes" // "processes" | "performance" | "startup" | "services"
@@ -211,13 +212,16 @@ ShellRoot {
     Rectangle {
       id: mainFrame
       anchors.centerIn: parent
-      width: Math.min(1020, (taskManagerWindow.screen ? taskManagerWindow.screen.width : 1280) - 40)
-      height: Math.min(680, (taskManagerWindow.screen ? taskManagerWindow.screen.height : 720) - 50)
-      radius: 8
+      width: taskManagerWindow.isMaximized ? ((taskManagerWindow.screen ? taskManagerWindow.screen.width : 1280) - 20) : Math.min(1020, (taskManagerWindow.screen ? taskManagerWindow.screen.width : 1280) - 40)
+      height: taskManagerWindow.isMaximized ? ((taskManagerWindow.screen ? taskManagerWindow.screen.height : 720) - 40) : Math.min(680, (taskManagerWindow.screen ? taskManagerWindow.screen.height : 720) - 50)
+      radius: taskManagerWindow.isMaximized ? 0 : 8
       color: Qt.rgba(0.12, 0.13, 0.17, 0.96)
       border.color: Qt.rgba(1, 1, 1, 0.14)
       border.width: 1
       clip: true
+
+      Behavior on width { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
+      Behavior on height { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
 
       ColumnLayout {
         anchors.fill: parent
@@ -313,14 +317,32 @@ ShellRoot {
                 width: 44; height: 44
                 color: btnMinM.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
                 Text { anchors.centerIn: parent; text: "─"; font.pixelSize: 10; color: "#ffffff" }
-                MouseArea { id: btnMinM; anchors.fill: parent; hoverEnabled: true; onClicked: taskManagerWindow.closeManager() }
+                MouseArea {
+                  id: btnMinM
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  onClicked: {
+                    Quickshell.execDetached(["omarchy-undercover-minimize"])
+                    taskManagerWindow.closeManager()
+                  }
+                }
               }
 
               Rectangle {
                 width: 44; height: 44
                 color: btnMaxM.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
-                Text { anchors.centerIn: parent; text: "□"; font.pixelSize: 11; color: "#ffffff" }
-                MouseArea { id: btnMaxM; anchors.fill: parent; hoverEnabled: true }
+                Text {
+                  anchors.centerIn: parent
+                  text: taskManagerWindow.isMaximized ? "🗗" : "□"
+                  font.pixelSize: 11
+                  color: "#ffffff"
+                }
+                MouseArea {
+                  id: btnMaxM
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  onClicked: taskManagerWindow.isMaximized = !taskManagerWindow.isMaximized
+                }
               }
 
               Rectangle {

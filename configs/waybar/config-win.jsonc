@@ -36,8 +36,9 @@
     },
     "custom/startmenu": {
       "format": "󰍲",
-      "tooltip": "Start (Win)",
-      "on-click": "omarchy-win11-start"
+      "tooltip": "Start (Win) / Right-click: Task Manager",
+      "on-click": "omarchy-win11-start",
+      "on-click-right": "omarchy-win11-taskmanager"
     },
     "custom/search": {
       "format": "󰍉  Search",
@@ -53,7 +54,8 @@
       "format": "{icon}",
       "icon-size": 24,
       "tooltip-format": "{title}",
-      "on-click": "activate"
+      "on-click": "activate",
+      "on-click-right": "omarchy-win11-taskmanager"
     },
     "tray": {
       "icon-size": 16,

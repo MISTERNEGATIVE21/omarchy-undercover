@@ -318,6 +318,7 @@ if keybindings_enabled and hl and hl.bind then
   bind_key("BIND_WIN_LOCK", "SUPER + L", exec_cmd("hyprlock || swaylock || loginctl lock-session"), "Lock screen", { locked = true })
   bind_key("BIND_WIN_RUN", "SUPER + R", exec_cmd("rofi -show run -theme ~/.config/rofi/windows11.rasi"), "Run dialog")
   bind_key("BIND_WIN_MINIMIZE", "SUPER + M", exec_cmd("omarchy-undercover-minimize"), "Minimize window")
+  bind_key("BIND_WIN_TASKMANAGER", "CTRL + SHIFT + ESCAPE", exec_cmd("omarchy-win11-taskmanager"), "Windows 11 Task Manager")
   bind_key("BIND_WIN_CLOSE", "ALT + F4", hl.dsp.window.close(), "Close window")
 
   -- Windows 11 Multi-Monitor & Screen Management (Win + Shift + Arrows)
