@@ -393,7 +393,7 @@ restore_shell_from_baseline() {
     local baseline="${1:-}"
     local restored=false
     if [[ -n "$baseline" && -f "$baseline/omarchy/shell.json" ]]; then
-        if ! grep -q "undercover\." "$baseline/omarchy/shell.json"; then
+        if ! grep -qEi "undercover|mac-|win11-" "$baseline/omarchy/shell.json"; then
             mkdir -p "$HOME/.config/omarchy"
             cp -f "$baseline/omarchy/shell.json" "$HOME/.config/omarchy/shell.json"
             msg "Restored original Omarchy Quickshell layout."
@@ -402,21 +402,33 @@ restore_shell_from_baseline() {
     fi
 
     if [[ "$restored" == "false" ]]; then
+        local def_src="/usr/share/omarchy/config/omarchy/shell.json"
+        [[ ! -f "$def_src" ]] && def_src=$(project_file "shell/shell-default.json")
+        [[ -z "$def_src" || ! -f "$def_src" ]] && def_src="${SCRIPT_DIR}/../configs/shell/shell-default.json"
+
         if [[ -f "$HOME/.config/omarchy/shell.json" ]] && command_exists jq; then
-            # Surgically purge undercover items only, preserving user custom widgets
+            # Surgically purge undercover, mac, and win11 items, preserving user custom widgets
             jq '
               walk(
-                if type == "object" and has("id") and ((.id // "") | test("undercover")) then empty
-                elif type == "array" then map(select(. != "omarchy-undercover" and . != "undercover"))
+                if type == "object" and has("id") and ((.id // "") | test("undercover|mac-|win11-")) then empty
+                elif type == "array" then map(select(type == "string" and (. | test("undercover|mac-|win11-")) | not))
                 else . end
               )
+              | .bar.transparent = false
+              | .bar.position = "top"
+              | if (.bar.centerAnchor // "") == "" then .bar.centerAnchor = "omarchy.clock" else . end
             ' "$HOME/.config/omarchy/shell.json" > "$HOME/.config/omarchy/shell.json.tmp" 2>/dev/null && \
             mv "$HOME/.config/omarchy/shell.json.tmp" "$HOME/.config/omarchy/shell.json"
+
+            # Check if left or right layout became empty or lacks standard Omarchy layout; if so, restore pristine default
+            if ! grep -q "omarchy\." "$HOME/.config/omarchy/shell.json" || \
+               grep -qEi "mac-|win11-|undercover" "$HOME/.config/omarchy/shell.json"; then
+                if [[ -f "$def_src" ]]; then
+                    cp -f "$def_src" "$HOME/.config/omarchy/shell.json"
+                fi
+            fi
             msg "Cleaned Undercover widgets from Quickshell layout."
         else
-            local def_src="/usr/share/omarchy/config/omarchy/shell.json"
-            [[ ! -f "$def_src" ]] && def_src=$(project_file "shell/shell-default.json")
-            [[ -z "$def_src" || ! -f "$def_src" ]] && def_src="${SCRIPT_DIR}/../configs/shell/shell-default.json"
             if [[ -f "$def_src" ]]; then
                 mkdir -p "$HOME/.config/omarchy"
                 cp -f "$def_src" "$HOME/.config/omarchy/shell.json"
@@ -425,6 +437,9 @@ restore_shell_from_baseline() {
         fi
     fi
 
+    if command_exists omarchy; then
+        omarchy restart shell >/dev/null 2>&1 || true
+    fi
     if command_exists omarchy-shell; then
         omarchy-shell shell reloadConfig >/dev/null 2>&1 || true
     fi
@@ -494,9 +509,18 @@ backup_original_configs() {
 
     backup_config_dir "waybar" "$cur_backup"
     if [[ -f "$HOME/.config/omarchy/shell.json" ]]; then
-        if ! grep -q "undercover\." "$HOME/.config/omarchy/shell.json"; then
+        if ! grep -qEi "undercover|mac-|win11-" "$HOME/.config/omarchy/shell.json"; then
             mkdir -p "$cur_backup/omarchy"
             cp -f "$HOME/.config/omarchy/shell.json" "$cur_backup/omarchy/"
+        fi
+    fi
+    if [[ ! -f "$cur_backup/omarchy/shell.json" ]]; then
+        local stock_src="/usr/share/omarchy/config/omarchy/shell.json"
+        [[ ! -f "$stock_src" ]] && stock_src=$(project_file "shell/shell-default.json")
+        [[ -z "$stock_src" || ! -f "$stock_src" ]] && stock_src="${SCRIPT_DIR}/../configs/shell/shell-default.json"
+        if [[ -f "$stock_src" ]]; then
+            mkdir -p "$cur_backup/omarchy"
+            cp -f "$stock_src" "$cur_backup/omarchy/shell.json"
         fi
     fi
 
