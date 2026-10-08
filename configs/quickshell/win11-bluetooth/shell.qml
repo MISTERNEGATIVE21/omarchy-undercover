@@ -103,7 +103,7 @@ ShellRoot {
     Process {
       id: powerPoller
       running: true
-      command: ["bash", "-c", "omarchy-bluetooth-dbus power"]
+      command: ["bash", "-c", "omarchy-bluetooth-power is-on 2>/dev/null && echo 'yes' || echo 'no'"]
       stdout: SplitParser {
         onRead: function(line) {
           btWindow.btEnabled = (String(line).trim().toLowerCase() === "yes")
@@ -390,7 +390,7 @@ ShellRoot {
                 onClicked: {
                   var target = !btWindow.btEnabled
                   btWindow.btEnabled = target
-                  Quickshell.execDetached(["omarchy-bluetooth-dbus", target ? "on" : "off"])
+                  Quickshell.execDetached(["omarchy-bluetooth-power", target ? "on" : "off"])
                   btWindow.triggerQuery()
                 }
               }
@@ -660,9 +660,9 @@ ShellRoot {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
                       if (modelData.connected) {
-                        Quickshell.execDetached(["omarchy-bluetooth-dbus", "disconnect", modelData.mac])
+                        Quickshell.execDetached(["omarchy-bluetooth-device", "disconnect", modelData.mac])
                       } else {
-                        Quickshell.execDetached(["omarchy-bluetooth-dbus", "connect", modelData.mac])
+                        Quickshell.execDetached(["omarchy-bluetooth-device", "connect", modelData.mac])
                       }
                       btWindow.triggerQuery()
                     }
@@ -677,10 +677,8 @@ ShellRoot {
                 cursorShape: Qt.PointingHandCursor
                 acceptedButtons: Qt.RightButton
                 onClicked: {
-                  if (modelData.connected) {
-                    Quickshell.execDetached(["omarchy-bluetooth-dbus", "disconnect", modelData.mac])
-                    btWindow.triggerQuery()
-                  }
+                  Quickshell.execDetached(["omarchy-bluetooth-device", "forget", modelData.mac])
+                  btWindow.triggerQuery()
                 }
               }
             }
