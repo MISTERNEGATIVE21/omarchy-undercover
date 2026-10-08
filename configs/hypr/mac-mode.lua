@@ -207,6 +207,7 @@ if keybindings_enabled and hl and hl.bind then
   local lock_cmd_str = "qs -p /usr/share/omarchy/shell ipc call omarchy-undercover-service lock 2>/dev/null || qs ipc call omarchy-undercover-service lock 2>/dev/null || " .. find_script("omarchy-mac-screensaver") .. " --lock || hyprlock || loginctl lock-session"
   bind_key("BIND_MAC_LOCK", "SUPER + CTRL + Q", hl.dsp.exec_cmd(lock_cmd_str), "Lock screen (macOS shortcut)", { locked = true })
   bind_key("BIND_LINUX_LOCK", "SUPER + CTRL + L", hl.dsp.exec_cmd(lock_cmd_str), "Lock screen (Linux shortcut)", { locked = true })
+  bind_key("BIND_MAC_ACTIVITYMONITOR", "SUPER + ALT + ESCAPE", exec_cmd("omarchy-mac-activitymonitor"), "Activity Monitor / Force Quit")
   bind_key("BIND_MAC_CLOSE", "SUPER + Q", hl.dsp.window.close(), "Quit / Close window")
 
   -- macOS Sequoia Native Window Tiling Shortcuts (Ctrl + Super + Arrows)

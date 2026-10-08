@@ -136,6 +136,20 @@ BarWidget {
           Layout.fillWidth: true
           height: 26
           radius: 5
+          color: mAct.containsMouse ? Color.accent : "transparent"
+          Text {
+            anchors.left: parent.left; anchors.leftMargin: 10; anchors.verticalCenter: parent.verticalCenter
+            text: "Activity Monitor..."
+            font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12
+            color: mAct.containsMouse ? "#ffffff" : Color.foreground
+          }
+          MouseArea { id: mAct; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.runCmd("omarchy-mac-activitymonitor") }
+        }
+
+        Rectangle {
+          Layout.fillWidth: true
+          height: 26
+          radius: 5
           color: m3.containsMouse ? Color.accent : "transparent"
           Text {
             anchors.left: parent.left; anchors.leftMargin: 10; anchors.verticalCenter: parent.verticalCenter
@@ -175,7 +189,7 @@ BarWidget {
             font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12
             color: m4.containsMouse ? "#ffffff" : Color.foreground
           }
-          MouseArea { id: m4; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.runCmd("hyprctl kill") }
+          MouseArea { id: m4; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.runCmd("omarchy-mac-activitymonitor") }
         }
 
         Rectangle { Layout.fillWidth: true; height: 1; color: Qt.rgba(1, 1, 1, 0.12) }
