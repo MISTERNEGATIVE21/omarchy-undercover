@@ -173,12 +173,34 @@ omarchy_reload_quickshell() {
     # Kill any leftover waybar processes so they do not overlap with quickshell
     pkill -9 -x waybar 2>/dev/null || true
 
+    # Terminate any duplicate omarchy-launch-shell supervisors to prevent double bars
+    local supervisors=()
+    supervisors=($(pgrep -f "omarchy-launch-shell" 2>/dev/null || true))
+    if (( ${#supervisors[@]} > 1 )); then
+        pkill -TERM -f "omarchy-launch-shell" 2>/dev/null || true
+        sleep 0.3
+        pkill -9 -f "omarchy-launch-shell" 2>/dev/null || true
+        while timeout 2 quickshell kill -p "/usr/share/omarchy/shell" --any-display >/dev/null 2>&1; do :; done
+        pkill -9 -f "quickshell.*omarchy/shell" 2>/dev/null || true
+        if command_exists omarchy; then
+            omarchy restart shell 2>/dev/null || true
+        elif command_exists omarchy-restart-shell; then
+            omarchy-restart-shell 2>/dev/null || true
+        fi
+        return 0
+    fi
+
     if command_exists omarchy-shell && omarchy-shell shell ping >/dev/null 2>&1; then
         omarchy-shell shell reloadConfig >/dev/null 2>&1 || true
-    elif command_exists omarchy; then
-        omarchy restart shell 2>/dev/null || true
-    elif command_exists omarchy-restart-shell; then
-        omarchy-restart-shell 2>/dev/null || true
+    else
+        # When restarting, terminate old supervisor first so dispatch does not leak duplicates
+        pkill -TERM -f "omarchy-launch-shell" 2>/dev/null || true
+        sleep 0.2
+        if command_exists omarchy; then
+            omarchy restart shell 2>/dev/null || true
+        elif command_exists omarchy-restart-shell; then
+            omarchy-restart-shell 2>/dev/null || true
+        fi
     fi
 }
 
