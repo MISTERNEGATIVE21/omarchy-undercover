@@ -34,7 +34,7 @@ BarWidget {
   }
 
   Timer {
-    interval: 8000
+    interval: 4000
     running: true
     repeat: true
     onTriggered: {

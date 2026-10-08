@@ -2743,6 +2743,7 @@ ShellRoot {
                               }
 
                               Rectangle {
+                                z: 10
                                 implicitWidth: modelData.installed ? (isSelected ? 65 : 75) : 85
                                 implicitHeight: 26
                                 radius: 13
@@ -2784,6 +2785,7 @@ ShellRoot {
 
                         MouseArea {
                           id: presetMouse
+                          z: 1
                           anchors.fill: parent
                           hoverEnabled: true
                           cursorShape: Qt.PointingHandCursor
@@ -2793,6 +2795,8 @@ ShellRoot {
                               var src = modelData.path.startsWith("file://") ? modelData.path : "file://" + modelData.path
                               previewPlayer.source = src
                               previewPlayer.play()
+                            } else {
+                              settingsWin.downloadScreensaverClip(modelData.id)
                             }
                           }
                         }
@@ -2927,6 +2931,43 @@ ShellRoot {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: settingsService.disconnectWifi()
+                      }
+                    }
+                  }
+                }
+
+                // 2b. Disconnected Status Card (If Not Connected)
+                Rectangle {
+                  visible: settingsService.wifiEnabled && settingsService.wifiActiveSsid === ""
+                  Layout.fillWidth: true
+                  implicitHeight: 64
+                  radius: 10
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 14
+
+                    Text { text: "󰤭"; font.pixelSize: 22; color: settingsWin.textSecondary }
+
+                    ColumnLayout {
+                      Layout.fillWidth: true
+                      spacing: 2
+                      Text {
+                        text: "Not Connected"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
+                        color: settingsWin.textPrimary
+                      }
+                      Text {
+                        text: "Wi-Fi is on but not connected to any network"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 11
+                        color: settingsWin.textSecondary
                       }
                     }
                   }

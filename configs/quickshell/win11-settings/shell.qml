@@ -2939,6 +2939,43 @@ ShellRoot {
                   }
                 }
 
+                // 2b. DISCONNECTED STATUS CARD (If Not Connected)
+                Rectangle {
+                  visible: settingsService.wifiEnabled && settingsService.wifiActiveSsid === ""
+                  Layout.fillWidth: true
+                  implicitHeight: 64
+                  radius: 8
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 14
+
+                    Text { text: "󰤭"; font.pixelSize: 22; color: settingsWin.textSecondary }
+
+                    ColumnLayout {
+                      Layout.fillWidth: true
+                      spacing: 2
+                      Text {
+                        text: "Not Connected"
+                        font.family: "Segoe UI, sans-serif"
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
+                        color: settingsWin.textPrimary
+                      }
+                      Text {
+                        text: "Wi-Fi is on but not connected to any network"
+                        font.family: "Segoe UI, sans-serif"
+                        font.pixelSize: 11
+                        color: settingsWin.textSecondary
+                      }
+                    }
+                  }
+                }
+
                 // 3. AVAILABLE NETWORKS CARD
                 Rectangle {
                   visible: settingsService.wifiEnabled

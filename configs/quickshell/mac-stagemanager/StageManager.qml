@@ -281,13 +281,17 @@ Item {
       root.shell.hide("debba.stage-manager")
     }
     Qt.callLater(function() {
+      var rawAddr = String(address || "").trim()
+      if (rawAddr && !rawAddr.startsWith("0x")) rawAddr = "0x" + rawAddr
       if (wsId && wsId > 0) {
-        Quickshell.execDetached(["hyprctl", "dispatch", "workspace", String(wsId)])
+        var wsCmd = "if hyprctl dispatch \"hl.dsp.focus({ workspace = " + wsId + " })\" 2>/dev/null; then :; else hyprctl dispatch workspace " + wsId + " 2>/dev/null; fi"
+        Quickshell.execDetached(["bash", "-c", wsCmd])
       }
       if (wayland && typeof wayland.activate === "function") {
         wayland.activate()
       } else {
-        Quickshell.execDetached(["hyprctl", "dispatch", "focuswindow", "address:" + address])
+        var winCmd = "if hyprctl dispatch \"hl.dsp.focus({ window = 'address:" + rawAddr + "' })\" 2>/dev/null; then :; else hyprctl dispatch focuswindow \"address:" + rawAddr + "\" 2>/dev/null; fi"
+        Quickshell.execDetached(["bash", "-c", winCmd])
       }
     })
   }
@@ -366,9 +370,7 @@ Timer {
 
     WlrLayershell.namespace: "omarchy-mac-stagemanager"
     WlrLayershell.layer: WlrLayer.Top
-    WlrLayershell.keyboardFocus: root.opened
-      ? (root.focusPrimed ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.Exclusive)
-      : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: root.opened ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
     Item {
       id: keyCatcher

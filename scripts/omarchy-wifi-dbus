@@ -215,6 +215,37 @@ def is_valid_ssid(ssid):
     return 1 <= len(raw) <= 32 and b"\x00" not in raw
 
 
+def get_known_ssids():
+    known = set()
+    try:
+        bus = get_bus()
+        settings_obj = bus.get_object(NM_BUS, "/org/freedesktop/NetworkManager/Settings")
+        settings_iface = dbus.Interface(settings_obj, NM_SETTINGS_IFACE)
+        for path in settings_iface.ListConnections():
+            try:
+                c_obj = bus.get_object(NM_BUS, path)
+                c_iface = dbus.Interface(c_obj, "org.freedesktop.NetworkManager.Settings.Connection")
+                s = c_iface.GetSettings()
+                wifi_s = s.get("802-11-wireless", {})
+                conn_s = s.get("connection", {})
+                c_type = str(conn_s.get("type", ""))
+                if "wireless" in c_type or "802-11-wireless" in s:
+                    ssid_b = bytes(wifi_s.get("ssid", b""))
+                    ssid = ssid_b.decode("utf-8", "replace") if ssid_b else str(conn_s.get("id", ""))
+                    if ssid:
+                        known.add(ssid)
+            except Exception:
+                continue
+    except Exception:
+        pass
+    return known
+
+
+def cmd_known():
+    for s in sorted(get_known_ssids()):
+        print(s)
+
+
 def cmd_connect(ssid, password=""):
     if not is_valid_ssid(ssid):
         print("invalid ssid")
@@ -229,11 +260,13 @@ def cmd_connect(ssid, password=""):
             print("failed: no wireless device")
             return
         dev_path = wireless[0]
+        dev_obj = bus.get_object(NM_BUS, dev_path)
+        dev_iface_name = str(dbus.Interface(dev_obj, DBUS_PROPS).Get(NM_DEVICE_IFACE, "Interface"))
 
-        # Search for existing connection profile in NetworkManager Settings
+        # Search for existing connection profiles in NetworkManager Settings
         settings_obj = bus.get_object(NM_BUS, "/org/freedesktop/NetworkManager/Settings")
         settings_iface = dbus.Interface(settings_obj, NM_SETTINGS_IFACE)
-        existing_conn_path = None
+        matching_conns = []
 
         for path in settings_iface.ListConnections():
             try:
@@ -244,38 +277,57 @@ def cmd_connect(ssid, password=""):
                 conn_s = s.get("connection", {})
                 c_ssid = bytes(wifi_s.get("ssid", b""))
                 if c_ssid == raw_ssid or conn_s.get("id") == ssid:
-                    existing_conn_path = path
-                    break
+                    c_dev = str(conn_s.get("interface-name", ""))
+                    ts = int(conn_s.get("timestamp", 0) or 0)
+                    has_sec = "802-11-wireless-security" in s
+                    score = 0
+                    if c_dev == dev_iface_name:
+                        score = 20
+                    elif not c_dev:
+                        score = 10
+                    else:
+                        score = 1
+                    if has_sec:
+                        score += 5
+                    matching_conns.append((score, ts, path, c_iface, s, c_dev))
             except Exception:
                 continue
 
-        if existing_conn_path:
+        # Sort matching candidates: highest score first, then newest timestamp
+        matching_conns.sort(key=lambda item: (item[0], item[1]), reverse=True)
+
+        if matching_conns:
+            # If password supplied, update the top candidate
             if password:
                 try:
-                    c_obj = bus.get_object(NM_BUS, existing_conn_path)
-                    c_iface = dbus.Interface(c_obj, "org.freedesktop.NetworkManager.Settings.Connection")
-                    s = c_iface.GetSettings()
-                    sec = s.setdefault("802-11-wireless-security", {})
+                    _, _, top_path, top_iface, top_s, top_dev = matching_conns[0]
+                    sec = top_s.setdefault("802-11-wireless-security", {})
                     sec["key-mgmt"] = "wpa-psk"
                     sec["psk"] = password
-                    c_iface.Update(s)
+                    if top_dev and top_dev != dev_iface_name:
+                        top_s["connection"]["interface-name"] = dev_iface_name
+                    top_iface.Update(top_s)
                 except Exception:
                     pass
-            try:
-                dbus.Interface(nm, NM_IFACE).ActivateConnection(
-                    existing_conn_path, dbus.ObjectPath(dev_path), dbus.ObjectPath("/")
-                )
-                print("connecting %s" % ssid)
-                return
-            except Exception:
-                pass
 
-        # No existing connection or activation failed: add and activate via D-Bus
+            # Try activating matching profiles in order
+            for _, _, cand_path, cand_iface, cand_s, cand_dev in matching_conns:
+                try:
+                    dbus.Interface(nm, NM_IFACE).ActivateConnection(
+                        cand_path, dbus.ObjectPath(dev_path), dbus.ObjectPath("/")
+                    )
+                    print("connecting %s" % ssid)
+                    return
+                except Exception:
+                    continue
+
+        # No existing candidate worked: if password provided or open network, add and activate
         connection = {
             "connection": {
                 "type": "802-11-wireless",
                 "uuid": str(uuid.uuid4()),
                 "id": ssid,
+                "interface-name": dev_iface_name,
             },
             "802-11-wireless": {
                 "ssid": dbus.ByteArray(raw_ssid),
@@ -288,18 +340,38 @@ def cmd_connect(ssid, password=""):
                 "psk": password,
             }
 
-        dbus.Interface(nm, NM_IFACE).AddAndActivateConnection(
-            connection, dbus.ObjectPath(dev_path), dbus.ObjectPath("/")
-        )
-        print("connecting %s" % ssid)
-        return
-    except Exception as e:
-        # Secure fallback: never place password in argv
+        try:
+            dbus.Interface(nm, NM_IFACE).AddAndActivateConnection(
+                connection, dbus.ObjectPath(dev_path), dbus.ObjectPath("/")
+            )
+            print("connecting %s" % ssid)
+            return
+        except Exception:
+            pass
+
+        # Fallback to nmcli
         if not password:
             res = subprocess.run(["nmcli", "connection", "up", "id", ssid], capture_output=True, text=True, check=False)
             if res.returncode == 0:
                 print("connecting %s" % ssid)
                 return
+            res2 = subprocess.run(["nmcli", "dev", "wifi", "connect", ssid], capture_output=True, text=True, check=False)
+            if res2.returncode == 0:
+                print("connecting %s" % ssid)
+                return
+        else:
+            proc = subprocess.run(
+                ["nmcli", "--ask", "dev", "wifi", "connect", ssid],
+                input=(password + "\n"),
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if proc.returncode == 0:
+                print("connecting %s" % ssid)
+                return
+        print("failed: unable to connect to %s" % ssid)
+    except Exception as e:
         print("failed: %s" % str(e))
 
 
@@ -315,6 +387,8 @@ def main():
         cmd_set(cmd)
     elif cmd == "scan":
         cmd_scan()
+    elif cmd in ("known", "saved"):
+        cmd_known()
     elif cmd == "disconnect":
         cmd_disconnect()
     elif cmd == "connect":

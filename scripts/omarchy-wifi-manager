@@ -136,6 +136,23 @@ class WifiManagerWindow(Adw.Window):
         except Exception:
             pass
 
+        # Known saved SSIDs
+        known_ssids = set()
+        try:
+            helper = "omarchy-wifi-dbus"
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            local_helper = os.path.join(script_dir, "omarchy-wifi-dbus")
+            if os.path.isfile(local_helper) and os.access(local_helper, os.X_OK):
+                helper = local_helper
+            out_known = subprocess.check_output([helper, "known"], text=True)
+            for line in out_known.splitlines():
+                line = line.strip()
+                if line:
+                    known_ssids.add(line)
+        except Exception:
+            pass
+        self.known_ssids = known_ssids
+
         # Scan list
         networks = []
         try:
@@ -172,7 +189,8 @@ class WifiManagerWindow(Adw.Window):
             lbl_name.add_css_class("wifi-name")
             lbl_name.set_halign(Gtk.Align.START)
             
-            lbl_sec = Gtk.Label(label=f"Signal: {sig}% • {sec}")
+            is_saved = ssid in self.known_ssids
+            lbl_sec = Gtk.Label(label=f"Signal: {sig}% • {sec}" + (" • Saved" if is_saved else ""))
             lbl_sec.set_halign(Gtk.Align.START)
             lbl_sec.set_opacity(0.7)
 
@@ -198,6 +216,9 @@ class WifiManagerWindow(Adw.Window):
             self.list_box.append(card)
 
     def prompt_password(self, ssid, security):
+        if hasattr(self, "known_ssids") and ssid in self.known_ssids:
+            self.connect_wifi(ssid, "")
+            return
         if "WPA" in security or "WEP" in security or "802.1X" in security:
             dlg = Adw.MessageDialog(
                 transient_for=self,

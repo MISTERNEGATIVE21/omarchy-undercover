@@ -31,6 +31,7 @@ ShellRoot {
     property bool wifiEnabled: true
     property string activeSsid: ""
     property var networks: []
+    property var knownSsids: []
     property string connectingSsid: ""
     property string passwordInput: ""
     property bool isScanning: false
@@ -193,6 +194,35 @@ ShellRoot {
       }
       onExited: function() {
         wifiWindow.isScanning = false
+        var anyInUse = false
+        for (var i = 0; i < wifiWindow.networks.length; i++) {
+          if (wifiWindow.networks[i].inUse) {
+            anyInUse = true
+            wifiWindow.activeSsid = wifiWindow.networks[i].ssid
+            break
+          }
+        }
+        if (!anyInUse) {
+          wifiWindow.activeSsid = ""
+        }
+        if (!knownPoller.running) knownPoller.running = true
+      }
+    }
+
+    // Known Saved SSIDs Poller
+    Process {
+      id: knownPoller
+      running: true
+      command: ["bash", "-c", "omarchy-wifi-dbus known"]
+      stdout: SplitParser {
+        onRead: function(line) {
+          var s = String(line).trim()
+          if (s && wifiWindow.knownSsids.indexOf(s) === -1) {
+            var arr = wifiWindow.knownSsids.slice(0)
+            arr.push(s)
+            wifiWindow.knownSsids = arr
+          }
+        }
       }
     }
 
@@ -239,6 +269,7 @@ ShellRoot {
       onTriggered: {
         if (!scanPoller.running) scanPoller.running = true
         if (!radioPoller.running) radioPoller.running = true
+        if (!knownPoller.running) knownPoller.running = true
         if (!netStatusPoller.running) netStatusPoller.running = true
         if (!bandPoller.running) bandPoller.running = true
       }
@@ -845,6 +876,14 @@ ShellRoot {
                   }
 
                   Text {
+                    visible: wifiWindow.knownSsids.indexOf(modelData.ssid) !== -1 && !modelData.inUse
+                    text: "Saved"
+                    font.family: "Segoe UI, sans-serif"
+                    font.pixelSize: 10
+                    color: wifiWindow.textSecondary
+                  }
+
+                  Text {
                     visible: modelData.isSecured && !modelData.inUse
                     text: "🔒"
                     font.pixelSize: 11
@@ -859,12 +898,14 @@ ShellRoot {
                   cursorShape: Qt.PointingHandCursor
                   onClicked: {
                     if (modelData.inUse) return
-                    if (modelData.isSecured) {
-                      wifiWindow.connectingSsid = (wifiWindow.connectingSsid === modelData.ssid ? "" : modelData.ssid)
-                      wifiWindow.passwordInput = ""
-                    } else {
+                    var isKnown = wifiWindow.knownSsids.indexOf(modelData.ssid) !== -1
+                    if (isKnown || !modelData.isSecured) {
+                      wifiWindow.connectingSsid = ""
                       wifiWindow.connectWifi(modelData.ssid, "")
                       wifiWindow.triggerScan()
+                    } else {
+                      wifiWindow.connectingSsid = (wifiWindow.connectingSsid === modelData.ssid ? "" : modelData.ssid)
+                      wifiWindow.passwordInput = ""
                     }
                   }
                 }

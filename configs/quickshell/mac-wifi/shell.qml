@@ -31,7 +31,9 @@ ShellRoot {
     property bool wifiEnabled: true
     property string activeSsid: ""
     property var networks: []
+    property var knownSsids: []
     property string connectingSsid: ""
+    property string passwordInput: ""
     property string searchText: ""
     property bool isScanning: false
     property string wifiBand: "auto"
@@ -39,6 +41,9 @@ ShellRoot {
     property string wifiFreq: ""
     property string wifiIp: ""
     property int wifiPing: 0
+
+    readonly property color textSec: isDark ? Qt.rgba(1, 1, 1, 0.6) : Qt.rgba(0, 0, 0, 0.55)
+    readonly property color textPrimary: isDark ? "#ffffff" : "#1a1a1a"
 
     readonly property var filteredNetworks: {
       var q = macWifiWindow.searchText.toLowerCase().trim()
@@ -131,6 +136,18 @@ ShellRoot {
       command: ["bash", "-c", "omarchy-wifi-dbus scan"]
       onExited: function() {
         macWifiWindow.isScanning = false
+        var anyInUse = false
+        for (var i = 0; i < macWifiWindow.networks.length; i++) {
+          if (macWifiWindow.networks[i].inUse) {
+            anyInUse = true
+            macWifiWindow.activeSsid = macWifiWindow.networks[i].ssid
+            break
+          }
+        }
+        if (!anyInUse) {
+          macWifiWindow.activeSsid = ""
+        }
+        if (!knownPoller.running) knownPoller.running = true
       }
       stdout: SplitParser {
         onRead: function(line) {
@@ -167,6 +184,23 @@ ShellRoot {
               }
               macWifiWindow.networks = currentList
             }
+          }
+        }
+      }
+    }
+
+    // Known Saved SSIDs Poller
+    Process {
+      id: knownPoller
+      running: true
+      command: ["bash", "-c", "omarchy-wifi-dbus known"]
+      stdout: SplitParser {
+        onRead: function(line) {
+          var s = String(line).trim()
+          if (s && macWifiWindow.knownSsids.indexOf(s) === -1) {
+            var arr = macWifiWindow.knownSsids.slice(0)
+            arr.push(s)
+            macWifiWindow.knownSsids = arr
           }
         }
       }
@@ -215,6 +249,7 @@ ShellRoot {
       onTriggered: {
         if (!scanPoller.running) scanPoller.running = true
         if (!radioPoller.running) radioPoller.running = true
+        if (!knownPoller.running) knownPoller.running = true
         if (!netStatusPoller.running) netStatusPoller.running = true
         if (!bandPoller.running) bandPoller.running = true
       }
@@ -245,13 +280,24 @@ ShellRoot {
         // Header
         RowLayout {
           Layout.fillWidth: true
-          Text {
-            text: "Wi-Fi"
-            font.family: "SF Pro Text"
-            font.pixelSize: 14
-            font.weight: Font.Bold
-            color: macWifiWindow.isDark ? "#ffffff" : "#1a1a1a"
+
+          RowLayout {
+            spacing: 6
             Layout.fillWidth: true
+
+            Text {
+              text: !macWifiWindow.wifiEnabled ? "󰤮" : (macWifiWindow.activeSsid.length > 0 ? "󰤨" : "󰤭")
+              font.pixelSize: 15
+              color: !macWifiWindow.wifiEnabled ? macWifiWindow.textSec : (macWifiWindow.activeSsid.length > 0 ? "#007aff" : (macWifiWindow.isDark ? "#ffffff" : "#1a1a1a"))
+            }
+
+            Text {
+              text: "Wi-Fi"
+              font.family: "SF Pro Text"
+              font.pixelSize: 14
+              font.weight: Font.Bold
+              color: macWifiWindow.isDark ? "#ffffff" : "#1a1a1a"
+            }
           }
 
           // Scan / Refresh Button
@@ -318,6 +364,48 @@ ShellRoot {
               onClicked: Qt.quit()
             }
           }
+        }
+
+        // Disconnected Network Status Card
+        Rectangle {
+          visible: macWifiWindow.wifiEnabled && macWifiWindow.activeSsid.length === 0
+          Layout.fillWidth: true
+          implicitHeight: 56
+          radius: 10
+          color: macWifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.05) : Qt.rgba(0, 0, 0, 0.03)
+          border.color: macWifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(0, 0, 0, 0.08)
+          border.width: 1
+
+          RowLayout {
+            anchors.fill: parent
+            anchors.margins: 10
+            spacing: 10
+
+            Text {
+              text: "󰤭"
+              font.pixelSize: 20
+              color: macWifiWindow.textSec
+            }
+
+            ColumnLayout {
+              Layout.fillWidth: true
+              spacing: 2
+              Text {
+                text: "Not Connected"
+                font.family: "SF Pro Text"
+                font.pixelSize: 12
+                font.weight: Font.DemiBold
+                color: macWifiWindow.isDark ? "#ffffff" : "#1a1a1a"
+              }
+              Text {
+                text: "Select a network below to connect"
+                font.family: "SF Pro Text"
+                font.pixelSize: 10
+                color: macWifiWindow.textSec
+              }
+            }
+          }
+        }
         // Active Network Diagnostics Card
         Rectangle {
           visible: macWifiWindow.wifiEnabled && macWifiWindow.activeSsid.length > 0
@@ -565,41 +653,125 @@ ShellRoot {
             model: macWifiWindow.filteredNetworks
             spacing: 3
 
-            delegate: Rectangle {
+            delegate: ColumnLayout {
               width: macNetList.width
-              implicitHeight: 34
-              radius: 6
-              color: macRowM.containsMouse ? (macWifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.06)) : "transparent"
+              spacing: 3
 
-              RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 8
-                anchors.rightMargin: 8
-                spacing: 8
+              Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 34
+                radius: 6
+                color: macRowM.containsMouse ? (macWifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.06)) : "transparent"
 
-                Text { text: modelData.inUse ? "󰤨" : (modelData.signal > 60 ? "󰤨" : (modelData.signal > 30 ? "󰤥" : "󰤟")); font.pixelSize: 13; color: modelData.inUse ? "#007aff" : (macWifiWindow.isDark ? "#ffffff" : "#1a1a1a") }
-                Text {
-                  text: modelData.ssid
-                  textFormat: Text.PlainText
-                  font.family: "SF Pro Text"
-                  font.pixelSize: 12
-                  font.weight: modelData.inUse ? Font.DemiBold : Font.Normal
-                  color: modelData.inUse ? "#007aff" : (macWifiWindow.isDark ? "#ffffff" : "#1a1a1a")
-                  Layout.fillWidth: true
-                  elide: Text.ElideRight
+                RowLayout {
+                  anchors.fill: parent
+                  anchors.leftMargin: 8
+                  anchors.rightMargin: 8
+                  spacing: 8
+
+                  Text { text: modelData.inUse ? "󰤨" : (modelData.signal > 60 ? "󰤨" : (modelData.signal > 30 ? "󰤥" : "󰤟")); font.pixelSize: 13; color: modelData.inUse ? "#007aff" : (macWifiWindow.isDark ? "#ffffff" : "#1a1a1a") }
+                  Text {
+                    text: modelData.ssid
+                    textFormat: Text.PlainText
+                    font.family: "SF Pro Text"
+                    font.pixelSize: 12
+                    font.weight: modelData.inUse ? Font.DemiBold : Font.Normal
+                    color: modelData.inUse ? "#007aff" : (macWifiWindow.isDark ? "#ffffff" : "#1a1a1a")
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
+                  }
+                  Text {
+                    visible: macWifiWindow.knownSsids.indexOf(modelData.ssid) !== -1 && !modelData.inUse
+                    text: "Saved"
+                    font.family: "SF Pro Text"
+                    font.pixelSize: 10
+                    color: macWifiWindow.textSec
+                  }
+                  Text { visible: modelData.isSecured; text: "🔒"; font.pixelSize: 10 }
                 }
-                Text { visible: modelData.isSecured; text: "🔒"; font.pixelSize: 10 }
+
+                MouseArea {
+                  id: macRowM
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: {
+                    if (modelData.inUse) return
+                    var isKnown = macWifiWindow.knownSsids.indexOf(modelData.ssid) !== -1
+                    if (isKnown || !modelData.isSecured) {
+                      macWifiWindow.connectingSsid = ""
+                      macWifiWindow.connectWifi(modelData.ssid, "")
+                      if (!scanPoller.running) scanPoller.running = true
+                    } else {
+                      macWifiWindow.connectingSsid = (macWifiWindow.connectingSsid === modelData.ssid ? "" : modelData.ssid)
+                    }
+                  }
+                }
               }
 
-              MouseArea {
-                id: macRowM
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                  if (modelData.inUse) return
-                  macWifiWindow.connectWifi(modelData.ssid, "")
-                  if (!scanPoller.running) scanPoller.running = true
+              // Inline Password Input Panel
+              Rectangle {
+                visible: macWifiWindow.connectingSsid === modelData.ssid
+                Layout.fillWidth: true
+                implicitHeight: 40
+                radius: 6
+                color: macWifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.04)
+
+                RowLayout {
+                  anchors.fill: parent
+                  anchors.margins: 6
+                  spacing: 6
+
+                  Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 28
+                    radius: 4
+                    color: macWifiWindow.isDark ? Qt.rgba(0, 0, 0, 0.4) : "#ffffff"
+                    border.color: macWifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.2) : Qt.rgba(0, 0, 0, 0.15)
+                    border.width: 1
+
+                    TextInput {
+                      id: macPwInput
+                      anchors.fill: parent
+                      anchors.leftMargin: 6
+                      anchors.rightMargin: 6
+                      echoMode: TextInput.Password
+                      font.pixelSize: 11
+                      color: macWifiWindow.isDark ? "#ffffff" : "#1a1a1a"
+                      selectByMouse: true
+                      onAccepted: {
+                        macWifiWindow.connectWifi(modelData.ssid, text)
+                        text = ""
+                        macWifiWindow.connectingSsid = ""
+                        if (!scanPoller.running) scanPoller.running = true
+                      }
+                    }
+                  }
+
+                  Rectangle {
+                    implicitWidth: 54
+                    implicitHeight: 28
+                    radius: 4
+                    color: "#007aff"
+                    Text {
+                      anchors.centerIn: parent
+                      text: "Join"
+                      color: "#ffffff"
+                      font.family: "SF Pro Text"
+                      font.pixelSize: 11
+                      font.weight: Font.DemiBold
+                    }
+                    MouseArea {
+                      anchors.fill: parent
+                      cursorShape: Qt.PointingHandCursor
+                      onClicked: {
+                        macWifiWindow.connectWifi(modelData.ssid, macPwInput.text)
+                        macPwInput.text = ""
+                        macWifiWindow.connectingSsid = ""
+                        if (!scanPoller.running) scanPoller.running = true
+                      }
+                    }
+                  }
                 }
               }
             }
