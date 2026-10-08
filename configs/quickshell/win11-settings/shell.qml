@@ -22,8 +22,12 @@ ShellRoot {
       return (settingsService.monitors && settingsService.monitors.length > 0) ? settingsService.monitors[0] : null
     }
 
-    implicitWidth: Math.min(960, (Quickshell.screens[0] ? Quickshell.screens[0].width - 40 : 960))
-    implicitHeight: Math.min(620, (Quickshell.screens[0] ? Quickshell.screens[0].height - 60 : 620))
+    property bool isMaximized: false
+    readonly property real normalWidth: Math.min(960, (Quickshell.screens[0] ? Quickshell.screens[0].width - 40 : 960))
+    readonly property real normalHeight: Math.min(620, (Quickshell.screens[0] ? Quickshell.screens[0].height - 60 : 620))
+
+    implicitWidth: isMaximized ? (Quickshell.screens[0] ? Quickshell.screens[0].width - 20 : 1200) : normalWidth
+    implicitHeight: isMaximized ? (Quickshell.screens[0] ? Quickshell.screens[0].height - 60 : 800) : normalHeight
     minimumSize: Qt.size(Math.min(760, (Quickshell.screens[0] ? Quickshell.screens[0].width - 40 : 760)), Math.min(480, (Quickshell.screens[0] ? Quickshell.screens[0].height - 60 : 480)))
     color: "transparent"
 
@@ -374,7 +378,7 @@ ShellRoot {
                   anchors.fill: parent
                   hoverEnabled: true
                   cursorShape: Qt.PointingHandCursor
-                  onClicked: settingsWin.runCmd("hyprctl dispatch movetoworkspacesilent special:minimized 2>/dev/null || true")
+                  onClicked: settingsWin.runCmd("omarchy-undercover-minimize 2>/dev/null || hyprctl dispatch movetoworkspacesilent special:minimized 2>/dev/null || true")
                 }
               }
 
@@ -382,13 +386,21 @@ ShellRoot {
                 implicitWidth: 46
                 Layout.fillHeight: true
                 color: maxMouse.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08)) : "transparent"
-                Text { anchors.centerIn: parent; text: "🗖"; font.pixelSize: 11; color: settingsWin.textPrimary }
+                Text {
+                  anchors.centerIn: parent
+                  text: settingsWin.isMaximized ? "🗗" : "□"
+                  font.pixelSize: 11
+                  color: settingsWin.textPrimary
+                }
                 MouseArea {
                   id: maxMouse
                   anchors.fill: parent
                   hoverEnabled: true
                   cursorShape: Qt.PointingHandCursor
-                  onClicked: settingsWin.runCmd("hyprctl dispatch fullscreen 1")
+                  onClicked: {
+                    settingsWin.isMaximized = !settingsWin.isMaximized
+                    settingsWin.runCmd("hyprctl dispatch fullscreen 1 2>/dev/null || true")
+                  }
                 }
               }
 

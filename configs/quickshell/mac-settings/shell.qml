@@ -12,8 +12,12 @@ ShellRoot {
     id: settingsWin
     title: "System Settings"
 
-    implicitWidth: Math.min(960, (Quickshell.screens[0] ? Quickshell.screens[0].width - 40 : 960))
-    implicitHeight: Math.min(620, (Quickshell.screens[0] ? Quickshell.screens[0].height - 60 : 620))
+    property bool isMaximized: false
+    readonly property real normalWidth: Math.min(960, (Quickshell.screens[0] ? Quickshell.screens[0].width - 40 : 960))
+    readonly property real normalHeight: Math.min(620, (Quickshell.screens[0] ? Quickshell.screens[0].height - 60 : 620))
+
+    implicitWidth: isMaximized ? (Quickshell.screens[0] ? Quickshell.screens[0].width - 20 : 1200) : normalWidth
+    implicitHeight: isMaximized ? (Quickshell.screens[0] ? Quickshell.screens[0].height - 60 : 800) : normalHeight
     minimumSize: Qt.size(Math.min(760, (Quickshell.screens[0] ? Quickshell.screens[0].width - 40 : 760)), Math.min(480, (Quickshell.screens[0] ? Quickshell.screens[0].height - 60 : 480)))
     color: "transparent"
 
@@ -561,7 +565,7 @@ ShellRoot {
                   anchors.fill: parent
                   hoverEnabled: true
                   cursorShape: Qt.PointingHandCursor
-                  onClicked: settingsWin.runCmd("hyprctl dispatch movetoworkspacesilent special:minimized 2>/dev/null || true")
+                  onClicked: settingsWin.runCmd("omarchy-undercover-minimize 2>/dev/null || hyprctl dispatch movetoworkspacesilent special:minimized 2>/dev/null || true")
                 }
               }
 
@@ -574,7 +578,7 @@ ShellRoot {
 
                 Text {
                   anchors.centerIn: parent
-                  text: "+"
+                  text: settingsWin.isMaximized ? "—" : "+"
                   font.pixelSize: 9
                   font.bold: true
                   visible: zoomM.containsMouse
@@ -586,7 +590,10 @@ ShellRoot {
                   anchors.fill: parent
                   hoverEnabled: true
                   cursorShape: Qt.PointingHandCursor
-                  onClicked: settingsWin.runCmd("hyprctl dispatch fullscreen 1")
+                  onClicked: {
+                    settingsWin.isMaximized = !settingsWin.isMaximized
+                    settingsWin.runCmd("hyprctl dispatch fullscreen 1 2>/dev/null || true")
+                  }
                 }
               }
             }
