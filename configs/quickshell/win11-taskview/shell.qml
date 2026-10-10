@@ -31,6 +31,21 @@ ShellRoot {
     property string pluginDir: Quickshell.env("OMARCHY_PLUGIN_DIR") || (taskViewWindow.homeDir + "/.config/omarchy/plugins/omarchy-undercover")
     property bool isDark: true
     property string searchQuery: ""
+
+    FileView {
+      id: stateWatcher
+      path: taskViewWindow.homeDir + "/.local/state/omarchy/undercover/state"
+      watchChanges: true
+      onLoaded: {
+        var s = text().trim()
+        taskViewWindow.isDark = (s.indexOf("light") === -1)
+      }
+      onFileChanged: {
+        reload()
+        var s = text().trim()
+        taskViewWindow.isDark = (s.indexOf("light") === -1)
+      }
+    }
     property bool filterAllDesktops: false
     property int selectedDesktopId: 1
     property int focusedWindowIndex: 0
@@ -437,13 +452,16 @@ ShellRoot {
               Text {
                 text: "🔍"
                 font.pixelSize: 13
-                color: Qt.rgba(1, 1, 1, 0.6)
+                color: taskViewWindow.isDark ? Qt.rgba(1, 1, 1, 0.6) : Qt.rgba(0, 0, 0, 0.6)
+                Layout.alignment: Qt.AlignVCenter
               }
 
               TextInput {
                 id: searchInput
                 Layout.fillWidth: true
-                color: "#ffffff"
+                Layout.fillHeight: true
+                verticalAlignment: TextInput.AlignVCenter
+                color: taskViewWindow.isDark ? "#ffffff" : "#1a1a1a"
                 font.family: "Segoe UI"
                 font.pixelSize: 13
                 selectByMouse: true
@@ -454,10 +472,11 @@ ShellRoot {
                 }
 
                 Text {
-                  anchors.fill: parent
+                  anchors.verticalCenter: parent.verticalCenter
+                  anchors.left: parent.left
                   visible: !searchInput.text && !searchInput.activeFocus
                   text: "Search open windows... (Type to filter)"
-                  color: Qt.rgba(1, 1, 1, 0.45)
+                  color: taskViewWindow.isDark ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0, 0, 0, 0.45)
                   font.family: "Segoe UI"
                   font.pixelSize: 13
                 }
@@ -467,6 +486,7 @@ ShellRoot {
                 visible: searchInput.text.length > 0
                 width: 18; height: 18
                 radius: 9
+                Layout.alignment: Qt.AlignVCenter
                 color: clearMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.25) : Qt.rgba(1, 1, 1, 0.12)
                 Text {
                   anchors.centerIn: parent

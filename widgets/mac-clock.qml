@@ -39,8 +39,6 @@ BarWidget {
       font.pixelSize: 13
       font.weight: Font.Medium
       color: root.bar ? root.bar.foreground : "#ffffff"
-      style: Text.Outline
-      styleColor: Qt.rgba(0, 0, 0, 0.35)
     }
 
     property string homeDir: Quickshell.env("HOME")

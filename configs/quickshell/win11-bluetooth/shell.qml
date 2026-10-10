@@ -418,11 +418,14 @@ ShellRoot {
               text: "󰍉"
               font.pixelSize: 13
               color: btWindow.textMuted
+              Layout.alignment: Qt.AlignVCenter
             }
 
             TextInput {
               id: win11BtSearch
               Layout.fillWidth: true
+              Layout.fillHeight: true
+              verticalAlignment: TextInput.AlignVCenter
               color: btWindow.textPrimary
               font.family: "Segoe UI, sans-serif"
               font.pixelSize: 12
@@ -434,6 +437,7 @@ ShellRoot {
                 color: btWindow.textMuted
                 font: win11BtSearch.font
                 visible: !win11BtSearch.text && !win11BtSearch.activeFocus
+                anchors.verticalCenter: parent.verticalCenter
               }
             }
 
@@ -442,6 +446,7 @@ ShellRoot {
               implicitWidth: 18
               implicitHeight: 18
               radius: 9
+              Layout.alignment: Qt.AlignVCenter
               color: btWindow.isDark ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(0, 0, 0, 0.08)
               Text {
                 anchors.centerIn: parent

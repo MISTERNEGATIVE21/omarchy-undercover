@@ -80,10 +80,10 @@ border-alpha              = 0.12
 scrim                     = "#000000"
 scrim-alpha               = 0.25
 selected-background       = "#0071e3"
-selected-background-alpha = 0.18
-selected-text             = "#0071e3"
+selected-background-alpha = 1.0
+selected-text             = "#ffffff"
 selected-border           = "#0071e3"
-selected-border-alpha     = 0.35
+selected-border-alpha     = 1.0
 
 [menu]
 background                = "#ffffff"
@@ -94,7 +94,7 @@ border-alpha              = 0.12
 scrim                     = "#000000"
 scrim-alpha               = 0.25
 selected-background       = "#0071e3"
-selected-background-alpha = 0.16
-selected-text             = "#0071e3"
+selected-background-alpha = 1.0
+selected-text             = "#ffffff"
 selected-border           = "#0071e3"
-selected-border-alpha     = 0.28
+selected-border-alpha     = 1.0

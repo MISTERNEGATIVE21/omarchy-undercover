@@ -32,6 +32,21 @@ ShellRoot {
     property bool isDark: true
     property bool isMaximized: false
 
+    FileView {
+      id: stateWatcher
+      path: activityWindow.homeDir + "/.local/state/omarchy/undercover/state"
+      watchChanges: true
+      onLoaded: {
+        var s = text().trim()
+        activityWindow.isDark = (s.indexOf("light") === -1)
+      }
+      onFileChanged: {
+        reload()
+        var s = text().trim()
+        activityWindow.isDark = (s.indexOf("light") === -1)
+      }
+    }
+
     // Tabs & Filters
     property string activeTab: "cpu" // "cpu" | "memory" | "disk" | "network"
     property string searchQuery: ""
@@ -351,12 +366,19 @@ ShellRoot {
                 anchors.rightMargin: 8
                 spacing: 6
 
-                Text { text: "🔍"; font.pixelSize: 10; color: Qt.rgba(1, 1, 1, 0.5) }
+                Text {
+                  text: "🔍"
+                  font.pixelSize: 10
+                  color: activityWindow.isDark ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.5)
+                  Layout.alignment: Qt.AlignVCenter
+                }
 
                 TextInput {
                   id: macSearchIn
                   Layout.fillWidth: true
-                  color: "#ffffff"
+                  Layout.fillHeight: true
+                  verticalAlignment: TextInput.AlignVCenter
+                  color: activityWindow.isDark ? "#ffffff" : "#1a1a1a"
                   font.family: "SF Pro Text, -apple-system, sans-serif"
                   font.pixelSize: 11
                   selectByMouse: true
@@ -364,10 +386,11 @@ ShellRoot {
                   onTextChanged: activityWindow.searchQuery = text
 
                   Text {
-                    anchors.fill: parent
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.left: parent.left
                     visible: !macSearchIn.text && !macSearchIn.activeFocus
                     text: "Search"
-                    color: Qt.rgba(1, 1, 1, 0.4)
+                    color: activityWindow.isDark ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(0, 0, 0, 0.4)
                     font.family: "SF Pro Text, -apple-system, sans-serif"
                     font.pixelSize: 11
                   }

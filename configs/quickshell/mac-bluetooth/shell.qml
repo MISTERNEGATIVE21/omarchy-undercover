@@ -321,11 +321,14 @@ ShellRoot {
               font.pixelSize: 13
               color: macBtWindow.isDark ? "#ffffff" : "#1a1a1a"
               opacity: 0.65
+              Layout.alignment: Qt.AlignVCenter
             }
 
             TextInput {
               id: macBtSearchBox
               Layout.fillWidth: true
+              Layout.fillHeight: true
+              verticalAlignment: TextInput.AlignVCenter
               color: macBtWindow.isDark ? "#ffffff" : "#1a1a1a"
               font.family: "SF Pro Text"
               font.pixelSize: 12
@@ -337,6 +340,7 @@ ShellRoot {
                 color: macBtWindow.isDark ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(0, 0, 0, 0.4)
                 font: macBtSearchBox.font
                 visible: !macBtSearchBox.text && !macBtSearchBox.activeFocus
+                anchors.verticalCenter: parent.verticalCenter
               }
             }
 
@@ -345,6 +349,7 @@ ShellRoot {
               implicitWidth: 16
               implicitHeight: 16
               radius: 8
+              Layout.alignment: Qt.AlignVCenter
               color: Qt.rgba(1, 1, 1, 0.2)
               Text { anchors.centerIn: parent; text: "✕"; font.pixelSize: 9; color: "#ffffff" }
               MouseArea {

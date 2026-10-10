@@ -53,7 +53,7 @@ SETTINGS_FILE="$(undercover_settings_file)"
 WINDOWS_GTK_THEME="Win11-Dark"
 WINDOWS_ICON_THEME="Fluent-dark"
 WINDOWS_CURSOR_THEME="Fluent-dark-cursors"
-WINDOWS_FONT_NAME="Roboto 10.5"
+WINDOWS_FONT_NAME="Segoe UI 10.5"
 
 mkdir -p "$BACKUP_DIR" "$STATE_DIR"
 
@@ -513,6 +513,17 @@ apply_fontconfig_windows() {
     fi
 }
 
+apply_fontconfig_macos() {
+    local src
+    src=$(project_file "fontconfig")
+    if [[ -n "$src" && -f "$src/fonts-mac.conf" ]]; then
+        mkdir -p "$HOME/.config/fontconfig"
+        cp "$src/fonts-mac.conf" "$HOME/.config/fontconfig/fonts.conf"
+        fc-cache -f >/dev/null 2>&1 || true
+        msg "macOS font rendering configuration applied."
+    fi
+}
+
 backup_original_configs() {
     local timestamp
     timestamp=$(date +%Y%m%d_%H%M%S)
@@ -889,6 +900,7 @@ EOF
     killall -HUP xsettingsd 2>/dev/null || true
 
     apply_flea_mac
+    apply_fontconfig_macos
 
     # Deploy shell configuration (Quickshell or Waybar)
     apply_shell_mac
@@ -1024,6 +1036,7 @@ EOF
     killall -HUP xsettingsd 2>/dev/null || true
 
     apply_flea_windows
+    apply_fontconfig_windows
 
     # Deploy shell configuration (Quickshell or Waybar)
     apply_shell_windows

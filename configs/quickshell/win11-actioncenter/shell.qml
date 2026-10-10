@@ -1342,11 +1342,13 @@ ShellRoot {
             anchors.rightMargin: 8
             spacing: 6
 
-            Text { text: "󰍉"; font.pixelSize: 13; color: actionCenterWindow.textMuted }
-
+            Text { text: "󰍉"; font.pixelSize: 13; color: actionCenterWindow.textMuted; Layout.alignment: Qt.AlignVCenter }
+ 
             TextInput {
               id: acWifiSearch
               Layout.fillWidth: true
+              Layout.fillHeight: true
+              verticalAlignment: TextInput.AlignVCenter
               color: actionCenterWindow.textPrimary
               font.family: "Segoe UI, sans-serif"
               font.pixelSize: 11
@@ -1358,6 +1360,7 @@ ShellRoot {
                 color: actionCenterWindow.textMuted
                 font: acWifiSearch.font
                 visible: !acWifiSearch.text && !acWifiSearch.activeFocus
+                anchors.verticalCenter: parent.verticalCenter
               }
             }
 
@@ -1366,6 +1369,7 @@ ShellRoot {
               implicitWidth: 16
               implicitHeight: 16
               radius: 8
+              Layout.alignment: Qt.AlignVCenter
               color: actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(0, 0, 0, 0.08)
               Text { anchors.centerIn: parent; text: "✕"; font.pixelSize: 8; color: actionCenterWindow.textPrimary }
               MouseArea {
@@ -1725,6 +1729,7 @@ ShellRoot {
                       anchors.fill: parent
                       anchors.leftMargin: 6
                       anchors.rightMargin: 6
+                      verticalAlignment: TextInput.AlignVCenter
                       echoMode: TextInput.Password
                       font.pixelSize: 11
                       color: actionCenterWindow.textPrimary
@@ -1965,11 +1970,13 @@ ShellRoot {
             anchors.rightMargin: 8
             spacing: 6
 
-            Text { text: "󰍉"; font.pixelSize: 13; color: actionCenterWindow.textMuted }
+            Text { text: "󰍉"; font.pixelSize: 13; color: actionCenterWindow.textMuted; Layout.alignment: Qt.AlignVCenter }
 
             TextInput {
               id: acBtSearch
               Layout.fillWidth: true
+              Layout.fillHeight: true
+              verticalAlignment: TextInput.AlignVCenter
               color: actionCenterWindow.textPrimary
               font.family: "Segoe UI, sans-serif"
               font.pixelSize: 11
@@ -1981,6 +1988,7 @@ ShellRoot {
                 color: actionCenterWindow.textMuted
                 font: acBtSearch.font
                 visible: !acBtSearch.text && !acBtSearch.activeFocus
+                anchors.verticalCenter: parent.verticalCenter
               }
             }
 
@@ -1989,6 +1997,7 @@ ShellRoot {
               implicitWidth: 16
               implicitHeight: 16
               radius: 8
+              Layout.alignment: Qt.AlignVCenter
               color: actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(0, 0, 0, 0.08)
               Text { anchors.centerIn: parent; text: "✕"; font.pixelSize: 8; color: actionCenterWindow.textPrimary }
               MouseArea {

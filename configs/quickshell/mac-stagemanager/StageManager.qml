@@ -324,8 +324,8 @@ Item {
     function open() { root.open("{}") }
     function close() { root.close() }
     function status() { return root.status("") }
-    function cycle(delta) {
-      var d = Number(delta) || 1
+    function cycle(delta: int): string {
+      var d = delta || 1
       root.select(d)
       root.activateSelected()
       return "ok"

@@ -601,11 +601,14 @@ ShellRoot {
               text: "󰍉"
               font.pixelSize: 13
               color: wifiWindow.textMuted
+              Layout.alignment: Qt.AlignVCenter
             }
 
             TextInput {
               id: win11WifiSearch
               Layout.fillWidth: true
+              Layout.fillHeight: true
+              verticalAlignment: TextInput.AlignVCenter
               color: wifiWindow.textPrimary
               font.family: "Segoe UI, sans-serif"
               font.pixelSize: 12
@@ -617,6 +620,7 @@ ShellRoot {
                 color: wifiWindow.textMuted
                 font: win11WifiSearch.font
                 visible: !win11WifiSearch.text && !win11WifiSearch.activeFocus
+                anchors.verticalCenter: parent.verticalCenter
               }
             }
 
@@ -625,6 +629,7 @@ ShellRoot {
               implicitWidth: 18
               implicitHeight: 18
               radius: 9
+              Layout.alignment: Qt.AlignVCenter
               color: wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(0, 0, 0, 0.08)
               Text {
                 anchors.centerIn: parent
@@ -1007,6 +1012,7 @@ ShellRoot {
                         anchors.fill: parent
                         anchors.leftMargin: 8
                         anchors.rightMargin: 8
+                        verticalAlignment: TextInput.AlignVCenter
                         echoMode: TextInput.Password
                         font.pixelSize: 12
                         color: wifiWindow.textPrimary

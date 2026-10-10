@@ -35,6 +35,21 @@ ShellRoot {
     property bool isDark: true
     property bool isMaximized: false
 
+    FileView {
+      id: stateWatcher
+      path: taskManagerWindow.homeDir + "/.local/state/omarchy/undercover/state"
+      watchChanges: true
+      onLoaded: {
+        var s = text().trim()
+        taskManagerWindow.isDark = (s.indexOf("light") === -1)
+      }
+      onFileChanged: {
+        reload()
+        var s = text().trim()
+        taskManagerWindow.isDark = (s.indexOf("light") === -1)
+      }
+    }
+
     // Navigation & State
     property string activeTab: "processes" // "processes" | "performance" | "startup" | "services"
     property string performanceTab: "cpu"  // "cpu" | "memory" | "disk" | "network"
@@ -282,13 +297,16 @@ ShellRoot {
                 Text {
                   text: "🔍"
                   font.pixelSize: 11
-                  color: Qt.rgba(1, 1, 1, 0.5)
+                  color: taskManagerWindow.isDark ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.5)
+                  Layout.alignment: Qt.AlignVCenter
                 }
 
                 TextInput {
                   id: procSearchInput
                   Layout.fillWidth: true
-                  color: "#ffffff"
+                  Layout.fillHeight: true
+                  verticalAlignment: TextInput.AlignVCenter
+                  color: taskManagerWindow.isDark ? "#ffffff" : "#1a1a1a"
                   font.family: "Segoe UI"
                   font.pixelSize: 11
                   selectByMouse: true
@@ -296,10 +314,11 @@ ShellRoot {
                   onTextChanged: taskManagerWindow.searchQuery = text
 
                   Text {
-                    anchors.fill: parent
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.left: parent.left
                     visible: !procSearchInput.text && !procSearchInput.activeFocus
                     text: "Type a name, publisher, or PID to search"
-                    color: Qt.rgba(1, 1, 1, 0.4)
+                    color: taskManagerWindow.isDark ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(0, 0, 0, 0.4)
                     font.family: "Segoe UI"
                     font.pixelSize: 11
                   }
@@ -1530,6 +1549,7 @@ ShellRoot {
                   id: runInput
                   anchors.fill: parent
                   anchors.margins: 6
+                  verticalAlignment: TextInput.AlignVCenter
                   color: "#ffffff"
                   font.family: "Segoe UI"
                   font.pixelSize: 12

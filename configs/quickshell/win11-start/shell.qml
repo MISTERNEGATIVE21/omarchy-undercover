@@ -242,12 +242,15 @@ ShellRoot {
               text: "󰍉"
               font.pixelSize: 14
               color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.6) : Qt.rgba(0, 0, 0, 0.6)
+              Layout.alignment: Qt.AlignVCenter
             }
 
             TextInput {
               id: searchInput
               focus: true
               Layout.fillWidth: true
+              Layout.fillHeight: true
+              verticalAlignment: TextInput.AlignVCenter
               font.family: "Segoe UI"
               font.pixelSize: 12
               color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
@@ -282,6 +285,7 @@ ShellRoot {
               text: "✕"
               font.pixelSize: 11
               color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.70) : Qt.rgba(0, 0, 0, 0.60)
+              Layout.alignment: Qt.AlignVCenter
               MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
