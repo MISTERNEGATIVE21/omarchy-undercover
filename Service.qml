@@ -14,8 +14,9 @@ Item {
   }
   property string statePath: pluginDir + "/state"
   property string settingsConfPath: pluginDir + "/settings.conf"
-  property string currentState: "mac-dark"
+  property string currentState: "omarchy"
   property string previousState: ""
+  property bool disguisePersistent: false
 
   // macOS Screensaver Properties
   readonly property bool isMacMode: root.currentState.indexOf("mac") !== -1
@@ -62,6 +63,9 @@ Item {
         if (v && v.indexOf("screenrecording") === -1) {
           root.screensaverVideo = v
         }
+      } else if (line.indexOf("DISGUISE_PERSISTENT=") === 0) {
+        var p = line.substring(20).trim().toLowerCase()
+        root.disguisePersistent = (p === "true" || p === "1" || p === "yes")
       }
     }
     if (!root.screensaverVideo || root.screensaverVideo === "") {
@@ -129,9 +133,18 @@ Item {
   }
 
   Component.onCompleted: {
-    var s = stateFile.text().trim()
-    if (s) root.currentState = s
     reloadScreensaverConfig()
+    var s = stateFile.text().trim()
+    if (!root.disguisePersistent) {
+      if (s && s !== "omarchy" && s !== "") {
+        root.runCmd("omarchy-undercover --startup")
+        root.currentState = "omarchy"
+      } else {
+        root.currentState = "omarchy"
+      }
+    } else {
+      if (s) root.currentState = s
+    }
     if (!root.screensaverVideo || root.screensaverVideo === "") {
       root.screensaverVideo = root.homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.opt.mp4"
     }

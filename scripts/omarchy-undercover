@@ -1417,6 +1417,9 @@ show_help() {
     echo "  --restore                               Restore from baseline backup"
     echo "  --uninstall                             Uninstall and restore original settings (clean cache & runtime)"
     echo "  --purge                                 Completely purge all files, downloaded media, cache & unregister"
+    echo "  --persistent                            Enable disguise persistence across reboots"
+    echo "  --temporary                             Disable disguise persistence (boot to normal Omarchy mode)"
+    echo "  --startup                               System startup hook (resets to Omarchy if temporary)"
     echo "  --verify                                Verify integrity of config and state"
     echo "  --status                                Show current status"
     echo "  --help, -h                              Show this help message"
@@ -1600,6 +1603,30 @@ case "$1" in
     --sync-hyprland)
         cur_mode=$(read_setting "MODE" "windows")
         enable_undercover_hyprland "$cur_mode"
+        ;;
+    --persistent)
+        write_setting "DISGUISE_PERSISTENT" "true"
+        msg "Disguise persistence enabled (Disguise will be preserved across system reboots)."
+        ;;
+    --temporary)
+        write_setting "DISGUISE_PERSISTENT" "false"
+        msg "Disguise persistence disabled (System will automatically boot into normal Omarchy mode)."
+        ;;
+    --startup)
+        pers=$(read_setting "DISGUISE_PERSISTENT" "false")
+        if [[ "$pers" != "true" ]]; then
+            msg "Session startup: Disguise persistence is disabled, ensuring normal Omarchy desktop..."
+            cur_st=""
+            [[ -f "$STATE_FILE" ]] && cur_st=$(cat "$STATE_FILE" 2>/dev/null | tr -d '[:space:]')
+            if [[ -n "$cur_st" && "$cur_st" != "omarchy" && "$cur_st" != "default" ]]; then
+                switch_to_omarchy
+            else
+                set_state "omarchy"
+                write_setting "MODE" "omarchy"
+            fi
+        else
+            msg "Session startup: Disguise persistence is enabled, maintaining configured preset."
+        fi
         ;;
     --verify)
         verify_integrity

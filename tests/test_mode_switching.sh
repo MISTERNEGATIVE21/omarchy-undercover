@@ -24,4 +24,21 @@ echo "Checking mac-settings/shell.qml for Tahoe & Sequoia options..."
 grep -qi "tahoe" "$SETTINGS_QML" || { echo "ERROR: 'tahoe' not found in mac-settings/shell.qml" >&2; exit 1; }
 grep -qi "sequoia" "$SETTINGS_QML" || { echo "ERROR: 'sequoia' not found in mac-settings/shell.qml" >&2; exit 1; }
 
+echo "Checking omarchy-undercover persistence flags and --startup hook..."
+echo "$help_output" | grep -qi -- "--persistent" || { echo "ERROR: '--persistent' not found in undercover help" >&2; exit 1; }
+echo "$help_output" | grep -qi -- "--temporary" || { echo "ERROR: '--temporary' not found in undercover help" >&2; exit 1; }
+echo "$help_output" | grep -qi -- "--startup" || { echo "ERROR: '--startup' not found in undercover help" >&2; exit 1; }
+
+"$UNDERCOVER" --persistent
+grep -q "^DISGUISE_PERSISTENT=true" "$REPO_ROOT/settings.conf" || { echo "ERROR: DISGUISE_PERSISTENT not set to true" >&2; exit 1; }
+
+"$UNDERCOVER" --temporary
+grep -q "^DISGUISE_PERSISTENT=false" "$REPO_ROOT/settings.conf" || { echo "ERROR: DISGUISE_PERSISTENT not set to false" >&2; exit 1; }
+
+startup_res=$("$UNDERCOVER" --startup 2>&1 || true)
+if [[ "$startup_res" == *"Unknown option"* ]]; then
+  echo "ERROR: --startup failed with unknown option: $startup_res" >&2
+  exit 1
+fi
+
 echo "Mode switching tests passed!"

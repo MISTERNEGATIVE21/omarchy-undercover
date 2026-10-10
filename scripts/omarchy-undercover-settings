@@ -672,6 +672,15 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         row_autohide.connect("notify::active", self.on_autohide_toggled)
         group_cycle.add(row_autohide)
 
+        row_persistent = Adw.SwitchRow(
+            title="Disguise Persistence Across Reboots",
+            subtitle="When disabled (recommended), PC automatically starts in normal Omarchy mode"
+        )
+        persistent_enabled = read_setting("DISGUISE_PERSISTENT", "false").lower() == "true"
+        row_persistent.set_active(persistent_enabled)
+        row_persistent.connect("notify::active", self.on_persistent_toggled)
+        group_cycle.add(row_persistent)
+
         page.add(group_cycle)
         self.stack.add_titled(page, "presets", "Presets")
 
@@ -681,6 +690,13 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         cli = find_cli()
         subprocess.run([cli, "--autohide", "on" if is_active else "off"], check=False)
         self.show_toast(f"Dock auto-hide {'enabled' if is_active else 'disabled'}")
+
+    def on_persistent_toggled(self, row, param):
+        is_active = row.get_active()
+        write_setting("DISGUISE_PERSISTENT", "true" if is_active else "false")
+        cli = find_cli()
+        subprocess.run([cli, "--persistent" if is_active else "--temporary"], check=False)
+        self.show_toast(f"Disguise persistence {'enabled (saved across reboots)' if is_active else 'disabled (resets to Omarchy on reboot)'}")
 
     # ==================== PAGE: DOCK & TASKBAR ====================
     def build_dock_taskbar_page(self):
