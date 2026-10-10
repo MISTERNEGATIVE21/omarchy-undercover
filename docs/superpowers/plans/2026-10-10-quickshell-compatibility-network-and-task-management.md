@@ -239,12 +239,12 @@ In the active connected banner: add a secondary "Forget" button next to "Disconn
 
 Add a visible "Forget" button next to "Connect/Disconnect" in the device row.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `bash tests/test_win11_protocols.sh`  
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add configs/quickshell/win11-wifi/shell.qml configs/quickshell/win11-bluetooth/shell.qml configs/quickshell/win11-actioncenter/shell.qml tests/test_win11_protocols.sh
@@ -264,26 +264,26 @@ git commit -m "feat(win11): add visible forget wifi and forget bluetooth control
 - Consumes: Hyprland active window geometries and toplevel handles.
 - Produces: Intelligent Stage Manager rail auto-hiding and window stack cycling.
 
-- [ ] **Step 1: Write test assertions in `tests/test_stagemanager_navigation.sh`**
+- [x] **Step 1: Write test assertions in `tests/test_stagemanager_navigation.sh`**
 
 Test stage manager group cycling logic and auto-hide threshold calculation.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `bash tests/test_stagemanager_navigation.sh`  
 Expected: FAIL for new auto-hide threshold assertions.
 
-- [ ] **Step 3: Implement intelligent auto-hide and stacking in `StageManager.qml`**
+- [x] **Step 3: Implement intelligent auto-hide and stacking in `StageManager.qml`**
 
 Add detection of whether active window intersects the left rail (x < railWidth) or is fullscreen; if so, animate the rail to `x: -railWidth` with an edge hover trigger rectangle to temporarily reveal it.  
 Add window cycling within group when clicked repeatedly.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `bash tests/test_stagemanager_cli.sh && bash tests/test_stagemanager_navigation.sh`  
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add configs/quickshell/mac-stagemanager/StageManager.qml scripts/omarchy-mac-stagemanager tests/test_stagemanager_navigation.sh
@@ -304,25 +304,25 @@ git commit -m "feat(stagemanager): add intelligent rail auto-hiding, stack depth
 - Consumes: Hyprland workspaces and window dispatchers.
 - Produces: Robust virtual desktop operations, taskbar multi-instance grouping, and task management.
 
-- [ ] **Step 1: Write test assertions in `tests/test_win11_taskmanager.sh` for taskview desktop creation**
+- [x] **Step 1: Write test assertions in `tests/test_win11_taskmanager.sh` for taskview desktop creation**
 
 Verify `win11-taskview/shell.qml` creates and switches workspaces cleanly without error.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `bash tests/test_win11_taskmanager.sh`  
 Expected: FAIL for new workspace dispatcher assertions.
 
-- [ ] **Step 3: Enhance `win11-taskview/shell.qml` and `win11-taskmanager/shell.qml`**
+- [x] **Step 3: Enhance `win11-taskview/shell.qml` and `win11-taskmanager/shell.qml`**
 
 Add New Desktop creation dispatcher (`hyprctl dispatch workspace empty`), close desktop window dispatchers, and process search filtering. Ensure taskbar previews render thumbnail titles and close buttons cleanly.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `bash tests/test_win11_taskmanager.sh`  
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add configs/quickshell/win11-taskview/shell.qml configs/quickshell/win11-taskmanager/shell.qml widgets/win11-taskbar.qml tests/test_win11_taskmanager.sh
@@ -342,20 +342,20 @@ git commit -m "feat(win11): harden task view virtual desktops, taskbar grouping,
 - Consumes: Quickshell 0.3.2 IPC command line syntax.
 - Produces: 100% test pass rate across the full test suite.
 
-- [ ] **Step 1: Scan and replace deprecated IPC commands**
+- [x] **Step 1: Scan and replace deprecated IPC commands**
 
 Verify all `qs msg` / `quickshell msg` are replaced with `qs ipc call` / `quickshell ipc call`.
 
-- [ ] **Step 2: Validate all 18 Quickshell bundles with Quickshell 0.3.2**
+- [x] **Step 2: Validate all 18 Quickshell bundles with Quickshell 0.3.2**
 
 Run quickshell timeout checks on each bundle to ensure no syntax errors or fatal warnings.
 
-- [ ] **Step 3: Run comprehensive end-to-end test suite**
+- [x] **Step 3: Run comprehensive end-to-end test suite**
 
 Run: `bash tests/test_e2e_system_protocols.sh && bash tests/test_e2e_undercover_overhaul.sh`  
 Expected: ALL PASS.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add scripts/ tests/
