@@ -144,13 +144,34 @@ case "$action" in
     --hide|--close)
         do_close
         ;;
+    --cycle)
+        if command -v qs &>/dev/null; then
+            qs ipc call mac-stagemanager cycle 1 &>/dev/null || true
+        elif command -v quickshell &>/dev/null; then
+            quickshell ipc call mac-stagemanager cycle 1 &>/dev/null || true
+        fi
+        ;;
+    --next)
+        if command -v qs &>/dev/null; then
+            qs ipc call mac-stagemanager nextGroup &>/dev/null || true
+        elif command -v quickshell &>/dev/null; then
+            quickshell ipc call mac-stagemanager nextGroup &>/dev/null || true
+        fi
+        ;;
+    --prev)
+        if command -v qs &>/dev/null; then
+            qs ipc call mac-stagemanager prevGroup &>/dev/null || true
+        elif command -v quickshell &>/dev/null; then
+            quickshell ipc call mac-stagemanager prevGroup &>/dev/null || true
+        fi
+        ;;
     -h|--help)
-        echo "Usage: omarchy-mac-stagemanager [--toggle|--show|--hide|--status]"
+        echo "Usage: omarchy-mac-stagemanager [--toggle|--show|--hide|--status|--cycle|--next|--prev]"
         echo "Controls the native macOS Stage Manager overlay and window organizer."
         ;;
     *)
         echo "Unknown option: $action" >&2
-        echo "Usage: omarchy-mac-stagemanager [--toggle|--show|--hide|--status]" >&2
+        echo "Usage: omarchy-mac-stagemanager [--toggle|--show|--hide|--status|--cycle|--next|--prev]" >&2
         exit 1
         ;;
 esac

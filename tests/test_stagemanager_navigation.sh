@@ -36,7 +36,18 @@ if ! grep -A 25 "function activate(" "$SM_QML" | grep -q "workspace"; then
   exit 1
 fi
 
-# 5. Syntax validation with Quickshell
+# 5. Intelligent auto-hide and screen edge reveal detection
+if ! grep -q "windowTouchesRail" "$SM_QML"; then
+  echo "FAIL: StageManager.qml missing windowTouchesRail collision detection" >&2
+  exit 1
+fi
+
+if ! grep -q "autoHidden" "$SM_QML"; then
+  echo "FAIL: StageManager.qml missing autoHidden property" >&2
+  exit 1
+fi
+
+# 6. Syntax validation with Quickshell
 QS_OUT=$(timeout 1.5s quickshell -p "$REPO_DIR/configs/quickshell/mac-stagemanager" 2>&1 || true)
 if echo "$QS_OUT" | grep -iE "syntax error|fatal|cannot load"; then
   echo "FAIL: Quickshell failed to load Stage Manager QML:" >&2

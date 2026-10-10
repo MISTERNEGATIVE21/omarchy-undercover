@@ -32,6 +32,20 @@ Item {
   readonly property int previewHeight: Math.round((railWidth - Style.space(20)) * 0.58)
   readonly property real cardRadius: Style.cornerRadius * 1.65
 
+  readonly property bool windowTouchesRail: {
+    var at = Hyprland.activeToplevel
+    if (!at) return false
+    var ipc = at.lastIpcObject || ({})
+    if (ipc.fullscreen) return true
+    if (ipc.at && Array.isArray(ipc.at) && ipc.at.length >= 1) {
+      var wx = Number(ipc.at[0])
+      if (wx < (root.railWidth + root.panelGap * 2 + Style.space(20))) return true
+    }
+    return false
+  }
+
+  readonly property bool autoHidden: windowTouchesRail && !(panelHover.hovered || (typeof hotEdgeMouse !== "undefined" && hotEdgeMouse.containsMouse))
+
   function screenByName(name) {
     var screens = Quickshell.screens || []
     for (var i = 0; i < screens.length; i++) {
@@ -208,7 +222,9 @@ Item {
       monitor: root.targetMonitorName,
       groups: root.groups.length,
       windows: root.flatWindows.length,
-      reservedWidth: root.opened ? panel.implicitWidth : 0
+      autoHidden: root.autoHidden,
+      windowTouchesRail: root.windowTouchesRail,
+      reservedWidth: (root.opened && !root.autoHidden) ? panel.implicitWidth : 0
     })
   }
 
@@ -308,6 +324,22 @@ Item {
     function open() { root.open("{}") }
     function close() { root.close() }
     function status() { return root.status("") }
+    function cycle(delta) {
+      var d = Number(delta) || 1
+      root.select(d)
+      root.activateSelected()
+      return "ok"
+    }
+    function nextGroup() {
+      root.select(1)
+      root.activateSelected()
+      return "ok"
+    }
+    function prevGroup() {
+      root.select(-1)
+      root.activateSelected()
+      return "ok"
+    }
   }
 
 Timer {
@@ -438,13 +470,23 @@ Timer {
 
     HoverHandler { id: panelHover }
 
+    MouseArea {
+      id: hotEdgeMouse
+      anchors.left: parent.left
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      width: Style.space(16)
+      hoverEnabled: true
+      z: 50
+    }
+
     Item {
       id: stageRail
-      x: root.revealed ? root.panelGap : -Style.space(24)
+      x: (!root.autoHidden && root.revealed) ? root.panelGap : -root.railWidth
       y: 0
       width: root.railWidth
       height: panel.height
-      opacity: root.revealed ? 1 : 0
+      opacity: (!root.autoHidden && root.revealed) ? 1 : 0
 
       Behavior on x {
         NumberAnimation { duration: 260; easing.type: Easing.OutCubic }
