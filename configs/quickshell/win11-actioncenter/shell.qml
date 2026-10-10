@@ -1451,6 +1451,35 @@ ShellRoot {
                   }
                 }
               }
+
+              Rectangle {
+                implicitWidth: 60
+                implicitHeight: 24
+                radius: 4
+                color: fgtWifiMouse.containsMouse ? (actionCenterWindow.isDark ? "#d83b01" : "#c42b1c") : (actionCenterWindow.isDark ? Qt.rgba(255, 95, 86, 0.16) : Qt.rgba(196, 43, 28, 0.08))
+                border.color: fgtWifiMouse.containsMouse ? "transparent" : (actionCenterWindow.isDark ? Qt.rgba(255, 95, 86, 0.35) : Qt.rgba(196, 43, 28, 0.35))
+                border.width: 1
+
+                Text {
+                  anchors.centerIn: parent
+                  text: "Forget"
+                  font.family: "Segoe UI, sans-serif"
+                  font.pixelSize: 10
+                  font.bold: true
+                  color: fgtWifiMouse.containsMouse ? "#ffffff" : (actionCenterWindow.isDark ? "#ff7b72" : "#c42b1c")
+                }
+                MouseArea {
+                  id: fgtWifiMouse
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: {
+                    Quickshell.execDetached(["omarchy-wifi-dbus", "forget", actionCenterWindow.wifiSsid])
+                    actionCenterWindow.wifiSsid = "Disconnected"
+                    actionCenterWindow.triggerWifiScan()
+                  }
+                }
+              }
             }
 
             // Tools & Bands row
@@ -2096,6 +2125,39 @@ ShellRoot {
                       } else {
                         Quickshell.execDetached(["omarchy-bluetooth-device", "connect", modelData.mac])
                       }
+                      actionCenterWindow.triggerBtScan()
+                    }
+                  }
+                }
+
+                Rectangle {
+                  implicitWidth: 50
+                  implicitHeight: 24
+                  radius: 4
+                  color: acBtnFgtM.containsMouse
+                    ? (actionCenterWindow.isDark ? "#d83b01" : "#c42b1c")
+                    : (actionCenterWindow.isDark ? Qt.rgba(255, 255, 255, 0.08) : Qt.rgba(0, 0, 0, 0.05))
+                  border.color: acBtnFgtM.containsMouse
+                    ? "transparent"
+                    : (actionCenterWindow.isDark ? Qt.rgba(255, 255, 255, 0.15) : Qt.rgba(0, 0, 0, 0.12))
+                  border.width: 1
+
+                  Text {
+                    anchors.centerIn: parent
+                    text: "Forget"
+                    font.family: "Segoe UI, sans-serif"
+                    font.pixelSize: 10
+                    font.bold: true
+                    color: acBtnFgtM.containsMouse ? "#ffffff" : (actionCenterWindow.isDark ? actionCenterWindow.textSecondary : actionCenterWindow.textPrimary)
+                  }
+
+                  MouseArea {
+                    id: acBtnFgtM
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                      Quickshell.execDetached(["omarchy-bluetooth-dbus", "forget", modelData.mac])
                       actionCenterWindow.triggerBtScan()
                     }
                   }

@@ -720,6 +720,41 @@ ShellRoot {
                 }
               }
             }
+
+            Rectangle {
+              implicitWidth: 68
+              implicitHeight: 28
+              radius: 6
+              color: fgtMouse.containsMouse
+                ? (wifiWindow.isDark ? "#d83b01" : "#c42b1c")
+                : (wifiWindow.isDark ? Qt.rgba(255, 95, 86, 0.16) : Qt.rgba(196, 43, 28, 0.08))
+              border.color: fgtMouse.containsMouse
+                ? "transparent"
+                : (wifiWindow.isDark ? Qt.rgba(255, 95, 86, 0.35) : Qt.rgba(196, 43, 28, 0.35))
+              border.width: 1
+
+              Text {
+                anchors.centerIn: parent
+                text: "Forget"
+                font.family: "Segoe UI, sans-serif"
+                font.pixelSize: 11
+                font.weight: Font.DemiBold
+                color: fgtMouse.containsMouse
+                  ? "#ffffff"
+                  : (wifiWindow.isDark ? "#ff7b72" : "#c42b1c")
+              }
+              MouseArea {
+                id: fgtMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                  Quickshell.execDetached(["omarchy-wifi-dbus", "forget", wifiWindow.activeSsid])
+                  wifiWindow.activeSsid = ""
+                  wifiWindow.triggerScan()
+                }
+              }
+            }
           }
         }
 
@@ -881,6 +916,35 @@ ShellRoot {
                     font.family: "Segoe UI, sans-serif"
                     font.pixelSize: 10
                     color: wifiWindow.textSecondary
+                  }
+
+                  Rectangle {
+                    visible: wifiWindow.knownSsids.indexOf(modelData.ssid) !== -1 && !modelData.inUse
+                    implicitWidth: 48
+                    implicitHeight: 20
+                    radius: 4
+                    z: 2
+                    color: netFgtM.containsMouse
+                      ? (wifiWindow.isDark ? Qt.rgba(255, 95, 86, 0.25) : Qt.rgba(196, 43, 28, 0.12))
+                      : (wifiWindow.isDark ? Qt.rgba(255, 255, 255, 0.08) : Qt.rgba(0, 0, 0, 0.05))
+                    Text {
+                      anchors.centerIn: parent
+                      text: "Forget"
+                      font.family: "Segoe UI, sans-serif"
+                      font.pixelSize: 9
+                      font.weight: Font.DemiBold
+                      color: netFgtM.containsMouse ? "#ff7b72" : wifiWindow.textSecondary
+                    }
+                    MouseArea {
+                      id: netFgtM
+                      anchors.fill: parent
+                      hoverEnabled: true
+                      cursorShape: Qt.PointingHandCursor
+                      onClicked: {
+                        Quickshell.execDetached(["omarchy-wifi-dbus", "forget", modelData.ssid])
+                        wifiWindow.triggerScan()
+                      }
+                    }
                   }
 
                   Text {

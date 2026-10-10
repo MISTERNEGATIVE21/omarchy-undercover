@@ -668,6 +668,42 @@ ShellRoot {
                     }
                   }
                 }
+
+                // Forget Action Button
+                Rectangle {
+                  implicitWidth: 60
+                  implicitHeight: 28
+                  radius: 5
+                  color: btnFgtM.containsMouse
+                    ? (btWindow.isDark ? "#d83b01" : "#c42b1c")
+                    : (btWindow.isDark ? Qt.rgba(255, 255, 255, 0.08) : Qt.rgba(0, 0, 0, 0.05))
+                  border.color: btnFgtM.containsMouse
+                    ? "transparent"
+                    : (btWindow.isDark ? Qt.rgba(255, 255, 255, 0.15) : Qt.rgba(0, 0, 0, 0.12))
+                  border.width: 1
+
+                  Text {
+                    anchors.centerIn: parent
+                    text: "Forget"
+                    font.family: "Segoe UI, sans-serif"
+                    font.pixelSize: 11
+                    font.weight: Font.DemiBold
+                    color: btnFgtM.containsMouse
+                      ? "#ffffff"
+                      : (btWindow.isDark ? btWindow.textSecondary : btWindow.textPrimary)
+                  }
+
+                  MouseArea {
+                    id: btnFgtM
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                      Quickshell.execDetached(["omarchy-bluetooth-dbus", "forget", modelData.mac])
+                      btWindow.triggerQuery()
+                    }
+                  }
+                }
               }
 
               MouseArea {

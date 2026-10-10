@@ -37,6 +37,22 @@ if ! grep -q "omarchy-bluetooth-power" "$WIN_AC" || ! grep -q "omarchy-bluetooth
   exit 1
 fi
 
+echo "Checking forget bindings in Windows 11 panels..."
+if ! grep -q 'forget' "$WIN_WIFI"; then
+  echo "FAIL: win11-wifi missing forget action" >&2
+  exit 1
+fi
+
+if ! grep -q 'text: "Forget"' "$WIN_BT"; then
+  echo "FAIL: win11-bluetooth missing visible Forget button" >&2
+  exit 1
+fi
+
+if ! grep -q 'forget' "$WIN_AC"; then
+  echo "FAIL: win11-actioncenter missing forget action" >&2
+  exit 1
+fi
+
 # Quickshell Syntax Checks
 echo "Validating Quickshell QML syntax..."
 QS_WIFI=$(timeout 1.5s quickshell -p "$REPO_DIR/configs/quickshell/win11-wifi" 2>&1 || true)
