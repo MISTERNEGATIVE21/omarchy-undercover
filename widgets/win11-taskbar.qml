@@ -519,7 +519,7 @@ BarWidget {
     { id: "browser", name: "Microsoft Edge", iconFile: "microsoft-edge.svg", exec: "omarchy-browser", matchers: ["edge", "microsoft-edge", "chrome", "chromium", "firefox", "vivaldi", "brave", "zen", "browser", "google-chrome"] },
     { id: "antigravity", name: "Antigravity IDE", iconFile: "antigravity-ide.svg", exec: "antigravity-ide || code || vscodium", matchers: ["antigravity", "code", "vscodium", "vscode", "codium"] },
     { id: "terminal", name: "Terminal", iconFile: "terminal.svg", exec: "xdg-terminal-exec || alacritty || kitty", matchers: ["kitty", "alacritty", "foot", "terminal", "wezterm", "ghostty", "ptyxis", "xterm", "console"] },
-    { id: "notepad", name: "Notepad", iconFile: "notepad.svg", exec: "gedit || kate || mousepad || gnome-text-editor", matchers: ["gedit", "kate", "mousepad", "gnome-text-editor", "text-editor", "sublime_text", "nvim", "kwrite"] },
+    { id: "notepad", name: "Notepad", iconFile: "notepad.svg", exec: "omawrite || leafpad || gedit || kate || mousepad || gnome-text-editor || xdg-terminal-exec -e nano", matchers: ["omawrite", "leafpad", "gedit", "kate", "mousepad", "gnome-text-editor", "text-editor", "sublime_text", "nvim", "kwrite"] },
     { id: "settings", name: "Settings", iconFile: "settings.svg", exec: "omarchy-undercover-settings", matchers: ["omarchy-undercover-settings", "org.omarchy.undercover.settings", "settings", "gnome-control-center"] }
   ]
 
@@ -834,8 +834,8 @@ BarWidget {
               root.runCmd("omarchy-undercover-settings")
             } else if (itemBox.appRunning && itemBox.activeClient) {
               root.closeClient(itemBox.activeClient)
-            } else {
-              root.runCmd("omarchy-win11-taskmanager || omarchy-win11-taskview")
+            } else if (modelData.exec) {
+              root.runCmd(modelData.exec)
             }
           } else {
             // Left Click

@@ -116,7 +116,7 @@ ShellRoot {
       { name: "Antigravity", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/antigravity-ide.svg", exec: "antigravity-ide || code || vscodium" },
       { name: "VS Code", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/vscode.svg", exec: "code || vscodium || cursor" },
       { name: "Discord", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/discord.svg", exec: "discord || vesktop || telegram-desktop" },
-      { name: "Notepad", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/notepad.svg", exec: "gedit || kate || mousepad || gnome-text-editor" },
+      { name: "Notepad", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/notepad.svg", exec: "omawrite || leafpad || gedit || kate || mousepad || gnome-text-editor" },
       { name: "Mail", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/mail.svg", exec: "thunderbird || evolution || geary" },
       { name: "Paint", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/paint.svg", exec: "drawing || gimp || inkscape || pinta" },
       { name: "Weather", iconUrl: "file://" + startWindow.pluginDir + "/assets/icons/win11/weather.svg", exec: "omarchy-win11-widgets" }

@@ -39,7 +39,32 @@ if ! grep -q "🗗" "$TM_QML"; then
   exit 1
 fi
 
-# 5. Syntax validation with Quickshell
+# 5. Taskbar right-click decoupling and Notepad omawrite integration
+TASKBAR_QML="$REPO_DIR/widgets/win11-taskbar.qml"
+START_QML="$REPO_DIR/configs/quickshell/win11-start/shell.qml"
+START_MENU="$REPO_DIR/scripts/omarchy-win11-startmenu"
+
+if grep -q "omarchy-win11-taskmanager" "$TASKBAR_QML"; then
+  echo "FAIL: widgets/win11-taskbar.qml still contains fallback to omarchy-win11-taskmanager on pinned items" >&2
+  exit 1
+fi
+
+if ! grep -q 'id: "notepad".*omawrite' "$TASKBAR_QML"; then
+  echo "FAIL: widgets/win11-taskbar.qml Notepad entry does not use omawrite" >&2
+  exit 1
+fi
+
+if ! grep -q 'name: "Notepad".*omawrite' "$START_QML"; then
+  echo "FAIL: configs/quickshell/win11-start/shell.qml Notepad entry does not use omawrite" >&2
+  exit 1
+fi
+
+if ! grep -q 'Notepad.*omawrite' "$START_MENU"; then
+  echo "FAIL: scripts/omarchy-win11-startmenu Notepad entry does not use omawrite" >&2
+  exit 1
+fi
+
+# 6. Syntax validation with Quickshell
 QS_OUT=$(timeout 1.5s quickshell -p "$REPO_DIR/configs/quickshell/win11-taskmanager" 2>&1 || true)
 if echo "$QS_OUT" | grep -iE "syntax error|fatal|cannot load"; then
   echo "FAIL: Quickshell failed to load Windows 11 Task Manager QML:" >&2

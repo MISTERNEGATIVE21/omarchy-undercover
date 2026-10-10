@@ -945,7 +945,7 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
             ("browser", "Microsoft Edge", "Show Microsoft Edge / Web Browser on taskbar"),
             ("explorer", "File Explorer", "Show File Explorer / Flea on taskbar"),
             ("terminal", "Terminal Console", "Show Terminal emulator on taskbar"),
-            ("notepad", "Notepad Text Editor", "Show Notepad / Gedit text editor on taskbar"),
+            ("notepad", "Notepad Text Editor", "Show Notepad / Omawrite text editor on taskbar"),
             ("settings", "Windows Settings", "Show Settings control center on taskbar"),
             ("taskview", "Task View Switcher", "Show virtual desktop and window switcher on taskbar"),
         ]
