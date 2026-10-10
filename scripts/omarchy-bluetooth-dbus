@@ -216,6 +216,55 @@ def cmd_pair(mac):
     _device_call(mac, "Pair", "pair")
 
 
+def cmd_forget(mac):
+    if not mac:
+        print("Usage: omarchy-bluetooth-dbus forget <mac>", file=sys.stderr)
+        sys.exit(1)
+
+    bus = get_bus()
+    managed = get_managed()
+    target = None
+    for path, props in get_devices(managed):
+        if props.get("Address") == mac:
+            target = path
+            break
+
+    removed = False
+    if target is not None:
+        try:
+            adapter_path, _ = get_adapter(managed)
+            if adapter_path:
+                adapter_obj = bus.get_object(BLUEZ_BUS, adapter_path)
+                adapter_iface = dbus.Interface(adapter_obj, ADAPTER_IFACE)
+                adapter_iface.RemoveDevice(target)
+                removed = True
+        except Exception:
+            pass
+
+    # Fallback to omarchy-bluetooth-device forget
+    if not removed:
+        try:
+            res_omarchy = subprocess.run(["omarchy-bluetooth-device", "forget", mac], capture_output=True, text=True)
+            if res_omarchy.returncode == 0:
+                removed = True
+        except Exception:
+            pass
+
+    # Fallback to bluetoothctl remove
+    if not removed:
+        try:
+            res_btctl = subprocess.run(["bluetoothctl", "remove", mac], capture_output=True, text=True)
+            if res_btctl.returncode == 0 and "not available" not in res_btctl.stdout.lower():
+                removed = True
+        except Exception:
+            pass
+
+    if removed:
+        print("ok")
+    else:
+        print("not found")
+
+
 def main():
     args = sys.argv[1:]
     cmd = args[0] if args else "power"
@@ -237,6 +286,11 @@ def main():
         cmd_disconnect(args[1])
     elif cmd == "pair" and len(args) > 1:
         cmd_pair(args[1])
+    elif cmd == "forget":
+        if len(args) < 2 or args[1] in ("-h", "--help"):
+            print("Usage: omarchy-bluetooth-dbus forget <mac>", file=sys.stderr)
+            sys.exit(0 if (len(args) >= 2 and args[1] in ("-h", "--help")) else 1)
+        cmd_forget(args[1])
     else:
         cmd_power()
 
