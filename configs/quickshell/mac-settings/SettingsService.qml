@@ -106,46 +106,52 @@ Item {
 
   function scanWifi() {
     root.wifiScanning = true
-    runCmd("omarchy-settings-engine wifi rescan")
+    Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-settings-engine", "wifi", "rescan"])
     refreshTimer.restart()
   }
 
   function connectWifi(ssid, password) {
-    var pwArg = password ? (" '" + password + "'") : ""
-    runCmd("omarchy-settings-engine wifi connect '" + ssid + "'" + pwArg)
+    if (typeof ssid !== "string" || ssid.length === 0 || ssid.length > 32 || /[\x00-\x1f]/.test(ssid)) return
+    var args = [root.pluginDir + "/scripts/omarchy-settings-engine", "wifi", "connect", ssid]
+    if (typeof password === "string" && password.length > 0) {
+      args.push(password)
+    }
+    Quickshell.execDetached(args)
     refreshTimer.restart()
   }
 
   function disconnectWifi() {
-    runCmd("omarchy-settings-engine wifi disconnect")
+    Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-settings-engine", "wifi", "disconnect"])
     refreshTimer.restart()
   }
 
   function toggleWifi(on) {
     root.wifiEnabled = on
-    runCmd("omarchy-settings-engine wifi radio " + (on ? "on" : "off"))
+    Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-settings-engine", "wifi", "radio", on ? "on" : "off"])
     refreshTimer.restart()
   }
 
   function toggleBluetooth(on) {
     root.btEnabled = on
-    runCmd("omarchy-settings-engine bluetooth power " + (on ? "on" : "off"))
+    Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-settings-engine", "bluetooth", "power", on ? "on" : "off"])
     refreshTimer.restart()
   }
 
   function scanBluetooth() {
     root.btDiscovering = true
-    runCmd("omarchy-settings-engine bluetooth scan")
+    Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-settings-engine", "bluetooth", "scan"])
     refreshTimer.restart()
   }
 
   function connectBluetooth(address) {
-    runCmd("omarchy-settings-engine bluetooth connect '" + address + "'")
+    if (typeof address !== "string" || address.length === 0 || address.length > 32 || /[\x00-\x1f]/.test(address)) return
+    Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-settings-engine", "bluetooth", "connect", address])
     refreshTimer.restart()
   }
 
   function disconnectBluetooth(address) {
-    runCmd("omarchy-settings-engine bluetooth disconnect '" + address + "'")
+    if (typeof address !== "string" || address.length === 0 || address.length > 32 || /[\x00-\x1f]/.test(address)) return
+    Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-settings-engine", "bluetooth", "disconnect", address])
     refreshTimer.restart()
   }
 

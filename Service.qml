@@ -95,17 +95,8 @@ Item {
   }
 
   function lock(): string {
-    if (!root.isMacMode) {
-      root.runCmd("hyprlock || loginctl lock-session")
-      return "ok"
-    }
-    if (!root.screensaverVideo || root.screensaverVideo === "") {
-      root.screensaverVideo = root.homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.opt.mp4"
-    }
-    clipResolverProc.running = true
-    root.screensaverPreviewMode = false
-    root.screensaverStartLocked = true
-    root.screensaverActive = true
+    root.dismissScreensaver()
+    root.runCmd("omarchy-system-lock 2>/dev/null || hyprlock 2>/dev/null || loginctl lock-session 2>/dev/null || omarchy-lock 2>/dev/null")
     return "ok"
   }
 

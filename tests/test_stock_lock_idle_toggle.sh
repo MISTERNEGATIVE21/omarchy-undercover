@@ -21,13 +21,20 @@ else
     exit 1
 fi
 
-# 2. Verify disabledPlugins in shell.json contains omarchy.lock and omarchy.idle
+# 2. Verify disabledPlugins in shell.json contains omarchy.idle and DOES NOT contain omarchy.lock
 DISABLED_JSON=$(cat "$HOME/.config/omarchy/shell.json" | jq -r '.disabledPlugins // []')
-if echo "$DISABLED_JSON" | grep -q "omarchy.lock" && echo "$DISABLED_JSON" | grep -q "omarchy.idle"; then
-    echo "  ✔ ~/.config/omarchy/shell.json disabledPlugins contains omarchy.lock and omarchy.idle"
+if echo "$DISABLED_JSON" | grep -q "omarchy.idle"; then
+    echo "  ✔ ~/.config/omarchy/shell.json disabledPlugins contains omarchy.idle"
 else
-    echo "  ✖ disabledPlugins missing expected plugins: $DISABLED_JSON"
+    echo "  ✖ disabledPlugins missing expected omarchy.idle: $DISABLED_JSON"
     exit 1
+fi
+
+if echo "$DISABLED_JSON" | grep -q "omarchy.lock"; then
+    echo "  ✖ Security failure: omarchy.lock is disabled in shell.json!"
+    exit 1
+else
+    echo "  ✔ omarchy.lock remains enabled (PAM session lock security boundary preserved)"
 fi
 
 # 3. Verify official /usr/share/omarchy files are pristine and untouched
