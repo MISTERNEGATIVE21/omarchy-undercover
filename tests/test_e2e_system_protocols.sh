@@ -25,10 +25,19 @@ bash "$REPO_DIR/tests/test_win11_protocols.sh"
 echo -e "\n[5/7] Shell Restore Lifecycle Verification..."
 bash "$REPO_DIR/tests/test_restore_shell.sh"
 
-echo -e "\n[6/7] Task Manager & Activity Monitor Verification..."
+echo -e "\n[6/10] Task Manager & Activity Monitor Verification..."
 bash "$REPO_DIR/tests/test_mac_activitymonitor.sh"
 
-echo -e "\n[7/7] Contrast & File Manager Theming Verification..."
+echo -e "\n[7/10] Windows 11 Task Manager & Task View Verification..."
+bash "$REPO_DIR/tests/test_win11_taskmanager.sh"
+
+echo -e "\n[8/10] Mode Switching Persistence & Startup Lifecycle Verification..."
+bash "$REPO_DIR/tests/test_mode_switching.sh"
+
+echo -e "\n[9/10] Stage Manager Navigation & Intelligent Rail Verification..."
+bash "$REPO_DIR/tests/test_stagemanager_navigation.sh"
+
+echo -e "\n[10/10] Contrast & File Manager Theming Verification..."
 bash "$REPO_DIR/tests/test_contrast_and_filemanager.sh"
 
 echo -e "\n================================================================="
