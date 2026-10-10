@@ -148,7 +148,10 @@ ShellRoot {
         if (taskViewWindow.workspaceList[i] > maxWs) maxWs = taskViewWindow.workspaceList[i]
       }
       var nextWs = maxWs + 1
-      taskViewWindow.switchToWorkspace(nextWs)
+      taskViewWindow.selectedDesktopId = nextWs
+      var cmd = "hyprctl dispatch workspace empty 2>/dev/null || hyprctl dispatch workspace " + nextWs
+      Quickshell.execDetached(["bash", "-c", cmd])
+      refreshTimer.restart()
     }
 
     function closeDesktop(wsId) {

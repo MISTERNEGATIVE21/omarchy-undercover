@@ -64,11 +64,52 @@ if ! grep -q 'Notepad.*omawrite' "$START_MENU"; then
   exit 1
 fi
 
-# 6. Syntax validation with Quickshell
+# 6. Windows 11 Task View virtual desktops and search
+TASKVIEW_QML="$REPO_DIR/configs/quickshell/win11-taskview/shell.qml"
+if ! grep -q "function createNewDesktop" "$TASKVIEW_QML" || ! grep -q "workspace empty" "$TASKVIEW_QML"; then
+  echo "FAIL: createNewDesktop with 'workspace empty' dispatcher missing from win11-taskview/shell.qml" >&2
+  exit 1
+fi
+
+if ! grep -q "function closeDesktop" "$TASKVIEW_QML" || ! grep -q "movetoworkspacesilent" "$TASKVIEW_QML"; then
+  echo "FAIL: closeDesktop with 'movetoworkspacesilent' dispatcher missing from win11-taskview/shell.qml" >&2
+  exit 1
+fi
+
+if ! grep -q "searchQuery" "$TASKVIEW_QML" || ! grep -q "visibleClients" "$TASKVIEW_QML"; then
+  echo "FAIL: Task View search query filtering missing from win11-taskview/shell.qml" >&2
+  exit 1
+fi
+
+# 7. Windows 11 Task Manager process filtering & window controls
+if ! grep -q "function endTask" "$TM_QML" || ! grep -q "function switchToWindow" "$TM_QML"; then
+  echo "FAIL: endTask or switchToWindow functions missing from win11-taskmanager/shell.qml" >&2
+  exit 1
+fi
+
+if ! grep -q "searchQuery" "$TM_QML"; then
+  echo "FAIL: Task Manager searchQuery missing from win11-taskmanager/shell.qml" >&2
+  exit 1
+fi
+
+# 8. Windows 11 Taskbar Multi-instance Preview Controls
+if ! grep -q "closeClient" "$TASKBAR_QML" || ! grep -q "isThumbFocused" "$TASKBAR_QML"; then
+  echo "FAIL: Taskbar multi-instance closeClient or focus tracking missing from widgets/win11-taskbar.qml" >&2
+  exit 1
+fi
+
+# 9. Syntax validation with Quickshell
 QS_OUT=$(timeout 1.5s quickshell -p "$REPO_DIR/configs/quickshell/win11-taskmanager" 2>&1 || true)
 if echo "$QS_OUT" | grep -iE "syntax error|fatal|cannot load"; then
   echo "FAIL: Quickshell failed to load Windows 11 Task Manager QML:" >&2
   echo "$QS_OUT" >&2
+  exit 1
+fi
+
+QS_TV_OUT=$(timeout 1.5s quickshell -p "$REPO_DIR/configs/quickshell/win11-taskview" 2>&1 || true)
+if echo "$QS_TV_OUT" | grep -iE "syntax error|fatal|cannot load"; then
+  echo "FAIL: Quickshell failed to load Windows 11 Task View QML:" >&2
+  echo "$QS_TV_OUT" >&2
   exit 1
 fi
 
