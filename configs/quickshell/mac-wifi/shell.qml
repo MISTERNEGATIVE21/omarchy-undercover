@@ -104,6 +104,17 @@ ShellRoot {
       wifiConnectProc.running = true
     }
 
+    function disconnectWifi() {
+      Quickshell.execDetached(["omarchy-wifi-dbus", "disconnect"])
+      macWifiWindow.triggerScan()
+    }
+
+    function forgetWifi(ssid) {
+      if (!ssid) return
+      Quickshell.execDetached(["omarchy-wifi-dbus", "forget", ssid])
+      macWifiWindow.triggerScan()
+    }
+
     // Theme state poller
     Process {
       id: statePoller
@@ -617,6 +628,24 @@ ShellRoot {
               elide: Text.ElideRight
             }
             Text { text: "󰤨"; font.pixelSize: 14; color: "#007aff" }
+
+            Rectangle {
+              implicitWidth: 64
+              implicitHeight: 24
+              radius: 5
+              color: discM.containsMouse ? (macWifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.2) : Qt.rgba(0, 0, 0, 0.12)) : (macWifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(0, 0, 0, 0.06))
+              Text { anchors.centerIn: parent; text: "Disconnect"; font.pixelSize: 10; color: macWifiWindow.isDark ? "#ffffff" : "#1a1a1a" }
+              MouseArea { id: discM; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: macWifiWindow.disconnectWifi() }
+            }
+
+            Rectangle {
+              implicitWidth: 54
+              implicitHeight: 24
+              radius: 5
+              color: fgtM.containsMouse ? (macWifiWindow.isDark ? Qt.rgba(1, 0.3, 0.3, 0.3) : Qt.rgba(1, 0, 0, 0.15)) : (macWifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(0, 0, 0, 0.06))
+              Text { anchors.centerIn: parent; text: "Forget"; font.pixelSize: 10; color: fgtM.containsMouse ? "#ff453a" : (macWifiWindow.isDark ? "#ffffff" : "#1a1a1a") }
+              MouseArea { id: fgtM; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: macWifiWindow.forgetWifi(macWifiWindow.activeSsid) }
+            }
           }
         }
 
@@ -686,6 +715,22 @@ ShellRoot {
                     font.family: "SF Pro Text"
                     font.pixelSize: 10
                     color: macWifiWindow.textSec
+                  }
+                  Rectangle {
+                    visible: macWifiWindow.knownSsids.indexOf(modelData.ssid) !== -1 && !modelData.inUse
+                    implicitWidth: 48
+                    implicitHeight: 20
+                    radius: 4
+                    z: 2
+                    color: fgtSavedM.containsMouse ? (macWifiWindow.isDark ? Qt.rgba(1, 0.3, 0.3, 0.25) : Qt.rgba(1, 0, 0, 0.12)) : (macWifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05))
+                    Text { anchors.centerIn: parent; text: "Forget"; font.pixelSize: 9; color: fgtSavedM.containsMouse ? "#ff453a" : macWifiWindow.textSec }
+                    MouseArea {
+                      id: fgtSavedM
+                      anchors.fill: parent
+                      hoverEnabled: true
+                      cursorShape: Qt.PointingHandCursor
+                      onClicked: macWifiWindow.forgetWifi(modelData.ssid)
+                    }
                   }
                   Text { visible: modelData.isSecured; text: "🔒"; font.pixelSize: 10 }
                 }

@@ -1196,6 +1196,58 @@ ShellRoot {
                 }
               }
 
+              Rectangle {
+                implicitHeight: 22
+                implicitWidth: ccDiscText.implicitWidth + 14
+                radius: 4
+                color: ccDiscM.containsMouse ? (controlCenterWindow.isLight ? Qt.rgba(0,0,0,0.12) : Qt.rgba(1,1,1,0.22)) : (controlCenterWindow.isLight ? Qt.rgba(0,0,0,0.06) : Qt.rgba(1,1,1,0.12))
+                Text {
+                  id: ccDiscText
+                  anchors.centerIn: parent
+                  text: "Disconnect"
+                  font.family: "SF Pro Text"
+                  font.pixelSize: 10
+                  font.bold: true
+                  color: controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff"
+                }
+                MouseArea {
+                  id: ccDiscM
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: {
+                    Quickshell.execDetached(["omarchy-wifi-dbus", "disconnect"])
+                    controlCenterWindow.triggerWifiScan()
+                  }
+                }
+              }
+
+              Rectangle {
+                implicitHeight: 22
+                implicitWidth: ccFgtText.implicitWidth + 14
+                radius: 4
+                color: ccFgtM.containsMouse ? (controlCenterWindow.isLight ? Qt.rgba(1,0,0,0.12) : Qt.rgba(1,0.3,0.3,0.25)) : (controlCenterWindow.isLight ? Qt.rgba(0,0,0,0.06) : Qt.rgba(1,1,1,0.12))
+                Text {
+                  id: ccFgtText
+                  anchors.centerIn: parent
+                  text: "Forget"
+                  font.family: "SF Pro Text"
+                  font.pixelSize: 10
+                  font.bold: true
+                  color: ccFgtM.containsMouse ? "#ff453a" : (controlCenterWindow.isLight ? "#1d1d1f" : "#ffffff")
+                }
+                MouseArea {
+                  id: ccFgtM
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: {
+                    Quickshell.execDetached(["omarchy-wifi-dbus", "forget", controlCenterWindow.wifiSsid])
+                    controlCenterWindow.triggerWifiScan()
+                  }
+                }
+              }
+
               Item { Layout.fillWidth: true }
 
               // Band selector pills
@@ -1747,6 +1799,31 @@ ShellRoot {
                       } else {
                         Quickshell.execDetached(["omarchy-bluetooth-device", "connect", modelData.mac])
                       }
+                      controlCenterWindow.triggerBtScan()
+                    }
+                  }
+                }
+
+                Rectangle {
+                  implicitWidth: 46
+                  implicitHeight: 24
+                  radius: 5
+                  color: macCcBtFgtBtnM.containsMouse ? (controlCenterWindow.isLight ? Qt.rgba(1, 0, 0, 0.12) : Qt.rgba(1, 0.3, 0.3, 0.25)) : (controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.05) : Qt.rgba(1, 1, 1, 0.08))
+                  Text {
+                    anchors.centerIn: parent
+                    text: "Forget"
+                    font.family: "SF Pro Text"
+                    font.pixelSize: 10
+                    font.bold: true
+                    color: macCcBtFgtBtnM.containsMouse ? "#ff453a" : (controlCenterWindow.isLight ? "#515154" : Qt.rgba(1, 1, 1, 0.75))
+                  }
+                  MouseArea {
+                    id: macCcBtFgtBtnM
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                      Quickshell.execDetached(["omarchy-bluetooth-dbus", "forget", modelData.mac])
                       controlCenterWindow.triggerBtScan()
                     }
                   }

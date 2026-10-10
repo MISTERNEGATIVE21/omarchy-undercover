@@ -37,6 +37,12 @@ if ! grep -q "omarchy-bluetooth-device" "$MCC_QML"; then
   exit 1
 fi
 
+echo "Checking forget controls in mac-controlcenter..."
+if ! grep -q "forget" "$MCC_QML"; then
+  echo "FAIL: mac-controlcenter missing forget action" >&2
+  exit 1
+fi
+
 # Quickshell Syntax Check
 QS_OUT=$(timeout 1.5s quickshell -p "$REPO_DIR/configs/quickshell/mac-controlcenter" 2>&1 || true)
 if echo "$QS_OUT" | grep -iE "syntax error|fatal|cannot load"; then

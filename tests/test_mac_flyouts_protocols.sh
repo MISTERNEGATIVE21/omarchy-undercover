@@ -38,6 +38,17 @@ if ! grep -q "omarchy-bluetooth-device" "$MAC_BT"; then
   exit 1
 fi
 
+echo "Checking forget bindings in mac-wifi and mac-bluetooth..."
+if ! grep -q "forgetWifi" "$MAC_WIFI"; then
+  echo "FAIL: mac-wifi missing forgetWifi action binding" >&2
+  exit 1
+fi
+
+if ! grep -q 'text: "Forget"' "$MAC_BT"; then
+  echo "FAIL: mac-bluetooth missing visible Forget button" >&2
+  exit 1
+fi
+
 # Quickshell Syntax Checks
 QS_WIFI=$(timeout 1.5s quickshell -p "$REPO_DIR/configs/quickshell/mac-wifi" 2>&1 || true)
 if echo "$QS_WIFI" | grep -iE "syntax error|fatal|cannot load"; then

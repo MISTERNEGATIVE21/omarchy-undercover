@@ -413,12 +413,60 @@ ShellRoot {
                   Layout.fillWidth: true
                   elide: Text.ElideRight
                 }
-                Text {
-                  text: modelData.connected ? "Disconnect" : "Connect"
-                  font.family: "SF Pro Text"
-                  font.pixelSize: 10
-                  color: modelData.connected ? (macBtWindow.isDark ? Qt.rgba(1, 1, 1, 0.6) : Qt.rgba(0, 0, 0, 0.5)) : "#007aff"
-                  font.weight: Font.DemiBold
+                Rectangle {
+                  implicitWidth: 60
+                  implicitHeight: 22
+                  radius: 4
+                  z: 2
+                  color: btnConnM.containsMouse ? (macBtWindow.isDark ? Qt.rgba(1, 1, 1, 0.2) : Qt.rgba(0, 0, 0, 0.12)) : (macBtWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05))
+                  Text {
+                    anchors.centerIn: parent
+                    text: modelData.connected ? "Disconnect" : "Connect"
+                    font.family: "SF Pro Text"
+                    font.pixelSize: 10
+                    font.weight: Font.DemiBold
+                    color: modelData.connected ? (macBtWindow.isDark ? Qt.rgba(1, 1, 1, 0.6) : Qt.rgba(0, 0, 0, 0.5)) : "#007aff"
+                  }
+                  MouseArea {
+                    id: btnConnM
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                      if (modelData.connected) {
+                        Quickshell.execDetached(["omarchy-bluetooth-device", "disconnect", modelData.mac])
+                      } else {
+                        Quickshell.execDetached(["omarchy-bluetooth-device", "connect", modelData.mac])
+                      }
+                      macBtWindow.triggerScan()
+                    }
+                  }
+                }
+
+                Rectangle {
+                  implicitWidth: 46
+                  implicitHeight: 22
+                  radius: 4
+                  z: 2
+                  color: btnFgtM.containsMouse ? (macBtWindow.isDark ? Qt.rgba(1, 0.3, 0.3, 0.25) : Qt.rgba(1, 0, 0, 0.12)) : (macBtWindow.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05))
+                  Text {
+                    anchors.centerIn: parent
+                    text: "Forget"
+                    font.family: "SF Pro Text"
+                    font.pixelSize: 10
+                    font.weight: Font.DemiBold
+                    color: btnFgtM.containsMouse ? "#ff453a" : (macBtWindow.isDark ? Qt.rgba(1, 1, 1, 0.6) : Qt.rgba(0, 0, 0, 0.5))
+                  }
+                  MouseArea {
+                    id: btnFgtM
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                      Quickshell.execDetached(["omarchy-bluetooth-dbus", "forget", modelData.mac])
+                      macBtWindow.triggerScan()
+                    }
+                  }
                 }
               }
 
@@ -430,7 +478,7 @@ ShellRoot {
                 acceptedButtons: Qt.LeftButton | Qt.RightButton
                 onClicked: function(mouse) {
                   if (mouse.button === Qt.RightButton) {
-                    Quickshell.execDetached(["omarchy-bluetooth-device", "forget", modelData.mac])
+                    Quickshell.execDetached(["omarchy-bluetooth-dbus", "forget", modelData.mac])
                   } else if (modelData.connected) {
                     Quickshell.execDetached(["omarchy-bluetooth-device", "disconnect", modelData.mac])
                   } else {
