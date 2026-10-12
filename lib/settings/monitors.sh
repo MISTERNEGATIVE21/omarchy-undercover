@@ -149,6 +149,7 @@ monitor_find() {
     def matches($e):
       $e.key == $n
       or $e.name == $n
+      or ($e.description != "" and ($e.description == $n or ($n | startswith($e.description)) or ($e.description | startswith($n))))
       or (($n | startswith("desc:")) and $e.description != ""
           and ($e.description | startswith($n[5:])));
     (map(select(matches(.))) | first) // null' <<<"$live"
@@ -367,8 +368,22 @@ monitor_set() {
       --arg n "$name" --argjson s "$applied"
   fi
 
-  [[ $field == scale ]] && monitor_is_internal "$name" \
-    && monitor_lua_scale "$name" "$(monitor_settings "$name" | jq -r '.scale')"
+  if [[ $field == scale ]]; then
+    if command -v omarchy-hyprland-monitor-scaling >/dev/null 2>&1; then
+      omarchy-hyprland-monitor-scaling "$value" >/dev/null 2>&1 || true
+    fi
+    local mlua="$HYPR_DIR/monitors.lua"
+    if [[ -f $mlua ]] && grep -q '^local omarchy_monitor_scale = ' "$mlua"; then
+      local gdk_val
+      gdk_val=$(awk -v scale="$value" 'BEGIN { printf "%d", int(scale + 0.5) }')
+      sed -i -E \
+        -e "s|^local omarchy_monitor_scale = .*|local omarchy_monitor_scale = ${value}|" \
+        -e "s|^local omarchy_gdk_scale = .*|local omarchy_gdk_scale = ${gdk_val}|" \
+        "$mlua"
+    fi
+    monitor_is_internal "$name" \
+      && monitor_lua_scale "$name" "$(monitor_settings "$name" | jq -r '.scale')"
+  fi
   return 0
 }
 

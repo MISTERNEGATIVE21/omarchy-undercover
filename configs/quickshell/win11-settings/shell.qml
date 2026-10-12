@@ -774,13 +774,14 @@ ShellRoot {
                   // Hero Specs Banner Card
                   Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 78
+                    implicitHeight: Math.max(78, bannerRow.implicitHeight + 32)
                     radius: 8
                     color: settingsWin.cardBg
                     border.color: settingsWin.cardBorder
                     border.width: 1
 
                     RowLayout {
+                      id: bannerRow
                       anchors.fill: parent
                       anchors.margins: 16
                       spacing: 16
@@ -797,17 +798,22 @@ ShellRoot {
                         Layout.fillWidth: true
                         spacing: 2
                         Text {
+                          Layout.fillWidth: true
                           text: "Omarchy Workstation PC"
                           font.family: "Segoe UI, sans-serif"
                           font.pixelSize: 14
                           font.weight: Font.DemiBold
                           color: settingsWin.textPrimary
+                          elide: Text.ElideRight
                         }
                         Text {
+                          Layout.fillWidth: true
                           text: "Windows 11 Pro Disguise • Arch Linux Kernel • Wayland Compositor"
                           font.family: "Segoe UI, sans-serif"
                           font.pixelSize: 11
                           color: settingsWin.textSecondary
+                          wrapMode: Text.WordWrap
+                          elide: Text.ElideRight
                         }
                       }
 
@@ -842,13 +848,14 @@ ShellRoot {
                   // Display Brightness
                   Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 74
+                    implicitHeight: Math.max(74, brightRow.implicitHeight + 32)
                     radius: 8
                     color: settingsWin.cardBg
                     border.color: settingsWin.cardBorder
                     border.width: 1
 
                     RowLayout {
+                      id: brightRow
                       anchors.fill: parent
                       anchors.margins: 16
                       spacing: 14
@@ -862,8 +869,8 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "Display Brightness"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
-                        Text { text: settingsWin.brightnessLevel + "% backlight brightness"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                        Text { Layout.fillWidth: true; text: "Display Brightness"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary; elide: Text.ElideRight }
+                        Text { Layout.fillWidth: true; text: settingsWin.brightnessLevel + "% backlight brightness"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary; wrapMode: Text.WordWrap; elide: Text.ElideRight }
                       }
                       Slider {
                         Layout.preferredWidth: 180
@@ -880,13 +887,14 @@ ShellRoot {
                   // Sound Subpage Tile (Click to open full System > Sound)
                   Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 74
+                    implicitHeight: Math.max(74, soundTileRow.implicitHeight + 32)
                     radius: 8
                     color: soundTileM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.04)) : settingsWin.cardBg
                     border.color: settingsWin.cardBorder
                     border.width: 1
 
                     RowLayout {
+                      id: soundTileRow
                       anchors.fill: parent
                       anchors.margins: 16
                       spacing: 14
@@ -900,8 +908,8 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "Sound"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
-                        Text { text: "Volume levels, output, input, sound devices, and volume mixer"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                        Text { Layout.fillWidth: true; text: "Sound"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary; elide: Text.ElideRight }
+                        Text { Layout.fillWidth: true; text: "Volume levels, output, input, sound devices, and volume mixer"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary; wrapMode: Text.WordWrap; elide: Text.ElideRight }
                       }
                       Text {
                         text: audioService.masterVolume + "%"
@@ -925,13 +933,14 @@ ShellRoot {
                   // Display Subpage Tile
                   Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 74
+                    implicitHeight: Math.max(74, dispTileRow.implicitHeight + 32)
                     radius: 8
                     color: dispTileM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.04)) : settingsWin.cardBg
                     border.color: settingsWin.cardBorder
                     border.width: 1
 
                     RowLayout {
+                      id: dispTileRow
                       anchors.fill: parent
                       anchors.margins: 16
                       spacing: 14
@@ -944,8 +953,9 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "Display"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { Layout.fillWidth: true; text: "Display"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary; elide: Text.ElideRight }
                         Text {
+                          Layout.fillWidth: true
                           text: {
                             if (settingsService.monitors.length > 0) {
                               var m = settingsService.monitors[0]
@@ -956,6 +966,7 @@ ShellRoot {
                           font.family: "Segoe UI, sans-serif"
                           font.pixelSize: 11
                           color: settingsWin.textSecondary
+                          wrapMode: Text.WordWrap
                           elide: Text.ElideRight
                         }
                       }
@@ -974,13 +985,14 @@ ShellRoot {
                   // Power & Battery Subpage Tile
                   Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 74
+                    implicitHeight: Math.max(74, pwrTileRow.implicitHeight + 32)
                     radius: 8
                     color: pwrTileM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(0, 0, 0, 0.04)) : settingsWin.cardBg
                     border.color: settingsWin.cardBorder
                     border.width: 1
 
                     RowLayout {
+                      id: pwrTileRow
                       anchors.fill: parent
                       anchors.margins: 16
                       spacing: 14
@@ -993,12 +1005,15 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "Power & battery"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                        Text { Layout.fillWidth: true; text: "Power & battery"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary; elide: Text.ElideRight }
                         Text {
+                          Layout.fillWidth: true
                           text: (settingsService.batteryPct !== undefined ? (settingsService.batteryPct + "% • ") : "") + (settingsService.isCharging ? "Plugged in" : "On battery") + " • Mode: " + settingsService.powerProfile
                           font.family: "Segoe UI, sans-serif"
                           font.pixelSize: 11
                           color: settingsWin.textSecondary
+                          wrapMode: Text.WordWrap
+                          elide: Text.ElideRight
                         }
                       }
                       Text { text: "❯"; font.pixelSize: 14; color: settingsWin.textSecondary }
@@ -1016,13 +1031,14 @@ ShellRoot {
                   // Window Gaps Tuning
                   Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 74
+                    implicitHeight: Math.max(74, gapsTileRow.implicitHeight + 32)
                     radius: 8
                     color: settingsWin.cardBg
                     border.color: settingsWin.cardBorder
                     border.width: 1
 
                     RowLayout {
+                      id: gapsTileRow
                       anchors.fill: parent
                       anchors.margins: 16
                       spacing: 14
@@ -1036,8 +1052,8 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "Desktop Window Gaps"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
-                        Text { text: settingsWin.windowGaps + "px outer spacing"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                        Text { Layout.fillWidth: true; text: "Desktop Window Gaps"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary; elide: Text.ElideRight }
+                        Text { Layout.fillWidth: true; text: settingsWin.windowGaps + "px outer spacing"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary; wrapMode: Text.WordWrap; elide: Text.ElideRight }
                       }
                       Slider {
                         Layout.preferredWidth: 180
@@ -1055,13 +1071,14 @@ ShellRoot {
                   // Window Rounding
                   Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 74
+                    implicitHeight: Math.max(74, roundTileRow.implicitHeight + 32)
                     radius: 8
                     color: settingsWin.cardBg
                     border.color: settingsWin.cardBorder
                     border.width: 1
 
                     RowLayout {
+                      id: roundTileRow
                       anchors.fill: parent
                       anchors.margins: 16
                       spacing: 14
@@ -1075,8 +1092,8 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "Corner Rounding (Mica Geometry)"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
-                        Text { text: settingsWin.windowRounding + "px corner radius"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                        Text { Layout.fillWidth: true; text: "Corner Rounding (Mica Geometry)"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary; elide: Text.ElideRight }
+                        Text { Layout.fillWidth: true; text: settingsWin.windowRounding + "px corner radius"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary; wrapMode: Text.WordWrap; elide: Text.ElideRight }
                       }
                       Slider {
                         Layout.preferredWidth: 180
@@ -1843,9 +1860,9 @@ ShellRoot {
                         property var scales: [
                           { label: "100%", val: 1.0 },
                           { label: "125%", val: 1.25 },
-                          { label: "150%", val: 1.5 },
-                          { label: "175%", val: 1.75 },
-                          { label: "200%", val: 2.0 }
+                          { label: "160%", val: 1.6 },
+                          { label: "200%", val: 2.0 },
+                          { label: "300%", val: 3.0 }
                         ]
 
                         Repeater {
@@ -1856,7 +1873,7 @@ ShellRoot {
                             radius: 4
                             readonly property bool isSelected: {
                               if (settingsWin.activeMon && settingsWin.activeMon.scale !== undefined) {
-                                return Math.abs(settingsWin.activeMon.scale - modelData.val) < 0.05
+                                return Math.abs(settingsWin.activeMon.scale - modelData.val) < 0.08
                               }
                               return modelData.val === 1.0
                             }
@@ -1882,7 +1899,7 @@ ShellRoot {
                               cursorShape: Qt.PointingHandCursor
                               onClicked: {
                                 if (settingsWin.activeMon) {
-                                  settingsService.setMonitorScale(settingsWin.activeMon.name, modelData.val)
+                                  settingsService.setMonitorScale(settingsWin.activeMon.name || settingsWin.activeMon.output, modelData.val)
                                 }
                               }
                             }
@@ -3209,7 +3226,7 @@ ShellRoot {
                         model: parent.themes
                         Rectangle {
                           Layout.fillWidth: true
-                          implicitHeight: 64
+                          implicitHeight: Math.max(64, themeItemRow.implicitHeight + 20)
                           radius: 6
                           color: (settingsWin.currentDisguise === modelData.id)
                                  ? (settingsWin.isDark ? Qt.rgba(0.38, 0.80, 1.0, 0.12) : Qt.rgba(0, 0.40, 0.75, 0.08))
@@ -3218,6 +3235,7 @@ ShellRoot {
                           border.width: (settingsWin.currentDisguise === modelData.id) ? 2 : 1
 
                           RowLayout {
+                            id: themeItemRow
                             anchors.fill: parent
                             anchors.margins: 10
                             spacing: 12
@@ -3243,6 +3261,7 @@ ShellRoot {
                               Layout.fillWidth: true
                               spacing: 2
                               Text {
+                                Layout.fillWidth: true
                                 text: modelData.name
                                 font.family: "Segoe UI, sans-serif"
                                 font.pixelSize: 12
@@ -3251,10 +3270,12 @@ ShellRoot {
                                 elide: Text.ElideRight
                               }
                               Text {
+                                Layout.fillWidth: true
                                 text: (settingsWin.currentDisguise === modelData.id) ? "Active Theme • " + modelData.sub : modelData.sub
                                 font.family: "Segoe UI, sans-serif"
                                 font.pixelSize: 10
                                 color: (settingsWin.currentDisguise === modelData.id) ? settingsWin.accentColor : settingsWin.textSecondary
+                                wrapMode: Text.WordWrap
                                 elide: Text.ElideRight
                               }
                             }
@@ -3977,7 +3998,7 @@ ShellRoot {
                   // Windows 11 Dark
                   Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 74
+                    implicitHeight: Math.max(74, wDisCard1.implicitHeight + 28)
                     radius: 8
                     color: (settingsWin.currentDisguise === "win11-dark")
                            ? (settingsWin.isDark ? Qt.rgba(0.38, 0.80, 1.0, 0.12) : Qt.rgba(0, 0.40, 0.75, 0.08))
@@ -3986,6 +4007,7 @@ ShellRoot {
                     border.width: (settingsWin.currentDisguise === "win11-dark") ? 2 : 1
 
                     RowLayout {
+                      id: wDisCard1
                       anchors.fill: parent
                       anchors.margins: 14
                       spacing: 12
@@ -3997,8 +4019,8 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "Windows 11 Fluent (Dark)" + (settingsWin.currentDisguise === "win11-dark" ? " — Active" : ""); font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
-                        Text { text: "Mica Acrylic taskbar, Fluent icons & fonts"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                        Text { Layout.fillWidth: true; text: "Windows 11 Fluent (Dark)" + (settingsWin.currentDisguise === "win11-dark" ? " — Active" : ""); font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary; elide: Text.ElideRight }
+                        Text { Layout.fillWidth: true; text: "Mica Acrylic taskbar, Fluent icons & fonts"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary; wrapMode: Text.WordWrap; elide: Text.ElideRight }
                       }
                     }
                     MouseArea {
@@ -4013,7 +4035,7 @@ ShellRoot {
                   // Windows 11 Light
                   Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 74
+                    implicitHeight: Math.max(74, wDisCard2.implicitHeight + 28)
                     radius: 8
                     color: (settingsWin.currentDisguise === "win11-light")
                            ? (settingsWin.isDark ? Qt.rgba(0.38, 0.80, 1.0, 0.12) : Qt.rgba(0, 0.40, 0.75, 0.08))
@@ -4022,6 +4044,7 @@ ShellRoot {
                     border.width: (settingsWin.currentDisguise === "win11-light") ? 2 : 1
 
                     RowLayout {
+                      id: wDisCard2
                       anchors.fill: parent
                       anchors.margins: 14
                       spacing: 12
@@ -4033,8 +4056,8 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "Windows 11 Fluent (Light)" + (settingsWin.currentDisguise === "win11-light" ? " — Active" : ""); font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
-                        Text { text: "Solar Light taskbar with Fluent styling"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                        Text { Layout.fillWidth: true; text: "Windows 11 Fluent (Light)" + (settingsWin.currentDisguise === "win11-light" ? " — Active" : ""); font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary; elide: Text.ElideRight }
+                        Text { Layout.fillWidth: true; text: "Solar Light taskbar with Fluent styling"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary; wrapMode: Text.WordWrap; elide: Text.ElideRight }
                       }
                     }
                     MouseArea {
@@ -4049,7 +4072,7 @@ ShellRoot {
                   // macOS Tahoe Dark (Flagship Default)
                   Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 74
+                    implicitHeight: Math.max(74, wDisCard3.implicitHeight + 28)
                     radius: 8
                     color: (settingsWin.currentDisguise === "mac-dark" || settingsWin.currentDisguise === "mac-tahoe-dark" || settingsWin.currentDisguise === "mac")
                            ? (settingsWin.isDark ? Qt.rgba(0.38, 0.80, 1.0, 0.12) : Qt.rgba(0, 0.40, 0.75, 0.08))
@@ -4058,6 +4081,7 @@ ShellRoot {
                     border.width: (settingsWin.currentDisguise === "mac-dark" || settingsWin.currentDisguise === "mac-tahoe-dark" || settingsWin.currentDisguise === "mac") ? 2 : 1
 
                     RowLayout {
+                      id: wDisCard3
                       anchors.fill: parent
                       anchors.margins: 14
                       spacing: 12
@@ -4069,8 +4093,8 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "macOS Tahoe (Dark)" + ((settingsWin.currentDisguise === "mac-dark" || settingsWin.currentDisguise === "mac-tahoe-dark" || settingsWin.currentDisguise === "mac") ? " — Active" : ""); font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
-                        Text { text: "Flagship dark alpine vista, Stage Manager & Tahoe glassmorphism"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                        Text { Layout.fillWidth: true; text: "macOS Tahoe (Dark)" + ((settingsWin.currentDisguise === "mac-dark" || settingsWin.currentDisguise === "mac-tahoe-dark" || settingsWin.currentDisguise === "mac") ? " — Active" : ""); font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary; elide: Text.ElideRight }
+                        Text { Layout.fillWidth: true; text: "Flagship dark alpine vista, Stage Manager & Tahoe glassmorphism"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary; wrapMode: Text.WordWrap; elide: Text.ElideRight }
                       }
                     }
                     MouseArea {
@@ -4085,7 +4109,7 @@ ShellRoot {
                   // macOS Tahoe Light (Flagship Light)
                   Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 74
+                    implicitHeight: Math.max(74, wDisCard4.implicitHeight + 28)
                     radius: 8
                     color: (settingsWin.currentDisguise === "mac-light" || settingsWin.currentDisguise === "mac-tahoe-light")
                            ? (settingsWin.isDark ? Qt.rgba(0.38, 0.80, 1.0, 0.12) : Qt.rgba(0, 0.40, 0.75, 0.08))
@@ -4094,6 +4118,7 @@ ShellRoot {
                     border.width: (settingsWin.currentDisguise === "mac-light" || settingsWin.currentDisguise === "mac-tahoe-light") ? 2 : 1
 
                     RowLayout {
+                      id: wDisCard4
                       anchors.fill: parent
                       anchors.margins: 14
                       spacing: 12
@@ -4105,8 +4130,8 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "macOS Tahoe (Light)" + ((settingsWin.currentDisguise === "mac-light" || settingsWin.currentDisguise === "mac-tahoe-light") ? " — Active" : ""); font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
-                        Text { text: "Light alpine glass theme, solar dock & crisp white-sur icons"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                        Text { Layout.fillWidth: true; text: "macOS Tahoe (Light)" + ((settingsWin.currentDisguise === "mac-light" || settingsWin.currentDisguise === "mac-tahoe-light") ? " — Active" : ""); font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary; elide: Text.ElideRight }
+                        Text { Layout.fillWidth: true; text: "Light alpine glass theme, solar dock & crisp white-sur icons"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary; wrapMode: Text.WordWrap; elide: Text.ElideRight }
                       }
                     }
                     MouseArea {
@@ -4121,7 +4146,7 @@ ShellRoot {
                   // macOS Sequoia Dark (Classic)
                   Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 74
+                    implicitHeight: Math.max(74, wDisCard5.implicitHeight + 28)
                     radius: 8
                     color: (settingsWin.currentDisguise === "mac-sequoia-dark" || settingsWin.currentDisguise === "mac-sequoia")
                            ? (settingsWin.isDark ? Qt.rgba(0.38, 0.80, 1.0, 0.12) : Qt.rgba(0, 0.40, 0.75, 0.08))
@@ -4130,6 +4155,7 @@ ShellRoot {
                     border.width: (settingsWin.currentDisguise === "mac-sequoia-dark" || settingsWin.currentDisguise === "mac-sequoia") ? 2 : 1
 
                     RowLayout {
+                      id: wDisCard5
                       anchors.fill: parent
                       anchors.margins: 14
                       spacing: 12
@@ -4141,8 +4167,8 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "macOS Sequoia (Dark)" + ((settingsWin.currentDisguise === "mac-sequoia-dark" || settingsWin.currentDisguise === "mac-sequoia") ? " — Active" : ""); font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
-                        Text { text: "Classic Sequoia dark redwood theme, menu bar & dynamic dock"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                        Text { Layout.fillWidth: true; text: "macOS Sequoia (Dark)" + ((settingsWin.currentDisguise === "mac-sequoia-dark" || settingsWin.currentDisguise === "mac-sequoia") ? " — Active" : ""); font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary; elide: Text.ElideRight }
+                        Text { Layout.fillWidth: true; text: "Classic Sequoia dark redwood theme, menu bar & dynamic dock"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary; wrapMode: Text.WordWrap; elide: Text.ElideRight }
                       }
                     }
                     MouseArea {
@@ -4157,7 +4183,7 @@ ShellRoot {
                   // macOS Sequoia Light (Classic)
                   Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 74
+                    implicitHeight: Math.max(74, wDisCard6.implicitHeight + 28)
                     radius: 8
                     color: (settingsWin.currentDisguise === "mac-sequoia-light")
                            ? (settingsWin.isDark ? Qt.rgba(0.38, 0.80, 1.0, 0.12) : Qt.rgba(0, 0.40, 0.75, 0.08))
@@ -4166,6 +4192,7 @@ ShellRoot {
                     border.width: (settingsWin.currentDisguise === "mac-sequoia-light") ? 2 : 1
 
                     RowLayout {
+                      id: wDisCard6
                       anchors.fill: parent
                       anchors.margins: 14
                       spacing: 12
@@ -4177,8 +4204,8 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "macOS Sequoia (Light)" + (settingsWin.currentDisguise === "mac-sequoia-light" ? " — Active" : ""); font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
-                        Text { text: "Classic Sequoia solar redwood light glass theme"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                        Text { Layout.fillWidth: true; text: "macOS Sequoia (Light)" + (settingsWin.currentDisguise === "mac-sequoia-light" ? " — Active" : ""); font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary; elide: Text.ElideRight }
+                        Text { Layout.fillWidth: true; text: "Classic Sequoia solar redwood light glass theme"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary; wrapMode: Text.WordWrap; elide: Text.ElideRight }
                       }
                     }
                     MouseArea {
@@ -4193,7 +4220,7 @@ ShellRoot {
                   // Restore Default Omarchy
                   Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 74
+                    implicitHeight: Math.max(74, wDisCard7.implicitHeight + 28)
                     radius: 8
                     color: (settingsWin.currentDisguise === "omarchy")
                            ? (settingsWin.isDark ? Qt.rgba(0.38, 0.80, 1.0, 0.12) : Qt.rgba(0, 0.40, 0.75, 0.08))
@@ -4201,6 +4228,7 @@ ShellRoot {
                     border.color: (settingsWin.currentDisguise === "omarchy") ? "#34c759" : settingsWin.cardBorder
                     border.width: (settingsWin.currentDisguise === "omarchy") ? 2 : 1
                     RowLayout {
+                      id: wDisCard7
                       anchors.fill: parent
                       anchors.margins: 14
                       spacing: 12
@@ -4212,8 +4240,8 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "Restore Default Omarchy" + (settingsWin.currentDisguise === "omarchy" ? " — Active" : ""); font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
-                        Text { text: "Deactivate camouflage and restore baseline"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary }
+                        Text { Layout.fillWidth: true; text: "Restore Default Omarchy" + (settingsWin.currentDisguise === "omarchy" ? " — Active" : ""); font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary; elide: Text.ElideRight }
+                        Text { Layout.fillWidth: true; text: "Deactivate camouflage and restore baseline"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 11; color: settingsWin.textSecondary; wrapMode: Text.WordWrap; elide: Text.ElideRight }
                       }
                     }
                     MouseArea {

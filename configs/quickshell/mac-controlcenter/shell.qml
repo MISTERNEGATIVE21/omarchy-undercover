@@ -1111,13 +1111,14 @@ ShellRoot {
         Rectangle {
           visible: controlCenterWindow.wifiOn && controlCenterWindow.wifiSsid.length > 0
           Layout.fillWidth: true
-          implicitHeight: 74
+          implicitHeight: Math.max(74, wifiDiagCol.implicitHeight + 16)
           radius: 10
           color: controlCenterWindow.isLight ? Qt.rgba(0, 122, 255, 0.08) : Qt.rgba(0, 122, 255, 0.16)
           border.color: Qt.rgba(0, 122, 255, 0.3)
           border.width: 1
 
           ColumnLayout {
+            id: wifiDiagCol
             anchors.fill: parent
             anchors.margins: 8
             spacing: 6

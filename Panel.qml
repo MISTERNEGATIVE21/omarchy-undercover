@@ -49,7 +49,7 @@ Panel {
     bar: root.bar
     open: root.opened
     centerOnBar: false
-    contentWidth: typeof panel.fittedContentWidth === "function" ? panel.fittedContentWidth(Style.space(420)) : Style.space(420)
+    contentWidth: typeof panel.fittedContentWidth === "function" ? panel.fittedContentWidth(Style.space(440)) : Style.space(440)
     contentHeight: typeof panel.fittedContentHeight === "function" ? panel.fittedContentHeight(Style.space(560)) : Style.space(560)
 
     Rectangle {
@@ -104,10 +104,13 @@ Panel {
               }
 
               Text {
+                Layout.fillWidth: true
                 text: "Active: " + (root.currentMode === "mac" ? "macOS Sequoia (" + (root.activeState.indexOf("light") !== -1 ? "Light" : "Dark") + ")" : (root.currentMode === "win11" ? "Windows 11 Fluent (" + (root.activeState.indexOf("light") !== -1 ? "Light" : "Dark") + ")" : "Default Omarchy"))
                 font.family: Style.font.family
                 font.pixelSize: Style.font.caption
                 color: Color.muted
+                wrapMode: Text.WordWrap
+                elide: Text.ElideRight
               }
             }
 
@@ -140,13 +143,14 @@ Panel {
           // macOS Card
           Rectangle {
             Layout.fillWidth: true
-            implicitHeight: Style.space(72)
+            implicitHeight: Math.max(Style.space(72), macCardRow.implicitHeight + Style.space(20))
             radius: 10
             color: root.currentMode === "mac" ? Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.14) : Qt.rgba(1, 1, 1, 0.04)
             border.color: root.currentMode === "mac" ? Color.accent : Qt.rgba(1, 1, 1, 0.08)
             border.width: 1
 
             RowLayout {
+              id: macCardRow
               anchors.fill: parent
               anchors.margins: Style.space(10)
               spacing: Style.space(10)
@@ -158,16 +162,19 @@ Panel {
 
               ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 1
+                spacing: 2
 
                 RowLayout {
+                  Layout.fillWidth: true
                   spacing: 6
                   Text {
+                    Layout.fillWidth: true
                     text: "Apple macOS Sequoia"
                     font.family: "SF Pro Text, -apple-system, sans-serif"
                     font.pixelSize: Style.font.caption + 1
                     font.bold: true
                     color: Color.foreground
+                    elide: Text.ElideRight
                   }
                   Rectangle {
                     visible: root.currentMode === "mac"
@@ -186,10 +193,13 @@ Panel {
                 }
 
                 Text {
+                  Layout.fillWidth: true
                   text: "Frosted Menu Bar • Dynamic Dock • SF Fonts"
                   font.family: "SF Pro Text, -apple-system, sans-serif"
                   font.pixelSize: Style.font.caption
                   color: Color.muted
+                  wrapMode: Text.WordWrap
+                  elide: Text.ElideRight
                 }
               }
 
@@ -212,13 +222,14 @@ Panel {
           // Windows 11 Card
           Rectangle {
             Layout.fillWidth: true
-            implicitHeight: Style.space(72)
+            implicitHeight: Math.max(Style.space(72), winCardRow.implicitHeight + Style.space(20))
             radius: 10
             color: root.currentMode === "win11" ? Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.14) : Qt.rgba(1, 1, 1, 0.04)
             border.color: root.currentMode === "win11" ? Color.accent : Qt.rgba(1, 1, 1, 0.08)
             border.width: 1
 
             RowLayout {
+              id: winCardRow
               anchors.fill: parent
               anchors.margins: Style.space(10)
               spacing: Style.space(10)
@@ -230,16 +241,19 @@ Panel {
 
               ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 1
+                spacing: 2
 
                 RowLayout {
+                  Layout.fillWidth: true
                   spacing: 6
                   Text {
+                    Layout.fillWidth: true
                     text: "Windows 11 Fluent"
                     font.family: "Segoe UI, sans-serif"
                     font.pixelSize: Style.font.caption + 1
                     font.bold: true
                     color: Color.foreground
+                    elide: Text.ElideRight
                   }
                   Rectangle {
                     visible: root.currentMode === "win11"
@@ -258,10 +272,13 @@ Panel {
                 }
 
                 Text {
+                  Layout.fillWidth: true
                   text: "Centered Mica Taskbar • Start Menu • Segoe UI"
                   font.family: "Segoe UI, sans-serif"
                   font.pixelSize: Style.font.caption
                   color: Color.muted
+                  wrapMode: Text.WordWrap
+                  elide: Text.ElideRight
                 }
               }
 
@@ -284,13 +301,14 @@ Panel {
           // Omarchy Default Card
           Rectangle {
             Layout.fillWidth: true
-            implicitHeight: Style.space(52)
+            implicitHeight: Math.max(Style.space(52), omaCardRow.implicitHeight + Style.space(20))
             radius: 10
             color: root.currentMode === "omarchy" ? Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.14) : Qt.rgba(1, 1, 1, 0.04)
             border.color: root.currentMode === "omarchy" ? Color.accent : Qt.rgba(1, 1, 1, 0.08)
             border.width: 1
 
             RowLayout {
+              id: omaCardRow
               anchors.fill: parent
               anchors.margins: Style.space(10)
               spacing: Style.space(10)
@@ -306,6 +324,8 @@ Panel {
                 font.family: Style.font.family
                 font.pixelSize: Style.font.caption + 1
                 color: Color.foreground
+                elide: Text.ElideRight
+                wrapMode: Text.WordWrap
               }
 
               Button {

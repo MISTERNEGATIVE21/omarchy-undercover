@@ -348,10 +348,10 @@ def build_showcase():
     draw_centered_text(draw, y, "Desktop Camouflage & Transformation Suite for Omarchy Hyprland", f_hero_sub, (224, 231, 255))
     y += 68
     
-    # Hero Badges Row (Updated for v7.0.0 and Verified Plugin)
+    # Hero Badges Row (Updated for v7.4.2 and Verified Plugin)
     hero_badges = [
         ("✓ Verified Omarchy Plugin", (6, 78, 59), (110, 231, 183), (16, 185, 129)),
-        ("v7.0.0 Release", (30, 58, 138), (147, 197, 253), (59, 130, 246)),
+        ("v7.4.2 Release", (30, 58, 138), (147, 197, 253), (59, 130, 246)),
         ("macOS Tahoe & Sequoia", (19, 78, 74), (94, 234, 212), (20, 184, 166)),
         ("macOS Stage Manager", (88, 28, 135), (216, 180, 254), (168, 85, 247)),
         ("Apple Aerial Screensavers", (120, 53, 15), (254, 243, 199), (217, 119, 6)),
@@ -638,7 +638,7 @@ def build_showcase():
         
     f_foot_title = get_font("sf_bold", 26)
     f_foot_sub = get_font("sf_regular", 17)
-    draw.text((rx + 110, ry + 10), "Omarchy Undercover v7.0.0", font=f_foot_title, fill=TEXT_TITLE)
+    draw.text((rx + 110, ry + 10), "Omarchy Undercover v7.4.2", font=f_foot_title, fill=TEXT_TITLE)
     draw.text((rx + 110, ry + 48), "Verified Omarchy Plugin • GPL-3.0 • misternegative21", font=f_foot_sub, fill=TEXT_MUTED)
     
     actual_bottom = y + foot_h + 90
@@ -655,5 +655,138 @@ def build_showcase():
     stat = os.stat(OUTPUT_PATH)
     print(f"Output size: {stat.st_size / 1024 / 1024:.2f} MB")
 
+def build_banner_preview():
+    """Generates the compact 1200x720 banner preview image."""
+    BANNER_W = 1200
+    BANNER_H = 720
+    print(f"Generating 1200x720 banner preview at {OUTPUT_PATH}...")
+    
+    mac_wp = os.path.join(ROOT_DIR, "assets/wallpapers/macOS-Tahoe-Dark.jpg")
+    win_wp = os.path.join(ROOT_DIR, "assets/wallpapers/win11_bloom_dark.jpg")
+
+    im_mac = Image.open(mac_wp).resize((BANNER_W, BANNER_H), Image.Resampling.LANCZOS)
+    im_win = Image.open(win_wp).resize((BANNER_W, BANNER_H), Image.Resampling.LANCZOS)
+
+    scale = 4
+    mask_high = Image.new("L", (BANNER_W * scale, BANNER_H * scale), 0)
+    d_mask = ImageDraw.Draw(mask_high)
+    x_top = int(BANNER_W * 0.46)
+    x_bot = int(BANNER_W * 0.54)
+    d_mask.polygon([(0, 0), (x_top * scale, 0), (x_bot * scale, BANNER_H * scale), (0, BANNER_H * scale)], fill=255)
+    mask = mask_high.resize((BANNER_W, BANNER_H), Image.Resampling.LANCZOS)
+
+    hero = im_win.convert("RGBA").copy()
+    hero.paste(im_mac.convert("RGBA"), (0, 0), mask)
+
+    # Glass divider line
+    line_layer = Image.new("RGBA", (BANNER_W, BANNER_H), (0, 0, 0, 0))
+    d_line = ImageDraw.Draw(line_layer)
+    d_line.line([(x_top, 0), (x_bot, BANNER_H)], fill=(255, 255, 255, 60), width=8)
+    line_blurred = line_layer.filter(ImageFilter.GaussianBlur(4))
+
+    sharp_line = Image.new("RGBA", (BANNER_W, BANNER_H), (0, 0, 0, 0))
+    d_sharp = ImageDraw.Draw(sharp_line)
+    d_sharp.line([(x_top, 0), (x_bot, BANNER_H)], fill=(255, 255, 255, 120), width=3)
+    d_sharp.line([(x_top, 0), (x_bot, BANNER_H)], fill=(255, 255, 255, 220), width=1)
+
+    hero = Image.alpha_composite(hero, line_blurred)
+    hero = Image.alpha_composite(hero, sharp_line)
+
+    overlay = Image.new("RGBA", (BANNER_W, BANNER_H), (11, 15, 23, 140))
+    hero = Image.alpha_composite(hero, overlay)
+
+    canvas = hero
+    draw = ImageDraw.Draw(canvas)
+
+    # Logo
+    logo_svg = os.path.join(ROOT_DIR, "assets/omarchy-undercover-logo.svg")
+    logo_png = "/tmp/logo_1200.png"
+    subprocess.run(["magick", "-background", "none", "-density", "300", logo_svg, "-resize", "68x68", logo_png], check=True)
+    with Image.open(logo_png) as l_img:
+        canvas.paste(l_img, ((BANNER_W - l_img.width) // 2, 28), l_img)
+
+    f_title = get_font("sf_bold", 38)
+    f_sub = get_font("sf_medium", 17)
+    f_badge = get_font("sf_semibold", 12)
+    f_card_sub = get_font("sf_regular", 12)
+    f_footer = get_font("sf_medium", 12)
+
+    y = 104
+    draw_centered_text(draw, y, "OMARCHY UNDERCOVER", f_title, (255, 255, 255), width=BANNER_W)
+    y += 46
+    draw_centered_text(draw, y, "Desktop Camouflage & Transformation Suite for Omarchy Hyprland", f_sub, (224, 231, 255), width=BANNER_W)
+    y += 36
+
+    badges = [
+        ("✓ Verified Plugin", (6, 78, 59), (110, 231, 183), (16, 185, 129)),
+        ("v7.4.2 Release", (30, 58, 138), (147, 197, 253), (59, 130, 246)),
+        ("macOS Tahoe & Sequoia", (19, 78, 74), (94, 234, 212), (20, 184, 166)),
+        ("Windows 11 Fluent", (12, 74, 110), (186, 230, 253), (2, 132, 199)),
+        ("Stage Manager & Aerials", (88, 28, 135), (216, 180, 254), (168, 85, 247)),
+        ("Quickshell & Waybar", (67, 56, 202), (199, 210, 254), (99, 102, 241)),
+    ]
+    total_w = 0
+    b_widths = []
+    for text, bg, fg, border in badges:
+        bbox = f_badge.getbbox(text)
+        w = (bbox[2] - bbox[0]) + 24
+        b_widths.append(w)
+        total_w += w
+    total_w += 8 * (len(badges) - 1)
+
+    bx = (BANNER_W - total_w) // 2
+    for i, (text, bg, fg, border) in enumerate(badges):
+        draw_pill(canvas, bx, y, text, f_badge, bg, fg, padding=(12, 4), border_color=border)
+        bx += b_widths[i] + 8
+
+    margin_x = 42
+    gap = 20
+    card_w = (BANNER_W - (margin_x * 2) - gap) // 2
+    card_h = 368
+    shot_w = 516
+    shot_h = 290
+    cards_y = 236
+
+    # Left Card: macOS Tahoe
+    c1_x = margin_x
+    draw_rounded_rect_aa(canvas, [c1_x, cards_y, c1_x + card_w, cards_y + card_h], radius=18, fill=(16, 22, 34, 235), outline=(45, 58, 86), outline_width=1)
+    draw_pill(canvas, c1_x + 16, cards_y + 12, "macOS Tahoe Mode", get_font("sf_semibold", 11), (59, 7, 100), (233, 213, 255), padding=(10, 3), border_color=(147, 51, 234))
+    draw = ImageDraw.Draw(canvas)
+    draw.text((c1_x + 162, cards_y + 13), "Tahoe 4K • Stage Manager • Dynamic Dock", font=f_card_sub, fill=(148, 163, 184))
+
+    with Image.open(os.path.join(ROOT_DIR, "assets/screenshots/MacOS_Dark.png")) as s_mac:
+        s_mac_res = s_mac.resize((shot_w, shot_h), Image.Resampling.LANCZOS)
+        s_mac_sh, pad = create_shadowed_screenshot(s_mac_res, radius=10, shadow_blur=10, shadow_offset=(0, 4), shadow_alpha=150)
+        canvas.paste(s_mac_sh, (c1_x + (card_w - shot_w) // 2 - pad, cards_y + 40 - pad), s_mac_sh)
+
+    draw.text((c1_x + 16, cards_y + 342), "Apple Control Center • Polygraph Monitor • Aerial Drone Screensavers", font=get_font("sf_regular", 11), fill=(148, 163, 184))
+
+    # Right Card: Windows 11 Fluent
+    c2_x = margin_x + card_w + gap
+    draw_rounded_rect_aa(canvas, [c2_x, cards_y, c2_x + card_w, cards_y + card_h], radius=18, fill=(16, 22, 34, 235), outline=(45, 58, 86), outline_width=1)
+    draw_pill(canvas, c2_x + 16, cards_y + 12, "Windows 11 Fluent", get_font("segoe_semibold", 11), (12, 74, 110), (186, 230, 253), padding=(10, 3), border_color=(2, 132, 199))
+    draw = ImageDraw.Draw(canvas)
+    draw.text((c2_x + 160, cards_y + 13), "Centered Taskbar • Weather Feed • Acrylic", font=f_card_sub, fill=(148, 163, 184))
+
+    with Image.open(os.path.join(ROOT_DIR, "assets/screenshots/Windows11_Dark.png")) as s_win:
+        s_win_res = s_win.resize((shot_w, shot_h), Image.Resampling.LANCZOS)
+        s_win_sh, pad = create_shadowed_screenshot(s_win_res, radius=10, shadow_blur=10, shadow_offset=(0, 4), shadow_alpha=150)
+        canvas.paste(s_win_sh, (c2_x + (card_w - shot_w) // 2 - pad, cards_y + 40 - pad), s_win_sh)
+
+    draw.text((c2_x + 16, cards_y + 342), "Start Menu & Search • Action Center (Super+A) • Snap Assist (Super+Z)", font=get_font("segoe_regular", 11), fill=(148, 163, 184))
+
+    # Footer
+    draw_centered_text(draw, 680, "Instant Toggle: Super + Alt + U • Baseline Backup & Clean Rollback • GPL-3.0 License", f_footer, (148, 163, 184), width=BANNER_W)
+
+    final_rgb = canvas.convert("RGB")
+    final_rgb.save(OUTPUT_PATH, "PNG", optimize=True)
+    print(f"Successfully generated 1200x720 preview at {OUTPUT_PATH}!")
+    stat = os.stat(OUTPUT_PATH)
+    print(f"Output size: {stat.st_size / 1024:.1f} KB")
+
 if __name__ == "__main__":
-    build_showcase()
+    import sys
+    if "--full" in sys.argv or "--long" in sys.argv:
+        build_showcase()
+    else:
+        build_banner_preview()

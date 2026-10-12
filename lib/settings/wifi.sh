@@ -137,6 +137,8 @@ wifi_cmd() {
       # with this flag rather than passing the secret itself.
       if [[ $password == --password-stdin ]]; then
         IFS= read -r password || password=""
+      elif [[ -n $password ]]; then
+        echo "warning: passing Wi-Fi password as command-line argument exposes credentials via /proc/<pid>/cmdline; use --password-stdin" >&2
       fi
       if [[ -n $password ]]; then
         # --ask reads the passphrase from stdin, so it never appears in the

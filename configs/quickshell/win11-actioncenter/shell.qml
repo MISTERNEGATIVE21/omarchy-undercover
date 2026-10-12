@@ -1388,13 +1388,14 @@ ShellRoot {
         Rectangle {
           visible: actionCenterWindow.wifiSsid.length > 0 && actionCenterWindow.wifiSsid !== "Connected" && actionCenterWindow.wifiSsid !== "Disconnected" && actionCenterWindow.wifiEnabled
           Layout.fillWidth: true
-          implicitHeight: 74
+          implicitHeight: Math.max(74, wifiInfoCol.implicitHeight + 16)
           radius: 6
           color: actionCenterWindow.isDark ? Qt.rgba(0, 120, 212, 0.18) : Qt.rgba(0, 103, 192, 0.08)
           border.color: actionCenterWindow.isDark ? "#60cdff" : Qt.rgba(0, 103, 192, 0.35)
           border.width: 1
 
           ColumnLayout {
+            id: wifiInfoCol
             anchors.fill: parent
             anchors.margins: 8
             spacing: 5
@@ -1409,6 +1410,7 @@ ShellRoot {
                 spacing: 1
                 Layout.fillWidth: true
                 Text {
+                  Layout.fillWidth: true
                   text: actionCenterWindow.wifiSsid
                   textFormat: Text.PlainText
                   font.family: "Segoe UI, sans-serif"
@@ -1418,12 +1420,15 @@ ShellRoot {
                   elide: Text.ElideRight
                 }
                 Text {
+                  Layout.fillWidth: true
                   text: (actionCenterWindow.wifiFreq ? (parseFloat(actionCenterWindow.wifiFreq) >= 5000 ? "5 GHz" : "2.4 GHz") : "Connected") +
                         (actionCenterWindow.wifiBitrate ? (" • " + actionCenterWindow.wifiBitrate) : "") +
                         (actionCenterWindow.wifiPing > 0 ? (" • " + actionCenterWindow.wifiPing + "ms") : "")
                   font.family: "Segoe UI, sans-serif"
                   font.pixelSize: 9
                   color: actionCenterWindow.textSecondary
+                  wrapMode: Text.WordWrap
+                  elide: Text.ElideRight
                 }
               }
 

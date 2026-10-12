@@ -47,7 +47,7 @@ Item {
   }
 
   function setMonitorScale(desc, scale) {
-    runCmd("omarchy-settings-engine monitors scale '" + desc + "' " + scale)
+    runCmd("if command -v omarchy-hyprland-monitor-scaling >/dev/null 2>&1; then omarchy-hyprland-monitor-scaling " + scale + "; else omarchy-settings-engine monitors scale '" + desc + "' " + scale + "; fi")
     refreshTimer.restart()
   }
 
@@ -110,13 +110,31 @@ Item {
     refreshTimer.restart()
   }
 
+  Process {
+    id: wifiConnectProc
+    property string secret: ""
+    stdinEnabled: true
+    onStarted: {
+      if (secret) {
+        write(secret + "\n")
+        secret = ""
+      }
+    }
+    onExited: {
+      refreshTimer.restart()
+    }
+  }
+
   function connectWifi(ssid, password) {
     if (typeof ssid !== "string" || ssid.length === 0 || ssid.length > 32 || /[\x00-\x1f]/.test(ssid)) return
-    var args = [root.pluginDir + "/scripts/omarchy-settings-engine", "wifi", "connect", ssid]
-    if (typeof password === "string" && password.length > 0) {
-      args.push(password)
+    if (wifiConnectProc.running) wifiConnectProc.running = false
+    wifiConnectProc.secret = (typeof password === "string") ? password : ""
+    if (wifiConnectProc.secret) {
+      wifiConnectProc.command = [root.pluginDir + "/scripts/omarchy-settings-engine", "wifi", "connect", ssid, "--password-stdin"]
+    } else {
+      wifiConnectProc.command = [root.pluginDir + "/scripts/omarchy-settings-engine", "wifi", "connect", ssid]
     }
-    Quickshell.execDetached(args)
+    wifiConnectProc.running = true
     refreshTimer.restart()
   }
 

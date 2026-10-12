@@ -86,7 +86,7 @@ usage:
   omarchy-settings-engine reset <key>|--all
   omarchy-settings-engine monitors state | scale <display> <val> | mode <display> <val>
   omarchy-settings-engine devices state | set <device> <option> <value> keyboard|pointer
-  omarchy-settings-engine wifi list | rescan | connect <ssid> [password] | disconnect | radio on|off
+  omarchy-settings-engine wifi list | rescan | connect <ssid> [--password-stdin] | disconnect | radio on|off
   omarchy-settings-engine bluetooth state | power on|off | scan | pair|connect|disconnect <address>
   omarchy-settings-engine power state | profile ac|battery <power-saver|balanced|performance>
   omarchy-settings-engine audio state | default output|input <device> | volume output|input <pct>

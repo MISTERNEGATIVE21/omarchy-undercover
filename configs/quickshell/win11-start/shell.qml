@@ -401,10 +401,14 @@ ShellRoot {
 
                     Text {
                       Layout.alignment: Qt.AlignHCenter
+                      Layout.preferredWidth: 84
+                      Layout.maximumWidth: 84
                       text: modelData.name
                       font.family: "Segoe UI"
                       font.pixelSize: 11
                       color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
+                      elide: Text.ElideRight
+                      horizontalAlignment: Text.AlignHCenter
                     }
                   }
 
@@ -479,6 +483,8 @@ ShellRoot {
                         font.family: "Segoe UI"
                         font.pixelSize: 10
                         color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.5) : Qt.rgba(0, 0, 0, 0.5)
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
                       }
                     }
                   }
@@ -570,6 +576,7 @@ ShellRoot {
                     font.pixelSize: 11
                     color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
                     Layout.fillWidth: true
+                    elide: Text.ElideRight
                   }
                 }
 
@@ -643,12 +650,16 @@ ShellRoot {
                       font.pixelSize: 11
                       font.bold: true
                       color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
+                      Layout.fillWidth: true
+                      elide: Text.ElideRight
                     }
                     Text {
                       text: modelData.exec
                       font.family: "Segoe UI"
                       font.pixelSize: 9
                       color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.70) : Qt.rgba(0, 0, 0, 0.60)
+                      Layout.fillWidth: true
+                      elide: Text.ElideRight
                     }
                   }
                 }

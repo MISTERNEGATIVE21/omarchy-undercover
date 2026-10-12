@@ -2817,13 +2817,14 @@ ShellRoot {
                 // 1. Apple-style Wi-Fi Hero Toggle Card
                 Rectangle {
                   Layout.fillWidth: true
-                  implicitHeight: 74
+                  implicitHeight: Math.max(74, wifiHeroRow.implicitHeight + 32)
                   radius: 10
                   color: settingsWin.cardBg
                   border.color: settingsWin.cardBorder
                   border.width: 1
 
                   RowLayout {
+                    id: wifiHeroRow
                     anchors.fill: parent
                     anchors.margins: 16
                     spacing: 14
@@ -2843,17 +2844,22 @@ ShellRoot {
                       Layout.fillWidth: true
                       spacing: 2
                       Text {
+                        Layout.fillWidth: true
                         text: "Wi-Fi"
                         font.family: "SF Pro Text, -apple-system, sans-serif"
                         font.pixelSize: 13
                         font.weight: Font.DemiBold
                         color: settingsWin.textPrimary
+                        elide: Text.ElideRight
                       }
                       Text {
+                        Layout.fillWidth: true
                         text: settingsService.wifiEnabled ? (settingsService.wifiActiveSsid ? "Connected to " + settingsService.wifiActiveSsid : "Looking for networks nearby...") : "Wi-Fi is Off"
                         font.family: "SF Pro Text, -apple-system, sans-serif"
                         font.pixelSize: 11
                         color: settingsWin.textSecondary
+                        wrapMode: Text.WordWrap
+                        elide: Text.ElideRight
                       }
                     }
 
@@ -2880,13 +2886,14 @@ ShellRoot {
                 Rectangle {
                   visible: settingsService.wifiEnabled && settingsService.wifiActiveSsid !== ""
                   Layout.fillWidth: true
-                  implicitHeight: 74
+                  implicitHeight: Math.max(74, wifiActRow.implicitHeight + 32)
                   radius: 10
                   color: settingsWin.cardBg
                   border.color: settingsWin.cardBorder
                   border.width: 1
 
                   RowLayout {
+                    id: wifiActRow
                     anchors.fill: parent
                     anchors.margins: 16
                     spacing: 14
@@ -2897,17 +2904,22 @@ ShellRoot {
                       Layout.fillWidth: true
                       spacing: 2
                       Text {
+                        Layout.fillWidth: true
                         text: settingsService.wifiActiveSsid
                         font.family: "SF Pro Text, -apple-system, sans-serif"
                         font.pixelSize: 13
                         font.weight: Font.DemiBold
                         color: settingsWin.textPrimary
+                        elide: Text.ElideRight
                       }
                       Text {
+                        Layout.fillWidth: true
                         text: "Connected, Secured • Known Network"
                         font.family: "SF Pro Text, -apple-system, sans-serif"
                         font.pixelSize: 11
                         color: "#34c759"
+                        wrapMode: Text.WordWrap
+                        elide: Text.ElideRight
                       }
                     }
 
@@ -3168,13 +3180,14 @@ ShellRoot {
                 // 1. Apple-style Bluetooth Hero Toggle Card
                 Rectangle {
                   Layout.fillWidth: true
-                  implicitHeight: 74
+                  implicitHeight: Math.max(74, btHeroRow.implicitHeight + 32)
                   radius: 10
                   color: settingsWin.cardBg
                   border.color: settingsWin.cardBorder
                   border.width: 1
 
                   RowLayout {
+                    id: btHeroRow
                     anchors.fill: parent
                     anchors.margins: 16
                     spacing: 14
@@ -3194,17 +3207,22 @@ ShellRoot {
                       Layout.fillWidth: true
                       spacing: 2
                       Text {
+                        Layout.fillWidth: true
                         text: "Bluetooth"
                         font.family: "SF Pro Text, -apple-system, sans-serif"
                         font.pixelSize: 13
                         font.weight: Font.DemiBold
                         color: settingsWin.textPrimary
+                        elide: Text.ElideRight
                       }
                       Text {
+                        Layout.fillWidth: true
                         text: settingsService.btEnabled ? "Now discoverable as \"Omarchy Mac\"" : "Bluetooth is Off"
                         font.family: "SF Pro Text, -apple-system, sans-serif"
                         font.pixelSize: 11
                         color: settingsWin.textSecondary
+                        wrapMode: Text.WordWrap
+                        elide: Text.ElideRight
                       }
                     }
 
@@ -4198,13 +4216,14 @@ ShellRoot {
                   // macOS Tahoe Dark (Flagship Default)
                   Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 74
+                    implicitHeight: Math.max(74, dCardRow1.implicitHeight + 28)
                     radius: 8
                     color: settingsWin.cardBg
                     border.color: (settingsWin.currentDisguise === "mac-dark" || settingsWin.currentDisguise === "mac-tahoe-dark") ? settingsWin.accentColor : settingsWin.cardBorder
                     border.width: (settingsWin.currentDisguise === "mac-dark" || settingsWin.currentDisguise === "mac-tahoe-dark") ? 2 : 1
 
                     RowLayout {
+                      id: dCardRow1
                       anchors.fill: parent
                       anchors.margins: 14
                       spacing: 12
@@ -4216,8 +4235,8 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "macOS Tahoe (Dark)" + ((settingsWin.currentDisguise === "mac-dark" || settingsWin.currentDisguise === "mac-tahoe-dark") ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary }
-                        Text { text: "Alpine vista, frosted glass menu bar, Stage Manager & SF Pro fonts"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
+                        Text { Layout.fillWidth: true; text: "macOS Tahoe (Dark)" + ((settingsWin.currentDisguise === "mac-dark" || settingsWin.currentDisguise === "mac-tahoe-dark") ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary; elide: Text.ElideRight }
+                        Text { Layout.fillWidth: true; text: "Alpine vista, frosted glass menu bar, Stage Manager & SF Pro fonts"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary; wrapMode: Text.WordWrap; elide: Text.ElideRight }
                       }
                     }
                     MouseArea {
@@ -4230,13 +4249,14 @@ ShellRoot {
                   // macOS Tahoe Light
                   Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 74
+                    implicitHeight: Math.max(74, dCardRow2.implicitHeight + 28)
                     radius: 8
                     color: settingsWin.cardBg
                     border.color: (settingsWin.currentDisguise === "mac-light" || settingsWin.currentDisguise === "mac-tahoe-light") ? settingsWin.accentColor : settingsWin.cardBorder
                     border.width: (settingsWin.currentDisguise === "mac-light" || settingsWin.currentDisguise === "mac-tahoe-light") ? 2 : 1
 
                     RowLayout {
+                      id: dCardRow2
                       anchors.fill: parent
                       anchors.margins: 14
                       spacing: 12
@@ -4248,8 +4268,8 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "macOS Tahoe (Light)" + ((settingsWin.currentDisguise === "mac-light" || settingsWin.currentDisguise === "mac-tahoe-light") ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary }
-                        Text { text: "Solar alpine glass menu bar, high vibrancy dock & Stage Manager"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
+                        Text { Layout.fillWidth: true; text: "macOS Tahoe (Light)" + ((settingsWin.currentDisguise === "mac-light" || settingsWin.currentDisguise === "mac-tahoe-light") ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary; elide: Text.ElideRight }
+                        Text { Layout.fillWidth: true; text: "Solar alpine glass menu bar, high vibrancy dock & Stage Manager"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary; wrapMode: Text.WordWrap; elide: Text.ElideRight }
                       }
                     }
                     MouseArea {
@@ -4262,13 +4282,14 @@ ShellRoot {
                   // macOS Sequoia Dark
                   Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 74
+                    implicitHeight: Math.max(74, dCardRow3.implicitHeight + 28)
                     radius: 8
                     color: settingsWin.cardBg
                     border.color: (settingsWin.currentDisguise === "mac-sequoia-dark" || settingsWin.currentDisguise === "mac-sequoia") ? settingsWin.accentColor : settingsWin.cardBorder
                     border.width: (settingsWin.currentDisguise === "mac-sequoia-dark" || settingsWin.currentDisguise === "mac-sequoia") ? 2 : 1
 
                     RowLayout {
+                      id: dCardRow3
                       anchors.fill: parent
                       anchors.margins: 14
                       spacing: 12
@@ -4280,8 +4301,8 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "macOS Sequoia (Dark)" + ((settingsWin.currentDisguise === "mac-sequoia-dark" || settingsWin.currentDisguise === "mac-sequoia") ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary }
-                        Text { text: "Classic Sequoia dark redwood theme, menu bar & dynamic dock"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
+                        Text { Layout.fillWidth: true; text: "macOS Sequoia (Dark)" + ((settingsWin.currentDisguise === "mac-sequoia-dark" || settingsWin.currentDisguise === "mac-sequoia") ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary; elide: Text.ElideRight }
+                        Text { Layout.fillWidth: true; text: "Classic Sequoia dark redwood theme, menu bar & dynamic dock"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary; wrapMode: Text.WordWrap; elide: Text.ElideRight }
                       }
                     }
                     MouseArea {
@@ -4294,13 +4315,14 @@ ShellRoot {
                   // macOS Sequoia Light
                   Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 74
+                    implicitHeight: Math.max(74, dCardRow4.implicitHeight + 28)
                     radius: 8
                     color: settingsWin.cardBg
                     border.color: (settingsWin.currentDisguise === "mac-sequoia-light") ? settingsWin.accentColor : settingsWin.cardBorder
                     border.width: (settingsWin.currentDisguise === "mac-sequoia-light") ? 2 : 1
 
                     RowLayout {
+                      id: dCardRow4
                       anchors.fill: parent
                       anchors.margins: 14
                       spacing: 12
@@ -4312,8 +4334,8 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "macOS Sequoia (Light)" + (settingsWin.currentDisguise === "mac-sequoia-light" ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary }
-                        Text { text: "Classic Sequoia solar redwood light glass theme"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
+                        Text { Layout.fillWidth: true; text: "macOS Sequoia (Light)" + (settingsWin.currentDisguise === "mac-sequoia-light" ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary; elide: Text.ElideRight }
+                        Text { Layout.fillWidth: true; text: "Classic Sequoia solar redwood light glass theme"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary; wrapMode: Text.WordWrap; elide: Text.ElideRight }
                       }
                     }
                     MouseArea {
@@ -4326,13 +4348,14 @@ ShellRoot {
                   // Windows 11 Dark
                   Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 74
+                    implicitHeight: Math.max(74, dCardRow5.implicitHeight + 28)
                     radius: 8
                     color: settingsWin.cardBg
                     border.color: (settingsWin.currentDisguise === "win11-dark") ? settingsWin.accentColor : settingsWin.cardBorder
                     border.width: (settingsWin.currentDisguise === "win11-dark") ? 2 : 1
 
                     RowLayout {
+                      id: dCardRow5
                       anchors.fill: parent
                       anchors.margins: 14
                       spacing: 12
@@ -4344,8 +4367,8 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "Windows 11 Fluent (Dark)" + (settingsWin.currentDisguise === "win11-dark" ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary }
-                        Text { text: "Centered Mica taskbar, Start Menu & Segoe UI"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
+                        Text { Layout.fillWidth: true; text: "Windows 11 Fluent (Dark)" + (settingsWin.currentDisguise === "win11-dark" ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary; elide: Text.ElideRight }
+                        Text { Layout.fillWidth: true; text: "Centered Mica taskbar, Start Menu & Segoe UI"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary; wrapMode: Text.WordWrap; elide: Text.ElideRight }
                       }
                     }
                     MouseArea {
@@ -4358,13 +4381,14 @@ ShellRoot {
                   // Windows 11 Light
                   Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 74
+                    implicitHeight: Math.max(74, dCardRow6.implicitHeight + 28)
                     radius: 8
                     color: settingsWin.cardBg
                     border.color: (settingsWin.currentDisguise === "win11-light") ? settingsWin.accentColor : settingsWin.cardBorder
                     border.width: (settingsWin.currentDisguise === "win11-light") ? 2 : 1
 
                     RowLayout {
+                      id: dCardRow6
                       anchors.fill: parent
                       anchors.margins: 14
                       spacing: 12
@@ -4376,8 +4400,8 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "Windows 11 Fluent (Light)" + (settingsWin.currentDisguise === "win11-light" ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary }
-                        Text { text: "Solar Light taskbar, Fluent Start & Segoe UI"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
+                        Text { Layout.fillWidth: true; text: "Windows 11 Fluent (Light)" + (settingsWin.currentDisguise === "win11-light" ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary; elide: Text.ElideRight }
+                        Text { Layout.fillWidth: true; text: "Solar Light taskbar, Fluent Start & Segoe UI"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary; wrapMode: Text.WordWrap; elide: Text.ElideRight }
                       }
                     }
                     MouseArea {
@@ -4390,13 +4414,14 @@ ShellRoot {
                   // Restore Default Omarchy Desktop
                   Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: 74
+                    implicitHeight: Math.max(74, dCardRow7.implicitHeight + 28)
                     radius: 8
                     color: settingsWin.cardBg
                     border.color: (settingsWin.currentDisguise === "omarchy") ? "#34c759" : settingsWin.cardBorder
                     border.width: (settingsWin.currentDisguise === "omarchy") ? 2 : 1
 
                     RowLayout {
+                      id: dCardRow7
                       anchors.fill: parent
                       anchors.margins: 14
                       spacing: 12
@@ -4408,8 +4433,8 @@ ShellRoot {
                       }
                       ColumnLayout {
                         Layout.fillWidth: true
-                        Text { text: "Restore Default Omarchy Desktop" + (settingsWin.currentDisguise === "omarchy" ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary }
-                        Text { text: "Revert camouflage, top bar branding, GTK & baseline"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary }
+                        Text { Layout.fillWidth: true; text: "Restore Default Omarchy Desktop" + (settingsWin.currentDisguise === "omarchy" ? " — Active" : ""); font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 12; font.bold: true; color: settingsWin.textPrimary; elide: Text.ElideRight }
+                        Text { Layout.fillWidth: true; text: "Revert camouflage, top bar branding, GTK & baseline"; font.family: "SF Pro Text, -apple-system, sans-serif"; font.pixelSize: 10; color: settingsWin.textSecondary; wrapMode: Text.WordWrap; elide: Text.ElideRight }
                       }
                     }
                     MouseArea {
@@ -4806,10 +4831,10 @@ ShellRoot {
                       spacing: 10
 
                       property var scalePresets: [
-                        { label: "Larger Text", scale: 1.5, pct: "150%" },
-                        { label: "Default", scale: 1.25, pct: "125%" },
-                        { label: "Native", scale: 1.0, pct: "100%" },
-                        { label: "More Space", scale: 0.8, pct: "80%" }
+                        { label: "Larger Text", scale: 2.0, pct: "200%" },
+                        { label: "Default", scale: 1.6, pct: "160%" },
+                        { label: "Medium", scale: 1.25, pct: "125%" },
+                        { label: "Native", scale: 1.0, pct: "100%" }
                       ]
 
                       Repeater {
@@ -4861,7 +4886,7 @@ ShellRoot {
                             onClicked: {
                               if (settingsService.monitors.length > 0) {
                                 var m = settingsService.monitors[0]
-                                var desc = m.description || m.name
+                                var desc = m.name || m.description || m.output
                                 settingsService.setMonitorScale(desc, modelData.scale)
                               }
                             }
@@ -4883,7 +4908,7 @@ ShellRoot {
                       }
                       Item { Layout.fillWidth: true }
 
-                      property var numScales: [1.0, 1.25, 1.5, 1.75, 2.0]
+                      property var numScales: [1.0, 1.25, 1.6, 2.0, 3.0]
                       Repeater {
                         model: parent.numScales
                         delegate: Rectangle {
@@ -4891,7 +4916,7 @@ ShellRoot {
                           readonly property bool isSelected: {
                             if (settingsService.monitors.length > 0) {
                               var cur = settingsService.monitors[0].scale || 1.0
-                              return Math.abs(cur - modelData) < 0.05
+                              return Math.abs(cur - modelData) < 0.08
                             }
                             return modelData === 1.0
                           }
@@ -4916,7 +4941,7 @@ ShellRoot {
                             onClicked: {
                               if (settingsService.monitors.length > 0) {
                                 var m = settingsService.monitors[0]
-                                var desc = m.description || m.name
+                                var desc = m.name || m.description || m.output
                                 settingsService.setMonitorScale(desc, modelData)
                               }
                             }
