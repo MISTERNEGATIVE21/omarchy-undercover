@@ -746,20 +746,60 @@ ShellRoot {
                     opacity: 0.6
                   }
 
-                  TextInput {
+                  Item {
                     id: searchInput
                     Layout.fillWidth: true
-                    font.family: "SF Pro Text, -apple-system, sans-serif"
-                    font.pixelSize: 12
-                    color: settingsWin.textPrimary
-                    clip: true
-                    Text {
-                      visible: !searchInput.text
-                      text: "Search"
-                      font.family: "SF Pro Text, -apple-system, sans-serif"
-                      font.pixelSize: 12
-                      color: settingsWin.textSecondary
+                    implicitHeight: 20
+                    property string text: ""
+                    focus: true
+
+                    RowLayout {
+                      anchors.fill: parent
+                      spacing: 0
+                      Text {
+                        id: searchTextDisplay
+                        visible: searchInput.text.length > 0
+                        text: searchInput.text
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 12
+                        color: settingsWin.textPrimary
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
+                      }
+                      Text {
+                        visible: searchInput.text.length === 0
+                        text: "Search"
+                        font.family: "SF Pro Text, -apple-system, sans-serif"
+                        font.pixelSize: 12
+                        color: settingsWin.textSecondary
+                        Layout.fillWidth: true
+                      }
                     }
+
+                    MouseArea {
+                      anchors.fill: parent
+                      cursorShape: Qt.IBeamCursor
+                      onClicked: searchInput.forceActiveFocus()
+                    }
+
+                    Keys.onPressed: function(event) {
+                      if (event.key === Qt.Key_Backspace) {
+                        if (text.length > 0) {
+                          text = text.slice(0, -1)
+                          event.accepted = true
+                        }
+                      } else if (event.key === Qt.Key_Escape) {
+                        text = ""
+                        searchInput.focus = false
+                        event.accepted = true
+                      } else if (event.text && event.text.length > 0 && event.text >= ' ') {
+                        if (text.length < 64) {
+                          text += event.text
+                        }
+                        event.accepted = true
+                      }
+                    }
+
                     onTextChanged: settingsWin.searchQuery = text.toLowerCase()
                   }
                 }
@@ -5041,7 +5081,7 @@ ShellRoot {
                             onClicked: {
                               if (settingsService.monitors.length > 0) {
                                 var m = settingsService.monitors[0]
-                                var desc = m.description || m.name
+                                var desc = m.name || m.output || m.description
                                 var w = m.width || 1920
                                 var h = m.height || 1080
                                 settingsService.setMonitorMode(desc, w + "x" + h + "@" + modelData)

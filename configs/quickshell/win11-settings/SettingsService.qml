@@ -35,73 +35,72 @@ Item {
     return Quickshell.env("HOME") + "/omarchy-undercover"
   }
 
-  function runCmd(cmd) {
-    Quickshell.execDetached([
-      "bash", "-c",
-      "export PATH=\"" + root.pluginDir + "/scripts:$PATH\"; " + cmd
-    ])
-  }
-
   function refresh() {
     if (!statePoller.running) statePoller.running = true
   }
 
   function setMonitorScale(desc, scale) {
-    runCmd("if command -v omarchy-hyprland-monitor-scaling >/dev/null 2>&1; then omarchy-hyprland-monitor-scaling " + scale + "; else omarchy-settings-engine monitors scale '" + desc + "' " + scale + "; fi")
+    if (typeof desc !== "string" || !desc) return
+    Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-settings-engine", "monitors", "scale", desc, String(scale)])
     refreshTimer.restart()
   }
 
   function setMonitorMode(desc, mode) {
-    runCmd("omarchy-settings-engine monitors mode '" + desc + "' '" + mode + "'")
+    if (typeof desc !== "string" || !desc || typeof mode !== "string" || !mode) return
+    Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-settings-engine", "monitors", "mode", desc, mode])
     refreshTimer.restart()
   }
 
   function setMonitorTransform(desc, transform) {
-    runCmd("omarchy-settings-engine monitors transform '" + desc + "' " + transform)
+    if (typeof desc !== "string" || !desc) return
+    Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-settings-engine", "monitors", "transform", desc, String(transform)])
     refreshTimer.restart()
   }
 
   function setMonitorVrr(desc, vrr) {
-    runCmd("omarchy-settings-engine monitors vrr '" + desc + "' " + vrr)
+    if (typeof desc !== "string" || !desc) return
+    Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-settings-engine", "monitors", "vrr", desc, String(vrr)])
     refreshTimer.restart()
   }
 
   function setMonitorMirror(desc, target) {
-    runCmd("omarchy-settings-engine monitors mirror '" + desc + "' '" + (target || "none") + "'")
+    if (typeof desc !== "string" || !desc) return
+    Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-settings-engine", "monitors", "mirror", desc, String(target || "none")])
     refreshTimer.restart()
   }
 
   function setMonitorDisabled(desc, disabled) {
-    runCmd("omarchy-settings-engine monitors disabled '" + desc + "' " + (disabled ? "true" : "false"))
+    if (typeof desc !== "string" || !desc) return
+    Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-settings-engine", "monitors", "disabled", desc, disabled ? "true" : "false"])
     refreshTimer.restart()
   }
 
   function setProjectionMode(mode) {
     root.projectionMode = mode
-    runCmd("omarchy-settings-engine monitors project " + mode)
+    Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-settings-engine", "monitors", "project", String(mode)])
     refreshTimer.restart()
   }
 
   function saveMonitorProfile(name) {
-    if (!name) return
-    runCmd("omarchy-settings-engine monitors profile save '" + name + "'")
+    if (typeof name !== "string" || !name) return
+    Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-settings-engine", "monitors", "profile", "save", name])
     refreshTimer.restart()
   }
 
   function applyMonitorProfile(name) {
-    if (!name) return
-    runCmd("omarchy-settings-engine monitors profile apply '" + name + "'")
+    if (typeof name !== "string" || !name) return
+    Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-settings-engine", "monitors", "profile", "apply", name])
     refreshTimer.restart()
   }
 
   function deleteMonitorProfile(name) {
-    if (!name) return
-    runCmd("omarchy-settings-engine monitors profile delete '" + name + "'")
+    if (typeof name !== "string" || !name) return
+    Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-settings-engine", "monitors", "profile", "delete", name])
     refreshTimer.restart()
   }
 
   function identifyDisplays() {
-    runCmd("omarchy-display-identify 2>/dev/null || omarchy-settings-engine monitors identify 2>/dev/null")
+    Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-settings-engine", "monitors", "identify"])
   }
 
   function scanWifi() {
@@ -174,29 +173,29 @@ Item {
   }
 
   function setPowerProfile(profile) {
+    if (typeof profile !== "string" || !profile) return
     root.powerProfile = profile
-    runCmd("omarchy-settings-engine power profile ac " + profile + " 2>/dev/null; omarchy-settings-engine power profile battery " + profile + " 2>/dev/null; powerprofilesctl set " + profile + " 2>/dev/null")
+    Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-settings-engine", "power", "profile", "ac", profile])
+    Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-settings-engine", "power", "profile", "battery", profile])
     refreshTimer.restart()
   }
 
   function setDeviceOption(device, opt, val, kind) {
-    runCmd("omarchy-settings-engine devices set '" + device + "' '" + opt + "' '" + val + "' " + (kind || "pointer"))
+    if (typeof device !== "string" || !device) return
+    Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-settings-engine", "devices", "set", device, String(opt), String(val), String(kind || "pointer")])
     refreshTimer.restart()
   }
 
   function setHyprOption(key, val) {
-    runCmd("omarchy-settings-engine set " + key + " " + val)
+    if (typeof key !== "string" || !key) return
+    Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-settings-engine", "set", key, String(val)])
     refreshTimer.restart()
   }
 
   Process {
     id: statePoller
     running: true
-    command: [
-      "bash", "-c",
-      "export PATH=\"" + root.pluginDir + "/scripts:$PATH\"; " +
-      "omarchy-settings-engine state 2>/dev/null || bash " + root.pluginDir + "/scripts/omarchy-settings-engine state 2>/dev/null"
-    ]
+    command: [root.pluginDir + "/scripts/omarchy-settings-engine", "state"]
     stdout: SplitParser {
       splitMarker: "\n"
       onRead: function(line) {
