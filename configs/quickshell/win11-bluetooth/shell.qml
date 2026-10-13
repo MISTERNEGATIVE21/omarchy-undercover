@@ -421,23 +421,60 @@ ShellRoot {
               Layout.alignment: Qt.AlignVCenter
             }
 
-            TextInput {
+            Item {
               id: win11BtSearch
               Layout.fillWidth: true
               Layout.fillHeight: true
-              verticalAlignment: TextInput.AlignVCenter
-              color: btWindow.textPrimary
-              font.family: "Segoe UI, sans-serif"
-              font.pixelSize: 12
+              property string text: ""
+              focus: true
               clip: true
-              onTextChanged: btWindow.searchText = text
+
+              Text {
+                text: win11BtSearch.text
+                color: btWindow.textPrimary
+                font.family: "Segoe UI, sans-serif"
+                font.pixelSize: 12
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.right: parent.right
+                elide: Text.ElideRight
+                visible: win11BtSearch.text.length > 0
+              }
 
               Text {
                 text: "Search Bluetooth devices..."
                 color: btWindow.textMuted
-                font: win11BtSearch.font
+                font.family: "Segoe UI, sans-serif"
+                font.pixelSize: 12
                 visible: !win11BtSearch.text && !win11BtSearch.activeFocus
                 anchors.verticalCenter: parent.verticalCenter
+              }
+
+              MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.IBeamCursor
+                onClicked: win11BtSearch.forceActiveFocus()
+              }
+
+              Keys.onPressed: function(event) {
+                if (event.key === Qt.Key_Backspace) {
+                  if (text.length > 0) {
+                    text = text.slice(0, -1)
+                    btWindow.searchText = text
+                    event.accepted = true
+                  }
+                } else if (event.key === Qt.Key_Escape) {
+                  text = ""
+                  btWindow.searchText = ""
+                  win11BtSearch.focus = false
+                  event.accepted = true
+                } else if (event.text && event.text.length > 0 && event.text >= ' ') {
+                  if (text.length < 64) {
+                    text += event.text
+                    btWindow.searchText = text
+                  }
+                  event.accepted = true
+                }
               }
             }
 

@@ -519,21 +519,25 @@ PanelWindow {
                             anchors.rightMargin: 6
                             spacing: 6
 
-                            TextInput {
+                            Item {
                                 id: pwdInput
                                 Layout.fillWidth: true
-                                verticalAlignment: TextInput.AlignVCenter
-                                font.family: "SF Pro Text, -apple-system, sans-serif"
-                                font.pixelSize: 13
-                                color: "#ffffff"
-                                echoMode: TextInput.Password
-                                passwordCharacter: "•"
-                                clip: true
-                                selectByMouse: true
+                                property string text: ""
                                 focus: surface.locked
+                                clip: true
 
                                 Text {
-                                    visible: !pwdInput.text && !pwdInput.inputMethodComposing
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    text: "•".repeat(pwdInput.text.length)
+                                    font.family: "SF Pro Text, -apple-system, sans-serif"
+                                    font.pixelSize: 13
+                                    color: "#ffffff"
+                                }
+
+                                Text {
+                                    visible: pwdInput.text.length === 0
                                     text: "Enter Password"
                                     anchors.fill: parent
                                     verticalAlignment: Text.AlignVCenter
@@ -542,16 +546,36 @@ PanelWindow {
                                     color: Qt.rgba(255, 255, 255, 0.5)
                                 }
 
-                                Keys.onReturnPressed: surface.submitPassword()
-                                Keys.onEnterPressed: surface.submitPassword()
-                                Keys.onEscapePressed: {
-                                    if (surface.isPreview) {
-                                        surface.requestDismiss();
-                                    } else {
-                                        surface.locked = false;
-                                        surface.failureMessage = "";
-                                        surface.pendingPassword = "";
-                                        pwdInput.text = "";
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.IBeamCursor
+                                    onClicked: pwdInput.forceActiveFocus()
+                                }
+
+                                Keys.onPressed: function(event) {
+                                    if (event.key === Qt.Key_Backspace) {
+                                        if (text.length > 0) {
+                                            text = text.slice(0, -1);
+                                            event.accepted = true;
+                                        }
+                                    } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                        surface.submitPassword();
+                                        event.accepted = true;
+                                    } else if (event.key === Qt.Key_Escape) {
+                                        if (surface.isPreview) {
+                                            surface.requestDismiss();
+                                        } else {
+                                            surface.locked = false;
+                                            surface.failureMessage = "";
+                                            surface.pendingPassword = "";
+                                            pwdInput.text = "";
+                                        }
+                                        event.accepted = true;
+                                    } else if (event.text && event.text.length > 0 && event.text >= ' ') {
+                                        if (text.length < 128) {
+                                            text += event.text;
+                                        }
+                                        event.accepted = true;
                                     }
                                 }
                             }

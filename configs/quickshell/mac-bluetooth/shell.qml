@@ -324,23 +324,60 @@ ShellRoot {
               Layout.alignment: Qt.AlignVCenter
             }
 
-            TextInput {
+            Item {
               id: macBtSearchBox
               Layout.fillWidth: true
               Layout.fillHeight: true
-              verticalAlignment: TextInput.AlignVCenter
-              color: macBtWindow.isDark ? "#ffffff" : "#1a1a1a"
-              font.family: "SF Pro Text"
-              font.pixelSize: 12
+              property string text: ""
+              focus: true
               clip: true
-              onTextChanged: macBtWindow.searchText = text
+
+              Text {
+                text: macBtSearchBox.text
+                color: macBtWindow.isDark ? "#ffffff" : "#1a1a1a"
+                font.family: "SF Pro Text"
+                font.pixelSize: 12
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.right: parent.right
+                elide: Text.ElideRight
+                visible: macBtSearchBox.text.length > 0
+              }
 
               Text {
                 text: "Search Bluetooth devices..."
                 color: macBtWindow.isDark ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(0, 0, 0, 0.4)
-                font: macBtSearchBox.font
+                font.family: "SF Pro Text"
+                font.pixelSize: 12
                 visible: !macBtSearchBox.text && !macBtSearchBox.activeFocus
                 anchors.verticalCenter: parent.verticalCenter
+              }
+
+              MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.IBeamCursor
+                onClicked: macBtSearchBox.forceActiveFocus()
+              }
+
+              Keys.onPressed: function(event) {
+                if (event.key === Qt.Key_Backspace) {
+                  if (text.length > 0) {
+                    text = text.slice(0, -1)
+                    macBtWindow.searchText = text
+                    event.accepted = true
+                  }
+                } else if (event.key === Qt.Key_Escape) {
+                  text = ""
+                  macBtWindow.searchText = ""
+                  macBtSearchBox.focus = false
+                  event.accepted = true
+                } else if (event.text && event.text.length > 0 && event.text >= ' ') {
+                  if (text.length < 64) {
+                    text += event.text
+                    macBtWindow.searchText = text
+                  }
+                  event.accepted = true
+                }
               }
             }
 

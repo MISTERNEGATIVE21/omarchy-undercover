@@ -1312,23 +1312,60 @@ ShellRoot {
               Layout.alignment: Qt.AlignVCenter
             }
 
-            TextInput {
+            Item {
               id: macWifiSearchBox
               Layout.fillWidth: true
               Layout.fillHeight: true
-              verticalAlignment: TextInput.AlignVCenter
-              color: controlCenterWindow.isLight ? "#1a1a1a" : "#ffffff"
-              font.family: "SF Pro Text"
-              font.pixelSize: 11
+              property string text: ""
+              focus: true
               clip: true
-              onTextChanged: controlCenterWindow.wifiSearchText = text
+
+              Text {
+                text: macWifiSearchBox.text
+                color: controlCenterWindow.isLight ? "#1a1a1a" : "#ffffff"
+                font.family: "SF Pro Text"
+                font.pixelSize: 11
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.right: parent.right
+                elide: Text.ElideRight
+                visible: macWifiSearchBox.text.length > 0
+              }
 
               Text {
                 text: "Search Wi-Fi networks..."
                 color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.4) : Qt.rgba(1, 1, 1, 0.4)
-                font: macWifiSearchBox.font
+                font.family: "SF Pro Text"
+                font.pixelSize: 11
                 visible: !macWifiSearchBox.text && !macWifiSearchBox.activeFocus
                 anchors.verticalCenter: parent.verticalCenter
+              }
+
+              MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.IBeamCursor
+                onClicked: macWifiSearchBox.forceActiveFocus()
+              }
+
+              Keys.onPressed: function(event) {
+                if (event.key === Qt.Key_Backspace) {
+                  if (text.length > 0) {
+                    text = text.slice(0, -1)
+                    controlCenterWindow.wifiSearchText = text
+                    event.accepted = true
+                  }
+                } else if (event.key === Qt.Key_Escape) {
+                  text = ""
+                  controlCenterWindow.wifiSearchText = ""
+                  macWifiSearchBox.focus = false
+                  event.accepted = true
+                } else if (event.text && event.text.length > 0 && event.text >= ' ') {
+                  if (text.length < 64) {
+                    text += event.text
+                    controlCenterWindow.wifiSearchText = text
+                  }
+                  event.accepted = true
+                }
               }
             }
 
@@ -1482,21 +1519,53 @@ ShellRoot {
                   anchors.margins: 4
                   spacing: 6
 
-                  TextInput {
+                  Item {
                     id: macPwInput
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    verticalAlignment: TextInput.AlignVCenter
-                    font.pixelSize: 11
-                    color: controlCenterWindow.isLight ? "#1a1a1a" : "#ffffff"
-                    echoMode: TextInput.Password
+                    property string text: ""
+                    focus: true
                     clip: true
-                    onTextChanged: controlCenterWindow.wifiPasswordInput = text
-                    onAccepted: {
-                      controlCenterWindow.connectWifi(modelData.ssid, macPwInput.text)
-                      macPwInput.text = ""
-                      controlCenterWindow.connectingSsid = ""
-                      controlCenterWindow.triggerWifiScan()
+
+                    Text {
+                      anchors.verticalCenter: parent.verticalCenter
+                      anchors.left: parent.left
+                      anchors.right: parent.right
+                      text: "•".repeat(macPwInput.text.length)
+                      font.pixelSize: 11
+                      color: controlCenterWindow.isLight ? "#1a1a1a" : "#ffffff"
+                    }
+
+                    MouseArea {
+                      anchors.fill: parent
+                      cursorShape: Qt.IBeamCursor
+                      onClicked: macPwInput.forceActiveFocus()
+                    }
+
+                    Keys.onPressed: function(event) {
+                      if (event.key === Qt.Key_Backspace) {
+                        if (text.length > 0) {
+                          text = text.slice(0, -1)
+                          controlCenterWindow.wifiPasswordInput = text
+                          event.accepted = true
+                        }
+                      } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                        controlCenterWindow.connectWifi(modelData.ssid, macPwInput.text)
+                        macPwInput.text = ""
+                        controlCenterWindow.connectingSsid = ""
+                        controlCenterWindow.triggerWifiScan()
+                        event.accepted = true
+                      } else if (event.key === Qt.Key_Escape) {
+                        text = ""
+                        controlCenterWindow.wifiPasswordInput = ""
+                        event.accepted = true
+                      } else if (event.text && event.text.length > 0 && event.text >= ' ') {
+                        if (text.length < 64) {
+                          text += event.text
+                          controlCenterWindow.wifiPasswordInput = text
+                        }
+                        event.accepted = true
+                      }
                     }
                   }
 
@@ -1684,23 +1753,60 @@ ShellRoot {
               Layout.alignment: Qt.AlignVCenter
             }
 
-            TextInput {
+            Item {
               id: macBtSearchBox
               Layout.fillWidth: true
               Layout.fillHeight: true
-              verticalAlignment: TextInput.AlignVCenter
-              color: controlCenterWindow.isLight ? "#1a1a1a" : "#ffffff"
-              font.family: "SF Pro Text"
-              font.pixelSize: 11
+              property string text: ""
+              focus: true
               clip: true
-              onTextChanged: controlCenterWindow.btSearchText = text
+
+              Text {
+                text: macBtSearchBox.text
+                color: controlCenterWindow.isLight ? "#1a1a1a" : "#ffffff"
+                font.family: "SF Pro Text"
+                font.pixelSize: 11
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.right: parent.right
+                elide: Text.ElideRight
+                visible: macBtSearchBox.text.length > 0
+              }
 
               Text {
                 text: "Search Bluetooth devices..."
                 color: controlCenterWindow.isLight ? Qt.rgba(0, 0, 0, 0.4) : Qt.rgba(1, 1, 1, 0.4)
-                font: macBtSearchBox.font
+                font.family: "SF Pro Text"
+                font.pixelSize: 11
                 visible: !macBtSearchBox.text && !macBtSearchBox.activeFocus
                 anchors.verticalCenter: parent.verticalCenter
+              }
+
+              MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.IBeamCursor
+                onClicked: macBtSearchBox.forceActiveFocus()
+              }
+
+              Keys.onPressed: function(event) {
+                if (event.key === Qt.Key_Backspace) {
+                  if (text.length > 0) {
+                    text = text.slice(0, -1)
+                    controlCenterWindow.btSearchText = text
+                    event.accepted = true
+                  }
+                } else if (event.key === Qt.Key_Escape) {
+                  text = ""
+                  controlCenterWindow.btSearchText = ""
+                  macBtSearchBox.focus = false
+                  event.accepted = true
+                } else if (event.text && event.text.length > 0 && event.text >= ' ') {
+                  if (text.length < 64) {
+                    text += event.text
+                    controlCenterWindow.btSearchText = text
+                  }
+                  event.accepted = true
+                }
               }
             }
 

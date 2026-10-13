@@ -1344,23 +1344,60 @@ ShellRoot {
 
             Text { text: "󰍉"; font.pixelSize: 13; color: actionCenterWindow.textMuted; Layout.alignment: Qt.AlignVCenter }
  
-            TextInput {
+            Item {
               id: acWifiSearch
               Layout.fillWidth: true
               Layout.fillHeight: true
-              verticalAlignment: TextInput.AlignVCenter
-              color: actionCenterWindow.textPrimary
-              font.family: "Segoe UI, sans-serif"
-              font.pixelSize: 11
+              property string text: ""
+              focus: true
               clip: true
-              onTextChanged: actionCenterWindow.wifiSearchText = text
+
+              Text {
+                text: acWifiSearch.text
+                color: actionCenterWindow.textPrimary
+                font.family: "Segoe UI, sans-serif"
+                font.pixelSize: 11
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.right: parent.right
+                elide: Text.ElideRight
+                visible: acWifiSearch.text.length > 0
+              }
 
               Text {
                 text: "Search Wi-Fi networks..."
                 color: actionCenterWindow.textMuted
-                font: acWifiSearch.font
+                font.family: "Segoe UI, sans-serif"
+                font.pixelSize: 11
                 visible: !acWifiSearch.text && !acWifiSearch.activeFocus
                 anchors.verticalCenter: parent.verticalCenter
+              }
+
+              MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.IBeamCursor
+                onClicked: acWifiSearch.forceActiveFocus()
+              }
+
+              Keys.onPressed: function(event) {
+                if (event.key === Qt.Key_Backspace) {
+                  if (text.length > 0) {
+                    text = text.slice(0, -1)
+                    actionCenterWindow.wifiSearchText = text
+                    event.accepted = true
+                  }
+                } else if (event.key === Qt.Key_Escape) {
+                  text = ""
+                  actionCenterWindow.wifiSearchText = ""
+                  acWifiSearch.focus = false
+                  event.accepted = true
+                } else if (event.text && event.text.length > 0 && event.text >= ' ') {
+                  if (text.length < 64) {
+                    text += event.text
+                    actionCenterWindow.wifiSearchText = text
+                  }
+                  event.accepted = true
+                }
               }
             }
 
@@ -1729,22 +1766,54 @@ ShellRoot {
                     border.color: actionCenterWindow.isDark ? Qt.rgba(1, 1, 1, 0.20) : Qt.rgba(0, 0, 0, 0.18)
                     border.width: 1
 
-                    TextInput {
+                    Item {
                       id: acPwInput
                       anchors.fill: parent
                       anchors.leftMargin: 6
                       anchors.rightMargin: 6
-                      verticalAlignment: TextInput.AlignVCenter
-                      echoMode: TextInput.Password
-                      font.pixelSize: 11
-                      color: actionCenterWindow.textPrimary
-                      selectByMouse: true
-                      onTextChanged: actionCenterWindow.wifiPasswordInput = text
-                      onAccepted: {
-                        actionCenterWindow.connectWifi(modelData.ssid, acPwInput.text)
-                        acPwInput.text = ""
-                        actionCenterWindow.connectingSsid = ""
-                        actionCenterWindow.triggerWifiScan()
+                      property string text: ""
+                      focus: true
+                      clip: true
+
+                      Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        text: "•".repeat(acPwInput.text.length)
+                        font.pixelSize: 11
+                        color: actionCenterWindow.textPrimary
+                      }
+
+                      MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.IBeamCursor
+                        onClicked: acPwInput.forceActiveFocus()
+                      }
+
+                      Keys.onPressed: function(event) {
+                        if (event.key === Qt.Key_Backspace) {
+                          if (text.length > 0) {
+                            text = text.slice(0, -1)
+                            actionCenterWindow.wifiPasswordInput = text
+                            event.accepted = true
+                          }
+                        } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                          actionCenterWindow.connectWifi(modelData.ssid, acPwInput.text)
+                          acPwInput.text = ""
+                          actionCenterWindow.connectingSsid = ""
+                          actionCenterWindow.triggerWifiScan()
+                          event.accepted = true
+                        } else if (event.key === Qt.Key_Escape) {
+                          text = ""
+                          actionCenterWindow.wifiPasswordInput = ""
+                          event.accepted = true
+                        } else if (event.text && event.text.length > 0 && event.text >= ' ') {
+                          if (text.length < 64) {
+                            text += event.text
+                            actionCenterWindow.wifiPasswordInput = text
+                          }
+                          event.accepted = true
+                        }
                       }
                     }
                   }
@@ -1977,23 +2046,60 @@ ShellRoot {
 
             Text { text: "󰍉"; font.pixelSize: 13; color: actionCenterWindow.textMuted; Layout.alignment: Qt.AlignVCenter }
 
-            TextInput {
+            Item {
               id: acBtSearch
               Layout.fillWidth: true
               Layout.fillHeight: true
-              verticalAlignment: TextInput.AlignVCenter
-              color: actionCenterWindow.textPrimary
-              font.family: "Segoe UI, sans-serif"
-              font.pixelSize: 11
+              property string text: ""
+              focus: true
               clip: true
-              onTextChanged: actionCenterWindow.btSearchText = text
+
+              Text {
+                text: acBtSearch.text
+                color: actionCenterWindow.textPrimary
+                font.family: "Segoe UI, sans-serif"
+                font.pixelSize: 11
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.right: parent.right
+                elide: Text.ElideRight
+                visible: acBtSearch.text.length > 0
+              }
 
               Text {
                 text: "Search Bluetooth devices..."
                 color: actionCenterWindow.textMuted
-                font: acBtSearch.font
+                font.family: "Segoe UI, sans-serif"
+                font.pixelSize: 11
                 visible: !acBtSearch.text && !acBtSearch.activeFocus
                 anchors.verticalCenter: parent.verticalCenter
+              }
+
+              MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.IBeamCursor
+                onClicked: acBtSearch.forceActiveFocus()
+              }
+
+              Keys.onPressed: function(event) {
+                if (event.key === Qt.Key_Backspace) {
+                  if (text.length > 0) {
+                    text = text.slice(0, -1)
+                    actionCenterWindow.btSearchText = text
+                    event.accepted = true
+                  }
+                } else if (event.key === Qt.Key_Escape) {
+                  text = ""
+                  actionCenterWindow.btSearchText = ""
+                  acBtSearch.focus = false
+                  event.accepted = true
+                } else if (event.text && event.text.length > 0 && event.text >= ' ') {
+                  if (text.length < 64) {
+                    text += event.text
+                    actionCenterWindow.btSearchText = text
+                  }
+                  event.accepted = true
+                }
               }
             }
 

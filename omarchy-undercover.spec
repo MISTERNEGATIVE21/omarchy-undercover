@@ -1,5 +1,5 @@
 Name:           omarchy-undercover
-Version:        7.4.4
+Version:        7.4.5
 Release:        1%{?dist}
 Summary:        Camouflage & desktop transformation suite (macOS Sequoia & Windows 11 Fluent) for Omarchy Hyprland
 

@@ -301,17 +301,25 @@ ShellRoot {
                   Layout.alignment: Qt.AlignVCenter
                 }
 
-                TextInput {
+                Item {
                   id: procSearchInput
                   Layout.fillWidth: true
                   Layout.fillHeight: true
-                  verticalAlignment: TextInput.AlignVCenter
-                  color: taskManagerWindow.isDark ? "#ffffff" : "#1a1a1a"
-                  font.family: "Segoe UI"
-                  font.pixelSize: 11
-                  selectByMouse: true
+                  property string text: ""
+                  focus: true
                   clip: true
-                  onTextChanged: taskManagerWindow.searchQuery = text
+
+                  Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    text: procSearchInput.text
+                    color: taskManagerWindow.isDark ? "#ffffff" : "#1a1a1a"
+                    font.family: "Segoe UI"
+                    font.pixelSize: 11
+                    elide: Text.ElideRight
+                    visible: procSearchInput.text.length > 0
+                  }
 
                   Text {
                     anchors.verticalCenter: parent.verticalCenter
@@ -321,6 +329,33 @@ ShellRoot {
                     color: taskManagerWindow.isDark ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(0, 0, 0, 0.4)
                     font.family: "Segoe UI"
                     font.pixelSize: 11
+                  }
+
+                  MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.IBeamCursor
+                    onClicked: procSearchInput.forceActiveFocus()
+                  }
+
+                  Keys.onPressed: function(event) {
+                    if (event.key === Qt.Key_Backspace) {
+                      if (text.length > 0) {
+                        text = text.slice(0, -1)
+                        taskManagerWindow.searchQuery = text
+                        event.accepted = true
+                      }
+                    } else if (event.key === Qt.Key_Escape) {
+                      text = ""
+                      taskManagerWindow.searchQuery = ""
+                      procSearchInput.focus = false
+                      event.accepted = true
+                    } else if (event.text && event.text.length > 0 && event.text >= ' ') {
+                      if (text.length < 64) {
+                        text += event.text
+                        taskManagerWindow.searchQuery = text
+                      }
+                      event.accepted = true
+                    }
                   }
                 }
               }
@@ -1545,16 +1580,52 @@ ShellRoot {
                 border.color: runInput.activeFocus ? "#60cdff" : Qt.rgba(1, 1, 1, 0.14)
                 border.width: 1
 
-                TextInput {
+                Item {
                   id: runInput
                   anchors.fill: parent
                   anchors.margins: 6
-                  verticalAlignment: TextInput.AlignVCenter
-                  color: "#ffffff"
-                  font.family: "Segoe UI"
-                  font.pixelSize: 12
-                  selectByMouse: true
-                  onAccepted: taskManagerWindow.executeNewTask(text, taskManagerWindow.runAsAdmin)
+                  property string text: ""
+                  focus: true
+                  clip: true
+
+                  Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    text: runInput.text
+                    color: "#ffffff"
+                    font.family: "Segoe UI"
+                    font.pixelSize: 12
+                    elide: Text.ElideRight
+                    visible: runInput.text.length > 0
+                  }
+
+                  MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.IBeamCursor
+                    onClicked: runInput.forceActiveFocus()
+                  }
+
+                  Keys.onPressed: function(event) {
+                    if (event.key === Qt.Key_Backspace) {
+                      if (text.length > 0) {
+                        text = text.slice(0, -1)
+                        event.accepted = true
+                      }
+                    } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                      taskManagerWindow.executeNewTask(runInput.text, taskManagerWindow.runAsAdmin)
+                      event.accepted = true
+                    } else if (event.key === Qt.Key_Escape) {
+                      text = ""
+                      taskManagerWindow.showRunDialog = false
+                      event.accepted = true
+                    } else if (event.text && event.text.length > 0 && event.text >= ' ') {
+                      if (text.length < 256) {
+                        text += event.text
+                      }
+                      event.accepted = true
+                    }
+                  }
                 }
               }
             }

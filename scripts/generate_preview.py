@@ -348,10 +348,10 @@ def build_showcase():
     draw_centered_text(draw, y, "Desktop Camouflage & Transformation Suite for Omarchy Hyprland", f_hero_sub, (224, 231, 255))
     y += 68
     
-    # Hero Badges Row (Updated for v7.4.4 and Verified Plugin)
+    # Hero Badges Row (Updated for v7.4.5 and Verified Plugin)
     hero_badges = [
         ("✓ Verified Omarchy Plugin", (6, 78, 59), (110, 231, 183), (16, 185, 129)),
-        ("v7.4.4 Release", (30, 58, 138), (147, 197, 253), (59, 130, 246)),
+        ("v7.4.5 Release", (30, 58, 138), (147, 197, 253), (59, 130, 246)),
         ("macOS Tahoe & Sequoia", (19, 78, 74), (94, 234, 212), (20, 184, 166)),
         ("macOS Stage Manager", (88, 28, 135), (216, 180, 254), (168, 85, 247)),
         ("Apple Aerial Screensavers", (120, 53, 15), (254, 243, 199), (217, 119, 6)),
@@ -638,7 +638,7 @@ def build_showcase():
         
     f_foot_title = get_font("sf_bold", 26)
     f_foot_sub = get_font("sf_regular", 17)
-    draw.text((rx + 110, ry + 10), "Omarchy Undercover v7.4.4", font=f_foot_title, fill=TEXT_TITLE)
+    draw.text((rx + 110, ry + 10), "Omarchy Undercover v7.4.5", font=f_foot_title, fill=TEXT_TITLE)
     draw.text((rx + 110, ry + 48), "Verified Omarchy Plugin • GPL-3.0 • misternegative21", font=f_foot_sub, fill=TEXT_MUTED)
     
     actual_bottom = y + foot_h + 90
@@ -719,7 +719,7 @@ def build_banner_preview():
 
     badges = [
         ("✓ Verified Plugin", (6, 78, 59), (110, 231, 183), (16, 185, 129)),
-        ("v7.4.4 Release", (30, 58, 138), (147, 197, 253), (59, 130, 246)),
+        ("v7.4.5 Release", (30, 58, 138), (147, 197, 253), (59, 130, 246)),
         ("macOS Tahoe & Sequoia", (19, 78, 74), (94, 234, 212), (20, 184, 166)),
         ("Windows 11 Fluent", (12, 74, 110), (186, 230, 253), (2, 132, 199)),
         ("Stage Manager & Aerials", (88, 28, 135), (216, 180, 254), (168, 85, 247)),

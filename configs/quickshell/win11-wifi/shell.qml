@@ -604,23 +604,60 @@ ShellRoot {
               Layout.alignment: Qt.AlignVCenter
             }
 
-            TextInput {
+            Item {
               id: win11WifiSearch
               Layout.fillWidth: true
               Layout.fillHeight: true
-              verticalAlignment: TextInput.AlignVCenter
-              color: wifiWindow.textPrimary
-              font.family: "Segoe UI, sans-serif"
-              font.pixelSize: 12
+              property string text: ""
+              focus: true
               clip: true
-              onTextChanged: wifiWindow.searchText = text
+
+              Text {
+                text: win11WifiSearch.text
+                color: wifiWindow.textPrimary
+                font.family: "Segoe UI, sans-serif"
+                font.pixelSize: 12
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.right: parent.right
+                elide: Text.ElideRight
+                visible: win11WifiSearch.text.length > 0
+              }
 
               Text {
                 text: "Search Wi-Fi networks..."
                 color: wifiWindow.textMuted
-                font: win11WifiSearch.font
+                font.family: "Segoe UI, sans-serif"
+                font.pixelSize: 12
                 visible: !win11WifiSearch.text && !win11WifiSearch.activeFocus
                 anchors.verticalCenter: parent.verticalCenter
+              }
+
+              MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.IBeamCursor
+                onClicked: win11WifiSearch.forceActiveFocus()
+              }
+
+              Keys.onPressed: function(event) {
+                if (event.key === Qt.Key_Backspace) {
+                  if (text.length > 0) {
+                    text = text.slice(0, -1)
+                    wifiWindow.searchText = text
+                    event.accepted = true
+                  }
+                } else if (event.key === Qt.Key_Escape) {
+                  text = ""
+                  wifiWindow.searchText = ""
+                  win11WifiSearch.focus = false
+                  event.accepted = true
+                } else if (event.text && event.text.length > 0 && event.text >= ' ') {
+                  if (text.length < 64) {
+                    text += event.text
+                    wifiWindow.searchText = text
+                  }
+                  event.accepted = true
+                }
               }
             }
 
@@ -1007,22 +1044,55 @@ ShellRoot {
                       border.color: wifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.20) : Qt.rgba(0, 0, 0, 0.18)
                       border.width: 1
 
-                      TextInput {
+                      Item {
                         id: pwInput
                         anchors.fill: parent
                         anchors.leftMargin: 8
                         anchors.rightMargin: 8
-                        verticalAlignment: TextInput.AlignVCenter
-                        echoMode: TextInput.Password
-                        font.pixelSize: 12
-                        color: wifiWindow.textPrimary
-                        selectByMouse: true
-                        onTextChanged: wifiWindow.passwordInput = text
-                        onAccepted: {
-                          wifiWindow.connectWifi(modelData.ssid, pwInput.text)
-                          pwInput.text = ""
-                          wifiWindow.connectingSsid = ""
-                          wifiWindow.triggerScan()
+                        property string text: ""
+                        focus: true
+                        clip: true
+
+                        Text {
+                          anchors.verticalCenter: parent.verticalCenter
+                          anchors.left: parent.left
+                          anchors.right: parent.right
+                          text: "•".repeat(pwInput.text.length)
+                          font.pixelSize: 12
+                          color: wifiWindow.textPrimary
+                        }
+
+                        MouseArea {
+                          anchors.fill: parent
+                          cursorShape: Qt.IBeamCursor
+                          onClicked: pwInput.forceActiveFocus()
+                        }
+
+                        Keys.onPressed: function(event) {
+                          if (event.key === Qt.Key_Backspace) {
+                            if (text.length > 0) {
+                              text = text.slice(0, -1)
+                              wifiWindow.passwordInput = text
+                              event.accepted = true
+                            }
+                          } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                            wifiWindow.connectWifi(modelData.ssid, pwInput.text)
+                            pwInput.text = ""
+                            wifiWindow.passwordInput = ""
+                            wifiWindow.connectingSsid = ""
+                            wifiWindow.triggerScan()
+                            event.accepted = true
+                          } else if (event.key === Qt.Key_Escape) {
+                            text = ""
+                            wifiWindow.passwordInput = ""
+                            event.accepted = true
+                          } else if (event.text && event.text.length > 0 && event.text >= ' ') {
+                            if (text.length < 64) {
+                              text += event.text
+                              wifiWindow.passwordInput = text
+                            }
+                            event.accepted = true
+                          }
                         }
                       }
                     }

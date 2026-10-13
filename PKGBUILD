@@ -1,6 +1,6 @@
 # Maintainer: MISTERNEGATIVE21 <MISTERNEGATIVE21@gmail.com>
 pkgname=omarchy-undercover
-pkgver=7.4.4
+pkgver=7.4.5
 pkgrel=1
 pkgdesc="Windows 11 desktop transformation tool for Omarchy Hyprland"
 arch=('any')

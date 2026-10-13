@@ -373,17 +373,25 @@ ShellRoot {
                   Layout.alignment: Qt.AlignVCenter
                 }
 
-                TextInput {
+                Item {
                   id: macSearchIn
                   Layout.fillWidth: true
                   Layout.fillHeight: true
-                  verticalAlignment: TextInput.AlignVCenter
-                  color: activityWindow.isDark ? "#ffffff" : "#1a1a1a"
-                  font.family: "SF Pro Text, -apple-system, sans-serif"
-                  font.pixelSize: 11
-                  selectByMouse: true
+                  property string text: ""
+                  focus: true
                   clip: true
-                  onTextChanged: activityWindow.searchQuery = text
+
+                  Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    text: macSearchIn.text
+                    color: activityWindow.isDark ? "#ffffff" : "#1a1a1a"
+                    font.family: "SF Pro Text, -apple-system, sans-serif"
+                    font.pixelSize: 11
+                    elide: Text.ElideRight
+                    visible: macSearchIn.text.length > 0
+                  }
 
                   Text {
                     anchors.verticalCenter: parent.verticalCenter
@@ -393,6 +401,33 @@ ShellRoot {
                     color: activityWindow.isDark ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(0, 0, 0, 0.4)
                     font.family: "SF Pro Text, -apple-system, sans-serif"
                     font.pixelSize: 11
+                  }
+
+                  MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.IBeamCursor
+                    onClicked: macSearchIn.forceActiveFocus()
+                  }
+
+                  Keys.onPressed: function(event) {
+                    if (event.key === Qt.Key_Backspace) {
+                      if (text.length > 0) {
+                        text = text.slice(0, -1)
+                        activityWindow.searchQuery = text
+                        event.accepted = true
+                      }
+                    } else if (event.key === Qt.Key_Escape) {
+                      text = ""
+                      activityWindow.searchQuery = ""
+                      macSearchIn.focus = false
+                      event.accepted = true
+                    } else if (event.text && event.text.length > 0 && event.text >= ' ') {
+                      if (text.length < 64) {
+                        text += event.text
+                        activityWindow.searchQuery = text
+                      }
+                      event.accepted = true
+                    }
                   }
                 }
               }

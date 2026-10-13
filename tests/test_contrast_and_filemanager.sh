@@ -117,7 +117,7 @@ if grep -q 'selected-text = "#0078d4"' "$WL_SHELL"; then
   exit 1
 fi
 
-# 6. TextInput Vertical Alignment in Quickshell Panels
+# 6. Text Input Vertical Alignment in Quickshell Panels
 for qml in \
   "$REPO_DIR/configs/quickshell/win11-start/shell.qml" \
   "$REPO_DIR/configs/quickshell/win11-wifi/shell.qml" \
@@ -126,8 +126,8 @@ for qml in \
   "$REPO_DIR/configs/quickshell/mac-wifi/shell.qml" \
   "$REPO_DIR/configs/quickshell/mac-bluetooth/shell.qml" \
   "$REPO_DIR/configs/quickshell/mac-activitymonitor/shell.qml"; do
-  if ! grep -q "verticalAlignment: TextInput.AlignVCenter" "$qml"; then
-    echo "FAIL: $qml missing verticalAlignment: TextInput.AlignVCenter" >&2
+  if ! grep -q -E "verticalAlignment: TextInput.AlignVCenter|anchors.verticalCenter: parent.verticalCenter" "$qml"; then
+    echo "FAIL: $qml missing vertical centering (TextInput.AlignVCenter or anchors.verticalCenter)" >&2
     exit 1
   fi
 done

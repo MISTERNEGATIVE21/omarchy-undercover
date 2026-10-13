@@ -245,21 +245,28 @@ ShellRoot {
               Layout.alignment: Qt.AlignVCenter
             }
 
-            TextInput {
+            Item {
               id: searchInput
               focus: true
               Layout.fillWidth: true
               Layout.fillHeight: true
-              verticalAlignment: TextInput.AlignVCenter
-              font.family: "Segoe UI"
-              font.pixelSize: 12
-              color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
+              property string text: ""
               clip: true
-              selectByMouse: true
-              selectionColor: startWindow.isDark ? "#0078d4" : "#0067c0"
 
               Text {
-                visible: !searchInput.text && !searchInput.inputMethodComposing
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.right: parent.right
+                text: searchInput.text
+                font.family: "Segoe UI"
+                font.pixelSize: 12
+                color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
+                elide: Text.ElideRight
+                visible: searchInput.text.length > 0
+              }
+
+              Text {
+                visible: searchInput.text.length === 0
                 text: "Type here to search apps, settings, and documents..."
                 color: startWindow.isDark ? Qt.rgba(1, 1, 1, 0.70) : Qt.rgba(0, 0, 0, 0.60)
                 font.family: "Segoe UI"
@@ -267,16 +274,39 @@ ShellRoot {
                 anchors.verticalCenter: parent.verticalCenter
               }
 
-              onTextChanged: {
-                startWindow.searchFilter = text
-                if (text.trim().length > 0) startWindow.currentView = 2
+              MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.IBeamCursor
+                onClicked: searchInput.forceActiveFocus()
+              }
+
+              function updateSearch(val) {
+                text = val
+                startWindow.searchFilter = val
+                if (val.trim().length > 0) startWindow.currentView = 2
                 else startWindow.currentView = 0
               }
 
-              onAccepted: {
-                var res = startWindow.getFilteredApps()
-                if (res.length > 0) startWindow.runCmd(res[0].exec)
-                else if (text.trim().length > 0) startWindow.runCmd("omarchy-browser 'https://www.bing.com/search?q=" + encodeURIComponent(text.trim()) + "'")
+              Keys.onPressed: function(event) {
+                if (event.key === Qt.Key_Backspace) {
+                  if (text.length > 0) {
+                    updateSearch(text.slice(0, -1))
+                    event.accepted = true
+                  }
+                } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                  var res = startWindow.getFilteredApps()
+                  if (res.length > 0) startWindow.runCmd(res[0].exec)
+                  else if (text.trim().length > 0) startWindow.runCmd("omarchy-browser 'https://www.bing.com/search?q=" + encodeURIComponent(text.trim()) + "'")
+                  event.accepted = true
+                } else if (event.key === Qt.Key_Escape) {
+                  updateSearch("")
+                  event.accepted = true
+                } else if (event.text && event.text.length > 0 && event.text >= ' ') {
+                  if (text.length < 128) {
+                    updateSearch(text + event.text)
+                  }
+                  event.accepted = true
+                }
               }
             }
 

@@ -567,23 +567,60 @@ ShellRoot {
               Layout.alignment: Qt.AlignVCenter
             }
 
-            TextInput {
+            Item {
               id: wifiSearchBox
               Layout.fillWidth: true
               Layout.fillHeight: true
-              verticalAlignment: TextInput.AlignVCenter
-              color: macWifiWindow.isDark ? "#ffffff" : "#1a1a1a"
-              font.family: "SF Pro Text"
-              font.pixelSize: 12
+              property string text: ""
+              focus: true
               clip: true
-              onTextChanged: macWifiWindow.searchText = text
+
+              Text {
+                text: wifiSearchBox.text
+                color: macWifiWindow.isDark ? "#ffffff" : "#1a1a1a"
+                font.family: "SF Pro Text"
+                font.pixelSize: 12
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.right: parent.right
+                elide: Text.ElideRight
+                visible: wifiSearchBox.text.length > 0
+              }
 
               Text {
                 text: "Search Wi-Fi networks..."
                 color: macWifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.4) : Qt.rgba(0, 0, 0, 0.4)
-                font: wifiSearchBox.font
+                font.family: "SF Pro Text"
+                font.pixelSize: 12
                 visible: !wifiSearchBox.text && !wifiSearchBox.activeFocus
                 anchors.verticalCenter: parent.verticalCenter
+              }
+
+              MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.IBeamCursor
+                onClicked: wifiSearchBox.forceActiveFocus()
+              }
+
+              Keys.onPressed: function(event) {
+                if (event.key === Qt.Key_Backspace) {
+                  if (text.length > 0) {
+                    text = text.slice(0, -1)
+                    macWifiWindow.searchText = text
+                    event.accepted = true
+                  }
+                } else if (event.key === Qt.Key_Escape) {
+                  text = ""
+                  macWifiWindow.searchText = ""
+                  wifiSearchBox.focus = false
+                  event.accepted = true
+                } else if (event.text && event.text.length > 0 && event.text >= ' ') {
+                  if (text.length < 64) {
+                    text += event.text
+                    macWifiWindow.searchText = text
+                  }
+                  event.accepted = true
+                }
               }
             }
 
@@ -780,21 +817,51 @@ ShellRoot {
                     border.color: macWifiWindow.isDark ? Qt.rgba(1, 1, 1, 0.2) : Qt.rgba(0, 0, 0, 0.15)
                     border.width: 1
 
-                    TextInput {
+                    Item {
                       id: macPwInput
                       anchors.fill: parent
                       anchors.leftMargin: 6
                       anchors.rightMargin: 6
-                      verticalAlignment: TextInput.AlignVCenter
-                      echoMode: TextInput.Password
-                      font.pixelSize: 11
-                      color: macWifiWindow.isDark ? "#ffffff" : "#1a1a1a"
-                      selectByMouse: true
-                      onAccepted: {
-                        macWifiWindow.connectWifi(modelData.ssid, text)
-                        text = ""
-                        macWifiWindow.connectingSsid = ""
-                        if (!scanPoller.running) scanPoller.running = true
+                      property string text: ""
+                      focus: true
+                      clip: true
+
+                      Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        text: "•".repeat(macPwInput.text.length)
+                        font.pixelSize: 11
+                        color: macWifiWindow.isDark ? "#ffffff" : "#1a1a1a"
+                      }
+
+                      MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.IBeamCursor
+                        onClicked: macPwInput.forceActiveFocus()
+                      }
+
+                      Keys.onPressed: function(event) {
+                        if (event.key === Qt.Key_Backspace) {
+                          if (text.length > 0) {
+                            text = text.slice(0, -1)
+                            event.accepted = true
+                          }
+                        } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                          macWifiWindow.connectWifi(modelData.ssid, macPwInput.text)
+                          macPwInput.text = ""
+                          macWifiWindow.connectingSsid = ""
+                          if (!scanPoller.running) scanPoller.running = true
+                          event.accepted = true
+                        } else if (event.key === Qt.Key_Escape) {
+                          text = ""
+                          event.accepted = true
+                        } else if (event.text && event.text.length > 0 && event.text >= ' ') {
+                          if (text.length < 64) {
+                            text += event.text
+                          }
+                          event.accepted = true
+                        }
                       }
                     }
                   }

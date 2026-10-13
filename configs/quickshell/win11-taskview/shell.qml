@@ -456,19 +456,24 @@ ShellRoot {
                 Layout.alignment: Qt.AlignVCenter
               }
 
-              TextInput {
+              Item {
                 id: searchInput
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                verticalAlignment: TextInput.AlignVCenter
-                color: taskViewWindow.isDark ? "#ffffff" : "#1a1a1a"
-                font.family: "Segoe UI"
-                font.pixelSize: 13
-                selectByMouse: true
+                property string text: ""
+                focus: true
                 clip: true
-                onTextChanged: {
-                  taskViewWindow.searchQuery = text
-                  taskViewWindow.focusedWindowIndex = 0
+
+                Text {
+                  anchors.verticalCenter: parent.verticalCenter
+                  anchors.left: parent.left
+                  anchors.right: parent.right
+                  text: searchInput.text
+                  color: taskViewWindow.isDark ? "#ffffff" : "#1a1a1a"
+                  font.family: "Segoe UI"
+                  font.pixelSize: 13
+                  elide: Text.ElideRight
+                  visible: searchInput.text.length > 0
                 }
 
                 Text {
@@ -479,6 +484,36 @@ ShellRoot {
                   color: taskViewWindow.isDark ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0, 0, 0, 0.45)
                   font.family: "Segoe UI"
                   font.pixelSize: 13
+                }
+
+                MouseArea {
+                  anchors.fill: parent
+                  cursorShape: Qt.IBeamCursor
+                  onClicked: searchInput.forceActiveFocus()
+                }
+
+                Keys.onPressed: function(event) {
+                  if (event.key === Qt.Key_Backspace) {
+                    if (text.length > 0) {
+                      text = text.slice(0, -1)
+                      taskViewWindow.searchQuery = text
+                      taskViewWindow.focusedWindowIndex = 0
+                      event.accepted = true
+                    }
+                  } else if (event.key === Qt.Key_Escape) {
+                    text = ""
+                    taskViewWindow.searchQuery = ""
+                    taskViewWindow.focusedWindowIndex = 0
+                    searchInput.focus = false
+                    event.accepted = true
+                  } else if (event.text && event.text.length > 0 && event.text >= ' ') {
+                    if (text.length < 64) {
+                      text += event.text
+                      taskViewWindow.searchQuery = text
+                      taskViewWindow.focusedWindowIndex = 0
+                    }
+                    event.accepted = true
+                  }
                 }
               }
 
