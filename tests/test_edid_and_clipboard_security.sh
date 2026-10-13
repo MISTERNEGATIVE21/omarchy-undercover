@@ -47,7 +47,7 @@ echo "  ✔ Monitor methods use direct argument arrays without shell interpolati
 
 echo "=== 2. Checking Settings shell.qml for clipboard exhaustion isolation ==="
 
-# Verify searchInput is not an editable TextInput that queries foreign clipboard
+# Verify no editable TextInput exists in Settings GUI (preventing Qt Wayland clipboard hook exhaustion)
 for shell_file in "$REPO_ROOT/configs/quickshell/mac-settings/shell.qml" "$REPO_ROOT/configs/quickshell/win11-settings/shell.qml"; do
   if grep -n -C 2 "id: searchInput" "$shell_file" | grep -F "TextInput" >/dev/null; then
     echo "ERROR: $shell_file still uses TextInput for searchInput!"
@@ -57,8 +57,12 @@ for shell_file in "$REPO_ROOT/configs/quickshell/mac-settings/shell.qml" "$REPO_
     echo "ERROR: $shell_file searchInput is not an Item component!"
     exit 1
   fi
+  if grep -n "TextInput" "$shell_file" >/dev/null; then
+    echo "ERROR: $shell_file contains TextInput element(s), causing Qt Wayland clipboard exhaustion vulnerability!"
+    exit 1
+  fi
 done
-echo "  ✔ searchInput is isolated from Wayland clipboard in mac-settings and win11-settings."
+echo "  ✔ Zero TextInput elements exist in mac-settings and win11-settings (total clipboard isolation)."
 
 # Verify mac-settings refresh rate selector does not prioritize raw EDID description over canonical names
 if grep -n "setMonitorMode" "$REPO_ROOT/configs/quickshell/mac-settings/shell.qml" -B 3 | grep -F "m.description || m.name" >/dev/null; then

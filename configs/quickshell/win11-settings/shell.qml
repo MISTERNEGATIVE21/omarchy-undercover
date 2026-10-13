@@ -2113,25 +2113,64 @@ ShellRoot {
                           border.color: profInput.activeFocus ? settingsWin.accentColor : settingsWin.cardBorder
                           border.width: 1
 
-                          TextInput {
+                          Item {
                             id: profInput
                             anchors.fill: parent
                             anchors.leftMargin: 10
                             anchors.rightMargin: 10
-                            verticalAlignment: TextInput.AlignVCenter
-                            font.family: "Segoe UI, sans-serif"
-                            font.pixelSize: 12
-                            color: settingsWin.textPrimary
+                            property string text: ""
+                            focus: true
                             clip: true
 
                             Text {
-                              anchors.fill: parent
-                              verticalAlignment: Text.AlignVCenter
+                              anchors.verticalCenter: parent.verticalCenter
+                              anchors.left: parent.left
+                              text: profInput.text
+                              font.family: "Segoe UI, sans-serif"
+                              font.pixelSize: 12
+                              color: settingsWin.textPrimary
+                              visible: profInput.text.length > 0
+                            }
+
+                            Text {
+                              anchors.verticalCenter: parent.verticalCenter
+                              anchors.left: parent.left
                               text: "Enter profile name (e.g. Work Desk, Dock)..."
                               font.family: "Segoe UI, sans-serif"
                               font.pixelSize: 12
                               color: settingsWin.textSecondary
-                              visible: !profInput.text && !profInput.activeFocus
+                              visible: profInput.text.length === 0 && !profInput.activeFocus
+                            }
+
+                            MouseArea {
+                              anchors.fill: parent
+                              cursorShape: Qt.IBeamCursor
+                              onClicked: profInput.forceActiveFocus()
+                            }
+
+                            Keys.onPressed: function(event) {
+                              if (event.key === Qt.Key_Backspace) {
+                                if (text.length > 0) {
+                                  text = text.slice(0, -1)
+                                  event.accepted = true
+                                }
+                              } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                var name = profInput.text.trim()
+                                if (name) {
+                                  settingsService.saveMonitorProfile(name)
+                                  profInput.text = ""
+                                }
+                                event.accepted = true
+                              } else if (event.key === Qt.Key_Escape) {
+                                text = ""
+                                profInput.focus = false
+                                event.accepted = true
+                              } else if (event.text && event.text.length > 0 && event.text >= ' ') {
+                                if (text.length < 64) {
+                                  text += event.text
+                                }
+                                event.accepted = true
+                              }
                             }
                           }
                         }
@@ -3150,14 +3189,49 @@ ShellRoot {
                                 border.color: settingsWin.cardBorder
                                 border.width: 1
 
-                                TextInput {
+                                Item {
                                   id: pwField
                                   anchors.fill: parent
                                   anchors.margins: 6
-                                  echoMode: TextInput.Password
-                                  font.family: "Segoe UI, sans-serif"
-                                  font.pixelSize: 11
-                                  color: settingsWin.textPrimary
+                                  property string text: ""
+                                  focus: true
+                                  clip: true
+
+                                  Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    anchors.left: parent.left
+                                    text: "•".repeat(pwField.text.length)
+                                    font.family: "Segoe UI, sans-serif"
+                                    font.pixelSize: 11
+                                    color: settingsWin.textPrimary
+                                  }
+
+                                  MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.IBeamCursor
+                                    onClicked: pwField.forceActiveFocus()
+                                  }
+
+                                  Keys.onPressed: function(event) {
+                                    if (event.key === Qt.Key_Backspace) {
+                                      if (text.length > 0) {
+                                        text = text.slice(0, -1)
+                                        event.accepted = true
+                                      }
+                                    } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                      settingsService.connectWifi(modelData.ssid, pwField.text)
+                                      parent.parent.parent.parent.expandedSsid = ""
+                                      event.accepted = true
+                                    } else if (event.key === Qt.Key_Escape) {
+                                      text = ""
+                                      event.accepted = true
+                                    } else if (event.text && event.text.length > 0 && event.text >= ' ') {
+                                      if (text.length < 64) {
+                                        text += event.text
+                                      }
+                                      event.accepted = true
+                                    }
+                                  }
                                 }
                               }
 

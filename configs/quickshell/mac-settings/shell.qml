@@ -2506,6 +2506,20 @@ ShellRoot {
                     anchors.margins: 14
                     spacing: 12
 
+                    Process {
+                      id: safeUrlPasteProcess
+                      command: ["bash", "-c", "timeout 0.3s wl-paste -n --no-newline 2>/dev/null | head -c 2048"]
+                      stdout: SplitParser {
+                        splitMarker: "\n"
+                        onRead: function(line) {
+                          var str = String(line).trim()
+                          if (str && str.length > 0) {
+                            urlInput.text = str.slice(0, 2048)
+                          }
+                        }
+                      }
+                    }
+
                     RowLayout {
                       Layout.fillWidth: true
                       ColumnLayout {
@@ -2575,21 +2589,83 @@ ShellRoot {
                             color: settingsWin.textSecondary
                           }
 
-                          TextInput {
+                          Item {
                             id: urlInput
                             Layout.fillWidth: true
-                            font.family: "SF Pro Text, -apple-system, sans-serif"
-                            font.pixelSize: 12
-                            color: settingsWin.textPrimary
-                            clip: true
-                            selectByMouse: true
+                            implicitHeight: 20
+                            property string text: ""
+                            focus: true
 
+                            RowLayout {
+                              anchors.fill: parent
+                              spacing: 0
+                              Text {
+                                visible: urlInput.text.length > 0
+                                text: urlInput.text
+                                font.family: "SF Pro Text, -apple-system, sans-serif"
+                                font.pixelSize: 12
+                                color: settingsWin.textPrimary
+                                elide: Text.ElideMiddle
+                                Layout.fillWidth: true
+                              }
+                              Text {
+                                visible: urlInput.text.length === 0
+                                text: "Paste YouTube or video URL (e.g. https://www.youtube.com/watch?v=...)"
+                                font.family: "SF Pro Text, -apple-system, sans-serif"
+                                font.pixelSize: 11
+                                color: settingsWin.textSecondary
+                                Layout.fillWidth: true
+                              }
+                            }
+
+                            MouseArea {
+                              anchors.fill: parent
+                              cursorShape: Qt.IBeamCursor
+                              onClicked: urlInput.forceActiveFocus()
+                            }
+
+                            Keys.onPressed: function(event) {
+                              if (event.key === Qt.Key_Backspace) {
+                                if (text.length > 0) {
+                                  text = text.slice(0, -1)
+                                  event.accepted = true
+                                }
+                              } else if (event.key === Qt.Key_Escape) {
+                                text = ""
+                                urlInput.focus = false
+                                event.accepted = true
+                              } else if (event.matches(StandardKey.Paste) || (event.modifiers & Qt.ControlModifier && event.key === Qt.Key_V)) {
+                                event.accepted = true
+                                safeUrlPasteProcess.running = true
+                              } else if (event.text && event.text.length > 0 && event.text >= ' ') {
+                                if (text.length < 2048) {
+                                  text += event.text
+                                }
+                                event.accepted = true
+                              }
+                            }
+                          }
+
+                          Rectangle {
+                            implicitWidth: 46
+                            implicitHeight: 22
+                            radius: 4
+                            color: urlPasteM.containsMouse ? (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.1)) : (settingsWin.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.05))
+                            border.color: settingsWin.cardBorder
+                            border.width: 1
                             Text {
-                              visible: !urlInput.text
-                              text: "Paste YouTube or video URL (e.g. https://www.youtube.com/watch?v=...)"
+                              anchors.centerIn: parent
+                              text: "Paste"
                               font.family: "SF Pro Text, -apple-system, sans-serif"
-                              font.pixelSize: 11
-                              color: settingsWin.textSecondary
+                              font.pixelSize: 10
+                              font.bold: true
+                              color: settingsWin.textPrimary
+                            }
+                            MouseArea {
+                              id: urlPasteM
+                              anchors.fill: parent
+                              cursorShape: Qt.PointingHandCursor
+                              onClicked: safeUrlPasteProcess.running = true
                             }
                           }
                         }
@@ -3150,15 +3226,49 @@ ShellRoot {
                                 border.color: settingsWin.cardBorder
                                 border.width: 1
 
-                                TextInput {
+                                Item {
                                   id: pwField
                                   anchors.fill: parent
                                   anchors.margins: 6
-                                  echoMode: TextInput.Password
-                                  font.family: "SF Pro Text, -apple-system, sans-serif"
-                                  font.pixelSize: 11
-                                  color: settingsWin.textPrimary
+                                  property string text: ""
+                                  focus: true
                                   clip: true
+
+                                  Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    anchors.left: parent.left
+                                    text: "•".repeat(pwField.text.length)
+                                    font.family: "SF Pro Text, -apple-system, sans-serif"
+                                    font.pixelSize: 11
+                                    color: settingsWin.textPrimary
+                                  }
+
+                                  MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.IBeamCursor
+                                    onClicked: pwField.forceActiveFocus()
+                                  }
+
+                                  Keys.onPressed: function(event) {
+                                    if (event.key === Qt.Key_Backspace) {
+                                      if (text.length > 0) {
+                                        text = text.slice(0, -1)
+                                        event.accepted = true
+                                      }
+                                    } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                      settingsService.connectWifi(modelData.ssid, pwField.text)
+                                      parent.parent.parent.parent.parent.expandedSsid = ""
+                                      event.accepted = true
+                                    } else if (event.key === Qt.Key_Escape) {
+                                      text = ""
+                                      event.accepted = true
+                                    } else if (event.text && event.text.length > 0 && event.text >= ' ') {
+                                      if (text.length < 64) {
+                                        text += event.text
+                                      }
+                                      event.accepted = true
+                                    }
+                                  }
                                 }
                               }
 
