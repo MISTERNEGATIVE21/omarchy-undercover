@@ -344,6 +344,7 @@ ShellRoot {
                   Text { text: modelData.type; font.pixelSize: 15 }
                   Text {
                     text: modelData.description || modelData.name
+                    textFormat: Text.PlainText
                     font.family: "Segoe UI, sans-serif"
                     font.pixelSize: 11
                     font.weight: modelData.isDefault ? Font.DemiBold : Font.Normal
@@ -486,6 +487,7 @@ ShellRoot {
                   Text { text: modelData.type; font.pixelSize: 14 }
                   Text {
                     text: modelData.description || modelData.name
+                    textFormat: Text.PlainText
                     font.family: "Segoe UI, sans-serif"
                     font.pixelSize: 11
                     font.weight: modelData.isDefault ? Font.DemiBold : Font.Normal
@@ -588,6 +590,7 @@ ShellRoot {
                     }
                     Text {
                       text: modelData.name
+                      textFormat: Text.PlainText
                       font.family: "Segoe UI, sans-serif"
                       font.pixelSize: 11
                       font.weight: Font.DemiBold

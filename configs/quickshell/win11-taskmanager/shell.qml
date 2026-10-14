@@ -821,6 +821,7 @@ ShellRoot {
 
                             Text {
                               Layout.fillWidth: true
+                              textFormat: Text.PlainText
                               text: procItem.name || procItem.class || "App"
                               font.family: "Segoe UI"
                               font.pixelSize: 11
@@ -965,6 +966,7 @@ ShellRoot {
                             Text { text: "⚙️"; font.pixelSize: 11 }
                             Text {
                               Layout.fillWidth: true
+                              textFormat: Text.PlainText
                               text: bgItem.name || "Process"
                               font.family: "Segoe UI"
                               font.pixelSize: 11

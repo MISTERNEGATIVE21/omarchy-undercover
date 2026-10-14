@@ -2184,6 +2184,7 @@ ShellRoot {
                     spacing: 4
                     Text {
                       text: modelData.name
+                      textFormat: Text.PlainText
                       font.family: "Segoe UI, sans-serif"
                       font.pixelSize: 11
                       font.bold: modelData.connected
@@ -2455,6 +2456,7 @@ ShellRoot {
 
                   Text {
                     text: modelData.name
+                    textFormat: Text.PlainText
                     font.family: "Segoe UI, sans-serif"
                     font.pixelSize: 12
                     font.bold: true

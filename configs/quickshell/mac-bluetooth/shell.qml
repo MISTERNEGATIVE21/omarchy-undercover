@@ -449,6 +449,7 @@ ShellRoot {
                 Text { text: modelData.type; font.pixelSize: 16 }
                 Text {
                   text: modelData.name
+                  textFormat: Text.PlainText
                   font.family: "SF Pro Text"
                   font.pixelSize: 12
                   color: macBtWindow.isDark ? "#ffffff" : "#1a1a1a"

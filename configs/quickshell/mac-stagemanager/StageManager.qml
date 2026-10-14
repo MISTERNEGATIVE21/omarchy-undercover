@@ -815,6 +815,7 @@ Timer {
 
     Text {
       id: appLabel
+      textFormat: Text.PlainText
       anchors.left: appIcon.right
       anchors.leftMargin: Style.space(6)
       anchors.right: windowSelectors.visible ? windowSelectors.left : parent.right

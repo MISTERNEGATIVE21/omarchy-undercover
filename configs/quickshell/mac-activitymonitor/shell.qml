@@ -509,6 +509,7 @@ ShellRoot {
 
                     Text {
                       Layout.fillWidth: true
+                      textFormat: Text.PlainText
                       text: procItem.name || procItem.class || "Process"
                       font.family: "SF Pro Text, -apple-system, sans-serif"
                       font.pixelSize: 11

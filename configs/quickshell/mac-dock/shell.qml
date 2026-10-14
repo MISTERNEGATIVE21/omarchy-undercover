@@ -679,6 +679,7 @@ ShellRoot {
 
               Text {
                 id: tooltipText
+                textFormat: Text.PlainText
                 anchors.centerIn: parent
                 anchors.leftMargin: 8
                 anchors.rightMargin: 8

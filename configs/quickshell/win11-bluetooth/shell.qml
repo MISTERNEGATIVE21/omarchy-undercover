@@ -630,6 +630,7 @@ ShellRoot {
                     spacing: 6
                     Text {
                       text: modelData.name
+                      textFormat: Text.PlainText
                       font.family: "Segoe UI, sans-serif"
                       font.pixelSize: 12
                       font.weight: modelData.connected ? Font.DemiBold : Font.Normal

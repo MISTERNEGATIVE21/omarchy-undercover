@@ -259,6 +259,7 @@ ShellRoot {
                     }
                     Text {
                       text: modelData.description || modelData.name
+                      textFormat: Text.PlainText
                       font.family: "SF Pro Text, -apple-system, sans-serif"
                       font.pixelSize: 12
                       color: macSoundWindow.isDark ? "#ffffff" : "#1a1a1a"
@@ -403,6 +404,7 @@ ShellRoot {
                     }
                     Text {
                       text: modelData.description || modelData.name
+                      textFormat: Text.PlainText
                       font.family: "SF Pro Text, -apple-system, sans-serif"
                       font.pixelSize: 11
                       color: macSoundWindow.isDark ? "#ffffff" : "#1a1a1a"
@@ -482,6 +484,7 @@ ShellRoot {
                       }
                       Text {
                         text: modelData.app_name || modelData.name || "App"
+                        textFormat: Text.PlainText
                         font.family: "SF Pro Text, -apple-system, sans-serif"
                         font.pixelSize: 11
                         font.weight: Font.DemiBold

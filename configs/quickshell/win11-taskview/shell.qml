@@ -468,6 +468,7 @@ ShellRoot {
                   anchors.verticalCenter: parent.verticalCenter
                   anchors.left: parent.left
                   anchors.right: parent.right
+                  textFormat: Text.PlainText
                   text: searchInput.text
                   color: taskViewWindow.isDark ? "#ffffff" : "#1a1a1a"
                   font.family: "Segoe UI"
@@ -726,6 +727,7 @@ ShellRoot {
                       }
 
                       Text {
+                        textFormat: Text.PlainText
                         text: winClient ? (winClient.title || winClient.class || "Application") : ""
                         font.family: "Segoe UI"
                         font.pixelSize: 11
@@ -833,6 +835,7 @@ ShellRoot {
 
                         Text {
                           Layout.alignment: Qt.AlignHCenter
+                          textFormat: Text.PlainText
                           text: winClient ? (winClient.class || winClient.initialClass || "") : ""
                           font.family: "Segoe UI"
                           font.pixelSize: 12
@@ -1089,6 +1092,7 @@ ShellRoot {
           spacing: 4
 
           Text {
+            textFormat: Text.PlainText
             text: taskViewWindow.contextMenuTarget ? (taskViewWindow.contextMenuTarget.title || taskViewWindow.contextMenuTarget.class || "Window") : ""
             font.family: "Segoe UI"
             font.pixelSize: 11

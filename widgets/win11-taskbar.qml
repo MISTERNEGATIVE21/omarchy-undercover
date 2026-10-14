@@ -1141,6 +1141,7 @@ BarWidget {
 
       Text {
         id: tooltipText
+        textFormat: Text.PlainText
         anchors.centerIn: parent
         text: root.tooltipString
         font.family: "Segoe UI"
@@ -1179,6 +1180,7 @@ BarWidget {
           }
 
           Text {
+            textFormat: Text.PlainText
             text: ((root.previewTargetItem && root.previewTargetItem.itemData && root.previewTargetItem.itemData.name) ? root.previewTargetItem.itemData.name : "Application") + " — " + root.previewTargetClients.length + " windows open"
             font.family: "Segoe UI"
             font.pixelSize: 11
@@ -1254,6 +1256,7 @@ BarWidget {
                     }
 
                     Text {
+                      textFormat: Text.PlainText
                       text: clientObj ? (clientObj.title || (root.previewTargetItem && root.previewTargetItem.itemData ? root.previewTargetItem.itemData.name : "") || "") : ""
                       font.family: "Segoe UI"
                       font.pixelSize: 11
@@ -1371,6 +1374,7 @@ BarWidget {
                         }
 
                         Text {
+                          textFormat: Text.PlainText
                           text: root.getMonitorLabel(clientObj ? clientObj.monitor : 0)
                           font.family: "Segoe UI, sans-serif"
                           font.pixelSize: 9
@@ -1381,6 +1385,7 @@ BarWidget {
                         }
 
                         Text {
+                          textFormat: Text.PlainText
                           text: "• Desktop " + ((clientObj && clientObj.workspace) ? (clientObj.workspace.name || clientObj.workspace.id) : "1")
                           font.family: "Segoe UI, sans-serif"
                           font.pixelSize: 9
@@ -1450,6 +1455,7 @@ BarWidget {
 
                         Text {
                           Layout.alignment: Qt.AlignHCenter
+                          textFormat: Text.PlainText
                           text: clientObj ? (clientObj.title || "") : ""
                           font.family: "Segoe UI"
                           font.pixelSize: 10
@@ -1572,6 +1578,7 @@ BarWidget {
                         }
 
                         Text {
+                          textFormat: Text.PlainText
                           text: winObj ? (winObj.title || "") : ""
                           font.family: "Segoe UI"
                           font.pixelSize: 10

@@ -159,6 +159,7 @@ BarWidget {
         spacing: 0
         Text {
           text: root.tempText
+          textFormat: Text.PlainText
           font.family: "Segoe UI, sans-serif"
           font.pixelSize: Math.round(12 * Math.min(1.3, root.scaleFactor))
           font.weight: Font.DemiBold
@@ -166,6 +167,7 @@ BarWidget {
         }
         Text {
           text: root.conditionText
+          textFormat: Text.PlainText
           font.family: "Segoe UI, sans-serif"
           font.pixelSize: Math.round(10 * Math.min(1.3, root.scaleFactor))
           color: root.textSecondaryColor

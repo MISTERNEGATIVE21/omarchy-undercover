@@ -79,7 +79,67 @@ if grep -n "setMonitorMode" "$REPO_ROOT/configs/quickshell/mac-settings/shell.qm
 fi
 echo "  ✔ Refresh rate selector uses canonical monitor identifiers."
 
-echo "=== 3. Validating Quickshell QML compilation ==="
+echo "=== 3. Checking application-controlled window titles and tooltips for Text.PlainText enforcement ==="
+
+# win11-taskbar.qml: window titles in preview and taskview must enforce Text.PlainText
+if ! grep -B 2 "clientObj.title" "$REPO_ROOT/widgets/win11-taskbar.qml" | grep -F "textFormat: Text.PlainText" >/dev/null; then
+  echo "ERROR: widgets/win11-taskbar.qml clientObj.title missing textFormat: Text.PlainText"
+  exit 1
+fi
+if ! grep -B 2 "winObj.title" "$REPO_ROOT/widgets/win11-taskbar.qml" | grep -F "textFormat: Text.PlainText" >/dev/null; then
+  echo "ERROR: widgets/win11-taskbar.qml winObj.title missing textFormat: Text.PlainText"
+  exit 1
+fi
+if ! grep -A 3 "id: tooltipText" "$REPO_ROOT/widgets/win11-taskbar.qml" | grep -F "textFormat: Text.PlainText" >/dev/null; then
+  echo "ERROR: widgets/win11-taskbar.qml tooltipText missing textFormat: Text.PlainText"
+  exit 1
+fi
+
+# win11-taskview/shell.qml: window titles must enforce Text.PlainText
+if ! grep -B 2 "winClient.title" "$REPO_ROOT/configs/quickshell/win11-taskview/shell.qml" | grep -F "textFormat: Text.PlainText" >/dev/null; then
+  echo "ERROR: configs/quickshell/win11-taskview/shell.qml winClient.title missing textFormat: Text.PlainText"
+  exit 1
+fi
+if ! grep -B 2 "contextMenuTarget.title" "$REPO_ROOT/configs/quickshell/win11-taskview/shell.qml" | grep -F "textFormat: Text.PlainText" >/dev/null; then
+  echo "ERROR: configs/quickshell/win11-taskview/shell.qml contextMenuTarget.title missing textFormat: Text.PlainText"
+  exit 1
+fi
+
+# mac-dock: tooltips must enforce Text.PlainText
+if ! grep -A 3 "id: tooltipText" "$REPO_ROOT/widgets/mac-dock.qml" | grep -F "textFormat: Text.PlainText" >/dev/null; then
+  echo "ERROR: widgets/mac-dock.qml tooltipText missing textFormat: Text.PlainText"
+  exit 1
+fi
+if ! grep -A 3 "id: tooltipText" "$REPO_ROOT/configs/quickshell/mac-dock/shell.qml" | grep -F "textFormat: Text.PlainText" >/dev/null; then
+  echo "ERROR: configs/quickshell/mac-dock/shell.qml tooltipText missing textFormat: Text.PlainText"
+  exit 1
+fi
+
+# mac-appmenu.qml: activeAppName must enforce Text.PlainText
+if ! grep -A 3 "id: appTitleText" "$REPO_ROOT/widgets/mac-appmenu.qml" | grep -F "textFormat: Text.PlainText" >/dev/null; then
+  echo "ERROR: widgets/mac-appmenu.qml appTitleText missing textFormat: Text.PlainText"
+  exit 1
+fi
+
+# StageManager.qml: appLabel must enforce Text.PlainText
+if ! grep -A 3 "id: appLabel" "$REPO_ROOT/configs/quickshell/mac-stagemanager/StageManager.qml" | grep -F "textFormat: Text.PlainText" >/dev/null; then
+  echo "ERROR: configs/quickshell/mac-stagemanager/StageManager.qml appLabel missing textFormat: Text.PlainText"
+  exit 1
+fi
+
+# Process monitors: process names must enforce Text.PlainText
+if ! grep -B 2 "procItem.name" "$REPO_ROOT/configs/quickshell/win11-taskmanager/shell.qml" | grep -F "textFormat: Text.PlainText" >/dev/null; then
+  echo "ERROR: configs/quickshell/win11-taskmanager/shell.qml procItem.name missing textFormat: Text.PlainText"
+  exit 1
+fi
+if ! grep -B 2 "procItem.name" "$REPO_ROOT/configs/quickshell/mac-activitymonitor/shell.qml" | grep -F "textFormat: Text.PlainText" >/dev/null; then
+  echo "ERROR: configs/quickshell/mac-activitymonitor/shell.qml procItem.name missing textFormat: Text.PlainText"
+  exit 1
+fi
+
+echo "  ✔ Window titles, process names, and tooltips strictly enforce Text.PlainText (rich text / image SSRF immunity)."
+
+echo "=== 4. Validating Quickshell QML compilation ==="
 if command -v quickshell >/dev/null 2>&1; then
   timeout 3s quickshell -p "$REPO_ROOT/configs/quickshell/mac-settings/shell.qml" 2>&1 | grep -iE "error|critical" || true
   timeout 3s quickshell -p "$REPO_ROOT/configs/quickshell/win11-settings/shell.qml" 2>&1 | grep -iE "error|critical" || true
@@ -88,4 +148,4 @@ if command -v quickshell >/dev/null 2>&1; then
   echo "  ✔ Quickshell settings and flyout QML configs compile cleanly."
 fi
 
-echo "🎉 All EDID injection and clipboard security tests passed successfully!"
+echo "🎉 All EDID injection, clipboard security, and plain text rendering tests passed successfully!"

@@ -77,6 +77,7 @@ BarWidget {
 
       Text {
         id: appTitleText
+        textFormat: Text.PlainText
         anchors.centerIn: parent
         text: root.activeAppName
         font.family: "SF Pro Text, -apple-system, sans-serif"
@@ -255,6 +256,7 @@ BarWidget {
                 anchors.rightMargin: 10
 
                 Text {
+                  textFormat: Text.PlainText
                   text: modelData.text || ""
                   font.family: "SF Pro Text, -apple-system, sans-serif"
                   font.pixelSize: 12
