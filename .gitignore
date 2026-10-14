@@ -13,6 +13,10 @@ state
 baseline
 settings.conf
 stock_toggles_suppressed
+previous_*
+wallpapers/
+quickshell/
+shell/
 *.bak
 *.bak.*
 settings.conf.bak*

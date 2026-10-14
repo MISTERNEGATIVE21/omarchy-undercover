@@ -705,6 +705,14 @@ sync_undercover_themes() {
             cp -f "$wall" "$CONFIG_DIR/wallpapers/$w_name" 2>/dev/null || true
         fi
     done
+
+    # Install theme-set hook for undercover theme synchronization
+    local hook_src="${SCRIPT_DIR}/../configs/hooks/theme-set.d/omarchy-undercover"
+    if [[ -f "$hook_src" ]]; then
+        mkdir -p "$HOME/.config/omarchy/hooks/theme-set.d"
+        cp -f "$hook_src" "$HOME/.config/omarchy/hooks/theme-set.d/omarchy-undercover"
+        chmod +x "$HOME/.config/omarchy/hooks/theme-set.d/omarchy-undercover"
+    fi
 }
 
 disable_stock_lock_and_idle() {
@@ -854,7 +862,7 @@ switch_to_mac() {
         echo -n "$theme_bg_file" > "$HOME/.local/state/omarchy/theme-backgrounds/macos-$variant" 2>/dev/null || true
     fi
     if command_exists omarchy-theme-set; then
-        omarchy-theme-set "macos-$variant" 2>/dev/null || true
+        OMARCHY_THEME_WAIT=1 omarchy-theme-set "macos-$variant" 2>/dev/null || true
     fi
 
     # 1. GSettings (GNOME / GTK / Flatpak / Libadwaita)
@@ -977,11 +985,6 @@ switch_to_win11() {
     write_setting "LAST_UNDERCOVER_MODE" "win11-$variant"
     rm -f "$HOME/.local/state/omarchy/toggles/bar-off" 2>/dev/null || true
 
-    sync_undercover_themes
-    if command_exists omarchy-theme-set; then
-        omarchy-theme-set "windows11-$variant" 2>/dev/null || true
-    fi
-
     local gtk_icon="Fluent-dark"
     local gtk_theme="Win11-Dark"
     local wall_img="win11_bloom_dark.jpg"
@@ -991,6 +994,16 @@ switch_to_win11() {
         gtk_theme="Win11-Light"
         wall_img="win11_bloom_light.jpg"
         color_scheme="prefer-light"
+    fi
+
+    sync_undercover_themes
+    mkdir -p "$HOME/.local/state/omarchy/theme-backgrounds"
+    local theme_bg_file="$HOME/.config/omarchy/themes/windows11-$variant/backgrounds/$wall_img"
+    if [[ -f "$theme_bg_file" ]]; then
+        echo -n "$theme_bg_file" > "$HOME/.local/state/omarchy/theme-backgrounds/windows11-$variant" 2>/dev/null || true
+    fi
+    if command_exists omarchy-theme-set; then
+        OMARCHY_THEME_WAIT=1 omarchy-theme-set "windows11-$variant" 2>/dev/null || true
     fi
 
     # 1. GSettings (GNOME / GTK / Flatpak / Libadwaita)
@@ -1155,10 +1168,14 @@ restore_desktop_state() {
         fi
     fi
 
-    if [[ -n "$target_theme" ]] && command_exists omarchy; then
+    if [[ -n "$target_theme" ]] && command_exists omarchy-theme-set; then
         msg "Restoring Omarchy theme: $target_theme"
-        omarchy theme set "$target_theme" 2>/dev/null || true
+        OMARCHY_THEME_WAIT=1 omarchy-theme-set "$target_theme" 2>/dev/null || true
+    elif [[ -n "$target_theme" ]] && command_exists omarchy; then
+        msg "Restoring Omarchy theme: $target_theme"
+        OMARCHY_THEME_WAIT=1 omarchy theme set "$target_theme" 2>/dev/null || true
     fi
+    rm -f "$HOME/.config/omarchy/hooks/theme-set.d/omarchy-undercover" 2>/dev/null || true
 
     # 4. Restore GTK / GNOME interface
     local gtk_theme="" icon_theme="" cursor_theme="" font_name="" color_scheme="" button_layout=""

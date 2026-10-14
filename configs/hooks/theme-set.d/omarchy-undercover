@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Omarchy Undercover - Theme Synchronization Hook
+# Automatically installed to ~/.config/omarchy/hooks/theme-set.d/omarchy-undercover
+# Ensures GTK themes, icons, and window button layouts stay 100% authentic
+# whenever an undercover theme is activated.
+# =============================================================================
+
+THEME_NAME="${1:-}"
+
+case "$THEME_NAME" in
+    macos-dark|macOS-Dark|"Macos Dark")
+        if command -v gsettings >/dev/null 2>&1; then
+            gsettings set org.gnome.desktop.wm.preferences button-layout "close,minimize,maximize:" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface gtk-theme "macOS-Tahoe-Dark" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface icon-theme "WhiteSur-dark" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface font-name "SF Pro Text 10.5" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface color-scheme "prefer-dark" 2>/dev/null || true
+        fi
+        ;;
+    macos-light|macOS-Light|"Macos Light")
+        if command -v gsettings >/dev/null 2>&1; then
+            gsettings set org.gnome.desktop.wm.preferences button-layout "close,minimize,maximize:" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface gtk-theme "macOS-Tahoe-Light" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface icon-theme "WhiteSur-light" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface font-name "SF Pro Text 10.5" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface color-scheme "prefer-light" 2>/dev/null || true
+        fi
+        ;;
+    windows11-dark|Windows11-Dark|"Windows11 Dark")
+        if command -v gsettings >/dev/null 2>&1; then
+            gsettings set org.gnome.desktop.wm.preferences button-layout ":minimize,maximize,close" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface gtk-theme "Win11-Dark" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface icon-theme "Fluent-dark" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface font-name "Segoe UI 10.5" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface color-scheme "prefer-dark" 2>/dev/null || true
+        fi
+        ;;
+    windows11-light|Windows11-Light|"Windows11 Light")
+        if command -v gsettings >/dev/null 2>&1; then
+            gsettings set org.gnome.desktop.wm.preferences button-layout ":minimize,maximize,close" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface gtk-theme "Win11-Light" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface icon-theme "Fluent-light" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface font-name "Segoe UI 10.5" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface color-scheme "prefer-light" 2>/dev/null || true
+        fi
+        ;;
+esac

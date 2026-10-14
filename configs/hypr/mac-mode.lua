@@ -5,10 +5,10 @@
 local home = os.getenv("HOME")
 local script_dir = debug.getinfo(1, "S").source:sub(2):match("(.*/)")
 local candidate_settings = {
+  home .. "/omarchy-undercover/settings.conf",
   home .. "/.config/omarchy/plugins/omarchy-undercover/settings.conf",
   home .. "/.config/omarchy/plugins/undercover/settings.conf",
   script_dir and (script_dir .. "../../settings.conf"),
-  home .. "/omarchy-undercover/settings.conf",
   "/usr/share/omarchy-undercover/settings.conf",
 }
 local settings_path = candidate_settings[1]
@@ -36,12 +36,24 @@ local function get_setting(key, default)
 end
 
 local mode = get_setting("MODE", "")
-local state_path = home .. "/.config/omarchy/plugins/omarchy-undercover/state"
-local state_file = io.open(state_path, "r") or io.open(home .. "/.config/omarchy/plugins/undercover/state", "r")
-if state_file then
-  local s = state_file:read("*l")
-  state_file:close()
-  if s and (s:find("mac") or s:find("ios")) then mode = "mac" end
+local variant = get_setting("THEME_VARIANT", "dark")
+local state_paths = {
+  home .. "/omarchy-undercover/state",
+  home .. "/.config/omarchy/plugins/omarchy-undercover/state",
+  home .. "/.config/omarchy/plugins/undercover/state",
+}
+for _, sp in ipairs(state_paths) do
+  local sf = io.open(sp, "r")
+  if sf then
+    local s = sf:read("*l")
+    sf:close()
+    if s then
+      if s:find("light") then variant = "light"
+      elseif s:find("dark") then variant = "dark" end
+      if s:find("mac") or s:find("ios") then mode = "mac" end
+      break
+    end
+  end
 end
 
 if mode ~= "mac" and mode ~= "ios" then return end
@@ -51,10 +63,10 @@ if mode ~= "mac" and mode ~= "ios" then return end
 -- ---------------------------------------------------------------------------
 local function find_script(name)
   local dirs = {
+    home .. "/omarchy-undercover/scripts",
     script_dir and (script_dir .. "../../scripts"),
     home .. "/.config/omarchy/plugins/omarchy-undercover/scripts",
     home .. "/.config/omarchy/plugins/undercover/scripts",
-    home .. "/omarchy-undercover/scripts",
     "/usr/share/omarchy-undercover/scripts",
   }
   for _, dir in ipairs(dirs) do
@@ -77,11 +89,18 @@ local function exec_cmd(cmd)
   return hl.dsp.exec_cmd(resolved)
 end
 
-local plugin_scripts = home .. "/.config/omarchy/plugins/omarchy-undercover/scripts"
+local plugin_scripts = home .. "/omarchy-undercover/scripts"
 local current_path = os.getenv("PATH") or "/usr/local/bin:/usr/bin:/bin"
 if not current_path:find(plugin_scripts, 1, true) then
   hl.env("PATH", plugin_scripts .. ":" .. current_path)
 end
+
+local is_light = (variant == "light")
+local bar_bg = is_light and "rgb(ececed)" or "rgb(282828)"
+local bar_text = is_light and "rgb(1d1d1f)" or "rgb(f5f5f7)"
+local active_border = is_light and "rgba(00000024)" or "rgba(ffffff20)"
+local inactive_border = "rgba(00000000)"
+local shadow_color = is_light and "rgba(00000028)" or "rgba(00000066)"
 
 hl.config({
   general = {
@@ -89,21 +108,21 @@ hl.config({
     gaps_out = 12,
     border_size = 1,
     col = {
-      active_border = "rgba(007aff66)",
-      inactive_border = "rgba(00000000)",
+      active_border = active_border,
+      inactive_border = inactive_border,
     },
     layout = "dwindle",
   },
   decoration = {
     rounding = 16,
-    active_opacity = 0.98,
-    inactive_opacity = 0.92,
+    active_opacity = is_light and 0.99 or 0.98,
+    inactive_opacity = is_light and 0.94 or 0.92,
     fullscreen_opacity = 1.0,
     shadow = {
       enabled = true,
-      range = 42,
+      range = is_light and 32 or 42,
       render_power = 4,
-      color = "rgba(00000066)",
+      color = shadow_color,
     },
     blur = {
       enabled = true,
@@ -111,8 +130,8 @@ hl.config({
       passes = 4,
       special = true,
       noise = 0.015,
-      contrast = 1.25,
-      brightness = 1.05,
+      contrast = is_light and 1.1 or 1.25,
+      brightness = is_light and 1.0 or 1.05,
       vibrancy = 0.40,
       vibrancy_darkness = 0.25,
       popups = true,
@@ -129,28 +148,36 @@ hl.config({
     repeat_delay = 600,
     follow_mouse = 1,
   },
+  animations = {
+    enabled = true,
+  },
 })
 
--- macOS Sequoia Spring & Smooth Acceleration Animation Physics
+-- Apple macOS Sequoia / Tahoe Spring & Fluid Animation Physics
+hl.curve("macFluid", { type = "bezier", points = { { 0.16, 1.0 }, { 0.3, 1.0 } } })
 hl.curve("macSpring", { type = "bezier", points = { { 0.1, 0.9 }, { 0.2, 1.0 } } })
 hl.curve("macEase", { type = "bezier", points = { { 0.25, 1.0 }, { 0.5, 1.0 } } })
 hl.curve("macFade", { type = "bezier", points = { { 0.0, 0.0 }, { 0.2, 1.0 } } })
-hl.curve("macFluid", { type = "bezier", points = { { 0.16, 1.0 }, { 0.3, 1.0 } } })
 hl.curve("macGenie", { type = "bezier", points = { { 0.2, 0.9 }, { 0.1, 1.05 } } })
 
-hl.animation({ leaf = "global", enabled = true, speed = 6, bezier = "macFluid" })
-hl.animation({ leaf = "windows", enabled = true, speed = 6, bezier = "macFluid" })
-hl.animation({ leaf = "windowsIn", enabled = true, speed = 6, bezier = "macFluid", style = "popin 85%" })
-hl.animation({ leaf = "windowsOut", enabled = true, speed = 4, bezier = "macEase", style = "popin 80%" })
-hl.animation({ leaf = "windowsMove", enabled = true, speed = 6, bezier = "macSpring" })
+hl.animation({ leaf = "global", enabled = true, speed = 5, bezier = "macFluid" })
+hl.animation({ leaf = "windows", enabled = true, speed = 5, bezier = "macFluid" })
+hl.animation({ leaf = "windowsIn", enabled = true, speed = 5, bezier = "macSpring", style = "popin 82%" })
+hl.animation({ leaf = "windowsOut", enabled = true, speed = 4, bezier = "macEase", style = "popin 82%" })
+hl.animation({ leaf = "windowsMove", enabled = true, speed = 5, bezier = "macFluid" })
+hl.animation({ leaf = "border", enabled = true, speed = 5, bezier = "macFluid" })
+hl.animation({ leaf = "fade", enabled = true, speed = 4, bezier = "macFade" })
 hl.animation({ leaf = "fadeIn", enabled = true, speed = 4, bezier = "macFade" })
-hl.animation({ leaf = "fadeOut", enabled = true, speed = 4, bezier = "macFade" })
+hl.animation({ leaf = "fadeOut", enabled = true, speed = 3, bezier = "macFade" })
+hl.animation({ leaf = "layers", enabled = true, speed = 5, bezier = "macFluid" })
+hl.animation({ leaf = "layersIn", enabled = true, speed = 4, bezier = "macSpring", style = "fade" })
+hl.animation({ leaf = "layersOut", enabled = true, speed = 3, bezier = "macEase", style = "fade" })
 hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "macEase", style = "slide" })
+hl.animation({ leaf = "workspacesIn", enabled = true, speed = 5, bezier = "macEase", style = "slide" })
+hl.animation({ leaf = "workspacesOut", enabled = true, speed = 4, bezier = "macEase", style = "slide" })
 hl.animation({ leaf = "specialWorkspace", enabled = true, speed = 5, bezier = "macFluid", style = "slidevert" })
 hl.animation({ leaf = "specialWorkspaceIn", enabled = true, speed = 5, bezier = "macSpring", style = "slide bottom" })
 hl.animation({ leaf = "specialWorkspaceOut", enabled = true, speed = 4, bezier = "macEase", style = "slide bottom" })
-hl.animation({ leaf = "layersIn", enabled = true, speed = 4, bezier = "macSpring", style = "fade" })
-hl.animation({ leaf = "layersOut", enabled = true, speed = 3, bezier = "macEase", style = "fade" })
 
 -- ---------------------------------------------------------------------------
 -- Dedicated Undercover toggle shortcuts (non-conflicting with base bindings)
@@ -303,12 +330,22 @@ local function configure_mac_titlebars()
   end
 
   local mac_hyprbars = {
-    bar_buttons_alignment = "left",
-    button_rounding = 10,
+    enabled = true,
+    workspace_tag = "omarchy-floating-workspace",
+    bar_height = 28,
+    bar_color = bar_bg,
+    col = { text = bar_text },
+    bar_text_font = "SF Pro Display",
+    bar_text_size = 11,
     bar_text_align = "center",
-    icon_on_hover = true,
-    bar_button_padding = 8,
+    bar_buttons_alignment = "left",
     bar_padding = 12,
+    bar_button_padding = 8,
+    button_rounding = 10,
+    icon_on_hover = true,
+    inactive_button_color = is_light and "rgba(00000020)" or "rgba(ffffff20)",
+    bar_part_of_window = true,
+    bar_precedence_over_border = true,
   }
 
   hl.config({
@@ -325,59 +362,57 @@ local function configure_mac_titlebars()
   hl.config = function(tbl)
     if tbl and tbl.plugin and tbl.plugin.hyprbars then
       local hb = tbl.plugin.hyprbars
+      hb.enabled = true
+      hb.workspace_tag = "omarchy-floating-workspace"
+      hb.bar_height = 28
+      hb.bar_color = bar_bg
+      hb.col = { text = bar_text }
       hb.bar_buttons_alignment = "left"
       hb.button_rounding = 10
       hb.bar_text_align = "center"
       hb.icon_on_hover = true
       hb.bar_button_padding = 8
       hb.bar_padding = 12
+      hb.bar_part_of_window = true
+      hb.bar_precedence_over_border = true
     end
     return hl._orig_config_undercover(tbl)
   end
 
-  -- Wrap hl.plugin.hyprbars.add_button so buttons are transformed into authentic
-  -- macOS traffic lights: Red (Close), Yellow (Minimize), Green (Maximize / Zoom)
+  -- Directly register authentic macOS traffic lights on the left:
+  -- Red dot (Close), Yellow dot (Minimize), Green dot (Maximize / Zoom)
   if hl.plugin and hl.plugin.hyprbars and hl.plugin.hyprbars.add_button then
-    if not hl.plugin.hyprbars._orig_add_button_undercover then
-      hl.plugin.hyprbars._orig_add_button_undercover = hl.plugin.hyprbars.add_button
-    end
-    local orig_add = hl.plugin.hyprbars._orig_add_button_undercover
+    local window_target = 'window = "address:%WINDOW%"'
+    pcall(function()
+      -- 1. Close: Red dot (#ff5f56)
+      hl.plugin.hyprbars.add_button({
+        bg_color = "rgb(ff5f56)",
+        fg_color = "rgb(4d0000)",
+        size = 13,
+        icon = "×",
+        action = "hyprctl dispatch 'hl.dsp.window.close({ " .. window_target .. " })'",
+      })
+      -- 2. Minimize: Yellow dot (#ffbd2e)
+      hl.plugin.hyprbars.add_button({
+        bg_color = "rgb(ffbd2e)",
+        fg_color = "rgb(5c3b00)",
+        size = 13,
+        icon = "−",
+        action = "omarchy-hyprland-window-minimize %WINDOW%",
+      })
+      -- 3. Maximize / Zoom: Green dot (#27c93f)
+      hl.plugin.hyprbars.add_button({
+        bg_color = "rgb(27c93f)",
+        fg_color = "rgb(004d11)",
+        size = 13,
+        icon = "+",
+        action = "hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = \"maximized\", action = \"toggle\", " .. window_target .. " })'",
+      })
+    end)
 
-    local pending_buttons = {}
+    -- Intercept subsequent calls from workspace-modes.lua to prevent monotone button pollution
     hl.plugin.hyprbars.add_button = function(spec)
-      if spec and spec.icon then
-        pending_buttons[spec.icon] = spec
-        if pending_buttons["×"] and pending_buttons["□"] and pending_buttons["−"] then
-          -- 1. Close: Red dot (#ff5f56)
-          orig_add({
-            bg_color = "rgb(ff5f56)",
-            fg_color = "rgb(4d0000)",
-            size = 13,
-            icon = "×",
-            action = pending_buttons["×"].action,
-          })
-          -- 2. Minimize: Yellow dot (#ffbd2e)
-          orig_add({
-            bg_color = "rgb(ffbd2e)",
-            fg_color = "rgb(5c3b00)",
-            size = 13,
-            icon = "−",
-            action = pending_buttons["−"].action,
-          })
-          -- 3. Maximize / Zoom: Green dot (#27c93f)
-          orig_add({
-            bg_color = "rgb(27c93f)",
-            fg_color = "rgb(004d11)",
-            size = 13,
-            icon = "+",
-            action = pending_buttons["□"].action,
-          })
-          pending_buttons = {}
-          return
-        end
-      else
-        return orig_add(spec)
-      end
+      return
     end
   end
 
@@ -402,5 +437,6 @@ local function configure_mac_titlebars()
 end
 
 configure_mac_titlebars()
+
 
 

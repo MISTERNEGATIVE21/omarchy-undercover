@@ -8,9 +8,9 @@ local home = os.getenv("HOME")
 -- Locate active plugin root directory
 local function get_plugin_dir()
   local dirs = {
+    home .. "/omarchy-undercover",
     home .. "/.config/omarchy/plugins/omarchy-undercover",
     home .. "/.config/omarchy/plugins/undercover",
-    home .. "/omarchy-undercover",
     "/usr/share/omarchy-undercover",
   }
   for _, d in ipairs(dirs) do

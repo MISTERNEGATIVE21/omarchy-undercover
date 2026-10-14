@@ -461,10 +461,18 @@ enable_undercover_hyprland() {
 
     if [[ -f "${SCRIPT_DIR}/../manifest.json" ]]; then
         plugin_root="$(cd "${SCRIPT_DIR}/.." && pwd)"
+    elif [[ -d "$HOME/omarchy-undercover" ]]; then
+        plugin_root="$HOME/omarchy-undercover"
     elif [[ -d "$HOME/.config/omarchy/plugins/omarchy-undercover" ]]; then
         plugin_root="$HOME/.config/omarchy/plugins/omarchy-undercover"
     elif [[ -d "$HOME/.config/omarchy/plugins/undercover" ]]; then
         plugin_root="$HOME/.config/omarchy/plugins/undercover"
+    fi
+
+    # Synchronize configs to installed plugin directory so both locations stay aligned
+    if [[ -d "$plugin_root" && "$plugin_root" != "$HOME/.config/omarchy/plugins/omarchy-undercover" ]]; then
+        mkdir -p "$HOME/.config/omarchy/plugins/omarchy-undercover/configs/hypr"
+        cp -f "$plugin_root/configs/hypr/"*.lua "$HOME/.config/omarchy/plugins/omarchy-undercover/configs/hypr/" 2>/dev/null || true
     fi
 
     mkdir -p "$toggles_dir"
@@ -503,21 +511,29 @@ enable_undercover_hyprland() {
         chmod 644 "$undercover_conf"
     fi
 
-
-    # Apply hyprbars floating window controls live to Hyprland
+    # Reset and reload titlebars plugin cleanly so button vector (m_vButtons) is initialized fresh
     if command_exists hyprctl; then
-        if [[ "$mode" == "mac" || "$mode" == "ios" ]]; then
-            hyprctl eval 'if hl and hl.config then hl.config({ plugin = { hyprbars = { bar_buttons_alignment = "left", button_rounding = 10, bar_text_align = "center", icon_on_hover = true, bar_button_padding = 8, bar_padding = 12 } } }) end' >/dev/null 2>&1 || true
-        else
-            hyprctl eval 'if hl and hl.config then hl.config({ plugin = { hyprbars = { bar_buttons_alignment = "right", button_rounding = 0, bar_text_align = "left", icon_on_hover = false, bar_button_padding = 8, bar_padding = 10 } } }) end' >/dev/null 2>&1 || true
+        local TITLEBARS="/usr/lib/omarchy-hyprland-titlebars/titlebars.so"
+        if [[ -f "$TITLEBARS" ]]; then
+            hyprctl plugin unload "$TITLEBARS" >/dev/null 2>&1 || true
+            hyprctl plugin load "$TITLEBARS" >/dev/null 2>&1 || true
         fi
-        # Reload hyprland cleanly so dynamic toggles take effect
+        # Reload hyprland cleanly so dynamic toggles and fresh hyprbars settings take effect
         hyprctl reload >/dev/null 2>&1 || true
     fi
 }
 
 disable_undercover_hyprland() {
-    enable_undercover_hyprland "omarchy"
+    rm -f "$HOME/.local/state/omarchy/toggles/hypr/undercover.lua" \
+          "$HOME/.local/state/omarchy/toggles/hypr/undercover.conf" 2>/dev/null || true
+    if command_exists hyprctl; then
+        local TITLEBARS="/usr/lib/omarchy-hyprland-titlebars/titlebars.so"
+        if [[ -f "$TITLEBARS" ]]; then
+            hyprctl plugin unload "$TITLEBARS" >/dev/null 2>&1 || true
+            hyprctl plugin load "$TITLEBARS" >/dev/null 2>&1 || true
+        fi
+        hyprctl reload >/dev/null 2>&1 || true
+    fi
 }
 
 uninstall_undercover_hyprland() {

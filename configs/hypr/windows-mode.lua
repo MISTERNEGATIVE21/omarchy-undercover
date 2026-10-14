@@ -16,10 +16,10 @@
 local home = os.getenv("HOME")
 local script_dir = debug.getinfo(1, "S").source:sub(2):match("(.*/)")
 local candidate_settings = {
+  home .. "/omarchy-undercover/settings.conf",
   home .. "/.config/omarchy/plugins/omarchy-undercover/settings.conf",
   home .. "/.config/omarchy/plugins/undercover/settings.conf",
   script_dir and (script_dir .. "../../settings.conf"),
-  home .. "/omarchy-undercover/settings.conf",
   "/usr/share/omarchy-undercover/settings.conf",
 }
 local settings_path = candidate_settings[1]
@@ -57,15 +57,27 @@ local blur_on       = get_setting("BLUR", "1") == "1"
 local is_trans      = get_setting("WIN11_TRANSPARENCY", "true") == "true"
 local cursor_size   = tonumber(get_setting("CURSOR_SIZE", "24")) or 24
 local mode          = get_setting("MODE", "windows")
+local variant       = get_setting("THEME_VARIANT", "dark")
 
 -- Check state file first (highest precedence)
-local state_path = home .. "/.config/omarchy/plugins/omarchy-undercover/state"
-local state_file = io.open(state_path, "r") or io.open(home .. "/.config/omarchy/plugins/undercover/state", "r")
-if state_file then
-  local s = state_file:read("*l")
-  state_file:close()
-  if s and (s:find("win") or s:find("windows")) then mode = "windows" end
-  if s and (s:find("mac") or s:find("ios") or s:find("omarchy")) then mode = s end
+local state_paths = {
+  home .. "/omarchy-undercover/state",
+  home .. "/.config/omarchy/plugins/omarchy-undercover/state",
+  home .. "/.config/omarchy/plugins/undercover/state",
+}
+for _, sp in ipairs(state_paths) do
+  local sf = io.open(sp, "r")
+  if sf then
+    local s = sf:read("*l")
+    sf:close()
+    if s then
+      if s:find("light") then variant = "light"
+      elseif s:find("dark") then variant = "dark" end
+      if s:find("win") or s:find("windows") then mode = "windows" end
+      if s:find("mac") or s:find("ios") or s:find("omarchy") then mode = s end
+      break
+    end
+  end
 end
 
 -- Bail out gracefully if the user turned windows mode off but left the file.
@@ -78,10 +90,10 @@ end
 -- ---------------------------------------------------------------------------
 local function find_script(name)
   local dirs = {
+    home .. "/omarchy-undercover/scripts",
     script_dir and (script_dir .. "../../scripts"),
     home .. "/.config/omarchy/plugins/omarchy-undercover/scripts",
     home .. "/.config/omarchy/plugins/undercover/scripts",
-    home .. "/omarchy-undercover/scripts",
     "/usr/share/omarchy-undercover/scripts",
   }
   for _, dir in ipairs(dirs) do
@@ -179,6 +191,10 @@ hl.config({
     follow_mouse = 1,
     mouse_refocus = true,
     float_switch_override_focus = 1,
+  },
+
+  animations = {
+    enabled = animations_on,
   },
 })
 
@@ -406,13 +422,26 @@ local function configure_windows_titlebars()
     end
   end
 
+  local is_light = (variant == "light")
+  local bar_bg = is_light and "rgb(f3f3f3)" or "rgb(202020)"
+  local bar_text = is_light and "rgb(1c1c1c)" or "rgb(ffffff)"
+
   local win_hyprbars = {
+    enabled = true,
+    workspace_tag = "omarchy-floating-workspace",
+    bar_height = 30,
+    bar_color = bar_bg,
+    col = { text = bar_text },
+    bar_text_font = "Segoe UI",
+    bar_text_size = 10,
     bar_buttons_alignment = "right",
     button_rounding = 0,
     bar_text_align = "left",
     icon_on_hover = false,
     bar_button_padding = 8,
     bar_padding = 10,
+    bar_part_of_window = true,
+    bar_precedence_over_border = true,
   }
 
   hl.config({
@@ -429,59 +458,57 @@ local function configure_windows_titlebars()
   hl.config = function(tbl)
     if tbl and tbl.plugin and tbl.plugin.hyprbars then
       local hb = tbl.plugin.hyprbars
+      hb.enabled = true
+      hb.workspace_tag = "omarchy-floating-workspace"
+      hb.bar_height = 30
+      hb.bar_color = bar_bg
+      hb.col = { text = bar_text }
       hb.bar_buttons_alignment = "right"
       hb.button_rounding = 0
       hb.bar_text_align = "left"
       hb.icon_on_hover = false
       hb.bar_button_padding = 8
       hb.bar_padding = 10
+      hb.bar_part_of_window = true
+      hb.bar_precedence_over_border = true
     end
     return hl._orig_config_undercover(tbl)
   end
 
-  -- Wrap hl.plugin.hyprbars.add_button to enforce authentic Windows 11 window controls:
-  -- Minimize (−), Maximize (□), Close (×)
+  -- Directly register authentic Windows 11 window controls on the right:
+  -- Close (×), Maximize (□), Minimize (−)
   if hl.plugin and hl.plugin.hyprbars and hl.plugin.hyprbars.add_button then
-    if not hl.plugin.hyprbars._orig_add_button_undercover then
-      hl.plugin.hyprbars._orig_add_button_undercover = hl.plugin.hyprbars.add_button
-    end
-    local orig_add = hl.plugin.hyprbars._orig_add_button_undercover
+    local window_target = 'window = "address:%WINDOW%"'
+    pcall(function()
+      -- 1. Close: Rightmost button (×)
+      hl.plugin.hyprbars.add_button({
+        bg_color = bar_bg,
+        fg_color = bar_text,
+        size = 20,
+        icon = "×",
+        action = "hyprctl dispatch 'hl.dsp.window.close({ " .. window_target .. " })'",
+      })
+      -- 2. Maximize: Middle button (□)
+      hl.plugin.hyprbars.add_button({
+        bg_color = bar_bg,
+        fg_color = bar_text,
+        size = 20,
+        icon = "□",
+        action = "hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = \"maximized\", action = \"toggle\", " .. window_target .. " })'",
+      })
+      -- 3. Minimize: Leftmost button (−)
+      hl.plugin.hyprbars.add_button({
+        bg_color = bar_bg,
+        fg_color = bar_text,
+        size = 20,
+        icon = "−",
+        action = "omarchy-hyprland-window-minimize %WINDOW%",
+      })
+    end)
 
-    local pending_buttons = {}
+    -- Intercept subsequent calls from workspace-modes.lua to prevent monotone button pollution
     hl.plugin.hyprbars.add_button = function(spec)
-      if spec and spec.icon then
-        pending_buttons[spec.icon] = spec
-        if pending_buttons["×"] and pending_buttons["□"] and pending_buttons["−"] then
-          -- 1. Close: Rightmost button (×)
-          orig_add({
-            bg_color = pending_buttons["×"].bg_color,
-            fg_color = pending_buttons["×"].fg_color,
-            size = 20,
-            icon = "×",
-            action = pending_buttons["×"].action,
-          })
-          -- 2. Maximize: Middle button (□)
-          orig_add({
-            bg_color = pending_buttons["□"].bg_color,
-            fg_color = pending_buttons["□"].fg_color,
-            size = 20,
-            icon = "□",
-            action = pending_buttons["□"].action,
-          })
-          -- 3. Minimize: Leftmost button (−)
-          orig_add({
-            bg_color = pending_buttons["−"].bg_color,
-            fg_color = pending_buttons["−"].fg_color,
-            size = 20,
-            icon = "−",
-            action = pending_buttons["−"].action,
-          })
-          pending_buttons = {}
-          return
-        end
-      else
-        return orig_add(spec)
-      end
+      return
     end
   end
 
