@@ -504,8 +504,14 @@ enable_undercover_hyprland() {
     fi
 
 
-    # Reload hyprland cleanly so dynamic toggles take effect
+    # Apply hyprbars floating window controls live to Hyprland
     if command_exists hyprctl; then
+        if [[ "$mode" == "mac" || "$mode" == "ios" ]]; then
+            hyprctl eval 'if hl and hl.config then hl.config({ plugin = { hyprbars = { bar_buttons_alignment = "left", button_rounding = 10, bar_text_align = "center", icon_on_hover = true, bar_button_padding = 8, bar_padding = 12 } } }) end' >/dev/null 2>&1 || true
+        else
+            hyprctl eval 'if hl and hl.config then hl.config({ plugin = { hyprbars = { bar_buttons_alignment = "right", button_rounding = 0, bar_text_align = "left", icon_on_hover = false, bar_button_padding = 8, bar_padding = 10 } } }) end' >/dev/null 2>&1 || true
+        fi
+        # Reload hyprland cleanly so dynamic toggles take effect
         hyprctl reload >/dev/null 2>&1 || true
     fi
 }

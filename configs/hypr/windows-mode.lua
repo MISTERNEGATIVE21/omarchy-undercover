@@ -390,3 +390,120 @@ if o and o.window then
     opacity = "1 1",
   })
 end
+
+-- ---------------------------------------------------------------------------
+-- Free Roam / Floating Window Controls: Windows 11 Controls (Hyprbars)
+-- ---------------------------------------------------------------------------
+local function configure_windows_titlebars()
+  if not hl or not hl.config then return end
+
+  local TITLEBARS = "/usr/lib/omarchy-hyprland-titlebars/titlebars.so"
+  local f = io.open(TITLEBARS, "r")
+  if f then
+    f:close()
+    if hl.plugin and hl.plugin.load then
+      pcall(function() hl.plugin.load(TITLEBARS) end)
+    end
+  end
+
+  local win_hyprbars = {
+    bar_buttons_alignment = "right",
+    button_rounding = 0,
+    bar_text_align = "left",
+    icon_on_hover = false,
+    bar_button_padding = 8,
+    bar_padding = 10,
+  }
+
+  hl.config({
+    plugin = {
+      hyprbars = win_hyprbars,
+    },
+  })
+
+  -- Intercept hl.config so that when workspace-modes.lua configures titlebars,
+  -- Windows 11 controls settings take precedence.
+  if not hl._orig_config_undercover then
+    hl._orig_config_undercover = hl.config
+  end
+  hl.config = function(tbl)
+    if tbl and tbl.plugin and tbl.plugin.hyprbars then
+      local hb = tbl.plugin.hyprbars
+      hb.bar_buttons_alignment = "right"
+      hb.button_rounding = 0
+      hb.bar_text_align = "left"
+      hb.icon_on_hover = false
+      hb.bar_button_padding = 8
+      hb.bar_padding = 10
+    end
+    return hl._orig_config_undercover(tbl)
+  end
+
+  -- Wrap hl.plugin.hyprbars.add_button to enforce authentic Windows 11 window controls:
+  -- Minimize (−), Maximize (□), Close (×)
+  if hl.plugin and hl.plugin.hyprbars and hl.plugin.hyprbars.add_button then
+    if not hl.plugin.hyprbars._orig_add_button_undercover then
+      hl.plugin.hyprbars._orig_add_button_undercover = hl.plugin.hyprbars.add_button
+    end
+    local orig_add = hl.plugin.hyprbars._orig_add_button_undercover
+
+    local pending_buttons = {}
+    hl.plugin.hyprbars.add_button = function(spec)
+      if spec and spec.icon then
+        pending_buttons[spec.icon] = spec
+        if pending_buttons["×"] and pending_buttons["□"] and pending_buttons["−"] then
+          -- 1. Close: Rightmost button (×)
+          orig_add({
+            bg_color = pending_buttons["×"].bg_color,
+            fg_color = pending_buttons["×"].fg_color,
+            size = 20,
+            icon = "×",
+            action = pending_buttons["×"].action,
+          })
+          -- 2. Maximize: Middle button (□)
+          orig_add({
+            bg_color = pending_buttons["□"].bg_color,
+            fg_color = pending_buttons["□"].fg_color,
+            size = 20,
+            icon = "□",
+            action = pending_buttons["□"].action,
+          })
+          -- 3. Minimize: Leftmost button (−)
+          orig_add({
+            bg_color = pending_buttons["−"].bg_color,
+            fg_color = pending_buttons["−"].fg_color,
+            size = 20,
+            icon = "−",
+            action = pending_buttons["−"].action,
+          })
+          pending_buttons = {}
+          return
+        end
+      else
+        return orig_add(spec)
+      end
+    end
+  end
+
+  -- Hook into workspace-modes.apply so mode stays locked to Windows 11 on workspace layout changes
+  local ok, wm = pcall(require, "default.hypr.workspace-modes")
+  if ok and wm and wm.apply then
+    if not wm._orig_apply_undercover then
+      wm._orig_apply_undercover = wm.apply
+    end
+    wm.apply = function(...)
+      local res = wm._orig_apply_undercover(...)
+      if hl and hl.config then
+        hl.config({
+          plugin = {
+            hyprbars = win_hyprbars,
+          },
+        })
+      end
+      return res
+    end
+  end
+end
+
+configure_windows_titlebars()
+

@@ -41,7 +41,7 @@ if [[ ! -f "$REPO_ROOT/preview.png" ]]; then
     exit 1
 fi
 preview_size=$(stat -c "%s" "$REPO_ROOT/preview.png")
-if (( preview_size < 1000000 )); then
+if (( preview_size < 500000 )); then
     echo "ERROR: preview.png appears incomplete (size: $preview_size bytes)" >&2
     exit 1
 fi

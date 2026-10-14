@@ -287,3 +287,120 @@ if o and o.window then
   })
 end
 
+-- ---------------------------------------------------------------------------
+-- Free Roam / Floating Window Controls: Apple macOS Traffic Lights (Hyprbars)
+-- ---------------------------------------------------------------------------
+local function configure_mac_titlebars()
+  if not hl or not hl.config then return end
+
+  local TITLEBARS = "/usr/lib/omarchy-hyprland-titlebars/titlebars.so"
+  local f = io.open(TITLEBARS, "r")
+  if f then
+    f:close()
+    if hl.plugin and hl.plugin.load then
+      pcall(function() hl.plugin.load(TITLEBARS) end)
+    end
+  end
+
+  local mac_hyprbars = {
+    bar_buttons_alignment = "left",
+    button_rounding = 10,
+    bar_text_align = "center",
+    icon_on_hover = true,
+    bar_button_padding = 8,
+    bar_padding = 12,
+  }
+
+  hl.config({
+    plugin = {
+      hyprbars = mac_hyprbars,
+    },
+  })
+
+  -- Intercept hl.config so that when workspace-modes.lua configures titlebars,
+  -- macOS traffic light settings take precedence over standard right-aligned buttons.
+  if not hl._orig_config_undercover then
+    hl._orig_config_undercover = hl.config
+  end
+  hl.config = function(tbl)
+    if tbl and tbl.plugin and tbl.plugin.hyprbars then
+      local hb = tbl.plugin.hyprbars
+      hb.bar_buttons_alignment = "left"
+      hb.button_rounding = 10
+      hb.bar_text_align = "center"
+      hb.icon_on_hover = true
+      hb.bar_button_padding = 8
+      hb.bar_padding = 12
+    end
+    return hl._orig_config_undercover(tbl)
+  end
+
+  -- Wrap hl.plugin.hyprbars.add_button so buttons are transformed into authentic
+  -- macOS traffic lights: Red (Close), Yellow (Minimize), Green (Maximize / Zoom)
+  if hl.plugin and hl.plugin.hyprbars and hl.plugin.hyprbars.add_button then
+    if not hl.plugin.hyprbars._orig_add_button_undercover then
+      hl.plugin.hyprbars._orig_add_button_undercover = hl.plugin.hyprbars.add_button
+    end
+    local orig_add = hl.plugin.hyprbars._orig_add_button_undercover
+
+    local pending_buttons = {}
+    hl.plugin.hyprbars.add_button = function(spec)
+      if spec and spec.icon then
+        pending_buttons[spec.icon] = spec
+        if pending_buttons["×"] and pending_buttons["□"] and pending_buttons["−"] then
+          -- 1. Close: Red dot (#ff5f56)
+          orig_add({
+            bg_color = "rgb(ff5f56)",
+            fg_color = "rgb(4d0000)",
+            size = 13,
+            icon = "×",
+            action = pending_buttons["×"].action,
+          })
+          -- 2. Minimize: Yellow dot (#ffbd2e)
+          orig_add({
+            bg_color = "rgb(ffbd2e)",
+            fg_color = "rgb(5c3b00)",
+            size = 13,
+            icon = "−",
+            action = pending_buttons["−"].action,
+          })
+          -- 3. Maximize / Zoom: Green dot (#27c93f)
+          orig_add({
+            bg_color = "rgb(27c93f)",
+            fg_color = "rgb(004d11)",
+            size = 13,
+            icon = "+",
+            action = pending_buttons["□"].action,
+          })
+          pending_buttons = {}
+          return
+        end
+      else
+        return orig_add(spec)
+      end
+    end
+  end
+
+  -- Hook into workspace-modes.apply so mode stays locked to macOS on workspace layout changes
+  local ok, wm = pcall(require, "default.hypr.workspace-modes")
+  if ok and wm and wm.apply then
+    if not wm._orig_apply_undercover then
+      wm._orig_apply_undercover = wm.apply
+    end
+    wm.apply = function(...)
+      local res = wm._orig_apply_undercover(...)
+      if hl and hl.config then
+        hl.config({
+          plugin = {
+            hyprbars = mac_hyprbars,
+          },
+        })
+      end
+      return res
+    end
+  end
+end
+
+configure_mac_titlebars()
+
+
