@@ -145,6 +145,11 @@ Item {
     if (!root.isMacMode && root.screensaverActive) {
       root.dismissScreensaver()
     }
+    if (root.currentState.indexOf("mac") !== -1 || root.currentState.indexOf("win") !== -1) {
+      root.runCmd("omarchy-undercover --hide-stock-dock")
+    } else if (root.currentState === "omarchy" || root.currentState === "") {
+      root.runCmd("omarchy-undercover --restore-stock-dock")
+    }
   }
 
   FileView {
@@ -342,6 +347,16 @@ Item {
       root.runCmd(root.pluginDir + "/scripts/omarchy-undercover-tracker --workspace " + id)
       return "ok"
     }
+
+    function hideStockDock(): string {
+      root.runCmd("omarchy-undercover --hide-stock-dock")
+      return "ok"
+    }
+
+    function restoreStockDock(): string {
+      root.runCmd("omarchy-undercover --restore-stock-dock")
+      return "ok"
+    }
   }
 
   IpcHandler {
@@ -439,6 +454,16 @@ Item {
 
     function focusWorkspace(id: string): string {
       root.runCmd(root.pluginDir + "/scripts/omarchy-undercover-tracker --workspace " + id)
+      return "ok"
+    }
+
+    function hideStockDock(): string {
+      root.runCmd("omarchy-undercover --hide-stock-dock")
+      return "ok"
+    }
+
+    function restoreStockDock(): string {
+      root.runCmd("omarchy-undercover --restore-stock-dock")
       return "ok"
     }
   }

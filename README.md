@@ -1,7 +1,7 @@
-# Omarchy Undercover (v7.5.0)
+# Omarchy Undercover (v7.5.1)
 
 [![Omarchy Verified](https://img.shields.io/badge/omarchy-verified_plugin-00c853?style=flat-square&logo=archlinux)](https://github.com/MISTERNEGATIVE21/omarchy-undercover)
-[![Version](https://img.shields.io/badge/version-v7.5.0?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases/tag/v7.5.0)
+[![Version](https://img.shields.io/badge/version-v7.5.1?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases/tag/v7.5.1)
 [![Release](https://img.shields.io/github/v/release/MISTERNEGATIVE21/omarchy-undercover?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases)
 [![Compositor](https://img.shields.io/badge/compositor-Hyprland-00f2fe?style=flat-square)](https://hyprland.org)
 [![Engine](https://img.shields.io/badge/engine-Quickshell%20%7C%20Waybar-ff2d55?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover)
@@ -23,6 +23,7 @@ Designed for presentations, shared screen privacy, or personal preference, Omarc
   - **Middle-Click**: Toggles between the active disguise and baseline Omarchy.
   - **Scroll Wheel**: Steps forward or backward through available presets.
 - **One-touch camouflage toggle**: Switch between your chosen disguise and baseline Omarchy instantly via <kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>U</kbd> or CLI.
+- **Automatic Stock Floating Dock Management**: In Undercover mode, the official stock Omarchy floating dock (`omarchy.dock`) is cleanly hidden and suppressed via Omarchy shell IPC (`omarchy-shell shell setPluginEnabled omarchy.dock false`), configuration isolation (`disabledPlugins: ["omarchy.dock"]`), and process management. When returning to normal Omarchy mode, the official stock dock is seamlessly restored to its pristine state.
 - **Real-Time VM & Window State Tracking (`.undercoverfile`)**: Maintains an atomic, zero-latency system/runtime tracking file inside the plugin folder (`~/.config/omarchy/plugins/omarchy-undercover/.undercoverfile`) tracking active VM/workspace, total VM counts, active and open window list, workspace paging, and Stage Manager app groupings. Powers infallible window switching across Stage Manager, Task View, Dock, and Taskbar via modern Hyprland Lua dispatch (`hl.dsp.focus` & `bring_to_top()`) and prevents missed window activation events without polluting `$HOME`.
 - **Apple macOS Tahoe Mode (Flagship Default)**: High-altitude alpine vistas in 4K UHD, modern GTK3 & GTK4 themes, frosted glass top menu bar with Apple menu, global application menu, polygraph monitor, Control Center, auto-magnifying dock with active app running indicators, Spotlight search (<kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>Space</kbd>), and authentic SF Pro typography.
 - **Apple macOS Sequoia Mode**: Preserved classic redwood theme available via `-mac-sequoia` or System Settings disguise switcher.
