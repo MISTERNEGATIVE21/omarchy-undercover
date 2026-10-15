@@ -255,6 +255,7 @@ ShellRoot {
     function shiftToClient(client) {
       if (!client || !client.address) return
       var rawAddr = String(client.address).trim()
+      if (!rawAddr.startsWith("0x")) rawAddr = "0x" + rawAddr
       if (!/^0x[0-9a-fA-F]+$/.test(rawAddr)) return
       if (client.workspace && client.workspace.id < 0) {
         Quickshell.execDetached(["omarchy-undercover-minimize", rawAddr])
@@ -262,11 +263,16 @@ ShellRoot {
         return
       }
       var wsId = (client.workspace && client.workspace.id) ? parseInt(client.workspace.id) : 0
-      var safeWs = (wsId > 0) ? ("hyprctl dispatch workspace " + wsId + " 2>/dev/null; hyprctl dispatch " + dockWindow.shellQuote("hl.dsp.focus({ workspace = " + wsId + " })") + " 2>/dev/null; ") : ""
-      var cmd = safeWs +
-                "if hyprctl dispatch " + dockWindow.shellQuote("hl.dsp.focus({ window = 'address:" + rawAddr + "' })") + " 2>/dev/null; then :; else " +
-                "hyprctl dispatch focuswindow " + dockWindow.shellQuote("address:" + rawAddr) + " 2>/dev/null; fi"
-      Quickshell.execDetached(["bash", "-c", cmd])
+      var monId = (client.monitor !== undefined && client.monitor !== null) ? parseInt(client.monitor) : -1
+      var trackerCmd = dockWindow.pluginDir + "/scripts/omarchy-undercover-tracker --focus " + rawAddr
+
+      var wsCmd = (wsId > 0) ? ("if hyprctl dispatch \"hl.dsp.focus({ workspace = " + wsId + " })\" 2>/dev/null; then :; else hyprctl dispatch workspace " + wsId + " 2>/dev/null; fi; ") : ""
+      var monCmd = (monId >= 0) ? ("if hyprctl dispatch \"hl.dsp.focus({ monitor = " + monId + " })\" 2>/dev/null; then :; else hyprctl dispatch focusmonitor " + monId + " 2>/dev/null; fi; ") : ""
+      var winCmd = "if hyprctl dispatch \"hl.dsp.focus({ window = 'address:" + rawAddr + "' })\" 2>/dev/null; then :; else hyprctl dispatch focuswindow \"address:" + rawAddr + "\" 2>/dev/null; fi; "
+      var topCmd = "hyprctl dispatch \"hl.dsp.window.bring_to_top()\" 2>/dev/null || true; "
+      var fallback = wsCmd + monCmd + winCmd + topCmd
+
+      Quickshell.execDetached(["bash", "-c", trackerCmd + " 2>/dev/null || (" + fallback + ")"])
       refreshTimer.restart()
     }
 

@@ -5,6 +5,7 @@ Finds running application window across Hyprland workspaces, focuses it, or laun
 """
 
 import sys
+import os
 import json
 import subprocess
 
@@ -21,15 +22,24 @@ def main():
             if any(p in fields for p in patterns):
                 addr = c.get("address")
                 ws_id = c.get("workspace", {}).get("id") if isinstance(c.get("workspace"), dict) else None
-                if ws_id is not None and ws_id < 0 and addr:
-                    subprocess.run(["omarchy-undercover-minimize", addr], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
-                    return
+                tracker_cmd = [
+                    os.path.expanduser("~/.config/omarchy/plugins/omarchy-undercover/scripts/omarchy-undercover-tracker"),
+                    "--focus", addr
+                ]
+                if not os.path.exists(tracker_cmd[0]):
+                    tracker_cmd[0] = os.path.join(os.path.dirname(__file__), "omarchy-undercover-tracker")
+                if os.path.exists(tracker_cmd[0]):
+                    res = subprocess.run(tracker_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+                    if res.returncode == 0:
+                        return
+
                 if ws_id and ws_id > 0:
                     subprocess.run(["hyprctl", "dispatch", f"hl.dsp.focus({{ workspace = {ws_id} }})"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
                     subprocess.run(["hyprctl", "dispatch", "workspace", str(ws_id)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
                 if addr:
                     subprocess.run(["hyprctl", "dispatch", f'hl.dsp.focus({{ window = "address:{addr}" }})'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
                     subprocess.run(["hyprctl", "dispatch", "focuswindow", f"address:{addr}"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+                    subprocess.run(["hyprctl", "dispatch", "hl.dsp.window.bring_to_top()"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
                 return
     except Exception:
         pass

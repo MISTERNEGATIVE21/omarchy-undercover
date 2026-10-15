@@ -115,6 +115,12 @@ Item {
     clipResolverProc.running = true
   }
 
+  Process {
+    id: trackerDaemonProc
+    command: ["python3", root.pluginDir + "/scripts/omarchy-undercover-tracker", "--daemon"]
+    running: true
+  }
+
   Component.onCompleted: {
     reloadScreensaverConfig()
     var s = stateFile.text().trim()
@@ -317,6 +323,21 @@ Item {
       root.reloadScreensaverConfig()
       return "ok"
     }
+
+    function trackerStatus(): string {
+      root.runCmd("omarchy-undercover-tracker --update")
+      return "ok"
+    }
+
+    function focusWindow(addr: string): string {
+      root.runCmd("omarchy-undercover-tracker --focus " + addr)
+      return "ok"
+    }
+
+    function focusWorkspace(id: string): string {
+      root.runCmd("omarchy-undercover-tracker --workspace " + id)
+      return "ok"
+    }
   }
 
   IpcHandler {
@@ -395,6 +416,21 @@ Item {
 
     function reloadScreensaverConfig(): string {
       root.reloadScreensaverConfig()
+      return "ok"
+    }
+
+    function trackerStatus(): string {
+      root.runCmd("omarchy-undercover-tracker --update")
+      return "ok"
+    }
+
+    function focusWindow(addr: string): string {
+      root.runCmd("omarchy-undercover-tracker --focus " + addr)
+      return "ok"
+    }
+
+    function focusWorkspace(id: string): string {
+      root.runCmd("omarchy-undercover-tracker --workspace " + id)
       return "ok"
     }
   }

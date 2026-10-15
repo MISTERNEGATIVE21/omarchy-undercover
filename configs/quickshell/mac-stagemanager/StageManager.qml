@@ -299,15 +299,17 @@ Item {
     Qt.callLater(function() {
       var rawAddr = String(address || "").trim()
       if (rawAddr && !rawAddr.startsWith("0x")) rawAddr = "0x" + rawAddr
-      if (wsId && wsId > 0) {
-        var wsCmd = "if hyprctl dispatch \"hl.dsp.focus({ workspace = " + wsId + " })\" 2>/dev/null; then :; else hyprctl dispatch workspace " + wsId + " 2>/dev/null; fi"
-        Quickshell.execDetached(["bash", "-c", wsCmd])
-      }
+
+      var pluginDir = (root.manifest && root.manifest.dir) ? root.manifest.dir : (Quickshell.env("HOME") + "/.config/omarchy/plugins/omarchy-undercover")
+      var trackerCmd = pluginDir + "/scripts/omarchy-undercover-tracker --focus " + rawAddr
+      var wsCmd = (wsId && wsId > 0) ? ("if hyprctl dispatch \"hl.dsp.focus({ workspace = " + wsId + " })\" 2>/dev/null; then :; else hyprctl dispatch workspace " + wsId + " 2>/dev/null; fi; ") : ""
+      var winCmd = "if hyprctl dispatch \"hl.dsp.focus({ window = 'address:" + rawAddr + "' })\" 2>/dev/null; then :; else hyprctl dispatch focuswindow \"address:" + rawAddr + "\" 2>/dev/null; fi; "
+      var topCmd = "hyprctl dispatch \"hl.dsp.window.bring_to_top()\" 2>/dev/null || true; "
+      var fallback = wsCmd + winCmd + topCmd
+
+      Quickshell.execDetached(["bash", "-c", trackerCmd + " 2>/dev/null || (" + fallback + ")"])
       if (wayland && typeof wayland.activate === "function") {
         wayland.activate()
-      } else {
-        var winCmd = "if hyprctl dispatch \"hl.dsp.focus({ window = 'address:" + rawAddr + "' })\" 2>/dev/null; then :; else hyprctl dispatch focuswindow \"address:" + rawAddr + "\" 2>/dev/null; fi"
-        Quickshell.execDetached(["bash", "-c", winCmd])
       }
     })
   }

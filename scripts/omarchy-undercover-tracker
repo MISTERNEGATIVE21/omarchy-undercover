@@ -1,0 +1,416 @@
+#!/usr/bin/env python3
+"""
+omarchy-undercover-tracker
+Maintains the live `.undercoverfile` state file tracking current VM / workspace,
+total VMs, windows, active window, and provides infallible window/workspace navigation.
+"""
+
+import sys
+import os
+import json
+import time
+import socket
+import argparse
+import subprocess
+from datetime import datetime, timezone
+
+TARGET_PATHS = [
+    os.path.expanduser("~/.undercoverfile"),
+    os.path.expanduser("~/.local/state/omarchy/undercover/.undercoverfile"),
+    os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), ".undercoverfile")
+]
+
+PID_FILE = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "omarchy-undercover-tracker.pid")
+
+def get_hypr_json(command):
+    try:
+        out = subprocess.check_output(["hyprctl", command, "-j"], stderr=subprocess.DEVNULL)
+        return json.loads(out.decode("utf-8", errors="replace"))
+    except Exception:
+        return [] if command.endswith("s") else {}
+
+def dispatch_lua_or_fallback(lua_cmd, legacy_cmd=None):
+    # Try modern Omarchy Hyprland Lua dispatch
+    try:
+        res = subprocess.run(
+            ["hyprctl", "dispatch", lua_cmd],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False
+        )
+        if res.returncode == 0 and "error:" not in res.stderr:
+            return True
+    except Exception:
+        pass
+
+    # Fallback to legacy syntax if provided
+    if legacy_cmd:
+        try:
+            res = subprocess.run(
+                ["hyprctl", "dispatch"] + legacy_cmd,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False
+            )
+            return res.returncode == 0
+        except Exception:
+            pass
+    return False
+
+def build_state():
+    clients = get_hypr_json("clients")
+    workspaces = get_hypr_json("workspaces")
+    active_ws = get_hypr_json("activeworkspace")
+    active_win = get_hypr_json("activewindow")
+    monitors = get_hypr_json("monitors")
+
+    # Map monitor IDs to names
+    mon_map = {}
+    if isinstance(monitors, list):
+        for m in monitors:
+            if isinstance(m, dict) and "id" in m:
+                mon_map[m["id"]] = m.get("name", f"MON-{m['id']}")
+
+    # Process open windows
+    window_list = []
+    ws_windows = {}
+    mapped_count = 0
+
+    if isinstance(clients, list):
+        for c in clients:
+            if not isinstance(c, dict):
+                continue
+            addr = c.get("address", "").strip()
+            if not addr:
+                continue
+            if not addr.startswith("0x"):
+                addr = "0x" + addr
+
+            ws_info = c.get("workspace", {})
+            ws_id = ws_info.get("id") if isinstance(ws_info, dict) else (c.get("workspace") if isinstance(c.get("workspace"), int) else 0)
+            ws_name = ws_info.get("name", str(ws_id)) if isinstance(ws_info, dict) else str(ws_id)
+            is_mapped = bool(c.get("mapped", True) and not c.get("hidden", False))
+            
+            if is_mapped:
+                mapped_count += 1
+
+            act_addr = active_win.get("address", "").strip()
+            if act_addr and not act_addr.startswith("0x"):
+                act_addr = "0x" + act_addr
+            is_active = (act_addr != "" and act_addr.lower() == addr.lower())
+
+            win_obj = {
+                "address": addr,
+                "class": c.get("class", ""),
+                "initialClass": c.get("initialClass", ""),
+                "title": c.get("title", ""),
+                "initialTitle": c.get("initialTitle", ""),
+                "workspace_id": ws_id,
+                "workspace_name": ws_name,
+                "monitor": c.get("monitor", 0),
+                "monitor_name": mon_map.get(c.get("monitor", 0), ""),
+                "pid": c.get("pid", 0),
+                "floating": bool(c.get("floating", False)),
+                "fullscreen": int(c.get("fullscreen", 0)),
+                "mapped": is_mapped,
+                "is_active": is_active,
+                "at": c.get("at", [0, 0]),
+                "size": c.get("size", [0, 0])
+            }
+            window_list.append(win_obj)
+
+            if is_mapped and ws_id > 0:
+                ws_key = str(ws_id)
+                if ws_key not in ws_windows:
+                    ws_windows[ws_key] = []
+                ws_windows[ws_key].append(win_obj)
+
+    # Process workspaces / VMs
+    ws_list = []
+    if isinstance(workspaces, list):
+        for w in workspaces:
+            if not isinstance(w, dict):
+                continue
+            w_id = w.get("id", 0)
+            if w_id <= 0:
+                continue
+            w_name = w.get("name", str(w_id))
+            mon_id = w.get("monitorID", w.get("monitor", 0))
+            w_obj = {
+                "id": w_id,
+                "name": w_name,
+                "monitor": mon_id,
+                "monitor_name": mon_map.get(mon_id, w.get("monitorName", "")),
+                "windows_count": len(ws_windows.get(str(w_id), [])),
+                "has_fullscreen": bool(w.get("hasfullscreen", False))
+            }
+            ws_list.append(w_obj)
+    ws_list.sort(key=lambda x: x["id"])
+
+    # Active workspace info
+    cur_ws_id = active_ws.get("id", 1) if isinstance(active_ws, dict) else 1
+    cur_ws_name = active_ws.get("name", str(cur_ws_id)) if isinstance(active_ws, dict) else str(cur_ws_id)
+    cur_ws_mon = active_ws.get("monitorID", active_ws.get("monitor", 0)) if isinstance(active_ws, dict) else 0
+
+    current_workspace_info = {
+        "id": cur_ws_id,
+        "name": cur_ws_name,
+        "monitor": cur_ws_mon,
+        "monitor_name": mon_map.get(cur_ws_mon, ""),
+        "windows_count": len(ws_windows.get(str(cur_ws_id), []))
+    }
+
+    # Active window info
+    act_addr = active_win.get("address", "").strip() if isinstance(active_win, dict) else ""
+    if act_addr and not act_addr.startswith("0x"):
+        act_addr = "0x" + act_addr
+    current_win_info = {
+        "address": act_addr,
+        "class": active_win.get("class", "") if isinstance(active_win, dict) else "",
+        "initialClass": active_win.get("initialClass", "") if isinstance(active_win, dict) else "",
+        "title": active_win.get("title", "") if isinstance(active_win, dict) else "",
+        "workspace_id": active_win.get("workspace", {}).get("id", cur_ws_id) if isinstance(active_win, dict) and isinstance(active_win.get("workspace"), dict) else cur_ws_id,
+        "monitor": active_win.get("monitor", cur_ws_mon) if isinstance(active_win, dict) else cur_ws_mon,
+        "pid": active_win.get("pid", 0) if isinstance(active_win, dict) else 0,
+        "floating": bool(active_win.get("floating", False)) if isinstance(active_win, dict) else False,
+        "fullscreen": int(active_win.get("fullscreen", 0)) if isinstance(active_win, dict) else 0
+    }
+
+    # Stage Manager Grouping (Group by application class / title)
+    sm_groups = []
+    class_groups = {}
+    for win in window_list:
+        if not win["mapped"] or win["workspace_id"] <= 0:
+            continue
+        c_name = win["class"] or win["initialClass"] or "Unknown"
+        if c_name not in class_groups:
+            class_groups[c_name] = []
+        class_groups[c_name].append(win)
+
+    for c_name, wins in class_groups.items():
+        sm_groups.append({
+            "class": c_name,
+            "title": wins[0]["title"],
+            "count": len(wins),
+            "primary_address": wins[0]["address"],
+            "workspace_id": wins[0]["workspace_id"],
+            "is_active": any(w["is_active"] for w in wins),
+            "windows": wins
+        })
+
+    now = time.time()
+    state = {
+        "timestamp": now,
+        "iso_time": datetime.now(timezone.utc).isoformat(),
+        "current_workspace": current_workspace_info,
+        "workspaces_count": len(ws_list),
+        "workspaces": ws_list,
+        # 'vms' and 'vm_count' aliases for virtual workspaces / desktops
+        "vms": ws_list,
+        "vms_count": len(ws_list),
+        "current_vm": current_workspace_info,
+        "current_window": current_win_info,
+        "windows_count": mapped_count,
+        "total_clients": len(window_list),
+        "windows": window_list,
+        "workspace_windows": ws_windows,
+        "stage_manager_groups": sm_groups,
+        "monitors": monitors if isinstance(monitors, list) else []
+    }
+    return state
+
+def write_state(state):
+    raw_json = json.dumps(state, indent=2)
+    for p in TARGET_PATHS:
+        try:
+            parent = os.path.dirname(p)
+            if not os.path.exists(parent):
+                os.makedirs(parent, exist_ok=True)
+            tmp_p = p + f".tmp.{os.getpid()}"
+            with open(tmp_p, "w", encoding="utf-8") as f:
+                f.write(raw_json)
+                f.write("\n")
+            os.replace(tmp_p, p)
+        except Exception as e:
+            pass
+    return raw_json
+
+def focus_target(target):
+    state = build_state()
+    target_clean = str(target).strip()
+    target_lower = target_clean.lower()
+
+    # 1. Check if target is a workspace number
+    if target_clean.isdigit():
+        ws_id = int(target_clean)
+        dispatch_lua_or_fallback(f"hl.dsp.focus({{ workspace = {ws_id} }})", ["workspace", str(ws_id)])
+        write_state(build_state())
+        return True
+
+    # 2. Search windows
+    match = None
+    windows = state.get("windows", [])
+    
+    # Check exact address match
+    raw_addr = target_lower if target_lower.startswith("0x") else "0x" + target_lower
+    for w in windows:
+        if w["address"].lower() == raw_addr:
+            match = w
+            break
+
+    # Check class or title match
+    if not match:
+        for w in windows:
+            if target_lower in w["class"].lower() or target_lower in w["initialClass"].lower() or target_lower in w["title"].lower():
+                match = w
+                break
+
+    if not match:
+        # Search by pid
+        if target_clean.isdigit():
+            pid_target = int(target_clean)
+            for w in windows:
+                if w["pid"] == pid_target:
+                    match = w
+                    break
+
+    if not match:
+        return False
+
+    addr = match["address"]
+    ws_id = match["workspace_id"]
+    mon_id = match["monitor"]
+
+    # If on a minimized / special workspace, unminimize
+    if ws_id < 0:
+        min_script = os.path.expanduser("~/.config/omarchy/plugins/omarchy-undercover/scripts/omarchy-undercover-minimize")
+        if not os.path.exists(min_script):
+            min_script = "omarchy-undercover-minimize"
+        subprocess.run([min_script, addr], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+        time.sleep(0.04)
+
+    # Focus workspace
+    if ws_id > 0:
+        dispatch_lua_or_fallback(f"hl.dsp.focus({{ workspace = {ws_id} }})", ["workspace", str(ws_id)])
+
+    # Focus monitor
+    if mon_id is not None and mon_id >= 0:
+        dispatch_lua_or_fallback(f"hl.dsp.focus({{ monitor = {mon_id} }})", ["focusmonitor", str(mon_id)])
+
+    # Focus window
+    dispatch_lua_or_fallback(f"hl.dsp.focus({{ window = 'address:{addr}' }})", ["focuswindow", f"address:{addr}"])
+
+    # Bring to top
+    dispatch_lua_or_fallback("hl.dsp.window.bring_to_top()")
+
+    # Update state file
+    write_state(build_state())
+    return True
+
+def run_daemon():
+    # Write pid file
+    try:
+        with open(PID_FILE, "w") as f:
+            f.write(str(os.getpid()))
+    except Exception:
+        pass
+
+    # Initial write
+    write_state(build_state())
+
+    sig = os.environ.get("HYPRLAND_INSTANCE_SIGNATURE", "")
+    runtime_dir = os.environ.get("XDG_RUNTIME_DIR", "/tmp")
+    sock_path = f"{runtime_dir}/hypr/{sig}/.socket2.sock"
+
+    if not os.path.exists(sock_path):
+        # Fallback polling mode if socket2 is not found
+        while True:
+            time.sleep(2)
+            write_state(build_state())
+
+    while True:
+        try:
+            s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            s.connect(sock_path)
+            buf = ""
+            last_update = 0
+
+            while True:
+                data = s.recv(4096)
+                if not data:
+                    break
+                buf += data.decode("utf-8", errors="replace")
+                lines = buf.split("\n")
+                buf = lines[-1]
+
+                needs_update = False
+                for line in lines[:-1]:
+                    if any(line.startswith(ev) for ev in [
+                        "workspace>>", "workspacev2>>",
+                        "activewindow>>", "activewindowv2>>",
+                        "openwindow>>", "closewindow>>",
+                        "movewindow>>", "movewindowv2>>",
+                        "focusedmon>>", "changefloatingmode>>"
+                    ]):
+                        needs_update = True
+                        break
+
+                now = time.time()
+                if needs_update and (now - last_update) >= 0.04:
+                    write_state(build_state())
+                    last_update = now
+
+        except Exception:
+            time.sleep(1)
+
+def main():
+    parser = argparse.ArgumentParser(description="Omarchy Undercover VM & Window State Tracker")
+    parser.add_argument("--update", action="store_true", help="Atomically update .undercoverfile")
+    parser.add_argument("--status", action="store_true", help="Print .undercoverfile JSON")
+    parser.add_argument("--summary", action="store_true", help="Print human-readable summary")
+    parser.add_argument("--focus", metavar="SPEC", help="Reliably focus window by address, class, title or workspace")
+    parser.add_argument("--workspace", metavar="ID", help="Switch to workspace ID")
+    parser.add_argument("--daemon", action="store_true", help="Run real-time socket2 event tracker daemon")
+
+    args = parser.parse_args()
+
+    if args.daemon:
+        run_daemon()
+        return
+
+    if args.focus:
+        success = focus_target(args.focus)
+        if success:
+            print(json.dumps({"success": True, "target": args.focus}))
+            sys.exit(0)
+        else:
+            print(json.dumps({"success": False, "error": f"Window or workspace '{args.focus}' not found"}), file=sys.stderr)
+            sys.exit(1)
+
+    if args.workspace:
+        success = focus_target(args.workspace)
+        sys.exit(0 if success else 1)
+
+    if args.summary:
+        st = build_state()
+        write_state(st)
+        cur_ws = st.get("current_workspace", {})
+        cur_win = st.get("current_window", {})
+        print("=== Omarchy Undercover State (.undercoverfile) ===")
+        print(f"  Current VM / Workspace : {cur_ws.get('id')} ({cur_ws.get('name')}) on monitor {cur_ws.get('monitor_name')}")
+        print(f"  Total VMs / Workspaces : {st.get('workspaces_count')} {[w['id'] for w in st.get('workspaces', [])]}")
+        print(f"  Active Window          : {cur_win.get('class')} - '{cur_win.get('title')}' ({cur_win.get('address')})")
+        print(f"  Total Open Windows     : {st.get('windows_count')}")
+        print(f"  Stage Manager Groups   : {len(st.get('stage_manager_groups', []))}")
+        print(f"  Timestamp              : {st.get('iso_time')}")
+        return
+
+    # Default / --update / --status:
+    st = build_state()
+    res = write_state(st)
+    if args.status or not args.update:
+        print(res)
+
+if __name__ == "__main__":
+    main()

@@ -101,16 +101,26 @@ ShellRoot {
     function focusClient(client) {
       if (!client || !client.address) return
       var rawAddr = String(client.address).trim()
+      if (!rawAddr.startsWith("0x")) rawAddr = "0x" + rawAddr
       var wsId = (client.workspace && client.workspace.id) ? parseInt(client.workspace.id) : 1
-      var cmd = "hyprctl dispatch workspace " + wsId + " 2>/dev/null; hyprctl dispatch focuswindow " + taskViewWindow.shellQuote("address:" + rawAddr) + " 2>/dev/null"
-      Quickshell.execDetached(["bash", "-c", cmd])
+      var monId = (client.monitor !== undefined && client.monitor !== null) ? parseInt(client.monitor) : -1
+
+      var trackerCmd = taskViewWindow.pluginDir + "/scripts/omarchy-undercover-tracker --focus " + rawAddr
+      var wsCmd = "if hyprctl dispatch \"hl.dsp.focus({ workspace = " + wsId + " })\" >/dev/null 2>&1; then :; else hyprctl dispatch workspace " + wsId + " >/dev/null 2>&1; fi; "
+      var monCmd = (monId >= 0) ? ("if hyprctl dispatch \"hl.dsp.focus({ monitor = " + monId + " })\" >/dev/null 2>&1; then :; else hyprctl dispatch focusmonitor " + monId + " >/dev/null 2>&1; fi; ") : ""
+      var winCmd = "if hyprctl dispatch \"hl.dsp.focus({ window = 'address:" + rawAddr + "' })\" >/dev/null 2>&1; then :; else hyprctl dispatch focuswindow \"address:" + rawAddr + "\" >/dev/null 2>&1; fi; "
+      var topCmd = "hyprctl dispatch \"hl.dsp.window.bring_to_top()\" >/dev/null 2>&1 || true; "
+
+      var fullCmd = trackerCmd + " 2>/dev/null || (" + wsCmd + monCmd + winCmd + topCmd + ")"
+      Quickshell.execDetached(["bash", "-c", fullCmd])
       taskViewWindow.closeTaskView()
     }
 
     function closeClient(client) {
       if (!client || !client.address) return
       var rawAddr = String(client.address).trim()
-      var cmd = "hyprctl dispatch closewindow " + taskViewWindow.shellQuote("address:" + rawAddr) + " 2>/dev/null"
+      if (!rawAddr.startsWith("0x")) rawAddr = "0x" + rawAddr
+      var cmd = "if hyprctl dispatch \"hl.dsp.window.close({ window = 'address:" + rawAddr + "' })\" 2>/dev/null; then :; else hyprctl dispatch closewindow \"address:" + rawAddr + "\" 2>/dev/null; fi"
       Quickshell.execDetached(["bash", "-c", cmd])
       // Optimistically remove client from view
       var nextClients = []
@@ -126,7 +136,8 @@ ShellRoot {
     function moveClientToWorkspace(client, wsId) {
       if (!client || !client.address) return
       var rawAddr = String(client.address).trim()
-      var cmd = "hyprctl dispatch movetoworkspace " + wsId + ",address:" + rawAddr
+      if (!rawAddr.startsWith("0x")) rawAddr = "0x" + rawAddr
+      var cmd = "hyprctl dispatch movetoworkspacesilent " + wsId + ",address:" + rawAddr + " 2>/dev/null || hyprctl dispatch movetoworkspace " + wsId + ",address:" + rawAddr + " 2>/dev/null"
       Quickshell.execDetached(["bash", "-c", cmd])
       taskViewWindow.showContextMenu = false
       refreshTimer.restart()
@@ -135,6 +146,7 @@ ShellRoot {
     function toggleFloating(client) {
       if (!client || !client.address) return
       var rawAddr = String(client.address).trim()
+      if (!rawAddr.startsWith("0x")) rawAddr = "0x" + rawAddr
       var cmd = "hyprctl dispatch togglefloating address:" + rawAddr
       Quickshell.execDetached(["bash", "-c", cmd])
       taskViewWindow.showContextMenu = false
@@ -144,7 +156,8 @@ ShellRoot {
     function toggleFullscreen(client) {
       if (!client || !client.address) return
       var rawAddr = String(client.address).trim()
-      var cmd = "hyprctl dispatch focuswindow address:" + rawAddr + "; hyprctl dispatch fullscreen 1"
+      if (!rawAddr.startsWith("0x")) rawAddr = "0x" + rawAddr
+      var cmd = "if hyprctl dispatch \"hl.dsp.focus({ window = 'address:" + rawAddr + "' })\" 2>/dev/null; then :; else hyprctl dispatch focuswindow \"address:" + rawAddr + "\" 2>/dev/null; fi; hyprctl dispatch \"hl.dsp.window.fullscreen()\" 2>/dev/null || hyprctl dispatch fullscreen 1 2>/dev/null"
       Quickshell.execDetached(["bash", "-c", cmd])
       taskViewWindow.showContextMenu = false
       taskViewWindow.closeTaskView()
@@ -152,7 +165,8 @@ ShellRoot {
 
     function switchToWorkspace(wsId) {
       taskViewWindow.selectedDesktopId = wsId
-      var cmd = "hyprctl dispatch workspace " + wsId
+      var trackerCmd = taskViewWindow.pluginDir + "/scripts/omarchy-undercover-tracker --workspace " + wsId
+      var cmd = trackerCmd + " 2>/dev/null || if hyprctl dispatch \"hl.dsp.focus({ workspace = " + wsId + " })\" 2>/dev/null; then :; else hyprctl dispatch workspace " + wsId + " 2>/dev/null; fi"
       Quickshell.execDetached(["bash", "-c", cmd])
       refreshTimer.restart()
     }
@@ -164,7 +178,7 @@ ShellRoot {
       }
       var nextWs = maxWs + 1
       taskViewWindow.selectedDesktopId = nextWs
-      var cmd = "hyprctl dispatch workspace empty 2>/dev/null || hyprctl dispatch workspace " + nextWs
+      var cmd = "if hyprctl dispatch \"hl.dsp.focus({ workspace = " + nextWs + " })\" 2>/dev/null; then :; else hyprctl dispatch workspace empty 2>/dev/null || hyprctl dispatch workspace " + nextWs + " 2>/dev/null; fi"
       Quickshell.execDetached(["bash", "-c", cmd])
       refreshTimer.restart()
     }
