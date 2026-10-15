@@ -21,13 +21,13 @@ else
     exit 1
 fi
 
-# 2. Verify disabledPlugins in shell.json contains omarchy.idle and DOES NOT contain omarchy.lock
+# 2. Verify disabledPlugins in shell.json DOES NOT contain omarchy.idle and DOES NOT contain omarchy.lock
 DISABLED_JSON=$(cat "$HOME/.config/omarchy/shell.json" | jq -r '.disabledPlugins // []')
 if echo "$DISABLED_JSON" | grep -q "omarchy.idle"; then
-    echo "  ✔ ~/.config/omarchy/shell.json disabledPlugins contains omarchy.idle"
-else
-    echo "  ✖ disabledPlugins missing expected omarchy.idle: $DISABLED_JSON"
+    echo "  ✖ Security failure: omarchy.idle is disabled in shell.json!"
     exit 1
+else
+    echo "  ✔ omarchy.idle remains enabled (Automatic stock idle lock trigger preserved)"
 fi
 
 if echo "$DISABLED_JSON" | grep -q "omarchy.lock"; then
@@ -68,5 +68,30 @@ fi
 echo "=== 3. Re-disabling stock plugins for active macOS Undercover session ==="
 "$PROJECT_ROOT/scripts/omarchy-undercover" --disable-stock-lock-idle
 echo "  ✔ Active macOS undercover session stock lock/idle toggles verified!"
+
+echo "=== 4. Verifying Layer Overlay Security & PAM Isolation ==="
+# Verify MacScreensaverOverlay has no PAM import, PamContext, or password prompt
+if grep -q "Pam" "$PROJECT_ROOT/MacScreensaverOverlay.qml" || grep -q "pwdInput" "$PROJECT_ROOT/MacScreensaverOverlay.qml"; then
+    echo "  ✖ Security failure: MacScreensaverOverlay contains PAM or password inputs on layer overlay!"
+    exit 1
+else
+    echo "  ✔ MacScreensaverOverlay is a pure visual screensaver (no PAM or password prompt)"
+fi
+
+# Verify Service.qml does not hijack target: "lock"
+if grep -q 'target: "lock"' "$PROJECT_ROOT/Service.qml"; then
+    echo "  ✖ Security failure: Service.qml hijacks official target: \"lock\"!"
+    exit 1
+else
+    echo "  ✔ Service.qml does not hijack official lock IPC target"
+fi
+
+# Verify Service.qml has no screensaverStartLocked
+if grep -q "screensaverStartLocked" "$PROJECT_ROOT/Service.qml"; then
+    echo "  ✖ Security failure: Service.qml retains mock locked screensaver state!"
+    exit 1
+else
+    echo "  ✔ Service.qml has no mock locked screensaver state"
+fi
 
 echo "🎉 Stock lock/idle toggle integration test passed successfully!"

@@ -26,7 +26,6 @@ Item {
   property string effectiveScreensaverVideo: ""
   property bool screensaverActive: false
   property bool screensaverPreviewMode: false
-  property bool screensaverStartLocked: false
   property bool stayAwake: false
   readonly property bool screensaverEngineActive: root.isMacMode && root.screensaverEnabled && !root.stayAwake
 
@@ -80,18 +79,12 @@ Item {
     }
     clipResolverProc.running = true
     root.screensaverPreviewMode = true
-    root.screensaverStartLocked = false
     root.screensaverActive = true
   }
 
   function triggerLockscreenPreview() {
-    if (!root.screensaverVideo || root.screensaverVideo === "") {
-      root.screensaverVideo = root.homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.opt.mp4"
-    }
-    clipResolverProc.running = true
-    root.screensaverPreviewMode = true
-    root.screensaverStartLocked = true
-    root.screensaverActive = true
+    root.dismissScreensaver()
+    root.runCmd("omarchy-shell lock preview 2>/dev/null || omarchy-system-lock 2>/dev/null")
   }
 
   function lock(): string {
@@ -103,7 +96,6 @@ Item {
   function dismissScreensaver() {
     root.screensaverActive = false
     root.screensaverPreviewMode = false
-    root.screensaverStartLocked = false
   }
 
   Process {
@@ -222,7 +214,28 @@ Item {
       clipUrl: root.effectiveScreensaverVideo !== "" ? root.effectiveScreensaverVideo : root.screensaverVideo
       active: root.screensaverActive
       isPreview: root.screensaverPreviewMode
-      startLocked: root.screensaverStartLocked
+    }
+  }
+
+  // Auto-dismiss screensaver overlay immediately when official omarchy.lock engages
+  Timer {
+    id: lockStatusPollTimer
+    interval: 1000
+    running: root.screensaverActive
+    repeat: true
+    onTriggered: lockStatusProc.running = true
+  }
+
+  Process {
+    id: lockStatusProc
+    command: ["bash", "-c", "[[ $(omarchy-shell lock isLocked 2>/dev/null) == \"true\" ]] && echo locked || echo unlocked"]
+    stdout: StdioCollector {
+      onStreamFinished: {
+        var s = String(text || "").trim()
+        if (s === "locked" && root.screensaverActive) {
+          root.dismissScreensaver()
+        }
+      }
     }
   }
 
@@ -386,24 +399,4 @@ Item {
     }
   }
 
-  IpcHandler {
-    target: "lock"
-    enabled: root.isMacMode
-
-    function lock(): string {
-      return root.lock()
-    }
-
-    function isLocked(): string {
-      return root.screensaverActive ? "true" : "false"
-    }
-
-    function status(): string {
-      return JSON.stringify({
-        locked: root.screensaverActive,
-        requested: root.screensaverActive,
-        undercover: true
-      })
-    }
-  }
 }

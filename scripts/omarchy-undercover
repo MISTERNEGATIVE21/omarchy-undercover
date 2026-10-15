@@ -716,9 +716,9 @@ sync_undercover_themes() {
 }
 
 disable_stock_lock_and_idle() {
-    echo -e "\e[32m✔\e[0m  Suppressing idle daemon and screensaver for undercover mode (keeping session lock strictly enabled)..."
+    echo -e "\e[32m✔\e[0m  Suppressing terminal screensaver for undercover mode (keeping session lock and idle lock strictly enabled)..."
 
-    # 1. Suppress official Omarchy screensaver (ttfx)
+    # 1. Suppress official Omarchy terminal screensaver (ttfx)
     if command_exists omarchy-toggle; then
         omarchy-toggle screensaver-off on 2>/dev/null || true
     else
@@ -726,32 +726,30 @@ disable_stock_lock_and_idle() {
         touch "$HOME/.local/state/omarchy/toggles/screensaver-off"
     fi
 
-    # 2. Terminate running idle daemons or terminal screensavers
-    pkill -x hypridle 2>/dev/null || true
+    # 2. Terminate running terminal screensavers
     pkill -x ttfx 2>/dev/null || true
     pkill -f '[o]rg.omarchy.screensaver' 2>/dev/null || true
 
-    # 3. Cleanly toggle off stock idle plugin without touching lock screen.
-    # Note: omarchy.lock MUST ALWAYS remain enabled as an inviolable ext-session-lock-v1 PAM security boundary.
+    # 3. Cleanly ensure stock idle and lock plugins remain strictly active.
+    # CRITICAL SECURITY INVARIANT:
+    # - omarchy.idle owns the idle timeout deadlines and automatically executes omarchy-system-lock.
+    # - omarchy.lock owns the compositor-level ext-session-lock-v1 PAM security boundary.
+    # Neither may ever be disabled, bypassed, or mocked by layer overlays.
     if command_exists omarchy-shell; then
         omarchy-shell shell setPluginEnabled omarchy.lock true 2>/dev/null || true
-        omarchy-shell shell setPluginEnabled omarchy.idle false 2>/dev/null || true
+        omarchy-shell shell setPluginEnabled omarchy.idle true 2>/dev/null || true
     elif command_exists omarchy; then
         omarchy plugin enable omarchy.lock 2>/dev/null || true
-        omarchy plugin disable omarchy.idle 2>/dev/null || true
+        omarchy plugin enable omarchy.idle 2>/dev/null || true
     fi
 
-    # 4. Directly check and ensure ~/.config/omarchy/shell.json has omarchy.idle disabled, but omarchy.lock enabled
+    # 4. Directly verify ~/.config/omarchy/shell.json has neither omarchy.lock nor omarchy.idle in disabledPlugins
     local shell_json="$HOME/.config/omarchy/shell.json"
     if [[ -f "$shell_json" ]] && command_exists jq; then
         local modified=0
-        if jq -e '.disabledPlugins // [] | index("omarchy.lock")' "$shell_json" >/dev/null 2>&1; then
-            jq '.disabledPlugins = ((.disabledPlugins // []) - ["omarchy.lock"]) | if (.disabledPlugins | length) == 0 then del(.disabledPlugins) else . end' "$shell_json" > "$shell_json.tmp" && mv "$shell_json.tmp" "$shell_json"
-            modified=1
-        fi
-        for p in "omarchy.idle"; do
-            if ! jq -e --arg p "$p" '.disabledPlugins // [] | index($p)' "$shell_json" >/dev/null 2>&1; then
-                jq --arg p "$p" '.disabledPlugins = ((.disabledPlugins // []) + [$p] | unique)' "$shell_json" > "$shell_json.tmp" && mv "$shell_json.tmp" "$shell_json"
+        for p in "omarchy.lock" "omarchy.idle"; do
+            if jq -e --arg p "$p" '.disabledPlugins // [] | index($p)' "$shell_json" >/dev/null 2>&1; then
+                jq --arg p "$p" '.disabledPlugins = ((.disabledPlugins // []) - [$p]) | if (.disabledPlugins | length) == 0 then del(.disabledPlugins) else . end' "$shell_json" > "$shell_json.tmp" && mv "$shell_json.tmp" "$shell_json"
                 modified=1
             fi
         done

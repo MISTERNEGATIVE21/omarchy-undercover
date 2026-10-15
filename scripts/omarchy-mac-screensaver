@@ -621,35 +621,22 @@ while [[ $# -gt 0 ]]; do
             exit 0
             ;;
         --preview-lock)
-            local qs_ok=false
-            if command -v qs &>/dev/null; then
-                if qs -p /usr/share/omarchy/shell ipc call omarchy-undercover-service previewLockscreen &>/dev/null || \
-                   qs ipc call omarchy-undercover-service previewLockscreen &>/dev/null; then
-                    qs_ok=true
-                fi
-            fi
-            if [[ "$qs_ok" == "false" ]]; then
-                run_wlroots_screensaver --preview
+            if command -v omarchy-shell &>/dev/null && omarchy-shell lock preview &>/dev/null; then
+                exit 0
+            elif command -v omarchy-system-lock &>/dev/null; then
+                omarchy-system-lock
+            elif command -v hyprlock &>/dev/null; then
+                hyprlock &>/dev/null || true
             fi
             exit 0
             ;;
         --lock)
-            local qs_ok=false
-            if command -v qs &>/dev/null; then
-                if qs -p /usr/share/omarchy/shell ipc call omarchy-undercover-service lock &>/dev/null || \
-                   qs ipc call omarchy-undercover-service lock &>/dev/null || \
-                   qs -p /usr/share/omarchy/shell ipc call lock lock &>/dev/null || \
-                   qs ipc call lock lock &>/dev/null; then
-                    qs_ok=true
-                fi
-            fi
-            if [[ "$qs_ok" == "false" ]] && command -v omarchy-shell &>/dev/null; then
-                if omarchy-shell lock lock &>/dev/null; then
-                    qs_ok=true
-                fi
-            fi
-            if [[ "$qs_ok" == "false" ]]; then
-                run_wlroots_screensaver --run
+            if command -v omarchy-system-lock &>/dev/null; then
+                omarchy-system-lock
+            elif command -v omarchy-shell &>/dev/null; then
+                omarchy-shell lock lock &>/dev/null || true
+            elif command -v hyprlock &>/dev/null; then
+                hyprlock &>/dev/null || true
             fi
             exit 0
             ;;
