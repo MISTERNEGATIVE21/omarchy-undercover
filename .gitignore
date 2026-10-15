@@ -20,6 +20,8 @@ shell/
 *.bak
 *.bak.*
 settings.conf.bak*
+.undercoverfile
+*.undercoverfile*
 
 # Superpowers artifacts & scratch
 .superpowers/

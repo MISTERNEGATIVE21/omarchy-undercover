@@ -23,7 +23,7 @@ Designed for presentations, shared screen privacy, or personal preference, Omarc
   - **Middle-Click**: Toggles between the active disguise and baseline Omarchy.
   - **Scroll Wheel**: Steps forward or backward through available presets.
 - **One-touch camouflage toggle**: Switch between your chosen disguise and baseline Omarchy instantly via <kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>U</kbd> or CLI.
-- **Real-Time VM & Window State Tracking (`.undercoverfile`)**: Maintains an atomic, zero-latency system/runtime tracking file (`~/.undercoverfile` and `$XDG_RUNTIME_DIR/.undercoverfile`) tracking active VM/workspace, total VM counts, active and open window list, and Stage Manager app groupings. Powers infallible window switching across Stage Manager, Task View, Dock, and Taskbar via modern Hyprland Lua dispatch (`hl.dsp.focus` & `bring_to_top()`) and prevents missed window activation events.
+- **Real-Time VM & Window State Tracking (`.undercoverfile`)**: Maintains an atomic, zero-latency system/runtime tracking file inside the plugin folder (`~/.config/omarchy/plugins/omarchy-undercover/.undercoverfile`) tracking active VM/workspace, total VM counts, active and open window list, workspace paging, and Stage Manager app groupings. Powers infallible window switching across Stage Manager, Task View, Dock, and Taskbar via modern Hyprland Lua dispatch (`hl.dsp.focus` & `bring_to_top()`) and prevents missed window activation events without polluting `$HOME`.
 - **Apple macOS Tahoe Mode (Flagship Default)**: High-altitude alpine vistas in 4K UHD, modern GTK3 & GTK4 themes, frosted glass top menu bar with Apple menu, global application menu, polygraph monitor, Control Center, auto-magnifying dock with active app running indicators, Spotlight search (<kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>Space</kbd>), and authentic SF Pro typography.
 - **Apple macOS Sequoia Mode**: Preserved classic redwood theme available via `-mac-sequoia` or System Settings disguise switcher.
 - **macOS Stage Manager**: Native-feeling window organizer and task viewer camouflaged as macOS Stage Manager. Groups open windows by application with live Wayland `ScreencopyView` thumbnails, multi-window stack depth layers, active application icons and window count badges, accessible from the top bar widget, Control Center, or <kbd>Super</kbd> + <kbd>`</kbd> / <kbd>Super</kbd> + <kbd>Tab</kbd>.
@@ -44,7 +44,7 @@ Designed for presentations, shared screen privacy, or personal preference, Omarc
 | `Panel.qml` | Native Quickshell popup control center, mode cards, and quick settings |
 | `Service.qml` | Background service synchronizing Hyprland state files and dynamic layer rules |
 | `settings.conf` | User configuration file (`~/.config/omarchy/plugins/omarchy-undercover/settings.conf`) |
-| `~/.undercoverfile` | Real-time VM, workspace, and window state tracking file |
+| `~/.config/omarchy/plugins/omarchy-undercover/.undercoverfile` | Real-time VM, workspace paging, and window state tracking file |
 | `scripts/omarchy-undercover-tracker` | Real-time Hyprland socket2 VM and window tracking daemon & navigation controller |
 | `configs/quickshell/mac-stagemanager/` | macOS Stage Manager overlay with live Wayland ScreencopyView app groups |
 | `widgets/mac-stagemanager.qml` | Top bar Stage Manager toggle widget |

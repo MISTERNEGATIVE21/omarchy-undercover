@@ -325,17 +325,21 @@ Item {
     }
 
     function trackerStatus(): string {
-      root.runCmd("omarchy-undercover-tracker --update")
+      root.runCmd(root.pluginDir + "/scripts/omarchy-undercover-tracker --update")
       return "ok"
     }
 
+    function trackerFile(): string {
+      return root.pluginDir + "/.undercoverfile"
+    }
+
     function focusWindow(addr: string): string {
-      root.runCmd("omarchy-undercover-tracker --focus " + addr)
+      root.runCmd(root.pluginDir + "/scripts/omarchy-undercover-tracker --focus " + addr)
       return "ok"
     }
 
     function focusWorkspace(id: string): string {
-      root.runCmd("omarchy-undercover-tracker --workspace " + id)
+      root.runCmd(root.pluginDir + "/scripts/omarchy-undercover-tracker --workspace " + id)
       return "ok"
     }
   }
@@ -420,17 +424,21 @@ Item {
     }
 
     function trackerStatus(): string {
-      root.runCmd("omarchy-undercover-tracker --update")
+      root.runCmd(root.pluginDir + "/scripts/omarchy-undercover-tracker --update")
       return "ok"
     }
 
+    function trackerFile(): string {
+      return root.pluginDir + "/.undercoverfile"
+    }
+
     function focusWindow(addr: string): string {
-      root.runCmd("omarchy-undercover-tracker --focus " + addr)
+      root.runCmd(root.pluginDir + "/scripts/omarchy-undercover-tracker --focus " + addr)
       return "ok"
     }
 
     function focusWorkspace(id: string): string {
-      root.runCmd("omarchy-undercover-tracker --workspace " + id)
+      root.runCmd(root.pluginDir + "/scripts/omarchy-undercover-tracker --workspace " + id)
       return "ok"
     }
   }

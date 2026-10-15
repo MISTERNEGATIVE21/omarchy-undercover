@@ -14,13 +14,20 @@ import argparse
 import subprocess
 from datetime import datetime, timezone
 
-TARGET_PATHS = [
-    os.path.expanduser("~/.undercoverfile"),
-    os.path.expanduser("~/.local/state/omarchy/undercover/.undercoverfile"),
-    os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), ".undercoverfile")
-]
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PLUGIN_DIR = os.path.dirname(SCRIPT_DIR)
+INSTALLED_PLUGIN_DIR = os.path.expanduser("~/.config/omarchy/plugins/omarchy-undercover")
+RUNTIME_DIR = os.environ.get("XDG_RUNTIME_DIR", "/tmp")
 
-PID_FILE = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "omarchy-undercover-tracker.pid")
+# Keep the undercoverfile paging system inside the plugin folders themselves
+TARGET_PATHS = list(dict.fromkeys([
+    os.path.join(PLUGIN_DIR, ".undercoverfile"),
+    os.path.join(INSTALLED_PLUGIN_DIR, ".undercoverfile"),
+    os.path.join(RUNTIME_DIR, "omarchy-undercover", ".undercoverfile"),
+    os.path.join(RUNTIME_DIR, ".undercoverfile")
+]))
+
+PID_FILE = os.path.join(RUNTIME_DIR, "omarchy-undercover-tracker.pid")
 
 def get_hypr_json(command):
     try:
@@ -200,9 +207,20 @@ def build_state():
         })
 
     now = time.time()
+    paging_system = {
+        "current_page": cur_ws_id,
+        "current_page_name": cur_ws_name,
+        "total_pages": len(ws_list),
+        "pages": ws_list,
+        "windows_per_page": {str(w["id"]): len(ws_windows.get(str(w["id"]), [])) for w in ws_list},
+        "active_page_windows": ws_windows.get(str(cur_ws_id), []),
+        "plugin_file": os.path.join(PLUGIN_DIR, ".undercoverfile")
+    }
+
     state = {
         "timestamp": now,
         "iso_time": datetime.now(timezone.utc).isoformat(),
+        "paging": paging_system,
         "current_workspace": current_workspace_info,
         "workspaces_count": len(ws_list),
         "workspaces": ws_list,
@@ -216,7 +234,9 @@ def build_state():
         "windows": window_list,
         "workspace_windows": ws_windows,
         "stage_manager_groups": sm_groups,
-        "monitors": monitors if isinstance(monitors, list) else []
+        "monitors": monitors if isinstance(monitors, list) else [],
+        "plugin_dir": PLUGIN_DIR,
+        "file_path": os.path.join(PLUGIN_DIR, ".undercoverfile")
     }
     return state
 
@@ -232,8 +252,17 @@ def write_state(state):
                 f.write(raw_json)
                 f.write("\n")
             os.replace(tmp_p, p)
-        except Exception as e:
+        except Exception:
             pass
+
+    # Clean up legacy ~/.undercoverfile from $HOME so $HOME remains clean
+    legacy_home_file = os.path.expanduser("~/.undercoverfile")
+    if os.path.isfile(legacy_home_file) and not os.path.islink(legacy_home_file):
+        try:
+            os.remove(legacy_home_file)
+        except Exception:
+            pass
+
     return raw_json
 
 def focus_target(target):
@@ -369,8 +398,9 @@ def main():
     parser.add_argument("--update", action="store_true", help="Atomically update .undercoverfile")
     parser.add_argument("--status", action="store_true", help="Print .undercoverfile JSON")
     parser.add_argument("--summary", action="store_true", help="Print human-readable summary")
+    parser.add_argument("--paging", action="store_true", help="Print workspace/VM paging system summary")
     parser.add_argument("--focus", metavar="SPEC", help="Reliably focus window by address, class, title or workspace")
-    parser.add_argument("--workspace", metavar="ID", help="Switch to workspace ID")
+    parser.add_argument("--workspace", "--page", dest="workspace", metavar="ID", help="Switch to workspace / page ID")
     parser.add_argument("--daemon", action="store_true", help="Run real-time socket2 event tracker daemon")
 
     args = parser.parse_args()
@@ -392,12 +422,26 @@ def main():
         success = focus_target(args.workspace)
         sys.exit(0 if success else 1)
 
+    if args.paging:
+        st = build_state()
+        write_state(st)
+        pg = st.get("paging", {})
+        print("=== Omarchy Undercover Paging System ===")
+        print(f"  Plugin State File    : {pg.get('plugin_file')}")
+        print(f"  Current Page         : {pg.get('current_page')} ({pg.get('current_page_name')})")
+        print(f"  Total Pages          : {pg.get('total_pages')}")
+        print(f"  Windows on This Page : {len(pg.get('active_page_windows', []))}")
+        print(f"  All Pages            : {[p['id'] for p in pg.get('pages', [])]}")
+        return
+
     if args.summary:
         st = build_state()
         write_state(st)
         cur_ws = st.get("current_workspace", {})
         cur_win = st.get("current_window", {})
+        pg = st.get("paging", {})
         print("=== Omarchy Undercover State (.undercoverfile) ===")
+        print(f"  Plugin State File      : {pg.get('plugin_file')}")
         print(f"  Current VM / Workspace : {cur_ws.get('id')} ({cur_ws.get('name')}) on monitor {cur_ws.get('monitor_name')}")
         print(f"  Total VMs / Workspaces : {st.get('workspaces_count')} {[w['id'] for w in st.get('workspaces', [])]}")
         print(f"  Active Window          : {cur_win.get('class')} - '{cur_win.get('title')}' ({cur_win.get('address')})")
