@@ -119,17 +119,28 @@ Item {
     var buckets = ({})
     var activeAddress = Hyprland.activeToplevel ? String(Hyprland.activeToplevel.address || "") : ""
 
+    var currentTargetMon = root.targetMonitorId
+    if (currentTargetMon < 0) {
+      currentTargetMon = Hyprland.focusedMonitor ? Number(Hyprland.focusedMonitor.id) : 0
+      root.targetMonitorId = currentTargetMon
+    }
+
     for (var i = 0; i < values.length; i++) {
       var toplevel = values[i]
       var ipc = toplevel.lastIpcObject || ({})
       var monitorId = toplevel.monitor ? Number(toplevel.monitor.id) : Number(ipc.monitor)
       var workspaceId = toplevel.workspace ? Number(toplevel.workspace.id)
         : Number(ipc.workspace && ipc.workspace.id)
+      var workspaceName = String(toplevel.workspace ? toplevel.workspace.name
+        : ((ipc.workspace && ipc.workspace.name) || workspaceId))
       var mapped = ipc.mapped === undefined ? true : ipc.mapped === true
 
-      // Positive ids are normal workspaces. Layer surfaces, special workspaces
-      // and shell-owned windows never become Stage Manager entries.
-      if (!mapped || workspaceId <= 0 || monitorId !== root.targetMonitorId) continue
+      // Positive ids are normal workspaces. Also include minimized windows (special:minimized, id -98)
+      var isMinimized = (workspaceId === -98 || workspaceName === "special:minimized")
+      var isNormalWorkspace = (workspaceId > 0)
+      if (!mapped && !isMinimized) continue
+      if (!isNormalWorkspace && !isMinimized) continue
+      if (!isNaN(monitorId) && currentTargetMon >= 0 && monitorId !== currentTargetMon) continue
 
       var initialClass = String(ipc.initialClass || "")
       var currentClass = String(ipc.class || "")
@@ -153,8 +164,8 @@ Item {
         address: String(toplevel.address || ipc.address || ""),
         title: String(toplevel.title || ipc.title || buckets[key].name),
         workspaceId: workspaceId,
-        workspaceName: String(toplevel.workspace ? toplevel.workspace.name
-          : (ipc.workspace && ipc.workspace.name) || workspaceId),
+        workspaceName: isMinimized ? "minimized" : workspaceName,
+        isMinimized: isMinimized,
         recency: history,
         active: String(toplevel.address || "") === activeAddress,
         toplevel: toplevel,
@@ -288,30 +299,57 @@ Item {
 
   function activate(record) {
     if (!record) return
-    var wayland = record.wayland
-    var address = record.address
+
+    var rawAddr = String(record.address || "").trim()
+    if (rawAddr && !rawAddr.startsWith("0x")) rawAddr = "0x" + rawAddr
+
     var wsId = record.workspaceId
+    var wsName = String(record.workspaceName || "")
+    var toplevel = record.toplevel
+    var wayland = record.wayland
+
+    // 1. Direct compositor surface activation (synchronous)
+    try {
+      if (toplevel && typeof toplevel.activate === "function") {
+        toplevel.activate()
+      }
+    } catch (e) {}
+
+    try {
+      if (wayland && typeof wayland.activate === "function") {
+        wayland.activate()
+      }
+    } catch (e) {}
+
+    // 2. Build multi-stage activation command
+    var home = Quickshell.env("HOME") || ""
+    var pluginDir = (root.manifest && root.manifest.dir) ? root.manifest.dir : (home + "/.config/omarchy/plugins/omarchy-undercover")
+    var devDir = home + "/omarchy-undercover"
+
+    var isMinimized = (wsId < 0 || wsName.indexOf("minimized") !== -1)
+    var restorePart = ""
+    if (isMinimized && rawAddr) {
+      restorePart = "if [ -x \"" + pluginDir + "/scripts/omarchy-undercover-minimize\" ]; then \"" + pluginDir + "/scripts/omarchy-undercover-minimize\" \"" + rawAddr + "\"; elif [ -x \"" + devDir + "/scripts/omarchy-undercover-minimize\" ]; then \"" + devDir + "/scripts/omarchy-undercover-minimize\" \"" + rawAddr + "\"; else omarchy-undercover-minimize \"" + rawAddr + "\" 2>/dev/null || true; fi; sleep 0.04; "
+    }
+
+    var trackerExec = "if [ -x \"" + pluginDir + "/scripts/omarchy-undercover-tracker\" ]; then \"" + pluginDir + "/scripts/omarchy-undercover-tracker\" --focus \"" + rawAddr + "\"; elif [ -x \"" + devDir + "/scripts/omarchy-undercover-tracker\" ]; then \"" + devDir + "/scripts/omarchy-undercover-tracker\" --focus \"" + rawAddr + "\"; else omarchy-undercover-tracker --focus \"" + rawAddr + "\"; fi"
+
+    var wsCmd = (wsId && wsId > 0) ? ("hyprctl dispatch \"hl.dsp.focus({ workspace = '" + wsId + "' })\" 2>/dev/null || hyprctl dispatch \"hl.dsp.focus({ workspace = " + wsId + " })\" 2>/dev/null || hyprctl dispatch workspace " + wsId + " 2>/dev/null || true; ") : ""
+    var winCmd = rawAddr ? ("hyprctl dispatch \"hl.dsp.focus({ window = 'address:" + rawAddr + "' })\" 2>/dev/null || hyprctl dispatch focuswindow \"address:" + rawAddr + "\" 2>/dev/null || true; ") : ""
+    var topCmd = rawAddr ? ("hyprctl dispatch \"hl.dsp.window.alter_zorder({ mode = 'top', window = 'address:" + rawAddr + "' })\" 2>/dev/null || hyprctl dispatch \"hl.dsp.window.bring_to_top()\" 2>/dev/null || true; ") : ""
+
+    var fallback = wsCmd + winCmd + topCmd
+    var fullCmd = restorePart + "(" + trackerExec + " 2>/dev/null || (" + fallback + "))"
+
+    // 3. Dispatch immediately BEFORE closing so child process is spawned
+    Quickshell.execDetached(["bash", "-c", fullCmd])
+
+    // 4. Close the stage manager UI
     root.close()
     if (root.shell && typeof root.shell.hide === "function") {
       root.shell.hide("omarchy-mac-stagemanager")
       root.shell.hide("debba.stage-manager")
     }
-    Qt.callLater(function() {
-      var rawAddr = String(address || "").trim()
-      if (rawAddr && !rawAddr.startsWith("0x")) rawAddr = "0x" + rawAddr
-
-      var pluginDir = (root.manifest && root.manifest.dir) ? root.manifest.dir : (Quickshell.env("HOME") + "/.config/omarchy/plugins/omarchy-undercover")
-      var trackerCmd = pluginDir + "/scripts/omarchy-undercover-tracker --focus " + rawAddr
-      var wsCmd = (wsId && wsId > 0) ? ("if hyprctl dispatch \"hl.dsp.focus({ workspace = " + wsId + " })\" 2>/dev/null; then :; else hyprctl dispatch workspace " + wsId + " 2>/dev/null; fi; ") : ""
-      var winCmd = "if hyprctl dispatch \"hl.dsp.focus({ window = 'address:" + rawAddr + "' })\" 2>/dev/null; then :; else hyprctl dispatch focuswindow \"address:" + rawAddr + "\" 2>/dev/null; fi; "
-      var topCmd = "hyprctl dispatch \"hl.dsp.window.bring_to_top()\" 2>/dev/null || true; "
-      var fallback = wsCmd + winCmd + topCmd
-
-      Quickshell.execDetached(["bash", "-c", trackerCmd + " 2>/dev/null || (" + fallback + ")"])
-      if (wayland && typeof wayland.activate === "function") {
-        wayland.activate()
-      }
-    })
   }
 
   function activateSelected() {
@@ -836,6 +874,19 @@ Timer {
       verticalAlignment: Text.AlignVCenter
 
       Behavior on opacity { NumberAnimation { duration: 130 } }
+    }
+
+    MouseArea {
+      id: appInfoMouse
+      anchors.left: appIcon.left
+      anchors.right: windowSelectors.visible ? windowSelectors.left : parent.right
+      anchors.top: appIcon.top
+      anchors.bottom: parent.bottom
+      z: 35
+      hoverEnabled: true
+      cursorShape: Qt.PointingHandCursor
+      onEntered: if (appGroup.currentRecord) root.selectedAddress = appGroup.currentRecord.address
+      onClicked: if (appGroup.currentRecord) root.activate(appGroup.currentRecord)
     }
 
     Row {

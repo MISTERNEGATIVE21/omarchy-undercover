@@ -331,7 +331,7 @@ if keybindings_enabled and hl and hl.bind then
   bind_key("BIND_WIN_SCREENSHOT", "SUPER + SHIFT + S", exec_cmd("omarchy capture screenshot region copy"), "Region screenshot")
   -- Clipboard: SUPER+ALT+V avoids conflict with Omarchy's SUPER+V (universal paste)
   bind_key("BIND_WIN_CLIPBOARD", "SUPER + ALT + V", exec_cmd("omarchy-launch-walker -m clipboard"), "Clipboard history")
-  bind_key("BIND_WIN_LOCK", "SUPER + L", exec_cmd("hyprlock || swaylock || loginctl lock-session"), "Lock screen", { locked = true })
+  bind_key("BIND_WIN_LOCK", "SUPER + L", exec_cmd("omarchy-system-lock || hyprlock || swaylock || loginctl lock-session"), "Lock screen", { locked = true })
   bind_key("BIND_WIN_RUN", "SUPER + R", exec_cmd("rofi -show run -theme ~/.config/rofi/windows11.rasi"), "Run dialog")
   bind_key("BIND_WIN_MINIMIZE", "SUPER + M", exec_cmd("omarchy-undercover-minimize"), "Minimize window")
   bind_key("BIND_WIN_TASKMANAGER", "CTRL + SHIFT + ESCAPE", exec_cmd("omarchy-win11-taskmanager"), "Windows 11 Task Manager")

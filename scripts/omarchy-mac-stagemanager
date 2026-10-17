@@ -58,8 +58,8 @@ get_status() {
     if command -v hyprctl &>/dev/null && command -v jq &>/dev/null; then
         local clients_json
         clients_json=$(hyprctl clients -j 2>/dev/null || echo "[]")
-        win_count=$(echo "$clients_json" | jq 'map(select(.mapped == true and (.workspace.id // 0) > 0)) | length' 2>/dev/null || echo 0)
-        grp_count=$(echo "$clients_json" | jq 'map(select(.mapped == true and (.workspace.id // 0) > 0)) | map(.class) | unique | length' 2>/dev/null || echo 0)
+        win_count=$(echo "$clients_json" | jq 'map(select((.mapped == true and (.workspace.id // 0) > 0) or (.workspace.id == -98))) | length' 2>/dev/null || echo 0)
+        grp_count=$(echo "$clients_json" | jq 'map(select((.mapped == true and (.workspace.id // 0) > 0) or (.workspace.id == -98))) | map(.class) | unique | length' 2>/dev/null || echo 0)
     fi
 
     jq -n \

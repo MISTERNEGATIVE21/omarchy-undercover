@@ -239,7 +239,7 @@ Item {
 
   Process {
     id: lockStatusProc
-    command: ["bash", "-c", "[[ $(omarchy-shell lock isLocked 2>/dev/null) == \"true\" ]] && echo locked || echo unlocked"]
+    command: ["bash", "-c", "if pidof hyprlock >/dev/null 2>&1 || [[ $(omarchy-shell lock isLocked 2>/dev/null) == \"true\" ]]; then echo locked; else echo unlocked; fi"]
     stdout: StdioCollector {
       onStreamFinished: {
         var s = String(text || "").trim()
