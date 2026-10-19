@@ -5,6 +5,8 @@
 [![Release](https://img.shields.io/github/v/release/MISTERNEGATIVE21/omarchy-undercover?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases)
 [![Compositor](https://img.shields.io/badge/compositor-Hyprland-00f2fe?style=flat-square)](https://hyprland.org)
 [![Engine](https://img.shields.io/badge/engine-Quickshell%20%7C%20Waybar-ff2d55?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover)
+[![Security Policy](https://img.shields.io/badge/security-policy-informational?style=flat-square&logo=shield)](SECURITY.md)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg?style=flat-square)](CODE_OF_CONDUCT.md)
 [![License](https://img.shields.io/badge/license-GPL--3.0--or--later-green?style=flat-square)](LICENSE)
 
 ![Omarchy Undercover Preview](preview.png)
@@ -58,6 +60,10 @@ Designed for presentations, shared screen privacy, or personal preference, Omarc
 | `scripts/generate_preview.py` | Automated high-resolution showcase preview generator |
 | `configs/` | Hyprland window rules, rofi themes, and Waybar fallback configurations |
 | `assets/` | Authentic SF Pro & Segoe UI fonts, 4K wallpapers, and SVG icon sets |
+| `CODE_OF_CONDUCT.md` | Contributor Covenant Code of Conduct (v2.1) |
+| `CONTRIBUTING.md` | Contribution guidelines, secure QML boundary policies, test protocols |
+| `SECURITY.md` | Security policy, vulnerability reporting workflow, and SLAs |
+| `.github/` | Standardized issue templates (`bug_report.md`, `feature_request.md`) and PR template |
 
 ---
 
@@ -267,6 +273,11 @@ Custom dock and taskbar pinned applications can be configured in `defaults.json`
    External scripts and keyboard handlers communicate with the running shell instance over Quickshell IPC via the `omarchy-undercover` and `omarchy-undercover-service` targets.
 4. **Waybar & Standalone Fallback**:
    On systems without Quickshell, the suite falls back to Waybar configurations (`configs/waybar/config-win.jsonc` and `config-mac.jsonc`), ensuring full compatibility.
+5. **Security & Untrusted Boundary Isolation (v8.0.0)**:
+   - **External Network Labels**: Strict `Text.PlainText` enforcement across all external network SSIDs, Wi-Fi scan results, diagnostics (`omarchy-network-status --verbose`, `iw`), Bluetooth device names, audio descriptors, and process titles to prevent automatic rich-text evaluation, image extraction, and SSRF attacks.
+   - **Total Clipboard Isolation**: Elimination of insecure `TextInput` elements in settings/flyouts to prevent clipboard exhaustion and unauthorized clipboard snooping.
+   - **Shell Injection Immunity**: Parameterized argument arrays in `SettingsService.qml` eliminating shell interpolation.
+   - **PAM Session Lock Protection**: Complete preservation of official compositor-level `omarchy.lock` (`ext-session-lock-v1`) with zero mock lockscreen bypasses.
 
 ---
 
@@ -296,6 +307,17 @@ yui uninstall
 omarchy plugin disable omarchy-undercover
 omarchy plugin remove omarchy-undercover
 ```
+
+---
+
+## Community & Contributing
+
+We welcome contributions from the community! Please read our [Contributing Guidelines](CONTRIBUTING.md) to understand our architectural principles, security invariants, and coding conventions.
+
+- **Code of Conduct**: We are committed to fostering a welcoming and inclusive environment. See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+- **Security Reporting**: If you discover a security vulnerability, please consult our [Security Policy](SECURITY.md) for responsible disclosure guidelines.
+- **Reporting Issues**: Use our standardized [Bug Report](.github/ISSUE_TEMPLATE/bug_report.md) or [Feature Request](.github/ISSUE_TEMPLATE/feature_request.md) templates when opening issues.
+- **Pull Requests**: Review our [Pull Request Template](.github/pull_request_template.md) before submitting changes.
 
 ---
 
