@@ -1482,6 +1482,7 @@ ShellRoot {
           spacing: 4
 
           Text {
+            textFormat: Text.PlainText
             text: taskManagerWindow.contextProcess ? (taskManagerWindow.contextProcess.name || "Process") : ""
             font.family: "Segoe UI"
             font.pixelSize: 11

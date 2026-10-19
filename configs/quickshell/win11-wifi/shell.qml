@@ -469,6 +469,7 @@ ShellRoot {
               Layout.fillWidth: true
               Text {
                 text: "󰤨  " + wifiWindow.activeSsid
+                textFormat: Text.PlainText
                 font.family: "Segoe UI, sans-serif"
                 font.pixelSize: 12
                 font.weight: Font.DemiBold

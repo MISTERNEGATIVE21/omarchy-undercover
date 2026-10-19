@@ -1216,6 +1216,7 @@ ShellRoot {
 
                             Text { text: modelData.type; font.pixelSize: 15 }
                             Text {
+                              textFormat: Text.PlainText
                               text: modelData.description || modelData.name
                               font.family: "Segoe UI, sans-serif"
                               font.pixelSize: 12
@@ -1373,6 +1374,7 @@ ShellRoot {
 
                             Text { text: modelData.type; font.pixelSize: 15 }
                             Text {
+                              textFormat: Text.PlainText
                               text: modelData.description || modelData.name
                               font.family: "Segoe UI, sans-serif"
                               font.pixelSize: 12
@@ -1684,6 +1686,7 @@ ShellRoot {
                                 Layout.alignment: Qt.AlignHCenter
                               }
                               Text {
+                                textFormat: Text.PlainText
                                 text: modelData.description || modelData.output || modelData.name || ("Display " + (index + 1))
                                 font.family: "Segoe UI, sans-serif"
                                 font.pixelSize: 10
@@ -1884,6 +1887,7 @@ ShellRoot {
                           spacing: 2
                           Layout.fillWidth: true
                           Text {
+                            textFormat: Text.PlainText
                             text: "Display " + (settingsWin.selectedMonitorIndex + 1) + (settingsWin.activeMon ? (" • " + (settingsWin.activeMon.description || settingsWin.activeMon.output || settingsWin.activeMon.name)) : "")
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 13
@@ -2750,6 +2754,7 @@ ShellRoot {
                               Layout.fillWidth: true
                               spacing: 1
                               Text {
+                                textFormat: Text.PlainText
                                 text: modelData.name || modelData.address || "Bluetooth Device"
                                 font.family: "Segoe UI, sans-serif"
                                 font.pixelSize: 12
@@ -2963,6 +2968,7 @@ ShellRoot {
                       Layout.fillWidth: true
                       Text { text: "Wi-Fi"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
                       Text {
+                        textFormat: Text.PlainText
                         text: settingsService.wifiEnabled ? (settingsService.wifiActiveSsid ? ("Connected to " + settingsService.wifiActiveSsid) : "Available networks nearby") : "Wi-Fi is turned off"
                         font.family: "Segoe UI, sans-serif"
                         font.pixelSize: 11
@@ -2996,6 +3002,7 @@ ShellRoot {
                     ColumnLayout {
                       Layout.fillWidth: true
                       Text {
+                        textFormat: Text.PlainText
                         text: settingsService.wifiActiveSsid
                         font.family: "Segoe UI, sans-serif"
                         font.pixelSize: 13
@@ -3153,6 +3160,7 @@ ShellRoot {
 
                               Text { text: "📶"; font.pixelSize: 14 }
                               Text {
+                                textFormat: Text.PlainText
                                 text: modelData.ssid || "Hidden Network"
                                 font.family: "Segoe UI, sans-serif"
                                 font.pixelSize: 12

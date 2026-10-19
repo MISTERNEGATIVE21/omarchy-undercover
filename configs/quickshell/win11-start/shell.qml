@@ -434,6 +434,7 @@ ShellRoot {
                       Layout.preferredWidth: 84
                       Layout.maximumWidth: 84
                       text: modelData.name
+                      textFormat: Text.PlainText
                       font.family: "Segoe UI"
                       font.pixelSize: 11
                       color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
@@ -501,6 +502,7 @@ ShellRoot {
                       spacing: 0
                       Text {
                         text: modelData.name
+                        textFormat: Text.PlainText
                         font.family: "Segoe UI"
                         font.pixelSize: 11
                         font.bold: true
@@ -602,6 +604,7 @@ ShellRoot {
 
                   Text {
                     text: modelData.name
+                    textFormat: Text.PlainText
                     font.family: "Segoe UI"
                     font.pixelSize: 11
                     color: startWindow.isDark ? "#ffffff" : "#1a1a1a"
@@ -676,6 +679,7 @@ ShellRoot {
                     spacing: 0
                     Text {
                       text: modelData.name
+                      textFormat: Text.PlainText
                       font.family: "Segoe UI"
                       font.pixelSize: 11
                       font.bold: true

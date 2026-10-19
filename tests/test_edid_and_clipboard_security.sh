@@ -139,7 +139,51 @@ fi
 
 echo "  ✔ Window titles, process names, and tooltips strictly enforce Text.PlainText (rich text / image SSRF immunity)."
 
-echo "=== 4. Validating Quickshell QML compilation ==="
+echo "=== 4. Checking external network and device labels for Text.PlainText enforcement ==="
+
+# mac-wifi: diagnostics active SSID card must enforce Text.PlainText
+if ! grep -C 3 "macWifiWindow.activeSsid" "$REPO_ROOT/configs/quickshell/mac-wifi/shell.qml" | grep -F "textFormat: Text.PlainText" >/dev/null; then
+  echo "ERROR: configs/quickshell/mac-wifi/shell.qml activeSsid diagnostics card missing textFormat: Text.PlainText"
+  exit 1
+fi
+
+# mac-controlcenter: diagnostics active SSID card must enforce Text.PlainText
+if ! grep -C 3 "controlCenterWindow.wifiSsid" "$REPO_ROOT/configs/quickshell/mac-controlcenter/shell.qml" | grep -F "textFormat: Text.PlainText" >/dev/null; then
+  echo "ERROR: configs/quickshell/mac-controlcenter/shell.qml wifiSsid diagnostics card missing textFormat: Text.PlainText"
+  exit 1
+fi
+
+# win11-wifi: diagnostics active SSID card must enforce Text.PlainText
+if ! grep -C 3 "wifiWindow.activeSsid" "$REPO_ROOT/configs/quickshell/win11-wifi/shell.qml" | grep -F "textFormat: Text.PlainText" >/dev/null; then
+  echo "ERROR: configs/quickshell/win11-wifi/shell.qml activeSsid diagnostics card missing textFormat: Text.PlainText"
+  exit 1
+fi
+
+# win11-actioncenter: bluetooth device label must enforce Text.PlainText
+if ! grep -C 3 "actionCenterWindow.btDevice" "$REPO_ROOT/configs/quickshell/win11-actioncenter/shell.qml" | grep -F "textFormat: Text.PlainText" >/dev/null; then
+  echo "ERROR: configs/quickshell/win11-actioncenter/shell.qml btDevice missing textFormat: Text.PlainText"
+  exit 1
+fi
+
+# mac-settings & win11-settings: active SSID must enforce Text.PlainText
+if ! grep -C 3 "text: settingsService.wifiActiveSsid" "$REPO_ROOT/configs/quickshell/mac-settings/shell.qml" | grep -F "textFormat: Text.PlainText" >/dev/null; then
+  echo "ERROR: configs/quickshell/mac-settings/shell.qml wifiActiveSsid missing textFormat: Text.PlainText"
+  exit 1
+fi
+if ! grep -C 3 "text: settingsService.wifiActiveSsid" "$REPO_ROOT/configs/quickshell/win11-settings/shell.qml" | grep -F "textFormat: Text.PlainText" >/dev/null; then
+  echo "ERROR: configs/quickshell/win11-settings/shell.qml wifiActiveSsid missing textFormat: Text.PlainText"
+  exit 1
+fi
+
+# win11-taskmanager: context menu process name must enforce Text.PlainText
+if ! grep -C 3 "taskManagerWindow.contextProcess" "$REPO_ROOT/configs/quickshell/win11-taskmanager/shell.qml" | grep -F "textFormat: Text.PlainText" >/dev/null; then
+  echo "ERROR: configs/quickshell/win11-taskmanager/shell.qml contextProcess.name missing textFormat: Text.PlainText"
+  exit 1
+fi
+
+echo "  ✔ External network SSIDs, Bluetooth devices, and diagnostic labels strictly enforce Text.PlainText."
+
+echo "=== 5. Validating Quickshell QML compilation ==="
 if command -v quickshell >/dev/null 2>&1; then
   timeout 3s quickshell -p "$REPO_ROOT/configs/quickshell/mac-settings/shell.qml" 2>&1 | grep -iE "error|critical" || true
   timeout 3s quickshell -p "$REPO_ROOT/configs/quickshell/win11-settings/shell.qml" 2>&1 | grep -iE "error|critical" || true

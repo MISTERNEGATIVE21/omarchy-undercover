@@ -619,6 +619,7 @@ ShellRoot {
                     }
                     Text {
                       text: !actionCenterWindow.btEnabled ? "Off" : (actionCenterWindow.btConnected ? actionCenterWindow.btDevice : "Not Connected")
+                      textFormat: Text.PlainText
                       font.family: "Segoe UI"
                       font.pixelSize: 9
                       color: actionCenterWindow.btEnabled ? Qt.rgba(1, 1, 1, 0.85) : actionCenterWindow.textSecondary

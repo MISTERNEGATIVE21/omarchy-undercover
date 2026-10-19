@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security Vulnerabilities
+    url: https://github.com/MISTERNEGATIVE21/omarchy-undercover/security/advisories/new
+    about: Please report security vulnerabilities privately.
+  - name: Omarchy Community & Documentation
+    url: https://omarchy.org
+    about: Official Omarchy Linux documentation and community channels.

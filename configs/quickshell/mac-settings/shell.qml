@@ -2970,6 +2970,7 @@ ShellRoot {
                       }
                       Text {
                         Layout.fillWidth: true
+                        textFormat: Text.PlainText
                         text: settingsService.wifiEnabled ? (settingsService.wifiActiveSsid ? "Connected to " + settingsService.wifiActiveSsid : "Looking for networks nearby...") : "Wi-Fi is Off"
                         font.family: "SF Pro Text, -apple-system, sans-serif"
                         font.pixelSize: 11
@@ -3021,6 +3022,7 @@ ShellRoot {
                       spacing: 2
                       Text {
                         Layout.fillWidth: true
+                        textFormat: Text.PlainText
                         text: settingsService.wifiActiveSsid
                         font.family: "SF Pro Text, -apple-system, sans-serif"
                         font.pixelSize: 13
@@ -3190,6 +3192,7 @@ ShellRoot {
 
                               Text { text: "📶"; font.pixelSize: 14 }
                               Text {
+                                textFormat: Text.PlainText
                                 text: modelData.ssid || "Hidden Network"
                                 font.family: "SF Pro Text, -apple-system, sans-serif"
                                 font.pixelSize: 12
@@ -3490,6 +3493,7 @@ ShellRoot {
                               Layout.fillWidth: true
                               spacing: 1
                               Text {
+                                textFormat: Text.PlainText
                                 text: modelData.name || modelData.address || "Bluetooth Accessory"
                                 font.family: "SF Pro Text, -apple-system, sans-serif"
                                 font.pixelSize: 12
@@ -3682,6 +3686,7 @@ ShellRoot {
                               font.pixelSize: 14
                             }
                             Text {
+                              textFormat: Text.PlainText
                               text: modelData.description || modelData.name
                               font.family: "SF Pro Text, -apple-system, sans-serif"
                               font.pixelSize: 12
@@ -3978,6 +3983,7 @@ ShellRoot {
                               font.pixelSize: 13
                             }
                             Text {
+                              textFormat: Text.PlainText
                               text: modelData.description || modelData.name
                               font.family: "SF Pro Text, -apple-system, sans-serif"
                               font.pixelSize: 12
@@ -4200,6 +4206,7 @@ ShellRoot {
                             font.pixelSize: 14
                           }
                           Text {
+                            textFormat: Text.PlainText
                             text: modelData.app_name || modelData.name || "Application"
                             font.family: "SF Pro Text, -apple-system, sans-serif"
                             font.pixelSize: 12

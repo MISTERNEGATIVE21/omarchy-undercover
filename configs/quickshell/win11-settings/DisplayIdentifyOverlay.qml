@@ -118,6 +118,7 @@ Item {
           }
 
           Text {
+            textFormat: Text.PlainText
             anchors.horizontalCenter: parent.horizontalCenter
             text: overlayWindow.modelData ? (overlayWindow.modelData.name || ("Display " + (overlayWindow.screenIndex + 1))) : "Display"
             font.family: "Segoe UI, sans-serif"

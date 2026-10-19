@@ -436,6 +436,7 @@ ShellRoot {
               Layout.fillWidth: true
               Text {
                 text: "󰤨  " + macWifiWindow.activeSsid
+                textFormat: Text.PlainText
                 font.family: "SF Pro Text"
                 font.pixelSize: 12
                 font.bold: true
