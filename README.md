@@ -1,7 +1,7 @@
-# Omarchy Undercover (v8.0.0)
+# Omarchy Undercover (v8.0.1)
 
 [![Omarchy Verified](https://img.shields.io/badge/omarchy-verified_plugin-00c853?style=flat-square&logo=archlinux)](https://github.com/MISTERNEGATIVE21/omarchy-undercover)
-[![Version](https://img.shields.io/badge/version-v8.0.0?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases/tag/v8.0.0)
+[![Version](https://img.shields.io/badge/version-v8.0.1?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases/tag/v8.0.1)
 [![Release](https://img.shields.io/github/v/release/MISTERNEGATIVE21/omarchy-undercover?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases)
 [![Compositor](https://img.shields.io/badge/compositor-Hyprland-00f2fe?style=flat-square)](https://hyprland.org)
 [![Engine](https://img.shields.io/badge/engine-Quickshell%20%7C%20Waybar-ff2d55?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover)
@@ -273,7 +273,8 @@ Custom dock and taskbar pinned applications can be configured in `defaults.json`
    External scripts and keyboard handlers communicate with the running shell instance over Quickshell IPC via the `omarchy-undercover` and `omarchy-undercover-service` targets.
 4. **Waybar & Standalone Fallback**:
    On systems without Quickshell, the suite falls back to Waybar configurations (`configs/waybar/config-win.jsonc` and `config-mac.jsonc`), ensuring full compatibility.
-5. **Security & Untrusted Boundary Isolation (v8.0.0)**:
+5. **Security & Untrusted Boundary Isolation (v8.0.1)**:
+   - **Wayland Application ID & Icon Decoder Isolation**: Strict canonical XDG icon token validation (`/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/`) and filesystem existence checks (`check: true`) across taskbars, docks, and task switchers, preventing path traversal, host image decoding of unvalidated paths, and memory exhaustion DoS from crafted PNG metadata chunks in client-mapped caches.
    - **External Network Labels**: Strict `Text.PlainText` enforcement across all external network SSIDs, Wi-Fi scan results, diagnostics (`omarchy-network-status --verbose`, `iw`), Bluetooth device names, audio descriptors, and process titles to prevent automatic rich-text evaluation, image extraction, and SSRF attacks.
    - **Total Clipboard Isolation**: Elimination of insecure `TextInput` elements in settings/flyouts to prevent clipboard exhaustion and unauthorized clipboard snooping.
    - **Shell Injection Immunity**: Parameterized argument arrays in `SettingsService.qml` eliminating shell interpolation.

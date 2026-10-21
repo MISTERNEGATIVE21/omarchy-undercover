@@ -183,13 +183,108 @@ fi
 
 echo "  ✔ External network SSIDs, Bluetooth devices, and diagnostic labels strictly enforce Text.PlainText."
 
-echo "=== 5. Validating Quickshell QML compilation ==="
+echo "=== 5. Checking Wayland application ID and icon decoder isolation ==="
+
+ICON_ISOLATION_FILES=(
+  "$REPO_ROOT/widgets/win11-taskbar.qml"
+  "$REPO_ROOT/widgets/mac-dock.qml"
+  "$REPO_ROOT/configs/quickshell/mac-dock/shell.qml"
+  "$REPO_ROOT/configs/quickshell/mac-stagemanager/StageManager.qml"
+  "$REPO_ROOT/configs/quickshell/win11-taskview/shell.qml"
+  "$REPO_ROOT/configs/quickshell/win11-taskmanager/shell.qml"
+  "$REPO_ROOT/configs/quickshell/mac-activitymonitor/shell.qml"
+)
+
+# 1. Verify isValidIconToken token validation helper is present in all target files
+for f in "${ICON_ISOLATION_FILES[@]}"; do
+  if ! grep -F "function isValidIconToken" "$f" >/dev/null; then
+    echo "ERROR: $f is missing isValidIconToken canonical token validation function!"
+    exit 1
+  fi
+  if ! grep -F 'return /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(str)' "$f" >/dev/null; then
+    echo "ERROR: $f has non-compliant isValidIconToken regex validation!"
+    exit 1
+  fi
+done
+echo "  ✔ isValidIconToken canonical token validator enforced across all taskbar, dock, and task view components."
+
+# 2. Verify no raw image://icon/ concatenation with unvalidated client variables exists
+for f in "${ICON_ISOLATION_FILES[@]}"; do
+  if grep -E 'image://icon/" \+ \(?c\.(class|initialClass)' "$f" >/dev/null; then
+    echo "ERROR: $f contains raw image://icon/ concatenation with client window class!"
+    exit 1
+  fi
+  if grep -E 'image://icon/" \+ modelData\.appId' "$f" >/dev/null; then
+    echo "ERROR: $f contains raw image://icon/ concatenation with modelData.appId!"
+    exit 1
+  fi
+done
+echo "  ✔ Zero raw image://icon/ client-controlled string interpolations detected."
+
+# 3. Verify StageManager.qml does not blindly map arbitrary root paths to file://
+if grep -F 'if (name.charAt(0) === "/") return "file://" + name' "$REPO_ROOT/configs/quickshell/mac-stagemanager/StageManager.qml" >/dev/null; then
+  echo "ERROR: StageManager.qml still blindly maps arbitrary absolute paths to file:// !"
+  exit 1
+fi
+echo "  ✔ StageManager strictly guards icon paths against client-controlled local file URIs."
+
+# 4. Functional validation of the canonical icon token regex against path traversal and URI vectors
+python3 -c '
+import re
+pattern = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._-]*$")
+
+# Malicious vectors: must all FAIL validation
+malicious = [
+    "/home/user/.cache/crafted.png",
+    "/tmp/bomb.png",
+    "../../../../etc/shadow",
+    "file:///home/user/.cache/bomb.png",
+    "image://icon/foo",
+    "http://127.0.0.1/evil.png",
+    "app\x00name",
+    "/bin/sh",
+    "../app.png",
+    "",
+    " ",
+    "-leading-dash",
+    ".leading-dot",
+    "app/subdir",
+    "app\\backslash"
+]
+
+for vec in malicious:
+    if pattern.match(vec):
+        print(f"SECURITY ERROR: Malicious vector allowed: {vec}")
+        exit(1)
+
+# Canonical tokens: must all PASS validation
+valid = [
+    "firefox",
+    "org.mozilla.firefox",
+    "org.gnome.Nautilus",
+    "discord",
+    "antigravity-ide",
+    "code_oss",
+    "app123",
+    "application-x-executable"
+]
+
+for val in valid:
+    if not pattern.match(val):
+        print(f"VALIDATION ERROR: Valid token rejected: {val}")
+        exit(1)
+'
+echo "  ✔ Canonical icon token regex correctly blocks path traversal, absolute filenames, and URI schemes."
+
+echo "=== 6. Validating Quickshell QML compilation ==="
 if command -v quickshell >/dev/null 2>&1; then
   timeout 3s quickshell -p "$REPO_ROOT/configs/quickshell/mac-settings/shell.qml" 2>&1 | grep -iE "error|critical" || true
   timeout 3s quickshell -p "$REPO_ROOT/configs/quickshell/win11-settings/shell.qml" 2>&1 | grep -iE "error|critical" || true
   timeout 3s quickshell -p "$REPO_ROOT/configs/quickshell/mac-wifi/shell.qml" 2>&1 | grep -iE "error|critical" || true
   timeout 3s quickshell -p "$REPO_ROOT/configs/quickshell/win11-wifi/shell.qml" 2>&1 | grep -iE "error|critical" || true
-  echo "  ✔ Quickshell settings and flyout QML configs compile cleanly."
+  timeout 3s quickshell -p "$REPO_ROOT/configs/quickshell/mac-dock/shell.qml" 2>&1 | grep -iE "error|critical" || true
+  echo "  ✔ Quickshell settings, flyout, and dock QML configs compile cleanly."
 fi
 
-echo "🎉 All EDID injection, clipboard security, and plain text rendering tests passed successfully!"
+echo "🎉 All EDID injection, clipboard security, plain text rendering, and icon isolation tests passed successfully!"
+

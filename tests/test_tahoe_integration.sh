@@ -30,8 +30,8 @@ qmllint -I /usr/share/omarchy/shell \
 
 echo "=== 6. Validating Plugin Manifest & Versioning ==="
 manifest_version=$(jq -r .version "$REPO_ROOT/manifest.json")
-if [[ ! "$manifest_version" =~ ^7\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
-    echo "ERROR: Expected valid v7.x version in manifest.json, found $manifest_version" >&2
+if [[ ! "$manifest_version" =~ ^[78]\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
+    echo "ERROR: Expected valid v7.x/v8.x version in manifest.json, found $manifest_version" >&2
     exit 1
 fi
 

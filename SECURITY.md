@@ -10,9 +10,9 @@ Security updates and bug fixes are actively provided for the following versions:
 
 | Version | Supported          |
 | ------- | ------------------ |
+| 8.0.x   | :white_check_mark: |
 | 7.5.x   | :white_check_mark: |
-| 7.4.x   | :x:                |
-| < 7.4   | :x:                |
+| < 7.5   | :x:                |
 
 Users are encouraged to run the latest released version via the official Arch Linux package (`omarchy-undercover`) or Git tags.
 
@@ -56,3 +56,7 @@ Network credentials (Wi-Fi pre-shared keys, passwords) are never passed as comma
 
 ### 4. Non-Destructive Desktop Isolation
 The plugin strictly sandboxes disguise configurations within `~/.config/omarchy/plugins/omarchy-undercover`. Baseline compositor rules, keybindings, and theme settings are backed up and restored cleanly, preventing dots pollution or loss of user configurations.
+
+### 5. Wayland Application ID & Icon Decoder Isolation
+Wayland client applications specify their application ID (`app_id` / window class) without compositor mediation. To prevent confined or sandboxed applications from abusing the shared shell's image decoders (e.g. host memory exhaustion via crafted PNG compressed metadata chunks in host-mapped caches), all client identifiers must be strictly validated against canonical XDG icon tokens (`/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/`). Absolute paths, path traversal sequences (`..`), path separators (`/`, `\`), and URI schemes (`file://`, `image://`) are unconditionally rejected, and icon existence checks (`check: true`) are enforced before passing tokens to theme providers.
+

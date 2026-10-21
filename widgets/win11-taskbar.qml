@@ -418,24 +418,49 @@ BarWidget {
     return false
   }
 
+  function isValidIconToken(str) {
+    if (!str || typeof str !== "string") return false
+    if (str.length === 0 || str.length > 128) return false
+    // Reject absolute paths, directory traversal, URL schemes, or non-token characters
+    return /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(str)
+  }
+
   function resolveAppIcon(c) {
     if (!c) return ""
-    var cls = (c.initialClass || c.class || "").toLowerCase()
+    var rawCls = c.class || ""
+    var rawInit = c.initialClass || ""
+    var cls = (rawInit || rawCls || "").toLowerCase().trim()
     if (cls.indexOf("telegram") !== -1) {
-      return Quickshell.iconPath("telegram") || Quickshell.iconPath("org.telegram.desktop") || ("file://" + root.configDir + "/assets/icons/win11/discord.svg")
+      return Quickshell.iconPath("telegram", true) || Quickshell.iconPath("org.telegram.desktop", true) || ("file://" + root.configDir + "/assets/icons/win11/discord.svg")
     }
     if (cls.indexOf("antigravity") !== -1) {
       return "file://" + root.configDir + "/assets/icons/win11/antigravity-ide.svg"
     }
-    var ip = Quickshell.iconPath(c.class) || Quickshell.iconPath(c.initialClass)
-    if (ip) return ip
-    var parts = cls.split(".")
-    for (var i = parts.length - 1; i >= 0; i--) {
-      var p = Quickshell.iconPath(parts[i])
-      if (p) return p
+
+    var candidates = []
+    if (isValidIconToken(rawCls)) candidates.push(rawCls)
+    if (isValidIconToken(rawInit) && candidates.indexOf(rawInit) === -1) candidates.push(rawInit)
+    if (isValidIconToken(cls) && candidates.indexOf(cls) === -1) candidates.push(cls)
+
+    for (var i = 0; i < candidates.length; i++) {
+      var p = Quickshell.iconPath(candidates[i], true)
+      if (p && p.length > 0) return p
     }
-    return "image://icon/" + (c.initialClass || c.class)
+
+    if (isValidIconToken(cls)) {
+      var parts = cls.split(".")
+      for (var j = parts.length - 1; j >= 0; j--) {
+        if (isValidIconToken(parts[j])) {
+          var pPart = Quickshell.iconPath(parts[j], true)
+          if (pPart && pPart.length > 0) return pPart
+        }
+      }
+    }
+
+    var fallback = Quickshell.iconPath("application-x-executable", true)
+    return fallback || ""
   }
+
 
   function formatAppName(c) {
     if (!c) return "Application"

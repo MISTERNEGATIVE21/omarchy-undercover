@@ -100,19 +100,33 @@ Item {
     return null
   }
 
-  function iconSource(icon) {
-    var name = String(icon || "")
-    if (name.indexOf("file://") === 0 || name.indexOf("image://") === 0) return name
-    if (name.charAt(0) === "/") return "file://" + name
-    var resolved = name !== "" ? Quickshell.iconPath(name, true) : ""
-    if (resolved !== "") {
-      if (resolved.charAt(0) === "/") return "file://" + resolved
-      return resolved
-    }
-    var fallback = Quickshell.iconPath("application-x-executable", true)
-    if (fallback && fallback.charAt(0) === "/") return "file://" + fallback
-    return fallback || ("image://icon/" + (name || "application-x-executable"))
+  function isValidIconToken(str) {
+    if (!str || typeof str !== "string") return false
+    if (str.length === 0 || str.length > 128) return false
+    // Reject absolute paths, directory traversal, URL schemes, or non-token characters
+    return /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(str)
   }
+
+  function iconSource(icon) {
+    var name = String(icon || "").trim()
+    if (!name) return Quickshell.iconPath("application-x-executable", true) || ""
+
+    // Allow trusted system icon files from standard system paths
+    if (name.indexOf("file:///usr/share/icons/") === 0 || name.indexOf("/usr/share/icons/") === 0 || name.indexOf("/usr/share/pixmaps/") === 0) {
+      return name.indexOf("file://") === 0 ? name : "file://" + name
+    }
+
+    if (isValidIconToken(name)) {
+      var resolved = Quickshell.iconPath(name, true)
+      if (resolved && resolved.length > 0) {
+        return resolved
+      }
+    }
+
+    var fallback = Quickshell.iconPath("application-x-executable", true)
+    return fallback || ""
+  }
+
 
   function rebuild() {
     var values = Hyprland.toplevels.values || []

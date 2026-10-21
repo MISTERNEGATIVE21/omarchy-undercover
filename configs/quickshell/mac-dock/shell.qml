@@ -290,12 +290,19 @@ ShellRoot {
       refreshTimer.restart()
     }
 
+    function isValidIconToken(str) {
+      if (!str || typeof str !== "string") return false
+      if (str.length === 0 || str.length > 128) return false
+      // Reject absolute paths, directory traversal, URL schemes, or non-token characters
+      return /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(str)
+    }
+
     function resolveAppIcon(c) {
       if (!c) return ""
       var cls = c.class || ""
       var initCls = c.initialClass || ""
-      var lowerCls = cls.toLowerCase()
-      var lowerInit = initCls.toLowerCase()
+      var lowerCls = cls.toLowerCase().trim()
+      var lowerInit = initCls.toLowerCase().trim()
 
       if (lowerCls.indexOf("telegram") !== -1 || lowerInit.indexOf("telegram") !== -1) {
         return "file://" + dockWindow.iconBasePath + "messages.svg"
@@ -310,27 +317,36 @@ ShellRoot {
         return "file://" + dockWindow.iconBasePath + "terminal.svg"
       }
 
-      var candidates = [cls, initCls, lowerCls, lowerInit]
-      var parts = cls.split(".")
-      for (var i = parts.length - 1; i >= 0; i--) {
-        if (parts[i]) {
-          candidates.push(parts[i])
-          candidates.push(parts[i].toLowerCase())
+      var rawCandidates = [cls, initCls, lowerCls, lowerInit]
+      var candidates = []
+      for (var r = 0; r < rawCandidates.length; r++) {
+        if (isValidIconToken(rawCandidates[r]) && candidates.indexOf(rawCandidates[r]) === -1) {
+          candidates.push(rawCandidates[r])
+        }
+      }
+
+      if (isValidIconToken(cls)) {
+        var parts = cls.split(".")
+        for (var i = parts.length - 1; i >= 0; i--) {
+          if (isValidIconToken(parts[i])) {
+            if (candidates.indexOf(parts[i]) === -1) candidates.push(parts[i])
+            var lp = parts[i].toLowerCase()
+            if (candidates.indexOf(lp) === -1) candidates.push(lp)
+          }
         }
       }
 
       for (var k = 0; k < candidates.length; k++) {
         var name = candidates[k]
-        if (!name) continue
-        var ip = Quickshell.iconPath(name)
+        var ip = Quickshell.iconPath(name, true)
         if (ip && ip.length > 0) {
-          if (ip.indexOf("image://") === 0 || ip.indexOf("file://") === 0) return ip
-          if (ip.indexOf("/") === 0) return "file://" + ip
           return ip
         }
       }
 
-      return "image://icon/" + (initCls || cls || "application-x-executable")
+      var fallback = Quickshell.iconPath("application-x-executable", true)
+      if (fallback) return fallback
+      return "file://" + dockWindow.iconBasePath + "appstore.svg"
     }
 
     function resolveModelIcon(modelData) {
@@ -342,21 +358,21 @@ ShellRoot {
         return dockWindow.resolveAppIcon(modelData.hyprClient)
       }
       if (modelData.icon) {
-        if (modelData.icon.indexOf("/") === 0) return "file://" + modelData.icon
-        if (modelData.icon.indexOf("image://") === 0 || modelData.icon.indexOf("file://") === 0) return modelData.icon
-        return "file://" + dockWindow.iconBasePath + modelData.icon
+        var iconStr = String(modelData.icon)
+        if (isValidIconToken(iconStr)) {
+          return "file://" + dockWindow.iconBasePath + iconStr
+        }
       }
-      if (modelData.appId) {
-        var ip = Quickshell.iconPath(modelData.appId)
-        if (ip) {
-          if (ip.indexOf("image://") === 0 || ip.indexOf("file://") === 0) return ip
-          if (ip.indexOf("/") === 0) return "file://" + ip
+      if (modelData.appId && isValidIconToken(modelData.appId)) {
+        var ip = Quickshell.iconPath(modelData.appId, true)
+        if (ip && ip.length > 0) {
           return ip
         }
-        return "image://icon/" + modelData.appId
       }
-      return ""
+      var fallback = Quickshell.iconPath("application-x-executable", true)
+      return fallback || ("file://" + dockWindow.iconBasePath + "appstore.svg")
     }
+
 
     // Pinned apps configuration & custom order
     property var macPinsConfig: ({})

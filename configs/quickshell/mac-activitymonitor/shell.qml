@@ -98,16 +98,32 @@ ShellRoot {
       activityWindow.selectedProcess = null
     }
 
+    function isValidIconToken(str) {
+      if (!str || typeof str !== "string") return false
+      if (str.length === 0 || str.length > 128) return false
+      // Reject absolute paths, directory traversal, URL schemes, or non-token characters
+      return /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(str)
+    }
+
     function resolveAppIcon(item) {
       if (!item) return ""
-      var cls = (item.class || item.name || "").toLowerCase().trim()
-      var candidates = [cls, cls.replace(/[\s_-]+/g, ""), cls.split(/[\s_-]+/)[0]]
+      var rawCls = item.class || ""
+      var rawName = item.name || ""
+      var cls = (rawCls || rawName || "").toLowerCase().trim()
+      var rawCandidates = [rawCls, rawName, cls, cls.replace(/[\s_-]+/g, ""), cls.split(/[\s_-]+/)[0]]
+      var candidates = []
+      for (var j = 0; j < rawCandidates.length; j++) {
+        if (isValidIconToken(rawCandidates[j]) && candidates.indexOf(rawCandidates[j]) === -1) {
+          candidates.push(rawCandidates[j])
+        }
+      }
       for (var i = 0; i < candidates.length; i++) {
         var p = Quickshell.iconPath(candidates[i], true)
         if (p && p.length > 0) return p
       }
       return Quickshell.iconPath("application-x-executable", true) || ""
     }
+
 
     // Process statistics backend
     Process {
