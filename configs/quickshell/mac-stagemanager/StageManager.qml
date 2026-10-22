@@ -111,15 +111,24 @@ Item {
     var name = String(icon || "").trim()
     if (!name) return Quickshell.iconPath("application-x-executable", true) || ""
 
-    // Allow trusted system icon files from standard system paths
-    if (name.indexOf("file:///usr/share/icons/") === 0 || name.indexOf("/usr/share/icons/") === 0 || name.indexOf("/usr/share/pixmaps/") === 0) {
-      return name.indexOf("file://") === 0 ? name : "file://" + name
-    }
-
     if (isValidIconToken(name)) {
       var resolved = Quickshell.iconPath(name, true)
       if (resolved && resolved.length > 0) {
         return resolved
+      }
+      var fb = Quickshell.iconPath("application-x-executable", true)
+      return fb || ""
+    }
+
+    // Allow trusted system icon files ONLY from standard system paths with strict canonicalization
+    // Must reject path traversal sequences (..), backslashes, null bytes, or non-icon extensions
+    if (name.indexOf("..") === -1 && name.indexOf("\\") === -1 && name.indexOf("\0") === -1) {
+      var cleanPath = name.indexOf("file://") === 0 ? name.slice(7) : name
+      if (/^\/usr\/share\/(icons|pixmaps)\/[a-zA-Z0-9_.-]+(\/[a-zA-Z0-9_.-]+)*\.(png|svg|xpm|ico)$/.test(cleanPath)) {
+        var parts = cleanPath.split("/").slice(1)
+        if (!parts.some(function(p) { return p === "." || p === ".." || p === "" })) {
+          return "file://" + cleanPath
+        }
       }
     }
 
@@ -162,11 +171,21 @@ Item {
       var key = normalize(initialClass || currentClass || appId || toplevel.address)
       if (!buckets[key]) {
         var entry = root.desktopEntryFor([initialClass, currentClass, appId])
+        var fallbackToken = ""
+        if (!entry || !entry.icon) {
+          var clientCandidates = [appId, currentClass, initialClass]
+          for (var t = 0; t < clientCandidates.length; t++) {
+            if (root.isValidIconToken(clientCandidates[t])) {
+              fallbackToken = clientCandidates[t]
+              break
+            }
+          }
+        }
         buckets[key] = {
           key: key,
           name: entry ? String(entry.name || root.friendlyName(initialClass || currentClass || appId))
             : root.friendlyName(initialClass || currentClass || appId),
-          icon: root.iconSource(entry ? entry.icon : (appId || currentClass || initialClass)),
+          icon: root.iconSource(entry && entry.icon ? entry.icon : fallbackToken),
           windows: [],
           recency: 1000000
         }

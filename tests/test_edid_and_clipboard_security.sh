@@ -221,17 +221,37 @@ for f in "${ICON_ISOLATION_FILES[@]}"; do
 done
 echo "  ✔ Zero raw image://icon/ client-controlled string interpolations detected."
 
-# 3. Verify StageManager.qml does not blindly map arbitrary root paths to file://
+# 3. Verify StageManager.qml does not blindly map arbitrary root paths to file:// or pass unvalidated client appId
 if grep -F 'if (name.charAt(0) === "/") return "file://" + name' "$REPO_ROOT/configs/quickshell/mac-stagemanager/StageManager.qml" >/dev/null; then
   echo "ERROR: StageManager.qml still blindly maps arbitrary absolute paths to file:// !"
   exit 1
 fi
-echo "  ✔ StageManager strictly guards icon paths against client-controlled local file URIs."
+if grep -E 'iconSource\(entry \? entry\.icon : \(appId' "$REPO_ROOT/configs/quickshell/mac-stagemanager/StageManager.qml" >/dev/null; then
+  echo "ERROR: StageManager.qml passes unvalidated client appId directly into iconSource!"
+  exit 1
+fi
+if ! grep -F 'fallbackToken = clientCandidates[t]' "$REPO_ROOT/configs/quickshell/mac-stagemanager/StageManager.qml" >/dev/null; then
+  echo "ERROR: StageManager.qml missing token validation on fallback client candidates!"
+  exit 1
+fi
+echo "  ✔ StageManager strictly guards icon paths against client-controlled local file URIs and path traversal."
 
-# 4. Functional validation of the canonical icon token regex against path traversal and URI vectors
+# 4. Functional validation of the canonical icon token regex and system icon path sanitization
 python3 -c '
 import re
-pattern = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._-]*$")
+token_pattern = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._-]*$")
+system_path_pattern = re.compile(r"^\/usr\/share\/(icons|pixmaps)\/[a-zA-Z0-9_.-]+(\/[a-zA-Z0-9_.-]+)*\.(png|svg|xpm|ico)$")
+
+def is_safe_system_icon(name):
+    if not name or not isinstance(name, str):
+        return False
+    if ".." in name or "\\" in name or "\0" in name:
+        return False
+    clean = name[7:] if name.startswith("file://") else name
+    if not system_path_pattern.match(clean):
+        return False
+    parts = clean.split("/")[1:]
+    return not any(p in (".", "..", "") for p in parts)
 
 # Malicious vectors: must all FAIL validation
 malicious = [
@@ -239,6 +259,9 @@ malicious = [
     "/tmp/bomb.png",
     "../../../../etc/shadow",
     "file:///home/user/.cache/bomb.png",
+    "/usr/share/icons/../../home/user/.cache/bomb.png",
+    "/usr/share/pixmaps/../../../tmp/crafted.png",
+    "file:///usr/share/icons/../../home/user/.cache/crafted.png",
     "image://icon/foo",
     "http://127.0.0.1/evil.png",
     "app\x00name",
@@ -253,12 +276,15 @@ malicious = [
 ]
 
 for vec in malicious:
-    if pattern.match(vec):
-        print(f"SECURITY ERROR: Malicious vector allowed: {vec}")
+    if token_pattern.match(vec):
+        print(f"SECURITY ERROR: Malicious vector allowed as token: {vec}")
+        exit(1)
+    if is_safe_system_icon(vec):
+        print(f"SECURITY ERROR: Malicious vector allowed as system path: {vec}")
         exit(1)
 
-# Canonical tokens: must all PASS validation
-valid = [
+# Canonical tokens: must all PASS token validation
+valid_tokens = [
     "firefox",
     "org.mozilla.firefox",
     "org.gnome.Nautilus",
@@ -269,12 +295,25 @@ valid = [
     "application-x-executable"
 ]
 
-for val in valid:
-    if not pattern.match(val):
+for val in valid_tokens:
+    if not token_pattern.match(val):
         print(f"VALIDATION ERROR: Valid token rejected: {val}")
         exit(1)
+
+# Trusted system paths: must PASS system path validation
+valid_paths = [
+    "/usr/share/icons/hicolor/scalable/apps/firefox.svg",
+    "/usr/share/pixmaps/gedit.png",
+    "file:///usr/share/icons/hicolor/48x48/apps/terminal.png",
+    "/usr/share/icons/Adwaita/32x32/apps/calc.svg"
+]
+
+for vp in valid_paths:
+    if not is_safe_system_icon(vp):
+        print(f"VALIDATION ERROR: Valid system icon path rejected: {vp}")
+        exit(1)
 '
-echo "  ✔ Canonical icon token regex correctly blocks path traversal, absolute filenames, and URI schemes."
+echo "  ✔ Canonical icon token and system path validation correctly blocks path traversal, absolute filenames, and URI schemes."
 
 echo "=== 6. Validating Quickshell QML compilation ==="
 if command -v quickshell >/dev/null 2>&1; then
