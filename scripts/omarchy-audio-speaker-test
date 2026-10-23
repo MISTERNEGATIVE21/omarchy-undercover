@@ -6,8 +6,8 @@
 
 set -euo pipefail
 
-(( $# == 1 )) || {
-  echo "Usage: audio-speaker-test <sink-name>" >&2
+(( $# >= 1 && $# <= 2 )) || {
+  echo "Usage: audio-speaker-test <sink-name> [channel]" >&2
   exit 1
 }
 
@@ -16,15 +16,26 @@ source "$script_dir/.audio-common"
 audio_acquire_mutation_lock || exit 1
 
 sink_name=$1
+channel_arg=${2:-}
 speaker_command=${AUDIO_CONTROL_SPEAKER_TEST_COMMAND:-speaker-test}
 command -v jq >/dev/null
 speaker_path=$(command -v "$speaker_command")
 LC_ALL=C
 
+speaker_channel_args=()
+if [[ -n $channel_arg ]]; then
+  case "$channel_arg" in
+    left) speaker_channel_args=(-s 1) ;;
+    right) speaker_channel_args=(-s 2) ;;
+    both) ;;
+    *) echo "Invalid channel identifier: $channel_arg" >&2; exit 1 ;;
+  esac
+fi
+
 jq -ne --arg sink "$sink_name" '
   ($sink | length) > 0 and ($sink | length) <= 160
   and ($sink | endswith(".monitor") | not)
-  and ($sink | test("[\u0000-\u001f\u007f-\u009f\u200e\u200f\u2028-\u202e\u2066-\u2069]") | not)
+  and ($sink | test("^[a-zA-Z0-9_.:@-]{1,160}$"))
 ' >/dev/null || {
   echo "Invalid output identifier" >&2
   exit 1
@@ -66,4 +77,4 @@ channels=$(jq -er '
 export PULSE_SINK=$sink_name
 export PULSE_PROP="application.id=ssupt.audio-control application.name='Advanced Audio Control' media.name='Speaker channel test'"
 exec timeout --foreground --kill-after=2 30 \
-  "$speaker_path" -D pulse -c "$channels" -t wav -l 1 -S 35
+  "$speaker_path" -D pulse -c "$channels" -t wav -l 1 -S 35 "${speaker_channel_args[@]}"

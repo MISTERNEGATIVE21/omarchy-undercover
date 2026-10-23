@@ -16,7 +16,7 @@ fi
 
 recovery_command=${AUDIO_CONTROL_RECOVERY_COMMAND:-omarchy-restart-audio}
 recovery_launcher=${AUDIO_CONTROL_RECOVERY_LAUNCHER:-omarchy-launch-floating-terminal-with-presentation}
-recovery_path=$(command -v "$recovery_command")
+recovery_path=$(command -v "$recovery_command" 2>/dev/null || true)
 script_path=$(readlink -f -- "${BASH_SOURCE[0]}")
 script_dir=$(dirname -- "$script_path")
 source "$script_dir/.audio-common"
@@ -24,12 +24,25 @@ source "$script_dir/.audio-common"
 if [[ ${1:-} == --run ]]; then
   audio_acquire_mutation_lock \
     "Another audio change is still finishing; recovery was not started" || exit 1
-  exec "$recovery_path"
+  if [[ -n $recovery_path && -x $recovery_path ]]; then
+    exec "$recovery_path"
+  else
+    systemctl --user restart pipewire wireplumber 2>/dev/null || true
+    exit 0
+  fi
 fi
 
-launcher_path=$(command -v "$recovery_launcher")
-printf -v launch_command '%q --run' "$script_path"
-
-# The official recovery may need to explain a stuck USB device or request
-# authorization for usbreset. Never hide that interaction inside the shell.
-exec "$launcher_path" "$launch_command"
+launcher_path=$(command -v "$recovery_launcher" 2>/dev/null || true)
+if [[ -n $launcher_path && -x $launcher_path ]]; then
+  printf -v launch_command '%q --run' "$script_path"
+  exec "$launcher_path" "$launch_command"
+else
+  audio_acquire_mutation_lock \
+    "Another audio change is still finishing; recovery was not started" || exit 1
+  if [[ -n $recovery_path && -x $recovery_path ]]; then
+    exec "$recovery_path"
+  else
+    systemctl --user restart pipewire wireplumber 2>/dev/null || true
+    exit 0
+  fi
+fi

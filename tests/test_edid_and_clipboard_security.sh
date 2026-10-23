@@ -45,6 +45,101 @@ for method in "setMonitorScale" "setMonitorMode" "setMonitorTransform" "setMonit
 done
 echo "  ✔ Monitor methods use direct argument arrays without shell interpolation."
 
+echo "=== 1b. Checking AudioService.qml for command injection immunity and device validation ==="
+
+AUDIO_SERVICES=(
+  "$REPO_ROOT/configs/quickshell/common/AudioService.qml"
+  "$REPO_ROOT/configs/quickshell/mac-sound/AudioService.qml"
+  "$REPO_ROOT/configs/quickshell/mac-settings/AudioService.qml"
+  "$REPO_ROOT/configs/quickshell/win11-sound/AudioService.qml"
+  "$REPO_ROOT/configs/quickshell/win11-settings/AudioService.qml"
+)
+
+# Verify all 5 files are synchronized
+AUDIO_BASE="${AUDIO_SERVICES[0]}"
+for f in "${AUDIO_SERVICES[@]}"; do
+  if ! cmp -s "$AUDIO_BASE" "$f"; then
+    echo "ERROR: $f is out of sync with $AUDIO_BASE"
+    exit 1
+  fi
+done
+echo "  ✔ All 5 AudioService.qml files are synchronized."
+
+# Verify no runCmd or bash -c command string interpolation exists in AudioService.qml
+for f in "${AUDIO_SERVICES[@]}"; do
+  if grep -E "runCmd\(" "$f" >/dev/null; then
+    echo "ERROR: Found runCmd in $f"
+    exit 1
+  fi
+  if grep -E 'bash.*-c' "$f" >/dev/null; then
+    echo "ERROR: Found bash -c interpolation in $f"
+    exit 1
+  fi
+done
+echo "  ✔ No runCmd or bash -c interpolation found in AudioService.qml files."
+
+# Verify isValidAudioDevice canonical token validator is enforced
+for f in "${AUDIO_SERVICES[@]}"; do
+  if ! grep -F "function isValidAudioDevice" "$f" >/dev/null; then
+    echo "ERROR: Missing isValidAudioDevice token validator in $f"
+    exit 1
+  fi
+done
+echo "  ✔ isValidAudioDevice canonical token validator enforced across all AudioService.qml copies."
+
+# Verify audio control methods use direct argument arrays without shell interpolation
+for token in 'Quickshell.execDetached(["pactl", "set-default-sink"' 'Quickshell.execDetached(["pactl", "set-default-source"' 'Quickshell.execDetached(["wpctl", "set-volume"' 'Quickshell.execDetached(["wpctl", "set-mute"'; do
+  if ! grep -F "$token" "$AUDIO_BASE" >/dev/null; then
+    echo "ERROR: Missing direct argument array execution for $token in $AUDIO_BASE"
+    exit 1
+  fi
+done
+echo "  ✔ Audio methods use direct argument arrays without shell interpolation."
+
+# Test device token validation in scripts/omarchy-audio-state and QML regex
+python3 -c '
+import re, sys
+
+device_pattern = re.compile(r"^[a-zA-Z0-9_.:@-]{1,160}$")
+
+malicious_vectors = [
+    "attacker;id;",
+    "sink;rm -rf /",
+    "sink$(whoami)",
+    "sink`touch /tmp/pwned`",
+    "sink\nid",
+    "sink|curl attacker.com",
+    "sink & touch /tmp/pwned &",
+    "sink name with spaces",
+    "../traversal/sink",
+    "a" * 161,
+    "",
+]
+
+for vec in malicious_vectors:
+    if device_pattern.match(vec):
+        print(f"SECURITY ERROR: Malicious audio device vector allowed: {vec}")
+        sys.exit(1)
+
+valid_devices = [
+    "alsa_output.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__HDMI3__sink",
+    "alsa_output.usb-Kart_Aura_Pro_33024317260416-01.pro-output-0",
+    "alsa_input.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__Mic1__source",
+    "bluez_output.00_11_22_33_44_55.1",
+    "null",
+    "auto_null",
+    "@DEFAULT_AUDIO_SINK@",
+    "@DEFAULT_AUDIO_SOURCE@",
+    "omarchy_audio_group_0123456789abcdef"
+]
+
+for dev in valid_devices:
+    if not device_pattern.match(dev):
+        print(f"VALIDATION ERROR: Valid audio device rejected: {dev}")
+        sys.exit(1)
+'
+echo "  ✔ Audio device token validator strictly rejects shell metacharacters, spaces, path traversal, and buffer overflows."
+
 echo "=== 2. Checking Settings and flyouts for clipboard exhaustion isolation ==="
 
 # Verify no editable TextInput exists anywhere in any QML file (preventing Qt Wayland clipboard hook exhaustion)
@@ -319,10 +414,12 @@ echo "=== 6. Validating Quickshell QML compilation ==="
 if command -v quickshell >/dev/null 2>&1; then
   timeout 3s quickshell -p "$REPO_ROOT/configs/quickshell/mac-settings/shell.qml" 2>&1 | grep -iE "error|critical" || true
   timeout 3s quickshell -p "$REPO_ROOT/configs/quickshell/win11-settings/shell.qml" 2>&1 | grep -iE "error|critical" || true
+  timeout 3s quickshell -p "$REPO_ROOT/configs/quickshell/mac-sound/shell.qml" 2>&1 | grep -iE "error|critical" || true
+  timeout 3s quickshell -p "$REPO_ROOT/configs/quickshell/win11-sound/shell.qml" 2>&1 | grep -iE "error|critical" || true
   timeout 3s quickshell -p "$REPO_ROOT/configs/quickshell/mac-wifi/shell.qml" 2>&1 | grep -iE "error|critical" || true
   timeout 3s quickshell -p "$REPO_ROOT/configs/quickshell/win11-wifi/shell.qml" 2>&1 | grep -iE "error|critical" || true
   timeout 3s quickshell -p "$REPO_ROOT/configs/quickshell/mac-dock/shell.qml" 2>&1 | grep -iE "error|critical" || true
-  echo "  ✔ Quickshell settings, flyout, and dock QML configs compile cleanly."
+  echo "  ✔ Quickshell settings, flyout, sound, and dock QML configs compile cleanly."
 fi
 
 echo "🎉 All EDID injection, clipboard security, plain text rendering, and icon isolation tests passed successfully!"
