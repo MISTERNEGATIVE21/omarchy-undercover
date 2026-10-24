@@ -50,6 +50,14 @@ error() {
 
 command_exists() { command -v "$1" &>/dev/null; }
 
+# Prevents Quickshell logging from exhausting tmpfs $XDG_RUNTIME_DIR (/run/user/1000)
+cleanup_runtime_dir() {
+    local rtd="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+    if [[ -d "$rtd/quickshell/by-id" ]]; then
+        find "$rtd/quickshell/by-id" -type f \( -name "log.log" -o -name "log.qslog" \) -size +10M -exec truncate -s 0 {} + 2>/dev/null || true
+    fi
+}
+
 # Omarchy Native Notification Helper
 notify_omarchy() {
     local headline="$1"

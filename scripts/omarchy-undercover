@@ -921,6 +921,7 @@ restore_stock_omarchy_dock() {
 }
 
 switch_to_mac() {
+    cleanup_runtime_dir
     local variant="dark"
     local flavor="tahoe"
 
@@ -1083,6 +1084,7 @@ EOF
 }
 
 switch_to_win11() {
+    cleanup_runtime_dir
     local variant="dark"
     if [[ "${1:-}" == "light" || "${1:-}" == "--light" || "${2:-}" == "light" || "${2:-}" == "--light" ]]; then
         variant="light"
@@ -1209,6 +1211,7 @@ switch_to_ios() {
 }
 
 restore_desktop_state() {
+    cleanup_runtime_dir
     local baseline="${1:-}"
 
     # 1. Terminate all disguise flyouts, popups, and dock processes
