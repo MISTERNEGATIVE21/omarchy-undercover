@@ -32,7 +32,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio, GLib, Gdk
 
 APP_ID = "org.omarchy.undercover.settings"
-VERSION = "8.0.3"
+VERSION = "8.0.4"
 
 _script_parent = Path(__file__).resolve().parent.parent
 if (_script_parent / "manifest.json").exists():
@@ -645,14 +645,33 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         # Quick Actions & Keybindings
         group_cycle = Adw.PreferencesGroup(title="Quick Actions & Keybindings")
         
+        current_shortcut = read_setting("BIND_UNDERCOVER_TOGGLE", "SUPER + ALT + U")
         row_toggle = Adw.ActionRow(
             title="Toggle Undercover / Default",
-            subtitle="Shortcut: Super + Alt + U (toggles between active Undercover preset and Default Omarchy)"
+            subtitle=f"Shortcut: {current_shortcut} (toggles between active Undercover preset and Default Omarchy)"
         )
         btn_toggle = Gtk.Button(label="🔄 Toggle Undercover / Default")
         btn_toggle.connect("clicked", lambda b: self.apply_preset("--toggle", "Toggle Mode"))
         row_toggle.add_suffix(btn_toggle)
         group_cycle.add(row_toggle)
+
+        row_toggle_key = Adw.EntryRow(
+            title="Reconfigure Toggle Shortcut Key",
+            text=current_shortcut
+        )
+        btn_save_key = Gtk.Button(label="Save Key")
+        btn_save_key.add_css_class("suggested-action")
+        def on_save_toggle_key(b):
+            val = row_toggle_key.get_text().strip().upper()
+            if val:
+                write_setting("BIND_UNDERCOVER_TOGGLE", val)
+                row_toggle.set_subtitle(f"Shortcut: {val} (toggles between active Undercover preset and Default Omarchy)")
+                subprocess.run(["hyprctl", "reload"], check=False)
+                self.show_toast(f"Toggle shortcut updated to {val}")
+        btn_save_key.connect("clicked", on_save_toggle_key)
+        row_toggle_key.connect("apply", lambda e: on_save_toggle_key(None))
+        row_toggle_key.add_suffix(btn_save_key)
+        group_cycle.add(row_toggle_key)
 
         row_restore = Adw.ActionRow(
             title="Restore Original Omarchy Desktop",
@@ -680,6 +699,34 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         row_persistent.set_active(persistent_enabled)
         row_persistent.connect("notify::active", self.on_persistent_toggled)
         group_cycle.add(row_persistent)
+
+        # Undercover Bar Widget Position (in Normal Omarchy Mode)
+        curr_bar_pos = read_setting("BAR_POSITION", "right").lower()
+        row_bar_pos = Adw.ComboRow(
+            title="Omarchy Bar Widget Placement",
+            subtitle="Choose where the Undercover icon appears on the Omarchy bar (hidden in camouflage mode)"
+        )
+        model_bar_pos = Gtk.StringList()
+        model_bar_pos.append("Right (Default)")
+        model_bar_pos.append("Center / Middle")
+        model_bar_pos.append("Left")
+        row_bar_pos.set_model(model_bar_pos)
+        if "center" in curr_bar_pos or "middle" in curr_bar_pos:
+            row_bar_pos.set_selected(1)
+        elif "left" in curr_bar_pos:
+            row_bar_pos.set_selected(2)
+        else:
+            row_bar_pos.set_selected(0)
+
+        def on_bar_pos_changed(combo, param):
+            idx = combo.get_selected()
+            pos = "right" if idx == 0 else ("center" if idx == 1 else "left")
+            write_setting("BAR_POSITION", pos)
+            cli = find_cli()
+            subprocess.run([cli, "--bar-position", pos], check=False)
+            self.show_toast(f"Bar widget placed in {pos.capitalize()} section")
+        row_bar_pos.connect("notify::selected", on_bar_pos_changed)
+        group_cycle.add(row_bar_pos)
 
         page.add(group_cycle)
         self.stack.add_titled(page, "presets", "Presets")
@@ -1108,6 +1155,27 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
                 self.show_toast("Omarchy default shortcuts preserved")
         row_override.connect("notify::active", on_override_toggled)
         group_master.add(row_override)
+
+        # Global Undercover Mode Toggle Shortcut
+        cur_toggle_key = read_setting("BIND_UNDERCOVER_TOGGLE", "SUPER + ALT + U")
+        row_global_toggle = Adw.EntryRow(
+            title="Global Camouflage Toggle Shortcut",
+            text=cur_toggle_key
+        )
+        btn_save_global_key = Gtk.Button(label="Save")
+        btn_save_global_key.add_css_class("suggested-action")
+        def on_save_global_toggle_key(b):
+            val = row_global_toggle.get_text().strip().upper()
+            if val:
+                write_setting("BIND_UNDERCOVER_TOGGLE", val)
+                row_toggle.set_subtitle(f"Shortcut: {val} (toggles between active Undercover preset and Default Omarchy)")
+                subprocess.run(["hyprctl", "reload"], check=False)
+                self.show_toast(f"Global toggle shortcut set to: {val}")
+        btn_save_global_key.connect("clicked", on_save_global_toggle_key)
+        row_global_toggle.connect("apply", lambda e: on_save_global_toggle_key(None))
+        row_global_toggle.add_suffix(btn_save_global_key)
+        group_master.add(row_global_toggle)
+
         page.add(group_master)
 
         # Windows 11 Shortcuts Group

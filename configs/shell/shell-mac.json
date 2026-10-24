@@ -28,9 +28,6 @@
       ],
       "right": [
         {
-          "id": "omarchy-undercover"
-        },
-        {
           "id": "mac-hiddenbar",
           "type": "qml",
           "source": "~/.config/omarchy/plugins/omarchy-undercover/widgets/mac-hiddenbar.qml"

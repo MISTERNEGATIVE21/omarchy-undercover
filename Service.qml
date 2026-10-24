@@ -124,15 +124,10 @@ Item {
   Component.onCompleted: {
     reloadScreensaverConfig()
     var s = stateFile.text().trim()
-    if (!root.disguisePersistent) {
-      if (s && s !== "omarchy" && s !== "") {
-        root.runCmd("omarchy-undercover --startup")
-        root.currentState = "omarchy"
-      } else {
-        root.currentState = "omarchy"
-      }
+    if (s && s !== "") {
+      root.currentState = s
     } else {
-      if (s) root.currentState = s
+      root.currentState = "omarchy"
     }
     if (!root.screensaverVideo || root.screensaverVideo === "") {
       root.screensaverVideo = root.homeDir + "/.local/share/omarchy-undercover/screensavers/sonoma_horizon.opt.mp4"
@@ -144,11 +139,6 @@ Item {
     // If transitioning away from macOS mode, immediately kill any active screensaver
     if (!root.isMacMode && root.screensaverActive) {
       root.dismissScreensaver()
-    }
-    if (root.currentState.indexOf("mac") !== -1 || root.currentState.indexOf("win") !== -1) {
-      root.runCmd("omarchy-undercover --hide-stock-dock")
-    } else if (root.currentState === "omarchy" || root.currentState === "") {
-      root.runCmd("omarchy-undercover --restore-stock-dock")
     }
   }
 
@@ -339,12 +329,18 @@ Item {
     }
 
     function focusWindow(addr: string): string {
-      root.runCmd(root.pluginDir + "/scripts/omarchy-undercover-tracker --focus " + addr)
+      var safeAddr = String(addr || "").trim()
+      if (/^[a-zA-Z0-9:x_-]+$/.test(safeAddr)) {
+        Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-undercover-tracker", "--focus", safeAddr])
+      }
       return "ok"
     }
 
     function focusWorkspace(id: string): string {
-      root.runCmd(root.pluginDir + "/scripts/omarchy-undercover-tracker --workspace " + id)
+      var safeId = String(id || "").trim()
+      if (/^[0-9]+$/.test(safeId)) {
+        Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-undercover-tracker", "--workspace", safeId])
+      }
       return "ok"
     }
 
@@ -358,114 +354,4 @@ Item {
       return "ok"
     }
   }
-
-  IpcHandler {
-    target: "undercover-service"
-
-    function toggle() {
-      root.runCmd("omarchy-undercover --toggle")
-    }
-
-    function mac() {
-      root.runCmd("omarchy-undercover -mac")
-    }
-
-    function macLight() {
-      root.runCmd("omarchy-undercover -mac-light")
-    }
-
-    function win11() {
-      root.runCmd("omarchy-undercover -w11")
-    }
-
-    function win11Light() {
-      root.runCmd("omarchy-undercover -w11-light")
-    }
-
-    function restore() {
-      root.runCmd("omarchy-undercover --disable")
-    }
-
-    function autohide(val: string) {
-      root.runCmd("omarchy-undercover --autohide " + (val === "on" || val === "true" ? "1" : "0"))
-    }
-
-    function transparency(val: string) {
-      root.runCmd("omarchy-undercover --transparency " + (val === "off" || val === "false" ? "off" : "on"))
-    }
-
-    function status(): string {
-      return root.currentState
-    }
-
-    function debugScreensaver(): string {
-      return JSON.stringify({
-        currentState: root.currentState,
-        isMacMode: root.isMacMode,
-        screensaverEnabled: root.screensaverEnabled,
-        screensaverTimeout: root.screensaverTimeout,
-        screensaverVideo: root.screensaverVideo,
-        screensaverActive: root.screensaverActive,
-        screensaverEngineActive: root.screensaverEngineActive
-      })
-    }
-
-    function previewScreensaver(): string {
-      root.triggerScreensaverPreview()
-      return "ok"
-    }
-
-    function previewLockscreen(): string {
-      root.triggerLockscreenPreview()
-      return "ok"
-    }
-
-    function lock(): string {
-      return root.lock()
-    }
-
-    function lockScreensaver(): string {
-      return root.lock()
-    }
-
-    function dismissScreensaver(): string {
-      root.dismissScreensaver()
-      return "ok"
-    }
-
-    function reloadScreensaverConfig(): string {
-      root.reloadScreensaverConfig()
-      return "ok"
-    }
-
-    function trackerStatus(): string {
-      root.runCmd(root.pluginDir + "/scripts/omarchy-undercover-tracker --update")
-      return "ok"
-    }
-
-    function trackerFile(): string {
-      return root.pluginDir + "/.undercoverfile"
-    }
-
-    function focusWindow(addr: string): string {
-      root.runCmd(root.pluginDir + "/scripts/omarchy-undercover-tracker --focus " + addr)
-      return "ok"
-    }
-
-    function focusWorkspace(id: string): string {
-      root.runCmd(root.pluginDir + "/scripts/omarchy-undercover-tracker --workspace " + id)
-      return "ok"
-    }
-
-    function hideStockDock(): string {
-      root.runCmd("omarchy-undercover --hide-stock-dock")
-      return "ok"
-    }
-
-    function restoreStockDock(): string {
-      root.runCmd("omarchy-undercover --restore-stock-dock")
-      return "ok"
-    }
-  }
-
 }

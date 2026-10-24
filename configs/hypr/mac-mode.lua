@@ -183,8 +183,15 @@ hl.animation({ leaf = "specialWorkspaceOut", enabled = true, speed = 4, bezier =
 -- Dedicated Undercover toggle shortcuts (non-conflicting with base bindings)
 -- ---------------------------------------------------------------------------
 if hl and hl.bind then
-  hl.bind("SUPER + ALT + U", exec_cmd("omarchy-undercover --toggle"), { description = "Toggle Undercover Mode" })
+  local toggle_key = get_setting("BIND_UNDERCOVER_TOGGLE", "SUPER + ALT + U")
+  hl.bind(toggle_key, exec_cmd("omarchy-undercover --toggle"), { description = "Toggle Undercover Mode" })
   hl.bind("SUPER + ALT + B", exec_cmd("omarchy-undercover-autohide --toggle"), { description = "Toggle Edge Auto-Hide Daemon" })
+end
+
+-- Suppress stock Omarchy dock in Undercover mode (use only undercover extensions)
+if hl and hl.keyword then
+  hl.keyword("layerrule", "ignorezero, omarchy-dock")
+  hl.keyword("layerrule", "ignorealpha 1.0, omarchy-dock")
 end
 
 -- Rebind Omarchy's native file manager shortcut to use the disguised undercover variant

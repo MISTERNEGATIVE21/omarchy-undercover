@@ -25,6 +25,10 @@ if [[ -n "${SCRIPT_DIR:-}" && -d "${SCRIPT_DIR}" ]]; then
     if [[ ":$PATH:" != *":${SCRIPT_DIR}:"* ]]; then
         PATH="${SCRIPT_DIR}:${PATH}"
     fi
+    if [[ ! -x "$HOME/.local/bin/omarchy-undercover" && -f "${SCRIPT_DIR}/omarchy-undercover" ]]; then
+        mkdir -p "$HOME/.local/bin"
+        ln -sf "${SCRIPT_DIR}/omarchy-undercover" "$HOME/.local/bin/omarchy-undercover" 2>/dev/null || true
+    fi
 fi
 
 # Standard output helpers
@@ -524,16 +528,9 @@ enable_undercover_hyprland() {
 }
 
 disable_undercover_hyprland() {
-    rm -f "$HOME/.local/state/omarchy/toggles/hypr/undercover.lua" \
-          "$HOME/.local/state/omarchy/toggles/hypr/undercover.conf" 2>/dev/null || true
-    if command_exists hyprctl; then
-        local TITLEBARS="/usr/lib/omarchy-hyprland-titlebars/titlebars.so"
-        if [[ -f "$TITLEBARS" ]]; then
-            hyprctl plugin unload "$TITLEBARS" >/dev/null 2>&1 || true
-            hyprctl plugin load "$TITLEBARS" >/dev/null 2>&1 || true
-        fi
-        hyprctl reload >/dev/null 2>&1 || true
-    fi
+    # In Omarchy mode, keep undercover.lua active in toggles so the toggle keybinding
+    # remains available. undercover.lua checks active mode and only binds the toggle shortcut.
+    enable_undercover_hyprland "omarchy"
 }
 
 uninstall_undercover_hyprland() {

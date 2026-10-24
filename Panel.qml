@@ -27,6 +27,7 @@ Panel {
   readonly property bool isAutohide: widget ? widget.isAutohide : false
   readonly property bool isTransparent: widget ? widget.isTransparent : true
   readonly property real activeOpacity: widget ? widget.activeOpacity : 0.95
+  readonly property string toggleShortcut: widget ? widget.toggleShortcut : "SUPER + ALT + U"
 
   function runCmd(cmd) {
     var pluginScripts = root.pluginDir + "/scripts"
@@ -105,7 +106,7 @@ Panel {
 
               Text {
                 Layout.fillWidth: true
-                text: "Active: " + (root.currentMode === "mac" ? "macOS Sequoia (" + (root.activeState.indexOf("light") !== -1 ? "Light" : "Dark") + ")" : (root.currentMode === "win11" ? "Windows 11 Fluent (" + (root.activeState.indexOf("light") !== -1 ? "Light" : "Dark") + ")" : "Default Omarchy"))
+                text: "Active: " + (root.currentMode === "mac" ? "macOS Sequoia (" + (root.activeState.indexOf("light") !== -1 ? "Light" : "Dark") + ")" : (root.currentMode === "win11" ? "Windows 11 Fluent (" + (root.activeState.indexOf("light") !== -1 ? "Light" : "Dark") + ")" : "Default Omarchy (Pre-Flight)"))
                 font.family: Style.font.family
                 font.pixelSize: Style.font.caption
                 color: Color.muted
@@ -117,10 +118,65 @@ Panel {
             // Quick Toggle / Close
             Button {
               bordered: true
-              text: root.currentMode === "omarchy" ? "Camouflage" : "Restore"
+              text: root.currentMode === "omarchy" ? "🚀 Camouflage" : "🐧 Restore"
               onClicked: {
                 root.runCmd("omarchy-undercover --toggle")
                 root.close()
+              }
+            }
+          }
+
+          // Pre-Flight / Shortcut Information Card
+          Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: preflightRow.implicitHeight + Style.space(16)
+            radius: 10
+            color: root.currentMode === "omarchy" ? Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.12) : Qt.rgba(1, 1, 1, 0.04)
+            border.color: root.currentMode === "omarchy" ? Color.accent : Qt.rgba(1, 1, 1, 0.08)
+            border.width: 1
+
+            RowLayout {
+              id: preflightRow
+              anchors.fill: parent
+              anchors.margins: Style.space(10)
+              spacing: Style.space(10)
+
+              Text {
+                text: "⌨️"
+                font.pixelSize: 20
+              }
+
+              ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 2
+
+                Text {
+                  Layout.fillWidth: true
+                  text: "Shortcut: " + root.toggleShortcut
+                  font.family: Style.font.family
+                  font.pixelSize: Style.font.caption + 1
+                  font.bold: true
+                  color: Color.foreground
+                  elide: Text.ElideRight
+                }
+
+                Text {
+                  Layout.fillWidth: true
+                  text: root.currentMode === "omarchy" ? "Configure your look beforehand. Press shortcut anytime to switch." : "Press shortcut anytime to restore original Omarchy desktop."
+                  font.family: Style.font.family
+                  font.pixelSize: Style.font.caption
+                  color: Color.muted
+                  wrapMode: Text.WordWrap
+                }
+              }
+
+              Button {
+                bordered: true
+                text: "Reconfigure"
+                onClicked: {
+                  root.runCmd("omarchy-undercover-settings")
+                  root.close()
+                }
               }
             }
           }

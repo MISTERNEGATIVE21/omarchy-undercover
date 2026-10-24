@@ -483,6 +483,32 @@ restore_shell_from_baseline() {
         fi
     fi
 
+    # Ensure Undercover bar widget is restored at the user's configured placement in Omarchy mode
+    local bar_pos
+    bar_pos=$(read_setting "BAR_POSITION" "right")
+    local section_key="right"
+    case "$bar_pos" in
+        left) section_key="left" ;;
+        center*|middle) section_key="center" ;;
+        *) section_key="right" ;;
+    esac
+
+    local shell_json="$HOME/.config/omarchy/shell.json"
+    if [[ -f "$shell_json" ]] && command_exists jq; then
+        local tmp="$HOME/.config/omarchy/shell.json.tmp"
+        if jq --arg sec "$section_key" '
+            .plugins = ((.plugins // []) + ["omarchy-undercover"] | unique)
+            | .bar.layout.left = ((.bar.layout.left // []) | map(select((.id // "") != "omarchy-undercover")))
+            | .bar.layout.center = ((.bar.layout.center // []) | map(select((.id // "") != "omarchy-undercover")))
+            | .bar.layout.right = ((.bar.layout.right // []) | map(select((.id // "") != "omarchy-undercover")))
+            | .bar.layout[$sec] = ((.bar.layout[$sec] // []) + [{"id": "omarchy-undercover"}])
+        ' "$shell_json" > "$tmp" 2>/dev/null && [[ -s "$tmp" ]]; then
+            mv "$tmp" "$shell_json"
+        else
+            rm -f "$tmp"
+        fi
+    fi
+
     # Reload quickshell cleanly without spawning duplicate supervisors
     omarchy_reload_quickshell
 }
@@ -836,13 +862,22 @@ hide_stock_omarchy_dock() {
     if [[ -f "$shell_json" ]] && command_exists jq; then
         if ! jq -e '.disabledPlugins // [] | index("omarchy.dock")' "$shell_json" >/dev/null 2>&1; then
             jq '.disabledPlugins = ((.disabledPlugins // []) + ["omarchy.dock"] | unique)' "$shell_json" > "$shell_json.tmp" && mv "$shell_json.tmp" "$shell_json"
-            if command_exists omarchy-shell; then
-                omarchy-shell -q shell reloadConfig 2>/dev/null || true
-            fi
         fi
     fi
 
-    # 4. Terminate any lingering Quickshell dock instances
+    # 4. Request Omarchy shell to rescan plugins and drop disabled service instances
+    if command_exists omarchy-shell; then
+        omarchy-shell -q shell rescanPlugins 2>/dev/null || true
+        omarchy-shell -q shell reloadConfig 2>/dev/null || true
+    fi
+
+    # 5. Suppress layer in Hyprland so no lingering dock surface can render
+    if command_exists hyprctl; then
+        hyprctl keyword layerrule "ignorezero, omarchy-dock" >/dev/null 2>&1 || true
+        hyprctl keyword layerrule "ignorealpha 1.0, omarchy-dock" >/dev/null 2>&1 || true
+    fi
+
+    # 6. Terminate any lingering Quickshell dock instances
     pkill -f "plugins/dock/Dock.qml" 2>/dev/null || true
 
     mkdir -p "$HOME/.local/state/omarchy"
@@ -874,6 +909,7 @@ restore_stock_omarchy_dock() {
             if jq -e '.disabledPlugins // [] | index("omarchy.dock")' "$shell_json" >/dev/null 2>&1; then
                 jq '.disabledPlugins = ((.disabledPlugins // []) - ["omarchy.dock"]) | if (.disabledPlugins | length) == 0 then del(.disabledPlugins) else . end' "$shell_json" > "$shell_json.tmp" && mv "$shell_json.tmp" "$shell_json"
                 if command_exists omarchy-shell; then
+                    omarchy-shell -q shell rescanPlugins 2>/dev/null || true
                     omarchy-shell -q shell reloadConfig 2>/dev/null || true
                 fi
             fi
@@ -1028,7 +1064,6 @@ EOF
 
     omarchy_reload_bar
     enable_undercover_hyprland "mac" 2>/dev/null || true
-    omarchy_reload_hyprland
 
     local enable_dock
     enable_dock=$(read_setting "ENABLE_MAC_DOCK" "true")
@@ -1146,7 +1181,9 @@ EOF
     apply_shell_windows
 
     # Apply wallpaper
-    if [[ -f "$CONFIG_DIR/wallpapers/$wall_img" ]]; then
+    if command_exists omarchy-undercover-wallpaper; then
+        omarchy-undercover-wallpaper -s "$wall_img" 2>/dev/null || true
+    elif [[ -f "$CONFIG_DIR/wallpapers/$wall_img" ]]; then
         killall swaybg 2>/dev/null || true
         nohup swaybg -i "$CONFIG_DIR/wallpapers/$wall_img" -m fill >/dev/null 2>&1 &
         disown 2>/dev/null || true
@@ -1160,7 +1197,6 @@ EOF
 
     omarchy_reload_bar
     enable_undercover_hyprland "windows" 2>/dev/null || true
-    omarchy_reload_hyprland
     msg "Switched to Windows 11 ($variant) — done!"
 }
 
@@ -1517,13 +1553,70 @@ verify_integrity() {
     fi
 }
 
+set_bar_widget_position() {
+    local target="${1:-}"
+    if [[ -z "$target" ]]; then
+        if [[ -t 0 && -t 1 ]] && command_exists gum; then
+            target=$(printf '%s\n' "right" "center" "left" | gum choose --header="Choose bar placement for Undercover widget in normal Omarchy mode:" --selected="$(read_setting "BAR_POSITION" "right")") || return 0
+        else
+            echo "Current bar widget position: $(read_setting "BAR_POSITION" "right")"
+            echo "Usage: omarchy-undercover --bar-position <left|center|middle|right>"
+            return 0
+        fi
+    fi
+
+    local norm_pos="right"
+    case "$target" in
+        left) norm_pos="left" ;;
+        center*|middle) norm_pos="center" ;;
+        right|*) norm_pos="right" ;;
+    esac
+
+    write_setting "BAR_POSITION" "$norm_pos"
+
+    local cur_mode
+    cur_mode=$(read_setting "MODE" "omarchy")
+    if [[ -f "$STATE_FILE" ]]; then
+        cur_mode=$(cat "$STATE_FILE" 2>/dev/null | tr -d '[:space:]')
+    fi
+
+    # Only add to active shell.json if currently in normal Omarchy mode.
+    # In undercover mode (mac / win11), the widget remains strictly hidden.
+    if [[ "$cur_mode" == "omarchy" || "$cur_mode" == "default" || -z "$cur_mode" ]]; then
+        local shell_json="$HOME/.config/omarchy/shell.json"
+        if [[ -f "$shell_json" ]] && command_exists jq; then
+            local tmp="$HOME/.config/omarchy/shell.json.tmp"
+            if jq --arg sec "$norm_pos" '
+                .plugins = ((.plugins // []) + ["omarchy-undercover"] | unique)
+                | .bar.layout.left = ((.bar.layout.left // []) | map(select((.id // "") != "omarchy-undercover")))
+                | .bar.layout.center = ((.bar.layout.center // []) | map(select((.id // "") != "omarchy-undercover")))
+                | .bar.layout.right = ((.bar.layout.right // []) | map(select((.id // "") != "omarchy-undercover")))
+                | .bar.layout[$sec] = ((.bar.layout[$sec] // []) + [{"id": "omarchy-undercover"}])
+            ' "$shell_json" > "$tmp" 2>/dev/null && [[ -s "$tmp" ]]; then
+                mv "$tmp" "$shell_json"
+                if command_exists omarchy-shell; then
+                    omarchy-shell shell rescanPlugins >/dev/null 2>&1 || true
+                    omarchy-shell shell reloadConfig >/dev/null 2>&1 || true
+                fi
+            else
+                rm -f "$tmp"
+            fi
+        fi
+        msg "Undercover bar widget placed in '$norm_pos' section on Omarchy bar."
+    else
+        msg "Saved bar widget placement: '$norm_pos'. (Widget remains hidden in Undercover camouflage mode)."
+    fi
+}
+
 show_status() {
+    local cur_bar_pos
+    cur_bar_pos=$(read_setting "BAR_POSITION" "right")
     if [[ -f "$STATE_FILE" ]]; then
         local state
         state=$(cat "$STATE_FILE")
-        echo "Omarchy Undercover: $state mode [Backend: $(detect_shell_backend)]"
+        echo "Omarchy Undercover: $state mode [Backend: $(detect_shell_backend), Bar widget: $cur_bar_pos]"
     else
-        echo "Omarchy Undercover: default mode [Backend: $(detect_shell_backend)]"
+        echo "Omarchy Undercover: default mode [Backend: $(detect_shell_backend), Bar widget: $cur_bar_pos]"
     fi
 }
 
@@ -1537,6 +1630,7 @@ show_help() {
     echo "  -mac-sequoia-light, --sequoia-light     Switch to Apple macOS Sequoia Light mode"
     echo "  -w11, --w11, --win11, --enable          Switch to Windows 11 (dark by default)"
     echo "  -w11-light, --win11-light               Switch to Windows 11 Light mode"
+    echo "  --bar-position [left|center|right]      Configure Undercover widget position in normal Omarchy mode"
     echo "  --backend [auto|quickshell|waybar]      Select or show desktop status bar engine"
     echo "  --transparency [on|off]                 Configure desktop frosted glass transparency"
     echo "  --taskbar-transparent [true|false|toggle] Toggle or set taskbar transparency"
@@ -1741,6 +1835,9 @@ case "$1" in
     --sync-hyprland)
         cur_mode=$(read_setting "MODE" "windows")
         enable_undercover_hyprland "$cur_mode"
+        ;;
+    --bar-position|--bar-placement|--widget-placement)
+        set_bar_widget_position "${2:-}"
         ;;
     --persistent)
         write_setting "DISGUISE_PERSISTENT" "true"
