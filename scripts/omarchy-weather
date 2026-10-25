@@ -12,18 +12,66 @@ if [[ -f "$CACHE_FILE" ]]; then
     fi
 fi
 
-# Fetch accurate location & weather from wttr.in over HTTPS
-weather_raw=$(curl -s --max-time 4 "https://wttr.in/?format=%c+%t+%C" 2>/dev/null | tr -d '\n')
+# Read custom location from settings if configured (avoids automatic IP detection by wttr.in/MSN)
+loc_setting=$(grep -h '^WEATHER_LOCATION=' "$HOME/.config/omarchy/plugins/omarchy-undercover/settings.conf" "$HOME/omarchy-undercover/settings.conf" 2>/dev/null | head -n 1 | cut -d= -f2- | tr -d '\r\n"\\' | sed 's/^[ \t]*//;s/[ \t]*$//')
+if [[ -z "$loc_setting" && -f "$HOME/.config/omarchy-undercover/win_widgets.conf" ]] && command -v jq >/dev/null 2>&1; then
+    loc_setting=$(jq -r '.weather_city // empty' "$HOME/.config/omarchy-undercover/win_widgets.conf" 2>/dev/null || true)
+fi
 
-if [[ -n "$weather_raw" && "$weather_raw" != *"Unknown"* && "$weather_raw" != *"50"* ]]; then
-    # Extract condition and temp
-    text=$(echo "$weather_raw" | awk '{print $1 " " $2}')
-    tooltip=$(echo "$weather_raw" | awk '{$1=$2=""; print $0}' | sed 's/^[ \t]*//')
-    json_out=$(printf '{"text":"%s","tooltip":"%s - Local Weather"}\n' "$text" "$weather_raw")
+qloc=""
+if [[ -n "$loc_setting" ]]; then
+    qloc="$(printf '%s' "$loc_setting" | tr -c '[:alnum:]_.,-' '+' | sed 's/++*/+/g; s/^+//; s/+$//')/"
+fi
+
+# Fetch accurate location & weather from wttr.in over HTTPS with strict byte ceiling
+weather_raw=$(curl -s --max-time 4 "https://wttr.in/${qloc}?format=%c+%t+%C" 2>/dev/null | head -c 129 | tr -d '\r\n')
+raw_bytes=$(printf "%s" "$weather_raw" | wc -c)
+
+if [[ -n "$weather_raw" && "$raw_bytes" -le 128 && "$weather_raw" != *"Unknown"* && "$weather_raw" != *"50"* ]] && \
+   ! echo "$weather_raw" | grep -qiE '<|html|head|error' && \
+   echo "$weather_raw" | grep -qE '[0-9]'; then
+
+    # Sanitize characters that break JSON or shell execution
+    sanitized=$(printf "%s" "$weather_raw" | tr -d '\000-\037\177"\\`$' | sed 's/[[:cntrl:]]//g; s/  */ /g; s/^ //; s/ $//')
+
+    # Extract fields with token and length capping
+    icon=$(echo "$sanitized" | awk '{print $1}')
+    temp=$(echo "$sanitized" | awk '{print $2}')
+    condition=$(echo "$sanitized" | awk '{$1=$2=""; print $0}' | sed 's/^[ \t]*//' | awk '{for(i=1;i<=5&&i<=NF;i++) printf "%s%s", $i, (i<5&&i<NF?" ":"")}')
+
+    icon=$(printf "%.8s" "$icon")
+    temp=$(printf "%.10s" "$temp")
+    condition=$(printf "%.32s" "$condition")
+
+    # If format lacked separate icon, shift appropriately
+    if ! echo "$temp" | grep -qE '[0-9]'; then
+        if echo "$icon" | grep -qE '[0-9]'; then
+            condition="$temp $condition"
+            temp="$icon"
+            icon="🌤"
+            condition=$(echo "$condition" | awk '{for(i=1;i<=5&&i<=NF;i++) printf "%s%s", $i, (i<5&&i<NF?" ":"")}')
+            condition=$(printf "%.32s" "$condition")
+        else
+            fallback='{"text":"🌤 26°C","tooltip":"Local Weather"}'
+            echo "$fallback" > "$CACHE_FILE"
+            echo "$fallback"
+            exit 0
+        fi
+    fi
+
+    text="$icon $temp"
+    loc_label="${loc_setting:-Local}"
+    if [[ -n "$condition" ]]; then
+        tooltip="$icon $temp $condition - $loc_label Weather"
+    else
+        tooltip="$icon $temp - $loc_label Weather"
+    fi
+
+    json_out=$(printf '{"text":"%s","tooltip":"%s"}\n' "$text" "$tooltip")
     echo "$json_out" > "$CACHE_FILE"
     echo "$json_out"
 else
-    # Fallback to local default if offline
+    # Fallback to local default if offline, overflow, or malformed
     fallback='{"text":"🌤 26°C","tooltip":"Local Weather"}'
     echo "$fallback" > "$CACHE_FILE"
     echo "$fallback"

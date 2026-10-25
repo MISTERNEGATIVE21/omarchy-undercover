@@ -540,10 +540,11 @@ class Win11NotificationsWindow(Gtk.Window):
             unit = self.cfg.get("temp_unit", "C")
             fmt = "%c+%t+%C" if unit == "C" else "%c+%f+%C"
             query = f"{city}?format={fmt}" if city else f"?format={fmt}"
-            out = subprocess.check_output(["curl", "-s", "--max-time", "1.5", f"wttr.in/{query}"], text=True).strip()
-            if out and not "<html>" in out:
-                weather_text = out
-                sub_text = f"{city or 'Real Location'} • Updated Just Now"
+            proc = subprocess.run(["curl", "-s", "--max-time", "1.5", f"wttr.in/{query}"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, timeout=2)
+            out = proc.stdout[:129].decode("utf-8", errors="replace").strip()
+            if out and len(out) <= 128 and "<" not in out and any(c.isdigit() for c in out):
+                weather_text = out[:48]
+                sub_text = f"{(city or 'Real Location')[:32]} • Updated Just Now"
         except Exception:
             pass
 

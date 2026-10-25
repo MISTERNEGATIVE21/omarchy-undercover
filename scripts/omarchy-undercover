@@ -1651,6 +1651,7 @@ show_help() {
     echo "  --startup                               System startup hook (resets to Omarchy if temporary)"
     echo "  --verify                                Verify integrity of config and state"
     echo "  --status                                Show current status"
+    echo "  --weather-location [city]               Set manual weather location (or empty string for Auto-IP / MSN)"
     echo "  --help, -h                              Show this help message"
 }
 
@@ -1871,6 +1872,23 @@ case "$1" in
         ;;
     --status)
         show_status
+        ;;
+    --weather-location|--weather-city)
+        if [[ $# -ge 2 ]]; then
+            w_loc="$2"
+            write_setting "WEATHER_LOCATION" "$w_loc"
+            mkdir -p "$HOME/.config/omarchy-undercover" 2>/dev/null || true
+            if command_exists jq; then
+                wwc="$HOME/.config/omarchy-undercover/win_widgets.conf"
+                if [[ -f "$wwc" ]]; then
+                    jq --arg loc "$w_loc" '.weather_city = $loc' "$wwc" > "$wwc.tmp" && mv "$wwc.tmp" "$wwc"
+                fi
+            fi
+            rm -f "${XDG_RUNTIME_DIR:-/tmp}/omarchy-undercover/weather-cache.json" "$HOME/.cache/omarchy-undercover/weather-cache.json" 2>/dev/null || true
+            msg "Weather location set to: ${w_loc:-Auto (MSN / IP)}"
+        else
+            echo "Current weather location: $(read_setting "WEATHER_LOCATION" "Auto (MSN / IP)")"
+        fi
         ;;
     --help|-h)
         show_help

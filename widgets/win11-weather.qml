@@ -91,22 +91,48 @@ BarWidget {
     }
   }
 
-  // Periodic weather updater
+  // Periodic weather updater with bounded payload & sanitized GUI parsing
   Process {
     id: weatherPoller
     command: [
       "bash", "-c",
-      "curl -s --max-time 2 'https://wttr.in/?format=%t+%C' 2>/dev/null | grep -E '[0-9]' || echo '+72°F Partly cloudy'"
+      "loc=$(grep -h '^WEATHER_LOCATION=' \"$HOME/.config/omarchy/plugins/omarchy-undercover/settings.conf\" \"$HOME/omarchy-undercover/settings.conf\" 2>/dev/null | head -n 1 | cut -d= -f2- | tr -d '\\r\\n\"\\\\' | sed 's/^[ \\t]*//;s/[ \\t]*$//'); " +
+      "qloc=\"\"; [ -n \"$loc\" ] && qloc=\"$(printf '%s' \"$loc\" | tr -c '[:alnum:]_.,-' '+' | sed 's/++*/+/g; s/^+//; s/+$//')/\"; " +
+      "raw=$(curl -s --max-time 2 \"https://wttr.in/${qloc}?format=%t+%C\" 2>/dev/null | head -c 129); " +
+      "if [ -n \"$raw\" ] && [ $(printf '%s' \"$raw\" | wc -c) -le 128 ] && " +
+      "echo \"$raw\" | grep -qE '^[+-]?[0-9]{1,3}(°?[CF])?[[:space:]]+[[:alnum:][:space:]_.,\\x27/()-]+$' && " +
+      "! echo \"$raw\" | grep -qiE '<|html|50[0-9]|error'; then " +
+      "echo \"$raw\" | head -n 1; " +
+      "else echo '+72°F Partly cloudy'; fi"
     ]
     stdout: SplitParser {
       onRead: function(line) {
-        if (!line) return
+        if (!line || line.length > 128) return
         var trimmed = line.trim()
-        var parts = trimmed.split(" ")
+        if (!trimmed || trimmed.indexOf("<") !== -1) return
+        var parts = trimmed.split(/\s+/)
         if (parts.length >= 2) {
-          root.tempText = parts[0].replace("+", "")
-          root.conditionText = parts.slice(1).join(" ")
-          var cond = root.conditionText.toLowerCase()
+          var rawTemp = parts[0].replace("+", "").trim()
+          // Validate temperature format: optional minus, 1-3 digits, optional degree and C/F
+          if (!/^-?[0-9]{1,3}(°?[CF])?$/.test(rawTemp)) {
+            root.tempText = "72°F"
+            root.conditionText = "Partly cloudy"
+            root.weatherIcon = "🌤️"
+            return
+          }
+          // Cap condition to at most 5 tokens and 32 characters
+          var condTokens = parts.slice(1, 6)
+          var condStr = condTokens.join(" ").slice(0, 32).trim()
+          if (!condStr) {
+            root.tempText = "72°F"
+            root.conditionText = "Partly cloudy"
+            root.weatherIcon = "🌤️"
+            return
+          }
+
+          root.tempText = rawTemp.slice(0, 8)
+          root.conditionText = condStr
+          var cond = condStr.toLowerCase()
           if (cond.indexOf("rain") !== -1 || cond.indexOf("drizzle") !== -1) root.weatherIcon = "🌧️"
           else if (cond.indexOf("snow") !== -1) root.weatherIcon = "❄️"
           else if (cond.indexOf("thunder") !== -1) root.weatherIcon = "⛈️"

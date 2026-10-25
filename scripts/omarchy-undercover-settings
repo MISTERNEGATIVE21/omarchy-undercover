@@ -921,6 +921,52 @@ class UndercoverAppWindow(Adw.ApplicationWindow):
         row_win_weather.connect("notify::active", lambda r, p: write_setting("SHOW_WIN_WEATHER", "true" if r.get_active() else "false"))
         group_win.add(row_win_weather)
 
+        # Manual Weather Location
+        row_weather_loc = Adw.EntryRow(
+            title="Weather Manual Location (Leave blank for Auto-IP / MSN)"
+        )
+        cur_loc = read_setting("WEATHER_LOCATION", "")
+        if not cur_loc:
+            try:
+                wwc = Path.home() / ".config" / "omarchy-undercover" / "win_widgets.conf"
+                if wwc.exists():
+                    cur_loc = json.loads(wwc.read_text()).get("weather_city", "")
+            except Exception:
+                pass
+        row_weather_loc.set_text(cur_loc)
+        btn_save_loc = Gtk.Button(label="Save")
+        btn_save_loc.add_css_class("suggested-action")
+        def on_save_weather_loc(b):
+            val = row_weather_loc.get_text().strip()
+            write_setting("WEATHER_LOCATION", val)
+            try:
+                wwc_dir = Path.home() / ".config" / "omarchy-undercover"
+                wwc_dir.mkdir(parents=True, exist_ok=True)
+                wwc = wwc_dir / "win_widgets.conf"
+                data = {}
+                if wwc.exists():
+                    try:
+                        data = json.loads(wwc.read_text())
+                    except Exception:
+                        pass
+                data["weather_city"] = val
+                wwc.write_text(json.dumps(data, indent=2))
+            except Exception:
+                pass
+            for cf in [
+                Path(os.environ.get("XDG_RUNTIME_DIR", "/tmp")) / "omarchy-undercover" / "weather-cache.json",
+                Path.home() / ".cache" / "omarchy-undercover" / "weather-cache.json"
+            ]:
+                try:
+                    cf.unlink(missing_ok=True)
+                except Exception:
+                    pass
+            self.show_toast(f"Weather location set to: {val or 'Auto (MSN / IP)'}")
+        btn_save_loc.connect("clicked", on_save_weather_loc)
+        row_weather_loc.connect("apply", lambda e: on_save_weather_loc(None))
+        row_weather_loc.add_suffix(btn_save_loc)
+        group_win.add(row_weather_loc)
+
         page.add(group_win)
 
         # 3. Default Applications Suite

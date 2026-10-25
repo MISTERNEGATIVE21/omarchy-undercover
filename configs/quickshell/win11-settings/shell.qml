@@ -202,6 +202,8 @@ ShellRoot {
         if (mg && mg[1]) settingsWin.windowGaps = parseInt(mg[1])
         var mr = s.match(/WINDOW_ROUNDING=([0-9]+)/)
         if (mr && mr[1]) settingsWin.windowRounding = parseInt(mr[1])
+        var mLoc = s.match(/^WEATHER_LOCATION=(.*)$/m)
+        if (mLoc && mLoc[1] !== undefined) settingsWin.weatherLocation = mLoc[1].trim()
       }
       onFileChanged: {
         reload()
@@ -212,7 +214,16 @@ ShellRoot {
         else settingsWin.taskbarAlign = "center"
         var m = s.match(/ACCENT=([0-9a-fA-F]+)/)
         if (m && m[1]) settingsWin.activeAccent = m[1]
+        var mLoc = s.match(/^WEATHER_LOCATION=(.*)$/m)
+        if (mLoc && mLoc[1] !== undefined) settingsWin.weatherLocation = mLoc[1].trim()
       }
+    }
+
+    property string weatherLocation: ""
+    function saveWeatherLoc(loc) {
+      weatherLocation = loc
+      saveSetting("WEATHER_LOCATION", loc)
+      runCmd("omarchy-undercover --weather-location \"" + loc.replace(/["\\]/g, "") + "\" 2>/dev/null || true")
     }
 
     property var winPins: ({})
@@ -3784,6 +3795,65 @@ ShellRoot {
                           onToggled: {
                             settingsWin.togglePin(modelData.id, checked)
                           }
+                        }
+                      }
+                    }
+                  }
+                }
+
+                // Weather Location Card
+                Rectangle {
+                  Layout.fillWidth: true
+                  implicitHeight: 74
+                  radius: 8
+                  color: settingsWin.cardBg
+                  border.color: settingsWin.cardBorder
+                  border.width: 1
+
+                  RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 14
+
+                    Image {
+                      Layout.preferredWidth: 22
+                      Layout.preferredHeight: 22
+                      width: 22; height: 22
+                      source: "file://" + settingsWin.pluginDir + "/assets/icons/win11/weather.svg"
+                      fillMode: Image.PreserveAspectFit
+                    }
+
+                    ColumnLayout {
+                      Layout.fillWidth: true
+                      spacing: 2
+                      Text { text: "Weather Location"; font.family: "Segoe UI, sans-serif"; font.pixelSize: 13; font.weight: Font.DemiBold; color: settingsWin.textPrimary }
+                      Text {
+                        text: "Current: " + (settingsWin.weatherLocation ? settingsWin.weatherLocation : "Auto (MSN / IP)") + " • Prevents automatic geolocation when specified"
+                        font.family: "Segoe UI, sans-serif"
+                        font.pixelSize: 11
+                        color: settingsWin.textSecondary
+                        elide: Text.ElideRight
+                      }
+                    }
+
+                    Rectangle {
+                      implicitWidth: 120
+                      implicitHeight: 32
+                      radius: 4
+                      color: settingsWin.accentColor
+                      Text {
+                        anchors.centerIn: parent
+                        text: "Change Location"
+                        font.family: "Segoe UI, sans-serif"
+                        font.pixelSize: 11
+                        font.weight: Font.DemiBold
+                        color: settingsWin.accentTextColor
+                      }
+                      MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                          settingsWin.runCmd("if command -v zenity >/dev/null 2>&1; then loc=$(zenity --entry --title='Weather Location' --text='Enter city (leave empty for Auto-IP / MSN):' 2>/dev/null); [ $? -eq 0 ] && " + settingsWin.pluginDir + "/scripts/omarchy-undercover --weather-location \"$loc\"; else " + settingsWin.pluginDir + "/scripts/omarchy-undercover-settings; fi")
                         }
                       }
                     }

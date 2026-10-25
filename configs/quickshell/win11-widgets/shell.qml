@@ -35,6 +35,23 @@ ShellRoot {
     property int batteryPct: 90
     property string wifiSsid: "Connected"
     property bool hasEntered: false
+    property string weatherLocation: "Auto (MSN / IP)"
+
+    FileView {
+      path: (Quickshell.env("OMARCHY_PLUGIN_DIR") || (Quickshell.env("HOME") + "/.config/omarchy/plugins/omarchy-undercover")) + "/settings.conf"
+      watchChanges: true
+      onLoaded: {
+        var m = text().match(/^WEATHER_LOCATION=(.*)$/m)
+        if (m && m[1] && m[1].trim()) widgetsWindow.weatherLocation = m[1].trim()
+        else widgetsWindow.weatherLocation = "Auto (MSN / IP)"
+      }
+      onFileChanged: {
+        reload()
+        var m = text().match(/^WEATHER_LOCATION=(.*)$/m)
+        if (m && m[1] && m[1].trim()) widgetsWindow.weatherLocation = m[1].trim()
+        else widgetsWindow.weatherLocation = "Auto (MSN / IP)"
+      }
+    }
 
     function closePopup() {
       widgetsWindow.visible = false
@@ -424,10 +441,12 @@ ShellRoot {
                       elide: Text.ElideRight
                     }
                     Text {
-                      text: "Cupertino"
+                      text: widgetsWindow.weatherLocation
                       color: Qt.rgba(1, 1, 1, 0.6)
                       font.family: "Segoe UI"
                       font.pixelSize: 10
+                      Layout.maximumWidth: 100
+                      elide: Text.ElideRight
                     }
                   }
 
