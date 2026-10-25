@@ -11,7 +11,7 @@ echo "Testing uninstaller CLI options and documentation..."
 
 echo "Validating plugin compliance against Omarchy v1 schema..."
 omarchy plugin validate "$ROOT_DIR"
-if [[ -d "$HOME/.config/omarchy/plugins/omarchy-undercover" ]]; then
+if [[ -d "$HOME/.config/omarchy/plugins/omarchy-undercover" && ! -L "$HOME/.config/omarchy/plugins/omarchy-undercover" ]]; then
     omarchy plugin validate "$HOME/.config/omarchy/plugins/omarchy-undercover"
 fi
 
