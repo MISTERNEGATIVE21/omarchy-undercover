@@ -264,15 +264,13 @@ ShellRoot {
       }
       var wsId = (client.workspace && client.workspace.id) ? parseInt(client.workspace.id) : 0
       var monId = (client.monitor !== undefined && client.monitor !== null) ? parseInt(client.monitor) : -1
-      var trackerCmd = dockWindow.pluginDir + "/scripts/omarchy-undercover-tracker --focus " + rawAddr
-
       var wsCmd = (wsId > 0) ? ("if hyprctl dispatch \"hl.dsp.focus({ workspace = " + wsId + " })\" 2>/dev/null; then :; else hyprctl dispatch workspace " + wsId + " 2>/dev/null; fi; ") : ""
       var monCmd = (monId >= 0) ? ("if hyprctl dispatch \"hl.dsp.focus({ monitor = " + monId + " })\" 2>/dev/null; then :; else hyprctl dispatch focusmonitor " + monId + " 2>/dev/null; fi; ") : ""
       var winCmd = "if hyprctl dispatch \"hl.dsp.focus({ window = 'address:" + rawAddr + "' })\" 2>/dev/null; then :; else hyprctl dispatch focuswindow \"address:" + rawAddr + "\" 2>/dev/null; fi; "
       var topCmd = "hyprctl dispatch \"hl.dsp.window.bring_to_top()\" 2>/dev/null || true; "
-      var fallback = wsCmd + monCmd + winCmd + topCmd
+      var fullCmd = wsCmd + monCmd + winCmd + topCmd
 
-      Quickshell.execDetached(["bash", "-c", trackerCmd + " 2>/dev/null || (" + fallback + ")"])
+      Quickshell.execDetached(["bash", "-c", fullCmd])
       refreshTimer.restart()
     }
 

@@ -365,14 +365,11 @@ Item {
       restorePart = "if [ -x \"" + pluginDir + "/scripts/omarchy-undercover-minimize\" ]; then \"" + pluginDir + "/scripts/omarchy-undercover-minimize\" \"" + rawAddr + "\"; elif [ -x \"" + devDir + "/scripts/omarchy-undercover-minimize\" ]; then \"" + devDir + "/scripts/omarchy-undercover-minimize\" \"" + rawAddr + "\"; else omarchy-undercover-minimize \"" + rawAddr + "\" 2>/dev/null || true; fi; sleep 0.04; "
     }
 
-    var trackerExec = "if [ -x \"" + pluginDir + "/scripts/omarchy-undercover-tracker\" ]; then \"" + pluginDir + "/scripts/omarchy-undercover-tracker\" --focus \"" + rawAddr + "\"; elif [ -x \"" + devDir + "/scripts/omarchy-undercover-tracker\" ]; then \"" + devDir + "/scripts/omarchy-undercover-tracker\" --focus \"" + rawAddr + "\"; else omarchy-undercover-tracker --focus \"" + rawAddr + "\"; fi"
-
     var wsCmd = (wsId && wsId > 0) ? ("hyprctl dispatch \"hl.dsp.focus({ workspace = '" + wsId + "' })\" 2>/dev/null || hyprctl dispatch \"hl.dsp.focus({ workspace = " + wsId + " })\" 2>/dev/null || hyprctl dispatch workspace " + wsId + " 2>/dev/null || true; ") : ""
     var winCmd = rawAddr ? ("hyprctl dispatch \"hl.dsp.focus({ window = 'address:" + rawAddr + "' })\" 2>/dev/null || hyprctl dispatch focuswindow \"address:" + rawAddr + "\" 2>/dev/null || true; ") : ""
     var topCmd = rawAddr ? ("hyprctl dispatch \"hl.dsp.window.alter_zorder({ mode = 'top', window = 'address:" + rawAddr + "' })\" 2>/dev/null || hyprctl dispatch \"hl.dsp.window.bring_to_top()\" 2>/dev/null || true; ") : ""
 
-    var fallback = wsCmd + winCmd + topCmd
-    var fullCmd = restorePart + "(" + trackerExec + " 2>/dev/null || (" + fallback + "))"
+    var fullCmd = restorePart + wsCmd + winCmd + topCmd
 
     // 3. Dispatch immediately BEFORE closing so child process is spawned
     Quickshell.execDetached(["bash", "-c", fullCmd])

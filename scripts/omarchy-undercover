@@ -73,17 +73,16 @@ detect_launcher() {
 
 set_state() {
     local val="$1"
-    mkdir -p "$STATE_DIR" "$CONFIG_DIR"
+    mkdir -p "$STATE_DIR"
     echo "$val" > "$STATE_FILE"
-    echo "$val" > "$CONFIG_DIR/state"
 }
 
 clear_state() {
-    rm -f "$STATE_FILE" "$CONFIG_DIR/state" 2>/dev/null || true
+    rm -f "$STATE_FILE" "$STATE_DIR/state" "$PLUGIN_DIR/state" 2>/dev/null || true
 }
 
 save_previous_desktop_state() {
-    mkdir -p "$STATE_DIR" "$CONFIG_DIR"
+    mkdir -p "$STATE_DIR"
 
     # 1. Query active Omarchy theme
     local cur_theme=""
@@ -102,7 +101,6 @@ save_previous_desktop_state() {
           "$cur_theme_lower" != *"macos"* && "$cur_theme_lower" != *"mac-"* && \
           "$cur_theme_lower" != *"mac "* && "$cur_theme_lower" != *"undercover"* ]]; then
         echo "$cur_theme" > "$STATE_DIR/previous_theme"
-        echo "$cur_theme" > "$CONFIG_DIR/previous_theme"
         write_setting "PREVIOUS_THEME" "$cur_theme"
     fi
 
@@ -118,27 +116,21 @@ save_previous_desktop_state() {
 
         if [[ -n "$cur_gtk" && "$cur_gtk" != *"Win11"* && "$cur_gtk" != *"WhiteSur"* ]]; then
             echo "$cur_gtk" > "$STATE_DIR/previous_gtk_theme"
-            echo "$cur_gtk" > "$CONFIG_DIR/previous_gtk_theme"
         fi
         if [[ -n "$cur_icon" && "$cur_icon" != *"Fluent"* && "$cur_icon" != *"WhiteSur"* ]]; then
             echo "$cur_icon" > "$STATE_DIR/previous_icon_theme"
-            echo "$cur_icon" > "$CONFIG_DIR/previous_icon_theme"
         fi
         if [[ -n "$cur_cursor" && "$cur_cursor" != *"Fluent"* && "$cur_cursor" != *"WhiteSur"* ]]; then
             echo "$cur_cursor" > "$STATE_DIR/previous_cursor_theme"
-            echo "$cur_cursor" > "$CONFIG_DIR/previous_cursor_theme"
         fi
         if [[ -n "$cur_font" && "$cur_font" != *"Segoe UI"* && "$cur_font" != *"SF Pro"* ]]; then
             echo "$cur_font" > "$STATE_DIR/previous_font"
-            echo "$cur_font" > "$CONFIG_DIR/previous_font"
         fi
         if [[ -n "$cur_scheme" ]]; then
             echo "$cur_scheme" > "$STATE_DIR/previous_color_scheme"
-            echo "$cur_scheme" > "$CONFIG_DIR/previous_color_scheme"
         fi
         if [[ -n "$cur_layout" && "$cur_layout" != ":minimize,maximize,close" && "$cur_layout" != "close,minimize,maximize:" ]]; then
             echo "$cur_layout" > "$STATE_DIR/previous_button_layout"
-            echo "$cur_layout" > "$CONFIG_DIR/previous_button_layout"
         fi
     fi
 
@@ -148,7 +140,6 @@ save_previous_desktop_state() {
         bg=$(readlink -f "$HOME/.local/state/omarchy/current/background" 2>/dev/null || true)
         if [[ -n "$bg" && -f "$bg" ]]; then
             echo "$bg" > "$STATE_DIR/previous_background"
-            echo "$bg" > "$CONFIG_DIR/previous_background"
         fi
     fi
 
@@ -162,7 +153,6 @@ save_previous_desktop_state() {
     fi
     if [[ ! -f "$STATE_DIR/previous_stock_dock_state" ]]; then
         echo "$cur_dock" > "$STATE_DIR/previous_stock_dock_state"
-        echo "$cur_dock" > "$CONFIG_DIR/previous_stock_dock_state"
     fi
 }
 
@@ -395,7 +385,6 @@ apply_shell_mac() {
             if command_exists jq; then
                 jq '.disabledPlugins = ((.disabledPlugins // []) + ["omarchy.dock"] | unique)' "$HOME/.config/omarchy/shell.json" > "$HOME/.config/omarchy/shell.json.tmp" 2>/dev/null && mv "$HOME/.config/omarchy/shell.json.tmp" "$HOME/.config/omarchy/shell.json" || true
             fi
-            cp -f "$src" "$CONFIG_DIR/shell/shell-mac.json"
             msg "Apple macOS Sequoia Quickshell menu bar applied (Omarchy 4.0 top bar)."
         fi
     fi
@@ -741,16 +730,6 @@ sync_undercover_themes() {
         fi
     done
 
-    # Sync wallpapers to CONFIG_DIR/wallpapers
-    for wall in "$CONFIG_DIR/assets/wallpapers"/* "$PLUGIN_DIR/assets/wallpapers"/* "${SCRIPT_DIR}/../assets/wallpapers"/*; do
-        if [[ -f "$wall" ]]; then
-            local w_name
-            w_name="$(basename "$wall")"
-            mkdir -p "$CONFIG_DIR/wallpapers"
-            cp -f "$wall" "$CONFIG_DIR/wallpapers/$w_name" 2>/dev/null || true
-        fi
-    done
-
     # Install theme-set hook for undercover theme synchronization
     local hook_src="${SCRIPT_DIR}/../configs/hooks/theme-set.d/omarchy-undercover"
     if [[ -f "$hook_src" ]]; then
@@ -1058,8 +1037,7 @@ EOF
     fi
 
     # Dispatch macOS sound effects
-    if [[ -d "$CONFIG_DIR/sounds" ]]; then
-        cp -f "$CONFIG_DIR/sounds/mac-notify.wav" "$CONFIG_DIR/sounds/current-notify.wav" 2>/dev/null || true
+    if command_exists omarchy-play-sound; then
         omarchy-play-sound mac-switch 2>/dev/null || true
     fi
 
@@ -1070,14 +1048,17 @@ EOF
     enable_dock=$(read_setting "ENABLE_MAC_DOCK" "true")
     if [[ "$enable_dock" == "true" ]]; then
         pkill -f "quickshell.*mac-dock" 2>/dev/null || true
-        local dock_dir="$CONFIG_DIR/quickshell/mac-dock"
-        mkdir -p "$dock_dir"
-        if [[ -f "$PLUGIN_DIR/configs/quickshell/mac-dock/shell.qml" ]]; then
-            cp -f "$PLUGIN_DIR/configs/quickshell/mac-dock/shell.qml" "$dock_dir/shell.qml" 2>/dev/null || true
-        elif [[ -f "${SCRIPT_DIR}/../configs/quickshell/mac-dock/shell.qml" ]]; then
-            cp -f "${SCRIPT_DIR}/../configs/quickshell/mac-dock/shell.qml" "$dock_dir/shell.qml" 2>/dev/null || true
+        local dock_dir=""
+        if [[ -d "$PLUGIN_DIR/configs/quickshell/mac-dock" ]]; then
+            dock_dir="$PLUGIN_DIR/configs/quickshell/mac-dock"
+        elif [[ -d "${SCRIPT_DIR}/../configs/quickshell/mac-dock" ]]; then
+            dock_dir="${SCRIPT_DIR}/../configs/quickshell/mac-dock"
+        elif [[ -d "$PLUGIN_DIR/quickshell/mac-dock" ]]; then
+            dock_dir="$PLUGIN_DIR/quickshell/mac-dock"
         fi
-        setsid -f quickshell -p "$dock_dir" >/dev/null 2>&1 || (nohup quickshell -p "$dock_dir" >/dev/null 2>&1 &)
+        if [[ -n "$dock_dir" ]]; then
+            setsid -f quickshell -p "$dock_dir" >/dev/null 2>&1 || (nohup quickshell -p "$dock_dir" >/dev/null 2>&1 &)
+        fi
     fi
 
     msg "Switched to Apple $flavor_title ($variant) — done!"
@@ -1192,8 +1173,7 @@ EOF
     fi
 
     # Dispatch Windows 11 sound effects
-    if [[ -d "$CONFIG_DIR/sounds" ]]; then
-        cp -f "$CONFIG_DIR/sounds/win11-notify.wav" "$CONFIG_DIR/sounds/current-notify.wav" 2>/dev/null || true
+    if command_exists omarchy-play-sound; then
         omarchy-play-sound win11-switch 2>/dev/null || true
     fi
 
@@ -1414,6 +1394,8 @@ switch_to_omarchy() {
         baseline=$(cat "$BASELINE_FILE" 2>/dev/null | tr -d '\r\n')
     fi
 
+    pkill -f "quickshell.*mac-dock" 2>/dev/null || true
+    pkill -f "omarchy-undercover-tracker" 2>/dev/null || true
     restore_desktop_state "$baseline"
     restore_stock_omarchy_dock
     msg "Restored original Omarchy desktop!"
@@ -1482,7 +1464,11 @@ uninstall_undercover() {
         fi
     fi
 
-    # 6. Clear state, backup, cache, and temporary runtime directories
+    # 6. Terminate any running tracker daemon
+    pkill -f "omarchy-undercover-tracker" 2>/dev/null || true
+    rm -f "${XDG_RUNTIME_DIR:-/tmp}/omarchy-undercover-tracker.pid" 2>/dev/null || true
+
+    # 7. Clear state, backup, cache, and temporary runtime directories
     clear_state
     rm -rf "$STATE_DIR" "${XDG_CACHE_HOME:-$HOME/.cache}/omarchy-undercover" 2>/dev/null || true
     rm -rf "${XDG_RUNTIME_DIR:-/run/user/$UID}/omarchy-undercover" 2>/dev/null || true

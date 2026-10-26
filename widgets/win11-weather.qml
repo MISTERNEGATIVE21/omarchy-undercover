@@ -96,7 +96,7 @@ BarWidget {
     id: weatherPoller
     command: [
       "bash", "-c",
-      "loc=$(grep -h '^WEATHER_LOCATION=' \"$HOME/.config/omarchy/plugins/omarchy-undercover/settings.conf\" \"$HOME/omarchy-undercover/settings.conf\" 2>/dev/null | head -n 1 | cut -d= -f2- | tr -d '\\r\\n\"\\\\' | sed 's/^[ \\t]*//;s/[ \\t]*$//'); " +
+      "loc=$(grep -h '^WEATHER_LOCATION=' \"$HOME/.config/omarchy-undercover/settings.conf\" \"$HOME/.config/omarchy/plugins/omarchy-undercover/settings.conf\" \"$HOME/omarchy-undercover/settings.conf\" 2>/dev/null | head -n 1 | cut -d= -f2- | tr -d '\\r\\n\"\\\\' | sed 's/^[ \\t]*//;s/[ \\t]*$//'); " +
       "qloc=\"\"; [ -n \"$loc\" ] && qloc=\"$(printf '%s' \"$loc\" | tr -c '[:alnum:]_.,-' '+' | sed 's/++*/+/g; s/^+//; s/+$//')/\"; " +
       "raw=$(curl -s --max-time 2 \"https://wttr.in/${qloc}?format=%t+%C\" 2>/dev/null | head -c 129); " +
       "if [ -n \"$raw\" ] && [ $(printf '%s' \"$raw\" | wc -c) -le 128 ] && " +

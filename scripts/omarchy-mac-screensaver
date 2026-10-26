@@ -14,10 +14,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Config file locations
-# Config file locations (prioritize active plugin configuration)
-SETTINGS_FILE="$HOME/.config/omarchy/plugins/omarchy-undercover/settings.conf"
-if [[ ! -f "$SETTINGS_FILE" ]] && [[ -f "$PLUGIN_DIR/settings.conf" ]]; then
-    SETTINGS_FILE="$PLUGIN_DIR/settings.conf"
+SETTINGS_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy-undercover/settings.conf"
+if [[ ! -f "$SETTINGS_FILE" ]]; then
+    mkdir -p "$(dirname "$SETTINGS_FILE")"
+    if [[ -f "$PLUGIN_DIR/settings.conf" ]]; then
+        cp -f "$PLUGIN_DIR/settings.conf" "$SETTINGS_FILE" 2>/dev/null || true
+    fi
 fi
 
 SCREENSAVER_DIR="$HOME/.local/share/omarchy-undercover/screensavers"
@@ -97,9 +99,6 @@ write_setting() {
     local key="$1"
     local val="$2"
     _update_conf "$SETTINGS_FILE" "$key" "$val"
-    if [[ -f "$PLUGIN_DIR/settings.conf" && "$PLUGIN_DIR/settings.conf" != "$SETTINGS_FILE" ]]; then
-        _update_conf "$PLUGIN_DIR/settings.conf" "$key" "$val"
-    fi
 }
 
 notify_quickshell() {

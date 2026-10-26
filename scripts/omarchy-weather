@@ -13,7 +13,7 @@ if [[ -f "$CACHE_FILE" ]]; then
 fi
 
 # Read custom location from settings if configured (avoids automatic IP detection by wttr.in/MSN)
-loc_setting=$(grep -h '^WEATHER_LOCATION=' "$HOME/.config/omarchy/plugins/omarchy-undercover/settings.conf" "$HOME/omarchy-undercover/settings.conf" 2>/dev/null | head -n 1 | cut -d= -f2- | tr -d '\r\n"\\' | sed 's/^[ \t]*//;s/[ \t]*$//')
+loc_setting=$(grep -h '^WEATHER_LOCATION=' "$HOME/.config/omarchy-undercover/settings.conf" "$HOME/.config/omarchy/plugins/omarchy-undercover/settings.conf" "$HOME/omarchy-undercover/settings.conf" 2>/dev/null | head -n 1 | cut -d= -f2- | tr -d '\r\n"\\' | sed 's/^[ \t]*//;s/[ \t]*$//')
 if [[ -z "$loc_setting" && -f "$HOME/.config/omarchy-undercover/win_widgets.conf" ]] && command -v jq >/dev/null 2>&1; then
     loc_setting=$(jq -r '.weather_city // empty' "$HOME/.config/omarchy-undercover/win_widgets.conf" 2>/dev/null || true)
 fi

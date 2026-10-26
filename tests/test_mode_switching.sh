@@ -29,11 +29,14 @@ echo "$help_output" | grep -qi -- "--persistent" || { echo "ERROR: '--persistent
 echo "$help_output" | grep -qi -- "--temporary" || { echo "ERROR: '--temporary' not found in undercover help" >&2; exit 1; }
 echo "$help_output" | grep -qi -- "--startup" || { echo "ERROR: '--startup' not found in undercover help" >&2; exit 1; }
 
+source "$REPO_ROOT/scripts/common.sh"
+SETTINGS_CONF="$(undercover_settings_file)"
+
 "$UNDERCOVER" --persistent
-grep -q "^DISGUISE_PERSISTENT=true" "$REPO_ROOT/settings.conf" || { echo "ERROR: DISGUISE_PERSISTENT not set to true" >&2; exit 1; }
+grep -q "^DISGUISE_PERSISTENT=true" "$SETTINGS_CONF" || { echo "ERROR: DISGUISE_PERSISTENT not set to true in $SETTINGS_CONF" >&2; exit 1; }
 
 "$UNDERCOVER" --temporary
-grep -q "^DISGUISE_PERSISTENT=false" "$REPO_ROOT/settings.conf" || { echo "ERROR: DISGUISE_PERSISTENT not set to false" >&2; exit 1; }
+grep -q "^DISGUISE_PERSISTENT=false" "$SETTINGS_CONF" || { echo "ERROR: DISGUISE_PERSISTENT not set to false in $SETTINGS_CONF" >&2; exit 1; }
 
 startup_res=$("$UNDERCOVER" --startup 2>&1 || true)
 if [[ "$startup_res" == *"Unknown option"* ]]; then

@@ -12,8 +12,16 @@ Item {
     if (resolved && resolved.length > 1 && resolved.indexOf("/") !== -1) return resolved;
     return homeDir + "/.config/omarchy/plugins/omarchy-undercover";
   }
-  property string statePath: pluginDir + "/state"
-  property string settingsConfPath: pluginDir + "/settings.conf"
+  property string statePath: {
+    var s = Quickshell.env("XDG_STATE_HOME")
+    if (s && s.length > 0) return s + "/omarchy/undercover/state"
+    return homeDir + "/.local/state/omarchy/undercover/state"
+  }
+  property string settingsConfPath: {
+    var c = Quickshell.env("XDG_CONFIG_HOME")
+    if (c && c.length > 0) return c + "/omarchy-undercover/settings.conf"
+    return homeDir + "/.config/omarchy-undercover/settings.conf"
+  }
   property string currentState: "omarchy"
   property string previousState: ""
   property bool disguisePersistent: false
@@ -115,10 +123,8 @@ Item {
     clipResolverProc.running = true
   }
 
-  Process {
-    id: trackerDaemonProc
-    command: ["python3", root.pluginDir + "/scripts/omarchy-undercover-tracker", "--daemon"]
-    running: true
+  Component.onDestruction: {
+    Quickshell.execDetached(["python3", root.pluginDir + "/scripts/omarchy-undercover-tracker", "--stop"])
   }
 
   Component.onCompleted: {
@@ -320,18 +326,18 @@ Item {
     }
 
     function trackerStatus(): string {
-      root.runCmd(root.pluginDir + "/scripts/omarchy-undercover-tracker --update")
       return "ok"
     }
 
     function trackerFile(): string {
-      return root.pluginDir + "/.undercoverfile"
+      var rtd = Quickshell.env("XDG_RUNTIME_DIR") || "/tmp"
+      return rtd + "/omarchy-undercover/.undercoverfile"
     }
 
     function focusWindow(addr: string): string {
       var safeAddr = String(addr || "").trim()
       if (/^[a-zA-Z0-9:x_-]+$/.test(safeAddr)) {
-        Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-undercover-tracker", "--focus", safeAddr])
+        Quickshell.execDetached(["bash", "-c", "hyprctl dispatch \"hl.dsp.focus({ window = 'address:" + safeAddr + "' })\" 2>/dev/null || hyprctl dispatch focuswindow \"address:" + safeAddr + "\" 2>/dev/null || true"])
       }
       return "ok"
     }
@@ -339,7 +345,7 @@ Item {
     function focusWorkspace(id: string): string {
       var safeId = String(id || "").trim()
       if (/^[0-9]+$/.test(safeId)) {
-        Quickshell.execDetached([root.pluginDir + "/scripts/omarchy-undercover-tracker", "--workspace", safeId])
+        Quickshell.execDetached(["bash", "-c", "hyprctl dispatch \"hl.dsp.focus({ workspace = " + safeId + " })\" 2>/dev/null || hyprctl dispatch workspace \"" + safeId + "\" 2>/dev/null || true"])
       }
       return "ok"
     }

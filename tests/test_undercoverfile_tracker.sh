@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Test: .undercoverfile Paging System and Window/VM Tracker Inside Plugin Folders
+# Test: .undercoverfile Paging System & Safe XDG State Tracking (No Reload Storm)
 # =============================================================================
 set -euo pipefail
 
@@ -8,7 +8,7 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TRACKER="$REPO_DIR/scripts/omarchy-undercover-tracker"
 REPO_UNDERCOVER_FILE="$REPO_DIR/.undercoverfile"
 INSTALLED_UNDERCOVER_FILE="$HOME/.config/omarchy/plugins/omarchy-undercover/.undercoverfile"
-RUNTIME_FILE="${XDG_RUNTIME_DIR:-/tmp}/.undercoverfile"
+RUNTIME_FILE="${XDG_RUNTIME_DIR:-/tmp}/omarchy-undercover/.undercoverfile"
 HOME_FILE="$HOME/.undercoverfile"
 
 echo "=== 1. Checking tracker script existence and permissions ==="
@@ -18,6 +18,9 @@ if [[ ! -x "$TRACKER" ]]; then
 fi
 echo "  ✔ $TRACKER is executable"
 
+# Ensure clean slate before test
+rm -f "$REPO_UNDERCOVER_FILE" "$INSTALLED_UNDERCOVER_FILE" "$HOME_FILE" "$RUNTIME_FILE"
+
 echo "=== 2. Running tracker --status and validating JSON ==="
 STATUS_OUTPUT="$("$TRACKER" --status)"
 if ! echo "$STATUS_OUTPUT" | jq . >/dev/null 2>&1; then
@@ -26,24 +29,24 @@ if ! echo "$STATUS_OUTPUT" | jq . >/dev/null 2>&1; then
 fi
 echo "  ✔ Tracker output is valid JSON"
 
-echo "=== 3. Validating target files creation inside plugin folders ==="
-if [[ ! -f "$REPO_UNDERCOVER_FILE" ]]; then
-  echo "FAIL: $REPO_UNDERCOVER_FILE was not created in repo/plugin directory" >&2
+echo "=== 3. Validating target file locations (Safe XDG, no plugin reload storm) ==="
+if [[ -f "$REPO_UNDERCOVER_FILE" ]]; then
+  echo "FAIL: $REPO_UNDERCOVER_FILE was created in repo directory! Writing here triggers inotify reloads." >&2
   exit 1
 fi
-echo "  ✔ $REPO_UNDERCOVER_FILE exists inside repository/plugin folder"
+echo "  ✔ Repo directory is clean (no writes triggering bar reload)"
 
-if [[ ! -f "$INSTALLED_UNDERCOVER_FILE" ]]; then
-  echo "FAIL: $INSTALLED_UNDERCOVER_FILE was not created in installed plugin directory" >&2
+if [[ -f "$INSTALLED_UNDERCOVER_FILE" ]]; then
+  echo "FAIL: $INSTALLED_UNDERCOVER_FILE was created in installed plugin directory! Writing here triggers infinite bar reloads." >&2
   exit 1
 fi
-echo "  ✔ $INSTALLED_UNDERCOVER_FILE exists inside installed plugin folder"
+echo "  ✔ Installed plugin directory is clean (no writes triggering bar reload)"
 
 if [[ ! -f "$RUNTIME_FILE" ]]; then
-  echo "FAIL: $RUNTIME_FILE was not created" >&2
+  echo "FAIL: $RUNTIME_FILE was not created in runtime directory" >&2
   exit 1
 fi
-echo "  ✔ $RUNTIME_FILE exists"
+echo "  ✔ $RUNTIME_FILE exists in runtime directory"
 
 if [[ -f "$HOME_FILE" && ! -L "$HOME_FILE" ]]; then
   echo "FAIL: Loose $HOME_FILE still exists in \$HOME root, should be cleaned up" >&2
@@ -51,11 +54,11 @@ if [[ -f "$HOME_FILE" && ! -L "$HOME_FILE" ]]; then
 fi
 echo "  ✔ \$HOME is clean (no loose .undercoverfile polluting user home directory)"
 
-echo "=== 4. Verifying required JSON schema fields & paging system in .undercoverfile ==="
+echo "=== 4. Verifying required JSON schema fields & paging system in runtime .undercoverfile ==="
 python3 -c "
 import json, os, sys
 
-path = '$REPO_UNDERCOVER_FILE'
+path = '$RUNTIME_FILE'
 with open(path, 'r', encoding='utf-8') as f:
     data = json.load(f)
 
@@ -93,7 +96,7 @@ assert isinstance(data['windows_count'], int), 'windows_count not int'
 assert isinstance(data['windows'], list), 'windows not list'
 assert isinstance(data['stage_manager_groups'], list), 'stage_manager_groups not list'
 
-print('  ✔ Schema validation passed: paging system, VM, and window fields verified')
+print('  ✔ Schema validation passed: runtime paging system, VM, and window fields verified')
 "
 
 echo "=== 5. Testing --paging CLI option ==="
@@ -143,48 +146,25 @@ if ! echo "$ERR_OUT" | grep -q "not found"; then
 fi
 echo "  ✔ --focus non-existent target handled cleanly"
 
-echo "=== 8. Verifying integration in layout switchers and Service.qml ==="
-grep -q "omarchy-undercover-tracker" "$REPO_DIR/widgets/win11-taskbar.qml" || {
-  echo "FAIL: win11-taskbar.qml does not integrate omarchy-undercover-tracker" >&2
+echo "=== 8. Testing daemon removal & clean no-op behavior ==="
+DAEMON_OUT="$("$TRACKER" --daemon 2>&1)"
+if [[ $? -ne 0 ]]; then
+  echo "FAIL: --daemon should cleanly exit 0" >&2
   exit 1
-}
-echo "  ✔ win11-taskbar.qml integrates tracker"
+fi
+STOP_OUT="$("$TRACKER" --stop 2>&1)"
+if [[ $? -ne 0 ]]; then
+  echo "FAIL: --stop should cleanly exit 0" >&2
+  exit 1
+fi
+echo "  ✔ --daemon and --stop exit cleanly without background process retention"
 
-grep -q "omarchy-undercover-tracker" "$REPO_DIR/configs/quickshell/mac-dock/shell.qml" || {
-  echo "FAIL: mac-dock shell.qml does not integrate omarchy-undercover-tracker" >&2
+echo "=== 9. Verifying no tracker daemon in Service.qml (prevents CPU drain) ==="
+if grep -q "trackerDaemonProc" "$REPO_DIR/Service.qml"; then
+  echo "FAIL: Service.qml still contains trackerDaemonProc (causes high CPU / socket2 loop)" >&2
   exit 1
-}
-echo "  ✔ mac-dock shell.qml integrates tracker"
-
-grep -q "omarchy-undercover-tracker" "$REPO_DIR/configs/quickshell/mac-stagemanager/StageManager.qml" || {
-  echo "FAIL: mac-stagemanager StageManager.qml does not integrate omarchy-undercover-tracker" >&2
-  exit 1
-}
-echo "  ✔ mac-stagemanager StageManager.qml integrates tracker"
-
-grep -q "omarchy-undercover-tracker" "$REPO_DIR/configs/quickshell/win11-taskview/shell.qml" || {
-  echo "FAIL: win11-taskview shell.qml does not integrate omarchy-undercover-tracker" >&2
-  exit 1
-}
-echo "  ✔ win11-taskview shell.qml integrates tracker"
-
-grep -q "omarchy-undercover-tracker" "$REPO_DIR/scripts/omarchy-undercover-activate" || {
-  echo "FAIL: omarchy-undercover-activate does not integrate omarchy-undercover-tracker" >&2
-  exit 1
-}
-echo "  ✔ omarchy-undercover-activate integrates tracker"
-
-grep -q "trackerDaemonProc" "$REPO_DIR/Service.qml" || {
-  echo "FAIL: Service.qml does not launch tracker daemon" >&2
-  exit 1
-}
-echo "  ✔ Service.qml launches tracker daemon"
-
-grep -q "trackerFile" "$REPO_DIR/Service.qml" || {
-  echo "FAIL: Service.qml does not expose trackerFile IPC" >&2
-  exit 1
-}
-echo "  ✔ Service.qml exposes trackerFile IPC"
+fi
+echo "  ✔ Service.qml does NOT launch background tracker daemon"
 
 grep -q "focusWindow" "$REPO_DIR/Service.qml" || {
   echo "FAIL: Service.qml does not expose focusWindow IPC" >&2
@@ -192,5 +172,11 @@ grep -q "focusWindow" "$REPO_DIR/Service.qml" || {
 }
 echo "  ✔ Service.qml exposes focusWindow IPC"
 
-echo "🎉 PASS: .undercoverfile paging system inside plugin folders verified successfully!"
+grep -q "focusWorkspace" "$REPO_DIR/Service.qml" || {
+  echo "FAIL: Service.qml does not expose focusWorkspace IPC" >&2
+  exit 1
+}
+echo "  ✔ Service.qml exposes focusWorkspace IPC"
+
+echo "🎉 PASS: .undercoverfile safe tracking & daemon-free performance verified successfully!"
 exit 0

@@ -22,7 +22,8 @@ else
 fi
 
 CONFIG_DIR="$PLUGIN_DIR"
-SETTINGS_FILE="${CONFIG_DIR}/settings.conf"
+SETTINGS_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy-undercover/settings.conf"
+[[ ! -f "$SETTINGS_FILE" && -f "$CONFIG_DIR/settings.conf" ]] && SETTINGS_FILE="$CONFIG_DIR/settings.conf"
 
 command_exists() {
     command -v "$1" >/dev/null 2>&1

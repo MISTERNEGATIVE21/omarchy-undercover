@@ -15,7 +15,8 @@ else
     PLUGIN_DIR="$HOME/.config/omarchy/plugins/omarchy-undercover"
 fi
 
-SETTINGS_FILE="$PLUGIN_DIR/settings.conf"
+SETTINGS_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy-undercover/settings.conf"
+[[ ! -f "$SETTINGS_FILE" && -f "$PLUGIN_DIR/settings.conf" ]] && SETTINGS_FILE="$PLUGIN_DIR/settings.conf"
 DEFAULTS_JSON="$PLUGIN_DIR/defaults.json"
 BROWSER_SETTING=""
 

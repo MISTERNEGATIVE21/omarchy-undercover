@@ -20,11 +20,10 @@ PLUGIN_DIR = os.path.dirname(SCRIPT_DIR)
 INSTALLED_PLUGIN_DIR = os.path.expanduser("~/.config/omarchy/plugins/omarchy-undercover")
 RUNTIME_DIR = os.environ.get("XDG_RUNTIME_DIR", "/tmp")
 
-# Keep the undercoverfile paging system inside the plugin folders themselves
+# Keep the undercoverfile paging system strictly in XDG_RUNTIME_DIR (never inside plugin folders)
+STATE_FILE = os.path.join(RUNTIME_DIR, "omarchy-undercover", ".undercoverfile")
 TARGET_PATHS = list(dict.fromkeys([
-    os.path.join(PLUGIN_DIR, ".undercoverfile"),
-    os.path.join(INSTALLED_PLUGIN_DIR, ".undercoverfile"),
-    os.path.join(RUNTIME_DIR, "omarchy-undercover", ".undercoverfile"),
+    STATE_FILE,
     os.path.join(RUNTIME_DIR, ".undercoverfile")
 ]))
 
@@ -219,7 +218,7 @@ def build_state():
         "pages": ws_list,
         "windows_per_page": {str(w["id"]): len(ws_windows.get(str(w["id"]), [])) for w in ws_list},
         "active_page_windows": ws_windows.get(str(cur_ws_id), []),
-        "plugin_file": os.path.join(PLUGIN_DIR, ".undercoverfile")
+        "plugin_file": STATE_FILE
     }
 
     state = {
@@ -241,7 +240,7 @@ def build_state():
         "stage_manager_groups": sm_groups,
         "monitors": monitors if isinstance(monitors, list) else [],
         "plugin_dir": PLUGIN_DIR,
-        "file_path": os.path.join(PLUGIN_DIR, ".undercoverfile")
+        "file_path": STATE_FILE
     }
     return state
 
@@ -260,13 +259,17 @@ def write_state(state):
         except Exception:
             pass
 
-    # Clean up legacy ~/.undercoverfile from $HOME so $HOME remains clean
-    legacy_home_file = os.path.expanduser("~/.undercoverfile")
-    if os.path.isfile(legacy_home_file) and not os.path.islink(legacy_home_file):
-        try:
-            os.remove(legacy_home_file)
-        except Exception:
-            pass
+    # Clean up legacy .undercoverfile from plugin directories and $HOME
+    for legacy in [
+        os.path.join(PLUGIN_DIR, ".undercoverfile"),
+        os.path.join(INSTALLED_PLUGIN_DIR, ".undercoverfile"),
+        os.path.expanduser("~/.undercoverfile")
+    ]:
+        if os.path.isfile(legacy) and not os.path.islink(legacy):
+            try:
+                os.remove(legacy)
+            except Exception:
+                pass
 
     return raw_json
 
@@ -367,61 +370,30 @@ def focus_target(target):
     write_state(build_state())
     return True
 
-def run_daemon():
-    # Write pid file
-    try:
-        with open(PID_FILE, "w") as f:
-            f.write(str(os.getpid()))
-    except Exception:
-        pass
-
-    # Initial write
-    write_state(build_state())
-
-    sig = os.environ.get("HYPRLAND_INSTANCE_SIGNATURE", "")
-    runtime_dir = os.environ.get("XDG_RUNTIME_DIR", "/tmp")
-    sock_path = f"{runtime_dir}/hypr/{sig}/.socket2.sock"
-
-    if not os.path.exists(sock_path):
-        # Fallback polling mode if socket2 is not found
-        while True:
-            time.sleep(2)
-            write_state(build_state())
-
-    while True:
+def stop_daemon():
+    # Terminate any running daemon by pid file
+    if os.path.isfile(PID_FILE):
         try:
-            s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            s.connect(sock_path)
-            buf = ""
-            last_update = 0
-
-            while True:
-                data = s.recv(4096)
-                if not data:
-                    break
-                buf += data.decode("utf-8", errors="replace")
-                lines = buf.split("\n")
-                buf = lines[-1]
-
-                needs_update = False
-                for line in lines[:-1]:
-                    if any(line.startswith(ev) for ev in [
-                        "workspace>>", "workspacev2>>",
-                        "activewindow>>", "activewindowv2>>",
-                        "openwindow>>", "closewindow>>",
-                        "movewindow>>", "movewindowv2>>",
-                        "focusedmon>>", "changefloatingmode>>"
-                    ]):
-                        needs_update = True
-                        break
-
-                now = time.time()
-                if needs_update and (now - last_update) >= 0.04:
-                    write_state(build_state())
-                    last_update = now
-
+            with open(PID_FILE) as f:
+                pid = int(f.read().strip())
+            os.kill(pid, 15)
         except Exception:
-            time.sleep(1)
+            pass
+        try:
+            os.remove(PID_FILE)
+        except Exception:
+            pass
+
+    # Clean up legacy .undercoverfile from plugin directories
+    for legacy in [
+        os.path.join(PLUGIN_DIR, ".undercoverfile"),
+        os.path.join(INSTALLED_PLUGIN_DIR, ".undercoverfile"),
+    ]:
+        if os.path.isfile(legacy):
+            try:
+                os.remove(legacy)
+            except Exception:
+                pass
 
 def main():
     parser = argparse.ArgumentParser(description="Omarchy Undercover VM & Window State Tracker")
@@ -431,12 +403,13 @@ def main():
     parser.add_argument("--paging", action="store_true", help="Print workspace/VM paging system summary")
     parser.add_argument("--focus", metavar="SPEC", help="Reliably focus window by address, class, title or workspace")
     parser.add_argument("--workspace", "--page", dest="workspace", metavar="ID", help="Switch to workspace / page ID")
-    parser.add_argument("--daemon", action="store_true", help="Run real-time socket2 event tracker daemon")
+    parser.add_argument("--daemon", action="store_true", help="Retired in v8.5.0 (cleans daemon and exits for zero CPU)")
+    parser.add_argument("--stop", action="store_true", help="Stop any running tracker daemon and clean state")
 
     args = parser.parse_args()
 
-    if args.daemon:
-        run_daemon()
+    if args.daemon or args.stop:
+        stop_daemon()
         return
 
     if args.focus:

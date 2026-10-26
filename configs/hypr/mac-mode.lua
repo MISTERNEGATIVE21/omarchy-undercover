@@ -329,12 +329,20 @@ local function configure_mac_titlebars()
 
   local TITLEBARS = "/usr/lib/omarchy-hyprland-titlebars/titlebars.so"
   local f = io.open(TITLEBARS, "r")
+  local plugin_available = false
   if f then
     f:close()
     if hl.plugin and hl.plugin.load then
       pcall(function() hl.plugin.load(TITLEBARS) end)
     end
+    plugin_available = true
+  else
+    if hl.plugin and hl.plugin.hyprbars then
+      plugin_available = true
+    end
   end
+
+  if not plugin_available then return end
 
   local mac_hyprbars = {
     enabled = true,

@@ -72,9 +72,12 @@ grep -q "BIND_UNDERCOVER_TOGGLE" "$REPO_ROOT/scripts/omarchy-undercover-settings
 echo "✔ omarchy-undercover-settings supports reconfiguring toggle shortcut."
 
 echo "=== 7. Verifying Bar Widget Placement and Stealth in Camouflage Mode ==="
+source "$REPO_ROOT/scripts/common.sh"
+SETTINGS_CONF="$(undercover_settings_file)"
+
 "$REPO_ROOT/scripts/omarchy-undercover" --bar-position right
-grep -q "^BAR_POSITION=right" "$REPO_ROOT/settings.conf" || {
-    echo "ERROR: BAR_POSITION not updated in settings.conf" >&2
+grep -q "^BAR_POSITION=right" "$SETTINGS_CONF" || {
+    echo "ERROR: BAR_POSITION not updated in $SETTINGS_CONF" >&2
     exit 1
 }
 jq -e '.bar.layout.right[] | select(.id == "omarchy-undercover")' "$HOME/.config/omarchy/shell.json" >/dev/null || {
@@ -84,8 +87,8 @@ jq -e '.bar.layout.right[] | select(.id == "omarchy-undercover")' "$HOME/.config
 echo "✔ omarchy-undercover correctly positioned on right of bar in normal mode."
 
 "$REPO_ROOT/scripts/omarchy-undercover" --bar-position left
-grep -q "^BAR_POSITION=left" "$REPO_ROOT/settings.conf" || {
-    echo "ERROR: BAR_POSITION left not updated in settings.conf" >&2
+grep -q "^BAR_POSITION=left" "$SETTINGS_CONF" || {
+    echo "ERROR: BAR_POSITION left not updated in $SETTINGS_CONF" >&2
     exit 1
 }
 jq -e '.bar.layout.left[] | select(.id == "omarchy-undercover")' "$HOME/.config/omarchy/shell.json" >/dev/null || {

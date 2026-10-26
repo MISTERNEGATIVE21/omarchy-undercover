@@ -29,10 +29,17 @@ elif os.path.isdir(os.path.expanduser("~/.config/omarchy/plugins/undercover")):
 else:
     PLUGIN_DIR = os.path.expanduser("~/.config/omarchy/plugins/omarchy-undercover")
 
-CONFIG_DIR = PLUGIN_DIR
-PID_FILE = os.path.join(CONFIG_DIR, "autohide.pid")
-STATE_FILE = os.path.join(CONFIG_DIR, "state")
+CONFIG_DIR = os.path.expanduser(os.environ.get("XDG_CONFIG_HOME", "~/.config")) + "/omarchy-undercover"
+RUNTIME_DIR = os.environ.get("XDG_RUNTIME_DIR", "/tmp")
+PID_FILE = os.path.join(RUNTIME_DIR, "omarchy-undercover-autohide.pid")
+STATE_FILE = os.path.expanduser(os.environ.get("XDG_STATE_HOME", "~/.local/state")) + "/omarchy/undercover/state"
 SETTINGS_FILE = os.path.join(CONFIG_DIR, "settings.conf")
+if not os.path.exists(SETTINGS_FILE) and os.path.exists(os.path.join(PLUGIN_DIR, "settings.conf")):
+    try:
+        os.makedirs(CONFIG_DIR, exist_ok=True)
+        shutil.copy(os.path.join(PLUGIN_DIR, "settings.conf"), SETTINGS_FILE)
+    except Exception:
+        pass
 BAR_OFF_FLAG = os.path.expanduser("~/.local/state/omarchy/toggles/bar-off")
 
 def get_backend():

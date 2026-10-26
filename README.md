@@ -1,7 +1,7 @@
-# Omarchy Undercover (v8.0.4)
+# Omarchy Undercover (v8.5.0)
 
 [![Omarchy Verified](https://img.shields.io/badge/omarchy-verified_plugin-00c853?style=flat-square&logo=archlinux)](https://github.com/MISTERNEGATIVE21/omarchy-undercover)
-[![Version](https://img.shields.io/badge/version-v8.0.4?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases/tag/v8.0.4)
+[![Version](https://img.shields.io/badge/version-v8.5.0?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases/tag/v8.5.0)
 [![Release](https://img.shields.io/github/v/release/MISTERNEGATIVE21/omarchy-undercover?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover/releases)
 [![Compositor](https://img.shields.io/badge/compositor-Hyprland-00f2fe?style=flat-square)](https://hyprland.org)
 [![Engine](https://img.shields.io/badge/engine-Quickshell%20%7C%20Waybar-ff2d55?style=flat-square)](https://github.com/MISTERNEGATIVE21/omarchy-undercover)
@@ -26,7 +26,8 @@ Designed for presentations, shared screen privacy, or personal preference, Omarc
   - **Scroll Wheel**: Steps forward or backward through available presets.
 - **One-touch camouflage toggle**: Switch between your chosen disguise and baseline Omarchy instantly via <kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>U</kbd> or CLI.
 - **Automatic Stock Floating Dock Management**: In Undercover mode, the official stock Omarchy floating dock (`omarchy.dock`) is cleanly hidden and suppressed via Omarchy shell IPC (`omarchy-shell shell setPluginEnabled omarchy.dock false`), configuration isolation (`disabledPlugins: ["omarchy.dock"]`), and process management. When returning to normal Omarchy mode, the official stock dock is seamlessly restored to its pristine state.
-- **Real-Time VM & Window State Tracking (`.undercoverfile`)**: Maintains an atomic, zero-latency system/runtime tracking file inside the plugin folder (`~/.config/omarchy/plugins/omarchy-undercover/.undercoverfile`) tracking active VM/workspace, total VM counts, active and open window list, workspace paging, and Stage Manager app groupings. Powers infallible window switching across Stage Manager, Task View, Dock, and Taskbar via modern Hyprland Lua dispatch (`hl.dsp.focus` & `bring_to_top()`) and prevents missed window activation events without polluting `$HOME`.
+- **Zero-CPU Real-Time VM & Window State Tracking (`.undercoverfile`)**: Maintains an atomic, zero-latency system/runtime tracking file inside XDG runtime storage (`${XDG_RUNTIME_DIR}/omarchy-undercover/.undercoverfile`). Powers infallible window switching across Stage Manager, Task View, Dock, and Taskbar via direct native Hyprland Lua dispatch (`hl.dsp.focus` & `bring_to_top()`) and prevents missed window activation events without background daemon overhead or CPU consumption.
+- **Reload-Loop Immune & Safe XDG Isolation**: Strictly avoids writing temporary runtime or state files to the plugin directory (`~/.config/omarchy/plugins/omarchy-undercover/`), preventing inotify reload loops on Omarchy 4.0.6+ and ensuring zero bar flashing. User settings are safely managed in `${XDG_CONFIG_HOME}/omarchy-undercover/settings.conf`.
 - **Apple macOS Tahoe Mode (Flagship Default)**: High-altitude alpine vistas in 4K UHD, modern GTK3 & GTK4 themes, frosted glass top menu bar with Apple menu, global application menu, polygraph monitor, Control Center, auto-magnifying dock with active app running indicators, Spotlight search (<kbd>Super</kbd> + <kbd>Alt</kbd> + <kbd>Space</kbd>), and authentic SF Pro typography.
 - **Apple macOS Sequoia Mode**: Preserved classic redwood theme available via `-mac-sequoia` or System Settings disguise switcher.
 - **macOS Stage Manager**: Native-feeling window organizer and task viewer camouflaged as macOS Stage Manager. Groups open windows by application with live Wayland `ScreencopyView` thumbnails, multi-window stack depth layers, active application icons and window count badges, accessible from the top bar widget, Control Center, or <kbd>Super</kbd> + <kbd>`</kbd> / <kbd>Super</kbd> + <kbd>Tab</kbd>.
@@ -46,9 +47,9 @@ Designed for presentations, shared screen privacy, or personal preference, Omarc
 | `Widget.qml` | Status bar presence and multi-state camouflage switcher icon |
 | `Panel.qml` | Native Quickshell popup control center, mode cards, and quick settings |
 | `Service.qml` | Background service synchronizing Hyprland state files and dynamic layer rules |
-| `settings.conf` | User configuration file (`~/.config/omarchy/plugins/omarchy-undercover/settings.conf`) |
-| `~/.config/omarchy/plugins/omarchy-undercover/.undercoverfile` | Real-time VM, workspace paging, and window state tracking file |
-| `scripts/omarchy-undercover-tracker` | Real-time Hyprland socket2 VM and window tracking daemon & navigation controller |
+| `settings.conf` | Template configuration seeded to `${XDG_CONFIG_HOME}/omarchy-undercover/settings.conf` |
+| `${XDG_RUNTIME_DIR}/omarchy-undercover/.undercoverfile` | Atomic VM, workspace paging, and window state tracking file (zero bar reloads) |
+| `scripts/omarchy-undercover-tracker` | High-efficiency one-shot CLI state reporter & focus controller |
 | `configs/quickshell/mac-stagemanager/` | macOS Stage Manager overlay with live Wayland ScreencopyView app groups |
 | `widgets/mac-stagemanager.qml` | Top bar Stage Manager toggle widget |
 | `scripts/omarchy-mac-stagemanager` | Stage Manager CLI controller (`--toggle`, `--show`, `--hide`, `--status`) |
@@ -278,7 +279,10 @@ Custom dock and taskbar pinned applications can be configured in `defaults.json`
    - **External Network Labels**: Strict `Text.PlainText` enforcement across all external network SSIDs, Wi-Fi scan results, diagnostics (`omarchy-network-status --verbose`, `iw`), Bluetooth device names, audio descriptors, and process titles to prevent automatic rich-text evaluation, image extraction, and SSRF attacks.
    - **Total Clipboard Isolation**: Elimination of insecure `TextInput` elements in settings/flyouts to prevent clipboard exhaustion and unauthorized clipboard snooping.
    - **Shell Injection Immunity**: Parameterized argument arrays in `SettingsService.qml` eliminating shell interpolation.
-   - **PAM Session Lock Protection**: Complete preservation of official compositor-level `omarchy.lock` (`ext-session-lock-v1`) with zero mock lockscreen bypasses.
+6. **Zero-CPU Daemonless Performance & Safe XDG Isolation (v8.5.0)**:
+   - **Direct Compositor Dispatch**: Window activation, workspace switching, and Stage Manager stacking dispatch directly via Hyprland native IPC (`hl.dsp.focus` / `bring_to_top()`), completely retiring the continuous background socket2 tracker daemon for 0% idle CPU consumption.
+   - **Inotify Reload Loop Immunity**: Dynamic runtime state and user settings are strictly relocated outside the watched Omarchy plugin directory to `${XDG_RUNTIME_DIR}/omarchy-undercover/` and `${XDG_CONFIG_HOME}/omarchy-undercover/`. This eliminates reload loops on Omarchy 4.0.6+ and prevents bar flashing.
+   - **Modern Widget Presentation**: Conforms to official Omarchy 4.0 `WidgetButton` conventions (`hasVisualContent: true`, `keepSpace: true`, explicit dimensions), eliminating the zero-width collapsed status bar slot.
 
 ---
 

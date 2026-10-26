@@ -41,10 +41,15 @@ if command -v omarchy-shell >/dev/null 2>&1 &&
   exit 1
 fi
 
+# Ensure background tracker process is terminated
+pkill -f "omarchy-undercover-tracker" 2>/dev/null || true
+rm -f "${XDG_RUNTIME_DIR:-/tmp}/omarchy-undercover-tracker.pid" 2>/dev/null || true
+
 if [[ "$PURGE" -eq 1 ]]; then
   "$SCRIPT_DIR/scripts/omarchy-undercover" --purge
 else
   "$SCRIPT_DIR/scripts/omarchy-undercover" --uninstall
 fi
 
+pkill -f "omarchy-undercover-tracker" 2>/dev/null || true
 echo "=== Uninstallation complete ==="

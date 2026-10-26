@@ -137,7 +137,7 @@ PanelWindow {
         videoOutput: videoOut
         loops: MediaPlayer.Infinite
         audioOutput: null // Always mute screensaver audio
-        source: surface.effectiveSource
+        source: surface.shouldPlay ? surface.effectiveSource : ""
 
         onMediaStatusChanged: {
             if (surface.shouldPlay) {
@@ -155,23 +155,25 @@ PanelWindow {
         }
 
         onPlaybackStateChanged: {
-            if (surface.shouldPlay && playbackState === MediaPlayer.StoppedState) {
+            if (surface.shouldPlay && playbackState === MediaPlayer.StoppedState && player.error === MediaPlayer.NoError) {
                 retryTimer.restart();
             }
         }
 
         onErrorOccurred: function(err, str) {
-            console.warn("omarchy-undercover: screensaver player error: " + err + " - " + str);
-            retryTimer.restart();
+            // Suppress infinite reload loop on missing video and let the authentic wallpaper backdrop display
+            if (err !== MediaPlayer.ResourceError && err !== MediaPlayer.FormatError) {
+                if (surface.shouldPlay) retryTimer.restart();
+            }
         }
     }
 
     Timer {
         id: retryTimer
-        interval: 350
+        interval: 1000
         repeat: false
         onTriggered: {
-            if (surface.shouldPlay) {
+            if (surface.shouldPlay && surface.effectiveSource !== "") {
                 var src = surface.effectiveSource;
                 player.source = "";
                 player.source = src;
@@ -182,8 +184,8 @@ PanelWindow {
 
     Timer {
         id: playWatchdog
-        interval: 1500
-        running: surface.active
+        interval: 3000
+        running: surface.active && player.error === MediaPlayer.NoError
         repeat: true
         onTriggered: {
             if (surface.shouldPlay && player.playbackState !== MediaPlayer.PlayingState) {

@@ -35,6 +35,7 @@ end
 
 local function get_setting(key, default)
   local settings_paths = {
+    home .. "/.config/omarchy-undercover/settings.conf",
     plugin_dir .. "/settings.conf",
     home .. "/.config/omarchy/plugins/omarchy-undercover/settings.conf",
     home .. "/.config/omarchy/plugins/undercover/settings.conf",
@@ -60,6 +61,7 @@ end
 local function get_active_mode()
   -- Check state file first (highest precedence)
   local state_paths = {
+    home .. "/.local/state/omarchy/undercover/state",
     plugin_dir .. "/state",
     home .. "/.config/omarchy/plugins/omarchy-undercover/state",
     home .. "/.config/omarchy/plugins/undercover/state",

@@ -23,7 +23,11 @@ else
 fi
 
 CONFIG_DIR="$PLUGIN_DIR"
-SETTINGS_FILE="$CONFIG_DIR/settings.conf"
+SETTINGS_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy-undercover/settings.conf"
+if [[ ! -f "$SETTINGS_FILE" && -f "$CONFIG_DIR/settings.conf" ]]; then
+    mkdir -p "$(dirname "$SETTINGS_FILE")"
+    cp -f "$CONFIG_DIR/settings.conf" "$SETTINGS_FILE" 2>/dev/null || true
+fi
 
 WP_SEARCH_DIRS=(
     "$CONFIG_DIR/assets/wallpapers"

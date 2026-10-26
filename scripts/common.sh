@@ -391,16 +391,13 @@ undercover_plugin_dir() {
 }
 
 undercover_config_dir() {
-    undercover_plugin_dir
+    local cdir="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy-undercover"
+    mkdir -p "$cdir" 2>/dev/null || true
+    echo "$cdir"
 }
 
 undercover_user_dir() {
-    local udir="$HOME/.config/omarchy/plugins/omarchy-undercover"
-    if [[ ! -d "$udir" && -d "$HOME/.config/omarchy/plugins/undercover" ]]; then
-        udir="$HOME/.config/omarchy/plugins/undercover"
-    fi
-    mkdir -p "$udir" 2>/dev/null || true
-    echo "$udir"
+    undercover_config_dir
 }
 
 undercover_state_dir() {
@@ -414,27 +411,19 @@ undercover_state_file() {
 }
 
 undercover_settings_file() {
-    local pdir
-    pdir=$(undercover_plugin_dir)
-    local cfg="$pdir/settings.conf"
-    if [[ -w "$pdir" || ( -f "$cfg" && -w "$cfg" ) ]]; then
-        if [[ ! -f "$cfg" ]]; then
-            touch "$cfg" 2>/dev/null || true
+    local cdir
+    cdir=$(undercover_config_dir)
+    local ucfg="$cdir/settings.conf"
+    if [[ ! -f "$ucfg" ]]; then
+        local pdir
+        pdir=$(undercover_plugin_dir)
+        if [[ -f "$pdir/settings.conf" ]]; then
+            cp -f "$pdir/settings.conf" "$ucfg" 2>/dev/null || touch "$ucfg" 2>/dev/null || true
+        else
+            touch "$ucfg" 2>/dev/null || true
         fi
-        echo "$cfg"
-    else
-        local udir
-        udir=$(undercover_user_dir)
-        local ucfg="$udir/settings.conf"
-        if [[ ! -f "$ucfg" ]]; then
-            if [[ -f "$cfg" ]]; then
-                cp -f "$cfg" "$ucfg" 2>/dev/null || true
-            else
-                touch "$ucfg" 2>/dev/null || true
-            fi
-        fi
-        echo "$ucfg"
     fi
+    echo "$ucfg"
 }
 
 read_setting() {

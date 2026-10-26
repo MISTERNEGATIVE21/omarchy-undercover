@@ -38,7 +38,7 @@ ShellRoot {
     property string weatherLocation: "Auto (MSN / IP)"
 
     FileView {
-      path: (Quickshell.env("OMARCHY_PLUGIN_DIR") || (Quickshell.env("HOME") + "/.config/omarchy/plugins/omarchy-undercover")) + "/settings.conf"
+      path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/omarchy-undercover/settings.conf"
       watchChanges: true
       onLoaded: {
         var m = text().match(/^WEATHER_LOCATION=(.*)$/m)

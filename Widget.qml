@@ -16,8 +16,16 @@ BarWidget {
     if (resolved && resolved.length > 1 && resolved.indexOf("/") !== -1) return resolved;
     return homeDir + "/.config/omarchy/plugins/omarchy-undercover";
   }
-  property string statePath: configDir + "/state"
-  property string settingsPath: configDir + "/settings.conf"
+  property string statePath: {
+    var s = Quickshell.env("XDG_STATE_HOME")
+    if (s && s.length > 0) return s + "/omarchy/undercover/state"
+    return homeDir + "/.local/state/omarchy/undercover/state"
+  }
+  property string settingsPath: {
+    var c = Quickshell.env("XDG_CONFIG_HOME")
+    if (c && c.length > 0) return c + "/omarchy-undercover/settings.conf"
+    return homeDir + "/.config/omarchy-undercover/settings.conf"
+  }
   property string activeState: "mac-dark"
   property string currentMode: "mac" // "mac", "win11", "omarchy"
   property bool isLight: false
@@ -186,8 +194,14 @@ BarWidget {
     anchors.fill: parent
     bar: root.bar
     active: root.opened
+    text: " "
+    labelVisible: false
+    hasVisualContent: true
+    keepSpace: true
     horizontalMargin: 8
     verticalPadding: 5
+    fixedWidth: root.vertical ? -1 : (contentRow.implicitWidth + Style.spaceReal(horizontalMargin) * 2)
+    fixedHeight: root.vertical ? (contentRow.implicitHeight + Style.spaceReal(verticalPadding) * 2) : -1
 
     tooltipText: "Omarchy Undercover Settings & Camouflage\n• Click: Configure & Switch Camouflage Beforehand\n• Shortcut: " + root.toggleShortcut + " (Toggle Camouflage)\n• Middle-Click: Toggle Quick Switch"
 
@@ -210,6 +224,7 @@ BarWidget {
     }
 
     RowLayout {
+      id: contentRow
       anchors.centerIn: parent
       spacing: 6
 

@@ -184,13 +184,11 @@ BarWidget {
       ? ('if hyprctl dispatch "hl.dsp.focus({ workspace = ' + wsId + ' })" >/dev/null 2>&1; then :; else hyprctl dispatch workspace ' + wsId + ' >/dev/null 2>&1; fi; ') : ""
     var monArg = (client.monitor !== undefined && client.monitor !== null && client.monitor !== "")
       ? ('if hyprctl dispatch "hl.dsp.focus({ monitor = ' + client.monitor + ' })" >/dev/null 2>&1; then :; else hyprctl dispatch focusmonitor ' + client.monitor + ' >/dev/null 2>&1; fi; ') : ""
-    var trackerCmd = root.configDir + "/scripts/omarchy-undercover-tracker --focus " + rawAddr
     var fallbackCmd = wsArg + monArg +
                       'if hyprctl dispatch "hl.dsp.focus({ window = \\"address:' + rawAddr + '\\" })" >/dev/null 2>&1; then :; else ' +
                       'hyprctl dispatch focuswindow "address:' + rawAddr + '" >/dev/null 2>&1; fi; ' +
                       'hyprctl dispatch "hl.dsp.window.bring_to_top()" >/dev/null 2>&1 || true;'
-    var cmd = trackerCmd + " 2>/dev/null || (" + fallbackCmd + ")"
-    Quickshell.execDetached(["bash", "-c", cmd])
+    Quickshell.execDetached(["bash", "-c", fallbackCmd])
     refreshTimer.restart()
   }
 

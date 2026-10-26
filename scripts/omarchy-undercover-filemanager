@@ -22,7 +22,8 @@ else
     PLUGIN_DIR="${SCRIPT_DIR}/.."
 fi
 
-STATE_FILE="$PLUGIN_DIR/state"
+STATE_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/undercover/state"
+[[ ! -f "$STATE_FILE" && -f "$PLUGIN_DIR/state" ]] && STATE_FILE="$PLUGIN_DIR/state"
 MODE="default"
 if [[ -f "$STATE_FILE" ]]; then
     s=$(cat "$STATE_FILE" 2>/dev/null || echo "default")
@@ -33,7 +34,8 @@ if [[ -f "$STATE_FILE" ]]; then
     fi
 fi
 
-SETTINGS_FILE="$PLUGIN_DIR/settings.conf"
+SETTINGS_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy-undercover/settings.conf"
+[[ ! -f "$SETTINGS_FILE" && -f "$PLUGIN_DIR/settings.conf" ]] && SETTINGS_FILE="$PLUGIN_DIR/settings.conf"
 
 CONFIGURED_FM="auto"
 if [[ -f "$SETTINGS_FILE" ]]; then

@@ -41,10 +41,12 @@ elif (Path.home() / ".config/omarchy/plugins/undercover").exists():
 else:
     PLUGIN_DIR = Path.home() / ".config/omarchy/plugins/omarchy-undercover"
 
-CONFIG_DIR = PLUGIN_DIR
-STATE_DIR = PLUGIN_DIR
-STATE_FILE = PLUGIN_DIR / "state"
-SETTINGS_FILE = PLUGIN_DIR / "settings.conf"
+CONFIG_DIR = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "omarchy-undercover"
+STATE_DIR = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local" / "state")) / "omarchy" / "undercover"
+STATE_FILE = STATE_DIR / "state"
+SETTINGS_FILE = CONFIG_DIR / "settings.conf"
+if not SETTINGS_FILE.exists() and (PLUGIN_DIR / "settings.conf").exists():
+    SETTINGS_FILE = PLUGIN_DIR / "settings.conf"
 
 FM_CMD = str(PLUGIN_DIR / "scripts" / "omarchy-undercover-filemanager") if (PLUGIN_DIR / "scripts" / "omarchy-undercover-filemanager").exists() else "omarchy-undercover-filemanager"
 
