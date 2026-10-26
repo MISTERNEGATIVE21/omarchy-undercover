@@ -17,6 +17,16 @@ PanelWindow {
     property string clipUrl: ""
     property bool active: false
     property bool isPreview: false
+    property bool armed: false
+
+    Timer {
+        id: armingTimer
+        interval: 800
+        repeat: false
+        onTriggered: {
+            surface.armed = true;
+        }
+    }
 
     readonly property bool shouldPlay: active && clipUrl !== ""
     readonly property string effectiveSource: {
@@ -92,11 +102,17 @@ PanelWindow {
 
     onActiveChanged: {
         if (surface.active) {
+            surface.armed = false;
+            armingTimer.restart();
+            inputArea.primed = false;
             surface.updateClock();
             player.play();
             sync();
             inputCatcher.forceActiveFocus();
         } else {
+            surface.armed = false;
+            armingTimer.stop();
+            inputArea.primed = false;
             player.stop();
         }
     }
@@ -104,6 +120,9 @@ PanelWindow {
     Component.onCompleted: {
         surface.updateClock();
         if (surface.active) {
+            surface.armed = false;
+            armingTimer.restart();
+            inputArea.primed = false;
             player.play();
             sync();
             inputCatcher.forceActiveFocus();
@@ -289,11 +308,14 @@ PanelWindow {
         focus: surface.active
 
         Keys.onPressed: function(event) {
-            surface.requestDismiss();
-            event.accepted = true;
+            if (surface.armed) {
+                surface.requestDismiss();
+                event.accepted = true;
+            }
         }
 
         MouseArea {
+            id: inputArea
             anchors.fill: parent
             hoverEnabled: true
             property real lastX: 0
@@ -301,14 +323,15 @@ PanelWindow {
             property bool primed: false
 
             onPositionChanged: function(mouse) {
+                if (!surface.active) return;
                 if (!primed) {
                     primed = true;
                     lastX = mouse.x;
                     lastY = mouse.y;
                     return;
                 }
-                // 15px motion threshold to ignore sensor jitter
-                if (Math.abs(mouse.x - lastX) > 15 || Math.abs(mouse.y - lastY) > 15) {
+                // Dismiss only once armed (past 800ms grace period) and motion exceeds threshold (25px)
+                if (surface.armed && (Math.abs(mouse.x - lastX) > 25 || Math.abs(mouse.y - lastY) > 25)) {
                     surface.requestDismiss();
                 }
                 lastX = mouse.x;
@@ -316,7 +339,9 @@ PanelWindow {
             }
 
             onPressed: {
-                surface.requestDismiss();
+                if (surface.armed) {
+                    surface.requestDismiss();
+                }
             }
         }
     }

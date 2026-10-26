@@ -492,11 +492,13 @@ local function configure_windows_titlebars()
 
   -- Directly register authentic Windows 11 window controls on the right:
   -- Close (×), Maximize (□), Minimize (−)
-  if hl.plugin and hl.plugin.hyprbars and hl.plugin.hyprbars.add_button then
+  local function register_windows_buttons()
+    local add_btn = hl._real_hyprbars_add_button or (hl.plugin and hl.plugin.hyprbars and hl.plugin.hyprbars.add_button)
+    if not add_btn then return end
     local window_target = 'window = "address:%WINDOW%"'
     pcall(function()
       -- 1. Close: Rightmost button (×)
-      hl.plugin.hyprbars.add_button({
+      add_btn({
         bg_color = bar_bg,
         fg_color = bar_text,
         size = 20,
@@ -504,7 +506,7 @@ local function configure_windows_titlebars()
         action = "hyprctl dispatch 'hl.dsp.window.close({ " .. window_target .. " })'",
       })
       -- 2. Maximize: Middle button (□)
-      hl.plugin.hyprbars.add_button({
+      add_btn({
         bg_color = bar_bg,
         fg_color = bar_text,
         size = 20,
@@ -512,7 +514,7 @@ local function configure_windows_titlebars()
         action = "hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = \"maximized\", action = \"toggle\", " .. window_target .. " })'",
       })
       -- 3. Minimize: Leftmost button (−)
-      hl.plugin.hyprbars.add_button({
+      add_btn({
         bg_color = bar_bg,
         fg_color = bar_text,
         size = 20,
@@ -520,12 +522,48 @@ local function configure_windows_titlebars()
         action = "omarchy-hyprland-window-minimize %WINDOW%",
       })
     end)
+  end
+
+  if hl.plugin and hl.plugin.hyprbars and hl.plugin.hyprbars.add_button then
+    if not hl._real_hyprbars_add_button then
+      hl._real_hyprbars_add_button = hl.plugin.hyprbars.add_button
+    end
+    register_windows_buttons()
 
     -- Intercept subsequent calls from workspace-modes.lua to prevent monotone button pollution
+    -- and ensure Windows 11 controls are preserved whenever workspace-modes initializes titlebars
     hl.plugin.hyprbars.add_button = function(spec)
-      return
+      register_windows_buttons()
     end
   end
+
+  -- Tag all application windows so Hyprbars renders Windows 11 controls on every window
+  pcall(function()
+    hl.window_rule({
+      match = { class = ".*" },
+      tag = "+omarchy-floating-workspace",
+    })
+  end)
+
+  -- Tag newly opened windows
+  if hl.on then
+    hl.on("window.open", function(win)
+      if win and win.address then
+        pcall(function()
+          hl.dispatch(hl.dsp.window.tag({ tag = "+omarchy-floating-workspace", window = "address:" .. win.address }))
+        end)
+      end
+    end)
+  end
+
+  -- Tag all currently active windows on load
+  pcall(function()
+    for _, win in ipairs(hl.get_windows and hl.get_windows() or {}) do
+      if win.address then
+        hl.dispatch(hl.dsp.window.tag({ tag = "+omarchy-floating-workspace", window = "address:" .. win.address }))
+      end
+    end
+  end)
 
   -- Hook into workspace-modes.apply so mode stays locked to Windows 11 on workspace layout changes
   local ok, wm = pcall(require, "default.hypr.workspace-modes")
@@ -542,6 +580,14 @@ local function configure_windows_titlebars()
           },
         })
       end
+      register_windows_buttons()
+      pcall(function()
+        for _, win in ipairs(hl.get_windows and hl.get_windows() or {}) do
+          if win.address then
+            hl.dispatch(hl.dsp.window.tag({ tag = "+omarchy-floating-workspace", window = "address:" .. win.address }))
+          end
+        end
+      end)
       return res
     end
   end

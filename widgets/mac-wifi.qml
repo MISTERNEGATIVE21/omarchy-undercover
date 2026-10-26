@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Networking
 import qs.Commons
 import qs.Ui
 
@@ -13,34 +14,17 @@ BarWidget {
   implicitWidth: contentWidth
   implicitHeight: root.bar ? root.bar.barSize : 28
 
-  property bool wifiRadioOn: true
-  property bool wifiConnected: false
-  property string activeSsid: ""
-
-  Process {
-    id: wifiPoller
-    running: true
-    command: ["bash", "-c", "r=$(nmcli radio wifi 2>/dev/null || echo 'disabled'); s=$(nmcli -t -f active,ssid dev wifi 2>/dev/null | grep '^yes:' | cut -d: -f2 || echo ''); echo \"$r|$s\""]
-    stdout: SplitParser {
-      onRead: function(line) {
-        if (!line) return
-        var parts = String(line).trim().split("|")
-        root.wifiRadioOn = (parts[0] === "enabled")
-        var s = parts.length > 1 ? parts[1].trim() : ""
-        root.activeSsid = s
-        root.wifiConnected = (s.length > 0)
-      }
+  readonly property bool wifiRadioOn: Networking.wifiEnabled
+  readonly property var activeNetwork: {
+    var nets = Networking.wifiNetworks;
+    if (!nets) return null;
+    for (var i = 0; i < nets.length; i++) {
+      if (nets[i].connected) return nets[i];
     }
+    return null;
   }
-
-  Timer {
-    interval: 4000
-    running: true
-    repeat: true
-    onTriggered: {
-      if (!wifiPoller.running) wifiPoller.running = true
-    }
-  }
+  readonly property bool wifiConnected: activeNetwork !== null
+  readonly property string activeSsid: activeNetwork ? (activeNetwork.name || "") : ""
 
   property string homeDir: Quickshell.env("HOME")
   property string configDir: homeDir + "/.config/omarchy/plugins/omarchy-undercover"

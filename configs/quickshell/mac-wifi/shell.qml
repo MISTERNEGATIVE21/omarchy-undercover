@@ -99,19 +99,22 @@ ShellRoot {
         return
       }
       if (wifiConnectProc.running) wifiConnectProc.running = false
-      wifiConnectProc.secret = (typeof password === "string") ? password : ""
-      wifiConnectProc.command = ["omarchy-wifi-dbus", "connect", ssid]
+      if (password && password.length > 0) {
+        wifiConnectProc.command = ["nmcli", "device", "wifi", "connect", ssid, "password", password]
+      } else {
+        wifiConnectProc.command = ["nmcli", "device", "wifi", "connect", ssid]
+      }
       wifiConnectProc.running = true
     }
 
     function disconnectWifi() {
-      Quickshell.execDetached(["omarchy-wifi-dbus", "disconnect"])
+      Quickshell.execDetached(["bash", "-c", "nmcli device disconnect wlan0 2>/dev/null || nmcli device disconnect wifi 2>/dev/null || true"])
       macWifiWindow.triggerScan()
     }
 
     function forgetWifi(ssid) {
       if (!ssid) return
-      Quickshell.execDetached(["omarchy-wifi-dbus", "forget", ssid])
+      Quickshell.execDetached(["nmcli", "connection", "delete", "id", ssid])
       macWifiWindow.triggerScan()
     }
 
@@ -119,7 +122,7 @@ ShellRoot {
     Process {
       id: statePoller
       running: true
-      command: ["bash", "-c", "cat $HOME/.config/omarchy/plugins/omarchy-undercover/state 2>/dev/null || echo 'mac-dark'"]
+      command: ["bash", "-c", "cat $HOME/.local/state/omarchy/undercover/state $HOME/.config/omarchy/plugins/omarchy-undercover/state 2>/dev/null || echo 'mac-dark'"]
       stdout: SplitParser {
         onRead: function(line) {
           var s = String(line).trim()
@@ -128,11 +131,11 @@ ShellRoot {
       }
     }
 
-    // Wi-Fi Radio status poller (NetworkManager over D-Bus)
+    // Wi-Fi Radio status poller
     Process {
       id: radioPoller
       running: true
-      command: ["bash", "-c", "omarchy-wifi-dbus radio"]
+      command: ["bash", "-c", "nmcli radio wifi 2>/dev/null | grep -qi 'enabled' && echo 'enabled' || echo 'disabled'"]
       stdout: SplitParser {
         onRead: function(line) {
           macWifiWindow.wifiEnabled = (String(line).trim().toLowerCase() === "enabled")
@@ -140,11 +143,11 @@ ShellRoot {
       }
     }
 
-    // Wi-Fi Scan Process (NetworkManager over D-Bus)
+    // Wi-Fi Scan Process (NetworkManager over nmcli)
     Process {
       id: scanPoller
       running: true
-      command: ["bash", "-c", "omarchy-wifi-dbus scan"]
+      command: ["bash", "-c", "nmcli -t -f in-use,ssid,signal,security,bssid device wifi list --rescan auto 2>/dev/null"]
       onExited: function() {
         macWifiWindow.isScanning = false
         var anyInUse = false
@@ -166,11 +169,11 @@ ShellRoot {
           if (!l) return
           var parts = l.split(":")
           if (parts.length >= 4) {
-            var inUse = (parts[0] === "*")
+            var inUse = (parts[0].indexOf("*") !== -1)
             var ssid = parts[1]
             var signal = parseInt(parts[2]) || 0
             var security = parts[3]
-            var bssid = parts.length >= 5 ? parts.slice(4).join(":") : ""
+            var bssid = parts.length >= 5 ? parts.slice(4).join(":").replace(/\\:/g, ":") : ""
             if (ssid && ssid.length > 0) {
               if (inUse) macWifiWindow.activeSsid = ssid
               var currentList = macWifiWindow.networks.slice(0)
@@ -204,7 +207,7 @@ ShellRoot {
     Process {
       id: knownPoller
       running: true
-      command: ["bash", "-c", "omarchy-wifi-dbus known"]
+      command: ["bash", "-c", "nmcli -t -f name,type connection show 2>/dev/null | grep ':802-11-wireless$' | cut -d: -f1"]
       stdout: SplitParser {
         onRead: function(line) {
           var s = String(line).trim()
@@ -355,7 +358,7 @@ ShellRoot {
               onClicked: {
                 var target = !macWifiWindow.wifiEnabled
                 macWifiWindow.wifiEnabled = target
-                Quickshell.execDetached(["omarchy-wifi-dbus", target ? "on" : "off"])
+                Quickshell.execDetached(["nmcli", "radio", "wifi", target ? "on" : "off"])
                 if (!scanPoller.running) scanPoller.running = true
               }
             }

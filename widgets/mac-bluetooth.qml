@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Bluetooth
 import qs.Commons
 import qs.Ui
 
@@ -13,40 +14,18 @@ BarWidget {
   implicitWidth: contentWidth
   implicitHeight: root.bar ? root.bar.barSize : 28
 
-  property bool btEnabled: true
-  property bool btConnected: false
-  property string connectedDevice: ""
-
-  Process {
-    id: btPoller
-    running: true
-    command: ["bash", "-c", "p=$(bluetoothctl show 2>/dev/null | grep -q 'Powered: yes' && echo '1' || echo '0'); c=$(bluetoothctl devices Connected 2>/dev/null | head -1); echo \"$p|$c\""]
-    stdout: SplitParser {
-      onRead: function(line) {
-        if (!line) return
-        var parts = String(line).trim().split("|")
-        root.btEnabled = (parts[0] === "1")
-        var dev = parts.length > 1 ? parts[1].trim() : ""
-        if (dev.length > 0) {
-          root.btConnected = true
-          var devParts = dev.split(" ")
-          root.connectedDevice = devParts.length > 2 ? devParts.slice(2).join(" ") : dev
-        } else {
-          root.btConnected = false
-          root.connectedDevice = ""
-        }
-      }
+  readonly property var adapter: Bluetooth.defaultAdapter
+  readonly property bool btEnabled: adapter ? adapter.enabled : false
+  readonly property var connectedDevices: {
+    if (!adapter || !adapter.devices) return [];
+    var list = [];
+    for (var i = 0; i < adapter.devices.length; i++) {
+      if (adapter.devices[i].connected) list.push(adapter.devices[i]);
     }
+    return list;
   }
-
-  Timer {
-    interval: 8000
-    running: true
-    repeat: true
-    onTriggered: {
-      if (!btPoller.running) btPoller.running = true
-    }
-  }
+  readonly property bool btConnected: connectedDevices.length > 0
+  readonly property string connectedDevice: btConnected ? (connectedDevices[0].deviceName || connectedDevices[0].name || "") : ""
 
   property string homeDir: Quickshell.env("HOME")
   property string configDir: homeDir + "/.config/omarchy/plugins/omarchy-undercover"

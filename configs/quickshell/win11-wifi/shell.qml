@@ -119,8 +119,11 @@ ShellRoot {
         return
       }
       if (wifiConnectProc.running) wifiConnectProc.running = false
-      wifiConnectProc.secret = (typeof password === "string") ? password : ""
-      wifiConnectProc.command = ["omarchy-wifi-dbus", "connect", ssid]
+      if (password && password.length > 0) {
+        wifiConnectProc.command = ["nmcli", "device", "wifi", "connect", ssid, "password", password]
+      } else {
+        wifiConnectProc.command = ["nmcli", "device", "wifi", "connect", ssid]
+      }
       wifiConnectProc.running = true
     }
 
@@ -128,7 +131,7 @@ ShellRoot {
     Process {
       id: statePoller
       running: true
-      command: ["bash", "-c", "cat $HOME/.config/omarchy/plugins/omarchy-undercover/state 2>/dev/null || echo 'win11-dark'"]
+      command: ["bash", "-c", "cat $HOME/.local/state/omarchy/undercover/state $HOME/.config/omarchy/plugins/omarchy-undercover/state 2>/dev/null || echo 'win11-dark'"]
       stdout: SplitParser {
         onRead: function(line) {
           var s = String(line).trim()
@@ -141,7 +144,7 @@ ShellRoot {
     Process {
       id: radioPoller
       running: true
-      command: ["bash", "-c", "omarchy-wifi-dbus radio"]
+      command: ["bash", "-c", "nmcli radio wifi 2>/dev/null | grep -qi 'enabled' && echo 'enabled' || echo 'disabled'"]
       stdout: SplitParser {
         onRead: function(line) {
           wifiWindow.wifiEnabled = (String(line).trim().toLowerCase() === "enabled")
@@ -149,22 +152,22 @@ ShellRoot {
       }
     }
 
-    // Wi-Fi Scan Process (NetworkManager over D-Bus)
+    // Wi-Fi Scan Process (NetworkManager over nmcli)
     Process {
       id: scanPoller
       running: true
-      command: ["bash", "-c", "omarchy-wifi-dbus scan"]
+      command: ["bash", "-c", "nmcli -t -f in-use,ssid,signal,security,bssid device wifi list --rescan auto 2>/dev/null"]
       stdout: SplitParser {
         onRead: function(line) {
           var l = String(line).trim()
           if (!l) return
           var parts = l.split(":")
           if (parts.length >= 4) {
-            var inUse = (parts[0] === "*")
+            var inUse = (parts[0].indexOf("*") !== -1)
             var ssid = parts[1]
             var signal = parseInt(parts[2]) || 0
             var security = parts[3]
-            var bssid = parts.length >= 5 ? parts.slice(4).join(":") : ""
+            var bssid = parts.length >= 5 ? parts.slice(4).join(":").replace(/\\:/g, ":") : ""
             if (ssid && ssid.length > 0) {
               if (inUse) wifiWindow.activeSsid = ssid
               var currentList = wifiWindow.networks.slice(0)
@@ -213,7 +216,7 @@ ShellRoot {
     Process {
       id: knownPoller
       running: true
-      command: ["bash", "-c", "omarchy-wifi-dbus known"]
+      command: ["bash", "-c", "nmcli -t -f name,type connection show 2>/dev/null | grep ':802-11-wireless$' | cut -d: -f1"]
       stdout: SplitParser {
         onRead: function(line) {
           var s = String(line).trim()
@@ -442,7 +445,7 @@ ShellRoot {
                 onClicked: {
                   var target = !wifiWindow.wifiEnabled
                   wifiWindow.wifiEnabled = target
-                  Quickshell.execDetached(["omarchy-wifi-dbus", target ? "on" : "off"])
+                  Quickshell.execDetached(["nmcli", "radio", "wifi", target ? "on" : "off"])
                   wifiWindow.triggerScan()
                 }
               }
@@ -757,7 +760,7 @@ ShellRoot {
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
-                  Quickshell.execDetached(["omarchy-wifi-dbus", "disconnect"])
+                  Quickshell.execDetached(["bash", "-c", "nmcli device disconnect wlan0 2>/dev/null || nmcli device disconnect wifi 2>/dev/null || true"])
                   wifiWindow.activeSsid = ""
                   wifiWindow.triggerScan()
                 }
@@ -792,7 +795,7 @@ ShellRoot {
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
-                  Quickshell.execDetached(["omarchy-wifi-dbus", "forget", wifiWindow.activeSsid])
+                  Quickshell.execDetached(["nmcli", "connection", "delete", "id", wifiWindow.activeSsid])
                   wifiWindow.activeSsid = ""
                   wifiWindow.triggerScan()
                 }
@@ -984,7 +987,7 @@ ShellRoot {
                       hoverEnabled: true
                       cursorShape: Qt.PointingHandCursor
                       onClicked: {
-                        Quickshell.execDetached(["omarchy-wifi-dbus", "forget", modelData.ssid])
+                        Quickshell.execDetached(["nmcli", "connection", "delete", "id", modelData.ssid])
                         wifiWindow.triggerScan()
                       }
                     }

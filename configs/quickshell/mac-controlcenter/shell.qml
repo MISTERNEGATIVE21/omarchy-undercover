@@ -154,8 +154,11 @@ ShellRoot {
         return
       }
       if (wifiConnectProc.running) wifiConnectProc.running = false
-      wifiConnectProc.secret = (typeof password === "string") ? password : ""
-      wifiConnectProc.command = ["omarchy-wifi-dbus", "connect", ssid]
+      if (password && password.length > 0) {
+        wifiConnectProc.command = ["nmcli", "device", "wifi", "connect", ssid, "password", password]
+      } else {
+        wifiConnectProc.command = ["nmcli", "device", "wifi", "connect", ssid]
+      }
       wifiConnectProc.running = true
     }
 
@@ -252,18 +255,18 @@ ShellRoot {
     // Wi-Fi Scan Process
     Process {
       id: wifiScanPoller
-      command: ["bash", "-c", "omarchy-wifi-dbus scan"]
+      command: ["bash", "-c", "nmcli -t -f in-use,ssid,signal,security,bssid device wifi list --rescan auto 2>/dev/null"]
       stdout: SplitParser {
         onRead: function(line) {
           var l = String(line).trim()
           if (!l) return
           var parts = l.split(":")
           if (parts.length >= 4) {
-            var inUse = (parts[0] === "*")
+            var inUse = (parts[0].indexOf("*") !== -1)
             var ssid = parts[1]
             var signal = parseInt(parts[2]) || 0
             var security = parts[3]
-            var bssid = parts.length >= 5 ? parts.slice(4).join(":") : ""
+            var bssid = parts.length >= 5 ? parts.slice(4).join(":").replace(/\\:/g, ":") : ""
             if (ssid && ssid.length > 0) {
               if (inUse) controlCenterWindow.wifiSsid = ssid
               var currentList = controlCenterWindow.networks.slice(0)
@@ -299,7 +302,7 @@ ShellRoot {
     // Bluetooth Scan Process
     Process {
       id: btScanPoller
-      command: ["bash", "-c", "omarchy-bluetooth-dbus scan"]
+      command: ["bash", "-c", "bluetoothctl --timeout 5 scan on 2>/dev/null || true; bluetoothctl devices | while read -r _ mac name; do c=$(bluetoothctl info \"$mac\" 2>/dev/null | grep -q 'Connected: yes' && echo 1 || echo 0); echo \"$mac|$c|$name\"; done"]
       stdout: SplitParser {
         onRead: function(line) {
           var l = String(line).trim()
@@ -467,7 +470,7 @@ ShellRoot {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
                       controlCenterWindow.wifiOn = !controlCenterWindow.wifiOn
-                      Quickshell.execDetached(["omarchy-wifi-dbus", controlCenterWindow.wifiOn ? "on" : "off"])
+                      Quickshell.execDetached(["nmcli", "radio", "wifi", controlCenterWindow.wifiOn ? "on" : "off"])
                     }
                   }
                 }
@@ -554,7 +557,7 @@ ShellRoot {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
                       controlCenterWindow.btOn = !controlCenterWindow.btOn
-                      Quickshell.execDetached(["omarchy-bluetooth-dbus", controlCenterWindow.btOn ? "on" : "off"])
+                      Quickshell.execDetached(["omarchy-bluetooth-power", controlCenterWindow.btOn ? "on" : "off"])
                     }
                   }
                 }
@@ -1091,7 +1094,7 @@ ShellRoot {
               onClicked: {
                 var target = !controlCenterWindow.wifiOn
                 controlCenterWindow.wifiOn = target
-                Quickshell.execDetached(["omarchy-wifi-dbus", target ? "on" : "off"])
+                Quickshell.execDetached(["nmcli", "radio", "wifi", target ? "on" : "off"])
                 controlCenterWindow.triggerWifiScan()
               }
             }
@@ -1218,7 +1221,7 @@ ShellRoot {
                   hoverEnabled: true
                   cursorShape: Qt.PointingHandCursor
                   onClicked: {
-                    Quickshell.execDetached(["omarchy-wifi-dbus", "disconnect"])
+                    Quickshell.execDetached(["bash", "-c", "nmcli device disconnect wlan0 2>/dev/null || nmcli device disconnect wifi 2>/dev/null || true"])
                     controlCenterWindow.triggerWifiScan()
                   }
                 }
@@ -1244,7 +1247,7 @@ ShellRoot {
                   hoverEnabled: true
                   cursorShape: Qt.PointingHandCursor
                   onClicked: {
-                    Quickshell.execDetached(["omarchy-wifi-dbus", "forget", controlCenterWindow.wifiSsid])
+                    Quickshell.execDetached(["nmcli", "connection", "delete", "id", controlCenterWindow.wifiSsid])
                     controlCenterWindow.triggerWifiScan()
                   }
                 }
@@ -1944,7 +1947,7 @@ ShellRoot {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                      Quickshell.execDetached(["omarchy-bluetooth-dbus", "forget", modelData.mac])
+                      Quickshell.execDetached(["omarchy-bluetooth-device", "forget", modelData.mac])
                       controlCenterWindow.triggerBtScan()
                     }
                   }

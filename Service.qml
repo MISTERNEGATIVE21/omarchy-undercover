@@ -330,8 +330,7 @@ Item {
     }
 
     function trackerFile(): string {
-      var rtd = Quickshell.env("XDG_RUNTIME_DIR") || "/tmp"
-      return rtd + "/omarchy-undercover/.undercoverfile"
+      return ""
     }
 
     function focusWindow(addr: string): string {

@@ -29,7 +29,7 @@ if ! echo "$STATUS_OUTPUT" | jq . >/dev/null 2>&1; then
 fi
 echo "  ✔ Tracker output is valid JSON"
 
-echo "=== 3. Validating target file locations (Safe XDG, no plugin reload storm) ==="
+echo "=== 3. Validating zero disk file writes (CPU and I/O savings, no reload storm) ==="
 if [[ -f "$REPO_UNDERCOVER_FILE" ]]; then
   echo "FAIL: $REPO_UNDERCOVER_FILE was created in repo directory! Writing here triggers inotify reloads." >&2
   exit 1
@@ -42,11 +42,11 @@ if [[ -f "$INSTALLED_UNDERCOVER_FILE" ]]; then
 fi
 echo "  ✔ Installed plugin directory is clean (no writes triggering bar reload)"
 
-if [[ ! -f "$RUNTIME_FILE" ]]; then
-  echo "FAIL: $RUNTIME_FILE was not created in runtime directory" >&2
+if [[ -f "$RUNTIME_FILE" ]]; then
+  echo "FAIL: $RUNTIME_FILE was created on disk. Disk writes must be eliminated to save CPU." >&2
   exit 1
 fi
-echo "  ✔ $RUNTIME_FILE exists in runtime directory"
+echo "  ✔ Zero disk writes verified (pure in-memory state tracking)"
 
 if [[ -f "$HOME_FILE" && ! -L "$HOME_FILE" ]]; then
   echo "FAIL: Loose $HOME_FILE still exists in \$HOME root, should be cleaned up" >&2
@@ -54,13 +54,11 @@ if [[ -f "$HOME_FILE" && ! -L "$HOME_FILE" ]]; then
 fi
 echo "  ✔ \$HOME is clean (no loose .undercoverfile polluting user home directory)"
 
-echo "=== 4. Verifying required JSON schema fields & paging system in runtime .undercoverfile ==="
+echo "=== 4. Verifying required JSON schema fields & paging system from in-memory tracker ==="
 python3 -c "
 import json, os, sys
 
-path = '$RUNTIME_FILE'
-with open(path, 'r', encoding='utf-8') as f:
-    data = json.load(f)
+data = json.loads('''$STATUS_OUTPUT''')
 
 required_keys = [
     'timestamp', 'iso_time',
@@ -96,7 +94,7 @@ assert isinstance(data['windows_count'], int), 'windows_count not int'
 assert isinstance(data['windows'], list), 'windows not list'
 assert isinstance(data['stage_manager_groups'], list), 'stage_manager_groups not list'
 
-print('  ✔ Schema validation passed: runtime paging system, VM, and window fields verified')
+print('  ✔ Schema validation passed: in-memory paging system, VM, and window fields verified')
 "
 
 echo "=== 5. Testing --paging CLI option ==="

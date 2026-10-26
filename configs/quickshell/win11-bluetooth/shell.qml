@@ -90,7 +90,7 @@ ShellRoot {
     Process {
       id: statePoller
       running: true
-      command: ["bash", "-c", "cat $HOME/.config/omarchy/plugins/omarchy-undercover/state 2>/dev/null || echo 'win11-dark'"]
+      command: ["bash", "-c", "cat $HOME/.local/state/omarchy/undercover/state $HOME/.config/omarchy/plugins/omarchy-undercover/state 2>/dev/null || echo 'win11-dark'"]
       stdout: SplitParser {
         onRead: function(line) {
           var s = String(line).trim()
@@ -111,11 +111,11 @@ ShellRoot {
       }
     }
 
-    // Devices query & scan (BlueZ over D-Bus)
+    // Devices query & scan (bluetoothctl)
     Process {
       id: devicesPoller
       running: true
-      command: ["bash", "-c", "omarchy-bluetooth-dbus listwin"]
+      command: ["bash", "-c", "bluetoothctl devices | while read -r _ mac name; do c=$(bluetoothctl info \"$mac\" 2>/dev/null | grep -q 'Connected: yes' && echo 1 || echo 0); echo \"$mac|$c|$name\"; done"]
       stdout: SplitParser {
         onRead: function(line) {
           var l = String(line).trim()
@@ -165,7 +165,7 @@ ShellRoot {
 
     Process {
       id: discoverPoller
-      command: ["bash", "-c", "omarchy-bluetooth-dbus scan"]
+      command: ["bash", "-c", "bluetoothctl --timeout 5 scan on 2>/dev/null || true; bluetoothctl devices | while read -r _ mac name; do c=$(bluetoothctl info \"$mac\" 2>/dev/null | grep -q 'Connected: yes' && echo 1 || echo 0); echo \"$mac|$c|$name\"; done"]
       stdout: SplitParser {
         onRead: function(line) {
           var l = String(line).trim()
@@ -742,7 +742,7 @@ ShellRoot {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                      Quickshell.execDetached(["omarchy-bluetooth-dbus", "forget", modelData.mac])
+                      Quickshell.execDetached(["omarchy-bluetooth-device", "forget", modelData.mac])
                       btWindow.triggerQuery()
                     }
                   }

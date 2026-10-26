@@ -396,11 +396,13 @@ local function configure_mac_titlebars()
 
   -- Directly register authentic macOS traffic lights on the left:
   -- Red dot (Close), Yellow dot (Minimize), Green dot (Maximize / Zoom)
-  if hl.plugin and hl.plugin.hyprbars and hl.plugin.hyprbars.add_button then
+  local function register_mac_buttons()
+    local add_btn = hl._real_hyprbars_add_button or (hl.plugin and hl.plugin.hyprbars and hl.plugin.hyprbars.add_button)
+    if not add_btn then return end
     local window_target = 'window = "address:%WINDOW%"'
     pcall(function()
       -- 1. Close: Red dot (#ff5f56)
-      hl.plugin.hyprbars.add_button({
+      add_btn({
         bg_color = "rgb(ff5f56)",
         fg_color = "rgb(4d0000)",
         size = 13,
@@ -408,7 +410,7 @@ local function configure_mac_titlebars()
         action = "hyprctl dispatch 'hl.dsp.window.close({ " .. window_target .. " })'",
       })
       -- 2. Minimize: Yellow dot (#ffbd2e)
-      hl.plugin.hyprbars.add_button({
+      add_btn({
         bg_color = "rgb(ffbd2e)",
         fg_color = "rgb(5c3b00)",
         size = 13,
@@ -416,7 +418,7 @@ local function configure_mac_titlebars()
         action = "omarchy-hyprland-window-minimize %WINDOW%",
       })
       -- 3. Maximize / Zoom: Green dot (#27c93f)
-      hl.plugin.hyprbars.add_button({
+      add_btn({
         bg_color = "rgb(27c93f)",
         fg_color = "rgb(004d11)",
         size = 13,
@@ -424,12 +426,48 @@ local function configure_mac_titlebars()
         action = "hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = \"maximized\", action = \"toggle\", " .. window_target .. " })'",
       })
     end)
+  end
+
+  if hl.plugin and hl.plugin.hyprbars and hl.plugin.hyprbars.add_button then
+    if not hl._real_hyprbars_add_button then
+      hl._real_hyprbars_add_button = hl.plugin.hyprbars.add_button
+    end
+    register_mac_buttons()
 
     -- Intercept subsequent calls from workspace-modes.lua to prevent monotone button pollution
+    -- and ensure traffic lights are preserved whenever workspace-modes initializes titlebars
     hl.plugin.hyprbars.add_button = function(spec)
-      return
+      register_mac_buttons()
     end
   end
+
+  -- Tag all application windows so Hyprbars renders traffic lights on every window
+  pcall(function()
+    hl.window_rule({
+      match = { class = ".*" },
+      tag = "+omarchy-floating-workspace",
+    })
+  end)
+
+  -- Tag newly opened windows
+  if hl.on then
+    hl.on("window.open", function(win)
+      if win and win.address then
+        pcall(function()
+          hl.dispatch(hl.dsp.window.tag({ tag = "+omarchy-floating-workspace", window = "address:" .. win.address }))
+        end)
+      end
+    end)
+  end
+
+  -- Tag all currently active windows on load
+  pcall(function()
+    for _, win in ipairs(hl.get_windows and hl.get_windows() or {}) do
+      if win.address then
+        hl.dispatch(hl.dsp.window.tag({ tag = "+omarchy-floating-workspace", window = "address:" .. win.address }))
+      end
+    end
+  end)
 
   -- Hook into workspace-modes.apply so mode stays locked to macOS on workspace layout changes
   local ok, wm = pcall(require, "default.hypr.workspace-modes")
@@ -446,6 +484,14 @@ local function configure_mac_titlebars()
           },
         })
       end
+      register_mac_buttons()
+      pcall(function()
+        for _, win in ipairs(hl.get_windows and hl.get_windows() or {}) do
+          if win.address then
+            hl.dispatch(hl.dsp.window.tag({ tag = "+omarchy-floating-workspace", window = "address:" .. win.address }))
+          end
+        end
+      end)
       return res
     end
   end

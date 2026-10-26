@@ -20,13 +20,7 @@ PLUGIN_DIR = os.path.dirname(SCRIPT_DIR)
 INSTALLED_PLUGIN_DIR = os.path.expanduser("~/.config/omarchy/plugins/omarchy-undercover")
 RUNTIME_DIR = os.environ.get("XDG_RUNTIME_DIR", "/tmp")
 
-# Keep the undercoverfile paging system strictly in XDG_RUNTIME_DIR (never inside plugin folders)
-STATE_FILE = os.path.join(RUNTIME_DIR, "omarchy-undercover", ".undercoverfile")
-TARGET_PATHS = list(dict.fromkeys([
-    STATE_FILE,
-    os.path.join(RUNTIME_DIR, ".undercoverfile")
-]))
-
+# In-memory tracking (zero disk I/O, no .undercoverfile writing)
 PID_FILE = os.path.join(RUNTIME_DIR, "omarchy-undercover-tracker.pid")
 
 def get_hypr_json(command):
@@ -218,7 +212,7 @@ def build_state():
         "pages": ws_list,
         "windows_per_page": {str(w["id"]): len(ws_windows.get(str(w["id"]), [])) for w in ws_list},
         "active_page_windows": ws_windows.get(str(cur_ws_id), []),
-        "plugin_file": STATE_FILE
+        "plugin_file": "in-memory"
     }
 
     state = {
@@ -240,27 +234,18 @@ def build_state():
         "stage_manager_groups": sm_groups,
         "monitors": monitors if isinstance(monitors, list) else [],
         "plugin_dir": PLUGIN_DIR,
-        "file_path": STATE_FILE
+        "file_path": "in-memory"
     }
     return state
 
 def write_state(state):
+    # Pure in-memory JSON state (zero disk writes, zero file I/O)
     raw_json = json.dumps(state, indent=2)
-    for p in TARGET_PATHS:
-        try:
-            parent = os.path.dirname(p)
-            if not os.path.exists(parent):
-                os.makedirs(parent, exist_ok=True)
-            tmp_p = p + f".tmp.{os.getpid()}"
-            with open(tmp_p, "w", encoding="utf-8") as f:
-                f.write(raw_json)
-                f.write("\n")
-            os.replace(tmp_p, p)
-        except Exception:
-            pass
 
-    # Clean up legacy .undercoverfile from plugin directories and $HOME
+    # Clean up any legacy .undercoverfile from runtime, plugin directories, or $HOME
     for legacy in [
+        os.path.join(RUNTIME_DIR, "omarchy-undercover", ".undercoverfile"),
+        os.path.join(RUNTIME_DIR, ".undercoverfile"),
         os.path.join(PLUGIN_DIR, ".undercoverfile"),
         os.path.join(INSTALLED_PLUGIN_DIR, ".undercoverfile"),
         os.path.expanduser("~/.undercoverfile")
