@@ -22,7 +22,15 @@ ShellRoot {
 
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "omarchy-menu"
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
     color: "transparent"
+
+    property bool hasEntered: false
+
+    Shortcut {
+      sequence: "Escape"
+      onActivated: Qt.quit()
+    }
 
     implicitWidth: Math.min(340, (screen ? screen.width : 1280) - 24)
     implicitHeight: Math.min(460, (screen ? screen.height : 720) - 50)
@@ -53,7 +61,7 @@ ShellRoot {
 
     function triggerScan() {
       macBtWindow.isScanning = true
-      macBtWindow.pairedDevices = []
+      if (!devicesPoller.running) devicesPoller.running = true
       if (!discoverPoller.running) discoverPoller.running = true
     }
 
@@ -212,6 +220,24 @@ ShellRoot {
 
       Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
       Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+
+      HoverHandler {
+        id: cardHover
+        onHoveredChanged: {
+          if (hovered) {
+            macBtWindow.hasEntered = true
+          }
+        }
+      }
+
+      Timer {
+        id: leaveTimer
+        interval: 350
+        running: macBtWindow.hasEntered && !cardHover.hovered
+        onTriggered: {
+          Qt.quit()
+        }
+      }
 
       Component.onCompleted: {
         opacity = 1.0
@@ -481,6 +507,7 @@ ShellRoot {
                       } else {
                         Quickshell.execDetached(["omarchy-bluetooth-device", "connect", modelData.mac])
                       }
+                      if (!devicesPoller.running) devicesPoller.running = true
                       macBtWindow.triggerScan()
                     }
                   }
@@ -507,6 +534,7 @@ ShellRoot {
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
                       Quickshell.execDetached(["omarchy-bluetooth-device", "forget", modelData.mac])
+                      if (!devicesPoller.running) devicesPoller.running = true
                       macBtWindow.triggerScan()
                     }
                   }
@@ -527,6 +555,7 @@ ShellRoot {
                   } else {
                     Quickshell.execDetached(["omarchy-bluetooth-device", "connect", modelData.mac])
                   }
+                  if (!devicesPoller.running) devicesPoller.running = true
                   macBtWindow.triggerScan()
                 }
               }

@@ -64,10 +64,21 @@ Panel {
 
   property string homeDir: Quickshell.env("HOME")
   property string configDir: homeDir + "/.config/omarchy/plugins/omarchy-undercover"
+  property string userConfigDir: {
+    var c = Quickshell.env("XDG_CONFIG_HOME")
+    if (c && c.length > 0) return c + "/omarchy-undercover"
+    return homeDir + "/.config/omarchy-undercover"
+  }
+  property string userStateDir: {
+    var s = Quickshell.env("XDG_STATE_HOME")
+    if (s && s.length > 0) return s + "/omarchy/undercover"
+    return homeDir + "/.local/state/omarchy/undercover"
+  }
   property string iconBasePath: configDir + "/assets/icons/mac-dock/"
   property bool isLight: false
   property bool isAutohide: false
-  property bool isDockRevealed: true
+  property bool isDockRevealed: !isAutohide
+  property var allAppsList: []
 
   // Workspaces & Running Windows Tracking via Native Hyprland State
   property var dockAppsList: []
@@ -188,12 +199,16 @@ Panel {
     if (mm && mm[1]) dockWindow.maxDockItems = Math.max(4, parseInt(mm[1]))
     var dt = s.match(/DOCK_TRANSPARENCY=(\d+)/)
     if (dt && dt[1]) dockWindow.dockTransparency = Math.max(10, Math.min(100, parseInt(dt[1])))
-    if (!dockWindow.isAutohide) dockWindow.isDockRevealed = true
+    if (!dockWindow.isAutohide) {
+      dockWindow.isDockRevealed = true
+    } else if (!dockWindow.isMouseOverDock) {
+      dockWindow.isDockRevealed = false
+    }
   }
 
   FileView {
     id: stateWatcher
-    path: dockWindow.configDir + "/state"
+    path: dockWindow.userStateDir + "/state"
     watchChanges: true
     printErrors: false
     onLoaded: dockWindow.updateState(text())
@@ -204,14 +219,76 @@ Panel {
   }
 
   FileView {
+    id: fallbackStateWatcher
+    path: dockWindow.configDir + "/state"
+    watchChanges: true
+    printErrors: false
+    onLoaded: {
+      if (!stateWatcher.exists) dockWindow.updateState(text())
+    }
+    onFileChanged: {
+      reload()
+      if (!stateWatcher.exists) dockWindow.updateState(text())
+    }
+  }
+
+  FileView {
     id: settingsWatcher
-    path: dockWindow.configDir + "/settings.conf"
+    path: dockWindow.userConfigDir + "/settings.conf"
     watchChanges: true
     printErrors: false
     onLoaded: dockWindow.updateSettings(text())
     onFileChanged: {
       reload()
       dockWindow.updateSettings(text())
+    }
+  }
+
+  FileView {
+    id: fallbackSettingsWatcher
+    path: dockWindow.configDir + "/settings.conf"
+    watchChanges: true
+    printErrors: false
+    onLoaded: {
+      if (!settingsWatcher.exists) dockWindow.updateSettings(text())
+    }
+    onFileChanged: {
+      reload()
+      if (!settingsWatcher.exists) dockWindow.updateSettings(text())
+    }
+  }
+
+  FileView {
+    id: appsJsonFile
+    path: dockWindow.configDir + "/apps.json"
+    watchChanges: false
+    printErrors: false
+    onLoaded: {
+      try {
+        var arr = JSON.parse(text())
+        if (Array.isArray(arr)) {
+          dockWindow.allAppsList = arr
+        }
+      } catch(e) {}
+      dockWindow.refreshDock()
+    }
+  }
+
+  FileView {
+    id: fallbackAppsJson
+    path: dockWindow.homeDir + "/omarchy-undercover/apps.json"
+    watchChanges: false
+    printErrors: false
+    onLoaded: {
+      if (!dockWindow.allAppsList || dockWindow.allAppsList.length === 0) {
+        try {
+          var arr = JSON.parse(text())
+          if (Array.isArray(arr)) {
+            dockWindow.allAppsList = arr
+          }
+        } catch(e) {}
+        dockWindow.refreshDock()
+      }
     }
   }
 
@@ -301,6 +378,30 @@ Panel {
     return /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(str)
   }
 
+  function findAppInAppsList(token) {
+    if (!token || !dockWindow.allAppsList || dockWindow.allAppsList.length === 0) return null
+    var t = token.toLowerCase().trim()
+    for (var i = 0; i < dockWindow.allAppsList.length; i++) {
+      var a = dockWindow.allAppsList[i]
+      if (!a) continue
+      var an = (a.name || "").toLowerCase().trim()
+      if (an === t) return a
+      var ex = (a.exec || "").toLowerCase().trim()
+      var exBase = ex.split(" ")[0].split("/").pop()
+      if (exBase === t) return a
+    }
+    for (var j = 0; j < dockWindow.allAppsList.length; j++) {
+      var b = dockWindow.allAppsList[j]
+      if (!b) continue
+      var bn = (b.name || "").toLowerCase().trim()
+      if (bn.indexOf(t) === 0 || t.indexOf(bn) === 0) return b
+      var bex = (b.exec || "").toLowerCase().trim()
+      var bexBase = bex.split(" ")[0].split("/").pop()
+      if (bexBase.indexOf(t) === 0 || t.indexOf(bexBase) === 0) return b
+    }
+    return null
+  }
+
   function resolveAppIcon(c) {
     if (!c) return ""
     var cls = c.class || ""
@@ -324,27 +425,57 @@ Panel {
     var rawCandidates = [cls, initCls, lowerCls, lowerInit]
     var candidates = []
     for (var r = 0; r < rawCandidates.length; r++) {
-      if (isValidIconToken(rawCandidates[r]) && candidates.indexOf(rawCandidates[r]) === -1) {
-        candidates.push(rawCandidates[r])
-      }
-    }
-
-    if (isValidIconToken(cls)) {
-      var parts = cls.split(".")
-      for (var i = parts.length - 1; i >= 0; i--) {
-        if (isValidIconToken(parts[i])) {
-          if (candidates.indexOf(parts[i]) === -1) candidates.push(parts[i])
-          var lp = parts[i].toLowerCase()
-          if (candidates.indexOf(lp) === -1) candidates.push(lp)
+      var cand = rawCandidates[r]
+      if (cand && candidates.indexOf(cand) === -1) {
+        candidates.push(cand)
+        var stripped = cand.replace(/-(stable|bin|desktop|browser|git|app)$/i, "")
+        if (stripped && stripped !== cand && candidates.indexOf(stripped) === -1) {
+          candidates.push(stripped)
         }
       }
     }
 
+    if (cls) {
+      var parts = cls.split(".")
+      for (var i = parts.length - 1; i >= 0; i--) {
+        var p = parts[i]
+        if (p) {
+          if (candidates.indexOf(p) === -1) candidates.push(p)
+          var lp = p.toLowerCase()
+          if (candidates.indexOf(lp) === -1) candidates.push(lp)
+          var sp = lp.replace(/-(stable|bin|desktop|browser|git|app)$/i, "")
+          if (sp && candidates.indexOf(sp) === -1) candidates.push(sp)
+        }
+      }
+    }
+
+    // 1. Check apps.json for indexed iconUrl
+    for (var a = 0; a < candidates.length; a++) {
+      var appMatch = dockWindow.findAppInAppsList(candidates[a])
+      if (appMatch && appMatch.iconUrl && appMatch.iconUrl.length > 0) {
+        return appMatch.iconUrl
+      }
+    }
+
+    // 2. Strict theme lookup
     for (var k = 0; k < candidates.length; k++) {
       var name = candidates[k]
-      var ip = Quickshell.iconPath(name, true)
-      if (ip && ip.length > 0) {
-        return ip
+      if (isValidIconToken(name)) {
+        var ip = Quickshell.iconPath(name, true)
+        if (ip && ip.length > 0) {
+          return ip
+        }
+      }
+    }
+
+    // 3. Quickshell / Qt theme engine fallback
+    for (var m = 0; m < candidates.length; m++) {
+      var tokenName = candidates[m]
+      if (isValidIconToken(tokenName)) {
+        var qip = Quickshell.iconPath(tokenName)
+        if (qip && qip.length > 0) {
+          return qip
+        }
       }
     }
 
@@ -371,6 +502,10 @@ Panel {
       var ip = Quickshell.iconPath(modelData.appId, true)
       if (ip && ip.length > 0) {
         return ip
+      }
+      var qip = Quickshell.iconPath(modelData.appId)
+      if (qip && qip.length > 0) {
+        return qip
       }
     }
     var fallback = Quickshell.iconPath("application-x-executable", true)
@@ -405,15 +540,15 @@ Panel {
   property var primaryDockApps: [
     { id: "finder", name: "Finder", icon: "finder.svg", exec: "omarchy-undercover-filemanager ~ || flea", matchers: ["flea", "nautilus", "thunar", "dolphin", "nemo", "pcmanfm", "files", "org.gnome.nautilus"] },
     { id: "launchpad", name: "Launchpad", icon: "launchpad.svg", exec: "omarchy-undercover-launcher", matchers: [] },
-    { id: "safari", name: "Safari", icon: "safari.svg", exec: "omarchy-browser", matchers: ["safari", "chrome", "chromium", "firefox", "vivaldi", "brave", "zen", "browser", "epiphany"] },
-    { id: "messages", name: "Messages", icon: "messages.svg", exec: "telegram-desktop || discord || signal-desktop || vesktop", matchers: ["telegram", "discord", "signal", "vesktop"] },
+    { id: "safari", name: "Safari", icon: "safari.svg", exec: "omarchy-browser", matchers: ["safari", "epiphany", "org.gnome.Epiphany"] },
+    { id: "messages", name: "Messages", icon: "messages.svg", exec: "telegram-desktop || discord || signal-desktop || vesktop", matchers: ["telegram", "im.riot.Riot"] },
     { id: "mail", name: "Mail", icon: "mail.svg", exec: "thunderbird || geary || evolution || omarchy-browser https://mail.google.com", matchers: ["thunderbird", "geary", "evolution"] },
     { id: "maps", name: "Maps", icon: "maps.svg", exec: "gnome-maps || omarchy-browser https://maps.google.com", matchers: ["maps"] },
     { id: "photos", name: "Photos", icon: "photos.svg", exec: "eog || gwenview || loupe || shotwell", matchers: ["eog", "gwenview", "loupe", "shotwell"] },
     { id: "calendar", name: "Calendar", icon: "calendar.svg", exec: "gnome-calendar || korganizer || omarchy-browser https://calendar.google.com", matchers: ["calendar", "korganizer"] },
     { id: "notes", name: "Notes", icon: "notes.svg", exec: "gnome-notes || bijiben || obsidian", matchers: ["notes", "bijiben", "obsidian"] },
     { id: "reminders", name: "Reminders", icon: "reminders.svg", exec: "gnome-todo || korganizer", matchers: ["todo", "reminders"] },
-    { id: "music", name: "Music", icon: "music.svg", exec: "spotify || rhythmbox || amberol", matchers: ["spotify", "rhythmbox", "amberol", "music"] },
+    { id: "music", name: "Music", icon: "music.svg", exec: "spotify || rhythmbox || amberol", matchers: ["rhythmbox", "amberol", "apple-music"] },
     { id: "antigravity", name: "Antigravity IDE", icon: "antigravity-ide.svg", exec: "antigravity-ide || code || vscodium", matchers: ["antigravity", "code", "vscodium", "vscode", "codium"] },
     { id: "terminal", name: "Terminal", icon: "terminal.svg", exec: "xdg-terminal-exec || alacritty || kitty", matchers: ["kitty", "alacritty", "foot", "terminal", "wezterm", "ghostty", "ptyxis", "xterm"] },
     { id: "settings", name: "System Settings", icon: "settings.svg", exec: "omarchy-mac-settings", matchers: ["omarchy-mac-settings", "omarchy-undercover-settings", "org.omarchy.undercover.settings", "settings", "gnome-control-center"] },
@@ -463,12 +598,13 @@ Panel {
         if (baseKey.indexOf("telegram") !== -1) baseKey = "telegram"
         if (!seenKeys[baseKey]) {
           seenKeys[baseKey] = true
+          var resolvedIcon = dockWindow.resolveAppIcon(c)
           unpinned.push({
             id: "running_" + c.address,
             name: c.title || c.initialTitle || c.class || "Application",
             hyprClient: c,
             isDynamic: true,
-            iconUrl: dockWindow.resolveAppIcon(c),
+            iconUrl: resolvedIcon,
             appId: c.class || c.initialClass || "",
             icon: "",
             exec: "",

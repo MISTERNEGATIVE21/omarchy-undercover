@@ -11,6 +11,11 @@ BarWidget {
 
   property string openMenu: "" // "", "app", "file", "edit", "view", "go", "window", "help"
   readonly property bool hasOpenMenu: openMenu !== ""
+  property Item activeAnchorItem: null
+
+  function close() {
+    root.openMenu = ""
+  }
 
   function runCmd(cmd) {
     root.openMenu = ""
@@ -60,6 +65,67 @@ BarWidget {
   implicitWidth: menuRow.implicitWidth + 8
   implicitHeight: root.bar ? root.bar.barSize : 24
 
+  component MenuBarItem: Item {
+    id: itemBtn
+    property string menuKey: ""
+    property string menuTitle: ""
+    property bool isBold: false
+    property var registeredBar: null
+
+    implicitWidth: btnLabel.implicitWidth + 14
+    implicitHeight: root.bar ? root.bar.barSize - 4 : 22
+
+    function triggerPress(button) {
+      if (root.openMenu === itemBtn.menuKey) {
+        root.openMenu = ""
+      } else {
+        root.activeAnchorItem = itemBtn
+        root.openMenu = itemBtn.menuKey
+      }
+    }
+
+    function syncClickRegistration() {
+      if (registeredBar && registeredBar.unregisterClickTarget) registeredBar.unregisterClickTarget(itemBtn)
+      registeredBar = root.bar
+      if (registeredBar && registeredBar.registerClickTarget) registeredBar.registerClickTarget(itemBtn)
+    }
+
+    onBarChanged: syncClickRegistration()
+    Component.onCompleted: syncClickRegistration()
+    Component.onDestruction: if (registeredBar && registeredBar.unregisterClickTarget) registeredBar.unregisterClickTarget(itemBtn)
+
+    Rectangle {
+      anchors.fill: parent
+      radius: 4
+      color: root.openMenu === itemBtn.menuKey ? (root.bar ? root.bar.hoverBackground : Qt.rgba(1, 1, 1, 0.16)) : (itemMouse.containsMouse ? (root.bar ? root.bar.widgetBackground : Qt.rgba(1, 1, 1, 0.08)) : "transparent")
+
+      Text {
+        id: btnLabel
+        textFormat: Text.PlainText
+        anchors.centerIn: parent
+        text: itemBtn.menuTitle
+        font.family: "SF Pro Text, -apple-system, sans-serif"
+        font.pixelSize: 13
+        font.weight: itemBtn.isBold ? Font.Bold : Font.Normal
+        color: root.bar ? root.bar.foreground : "#ffffff"
+      }
+
+      MouseArea {
+        id: itemMouse
+        anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        onEntered: {
+          if (root.hasOpenMenu && root.openMenu !== itemBtn.menuKey) {
+            root.activeAnchorItem = itemBtn
+            root.openMenu = itemBtn.menuKey
+          }
+        }
+        onClicked: itemBtn.triggerPress(Qt.LeftButton)
+      }
+    }
+  }
+
   RowLayout {
     id: menuRow
     anchors.verticalCenter: parent.verticalCenter
@@ -68,30 +134,60 @@ BarWidget {
     spacing: 0
 
     // 1. Active App Title (Bold)
-    Rectangle {
+    Item {
       id: appTitleBtn
       implicitWidth: appTitleText.implicitWidth + 14
       implicitHeight: root.bar ? root.bar.barSize - 4 : 22
-      radius: 4
-      color: root.openMenu === "app" ? (root.bar ? root.bar.hoverBackground : Qt.rgba(1, 1, 1, 0.16)) : (appMouse.containsMouse ? (root.bar ? root.bar.widgetBackground : Qt.rgba(1, 1, 1, 0.08)) : "transparent")
+      property var registeredBar: null
 
-      Text {
-        id: appTitleText
-        textFormat: Text.PlainText
-        anchors.centerIn: parent
-        text: root.activeAppName
-        font.family: "SF Pro Text, -apple-system, sans-serif"
-        font.pixelSize: 13
-        font.weight: Font.Bold
-        color: root.bar ? root.bar.foreground : "#ffffff"
+      function triggerPress(button) {
+        if (root.openMenu === "app") {
+          root.openMenu = ""
+        } else {
+          root.activeAnchorItem = appTitleBtn
+          root.openMenu = "app"
+        }
       }
 
-      MouseArea {
-        id: appMouse
+      function syncClickRegistration() {
+        if (registeredBar && registeredBar.unregisterClickTarget) registeredBar.unregisterClickTarget(appTitleBtn)
+        registeredBar = root.bar
+        if (registeredBar && registeredBar.registerClickTarget) registeredBar.registerClickTarget(appTitleBtn)
+      }
+
+      onBarChanged: syncClickRegistration()
+      Component.onCompleted: syncClickRegistration()
+      Component.onDestruction: if (registeredBar && registeredBar.unregisterClickTarget) registeredBar.unregisterClickTarget(appTitleBtn)
+
+      Rectangle {
         anchors.fill: parent
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
-        onClicked: root.openMenu = (root.openMenu === "app" ? "" : "app")
+        radius: 4
+        color: root.openMenu === "app" ? (root.bar ? root.bar.hoverBackground : Qt.rgba(1, 1, 1, 0.16)) : (appMouse.containsMouse ? (root.bar ? root.bar.widgetBackground : Qt.rgba(1, 1, 1, 0.08)) : "transparent")
+
+        Text {
+          id: appTitleText
+          textFormat: Text.PlainText
+          anchors.centerIn: parent
+          text: root.activeAppName
+          font.family: "SF Pro Text, -apple-system, sans-serif"
+          font.pixelSize: 13
+          font.weight: Font.Bold
+          color: root.bar ? root.bar.foreground : "#ffffff"
+        }
+
+        MouseArea {
+          id: appMouse
+          anchors.fill: parent
+          hoverEnabled: true
+          cursorShape: Qt.PointingHandCursor
+          onEntered: {
+            if (root.hasOpenMenu && root.openMenu !== "app") {
+              root.activeAnchorItem = appTitleBtn
+              root.openMenu = "app"
+            }
+          }
+          onClicked: appTitleBtn.triggerPress(Qt.LeftButton)
+        }
       }
     }
 
@@ -106,35 +202,10 @@ BarWidget {
         { id: "help", title: "Help" }
       ]
 
-      Rectangle {
-        id: menuItemBtn
-        implicitWidth: menuLabel.implicitWidth + 14
-        implicitHeight: root.bar ? root.bar.barSize - 4 : 22
-        radius: 4
-        color: root.openMenu === modelData.id ? (root.bar ? root.bar.hoverBackground : Qt.rgba(1, 1, 1, 0.16)) : (itemMouse.containsMouse ? (root.bar ? root.bar.widgetBackground : Qt.rgba(1, 1, 1, 0.08)) : "transparent")
-
-        Text {
-          id: menuLabel
-          anchors.centerIn: parent
-          text: modelData.title
-          font.family: "SF Pro Text, -apple-system, sans-serif"
-          font.pixelSize: 13
-          font.weight: Font.Normal
-          color: root.bar ? root.bar.foreground : "#ffffff"
-        }
-
-        MouseArea {
-          id: itemMouse
-          anchors.fill: parent
-          hoverEnabled: true
-          cursorShape: Qt.PointingHandCursor
-          onEntered: {
-            if (root.hasOpenMenu) root.openMenu = modelData.id
-          }
-          onClicked: {
-            root.openMenu = (root.openMenu === modelData.id ? "" : modelData.id)
-          }
-        }
+      MenuBarItem {
+        menuKey: modelData.id
+        menuTitle: modelData.title
+        isBold: false
       }
     }
   }
@@ -142,7 +213,7 @@ BarWidget {
   // Authentic macOS Popover Dropdown Panel
   KeyboardPanel {
     id: dropdownPanel
-    anchorItem: menuRow
+    anchorItem: root.activeAnchorItem || menuRow
     owner: root
     bar: root.bar
     open: root.hasOpenMenu

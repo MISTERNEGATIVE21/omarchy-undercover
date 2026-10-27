@@ -1542,23 +1542,118 @@ verify_integrity() {
     fi
 }
 
+install_undercover() {
+    local target_pos="${1:-}"
+
+    msg "=== Installing Omarchy Undercover ==="
+
+    # 1. Lock guard: do not install while desktop session is locked
+    if command_exists omarchy-shell && [[ "$(omarchy-shell lock isLocked 2>/dev/null)" == "true" ]]; then
+        echo "ERROR: Refusing to install while the session is locked." >&2
+        echo "Please unlock first, then re-run." >&2
+        return 1
+    fi
+
+    # 2. Ensure system directories exist
+    mkdir -p "$HOME/.local/bin"
+    mkdir -p "$HOME/.config/omarchy/plugins/omarchy-undercover"
+    mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/omarchy-undercover"
+    mkdir -p "${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/undercover"
+    mkdir -p "$HOME/.local/state/omarchy/toggles/hypr"
+
+    local repo_root=""
+    if [[ -f "${SCRIPT_DIR}/../manifest.json" ]]; then
+        repo_root="$(cd "${SCRIPT_DIR}/.." && pwd)"
+    elif [[ -f "${SCRIPT_DIR}/manifest.json" ]]; then
+        repo_root="${SCRIPT_DIR}"
+    fi
+
+    # 3. Synchronize plugin files into ~/.config/omarchy/plugins/omarchy-undercover
+    local plugin_dir="$HOME/.config/omarchy/plugins/omarchy-undercover"
+    if [[ -n "$repo_root" && "$repo_root" != "$plugin_dir" ]]; then
+        msg "Synchronizing plugin files to $plugin_dir..."
+        cp -a "$repo_root/"* "$plugin_dir/" 2>/dev/null || true
+    fi
+
+    # 4. Symlink executables to ~/.local/bin/
+    local scripts_src="$plugin_dir/scripts"
+    if [[ -d "$scripts_src" ]]; then
+        for sc in "$scripts_src"/*; do
+            if [[ -f "$sc" && -x "$sc" ]]; then
+                ln -sf "$sc" "$HOME/.local/bin/$(basename "$sc")"
+            fi
+        done
+    fi
+
+    # 5. Initialize settings if not already present
+    local settings_file
+    settings_file="$(undercover_settings_file)"
+    if [[ ! -f "$settings_file" && -f "$plugin_dir/settings.conf" ]]; then
+        cp "$plugin_dir/settings.conf" "$settings_file"
+    fi
+
+    # 6. Set baseline state to omarchy (normal mode) if not set
+    if [[ ! -f "$STATE_FILE" ]]; then
+        set_state "omarchy"
+    fi
+
+    # 7. Enable toggle shortcut in Hyprland
+    enable_undercover_hyprland "omarchy"
+
+    # 8. Register/enable plugin in Omarchy
+    if command_exists omarchy; then
+        omarchy plugin enable omarchy-undercover >/dev/null 2>&1 || true
+    fi
+
+    # 9. Configure Undercover status bar icon placement
+    set_bar_widget_position "$target_pos"
+
+    # 10. Reload bar and Hyprland
+    omarchy_reload_bar
+    omarchy_reload_hyprland
+
+    msg "✔ Omarchy Undercover successfully installed!"
+}
+
 set_bar_widget_position() {
     local target="${1:-}"
+    # Strip leading dashes if user supplied --middle, --left, -l, etc.
+    target="${target#--}"
+    target="${target#-}"
+
     if [[ -z "$target" ]]; then
         if [[ -t 0 && -t 1 ]] && command_exists gum; then
-            target=$(printf '%s\n' "right" "center" "left" | gum choose --header="Choose bar placement for Undercover widget in normal Omarchy mode:" --selected="$(read_setting "BAR_POSITION" "right")") || return 0
+            target=$(printf '%s\n' "left" "middle" "right" | gum choose --header="Where would you like to show the Undercover icon on the status bar?" --selected="$(read_setting "BAR_POSITION" "right")") || target="right"
+        elif [[ -t 0 || -p /dev/stdin || -c /dev/tty ]]; then
+            local tty_in="/dev/stdin"
+            if [[ ! -t 0 && ! -p /dev/stdin && -c /dev/tty ]]; then
+                tty_in="/dev/tty"
+            fi
+            echo ""
+            echo "Where would you like to show the Undercover icon on the status bar?"
+            echo "  1) Left"
+            echo "  2) Middle"
+            echo "  3) Right"
+            local choice=""
+            read -r -p "Select position [left/middle/right] (default: right): " choice < "$tty_in" || choice=""
+            case "${choice,,}" in
+                1|left|l) target="left" ;;
+                2|middle|mid|m|center|c) target="center" ;;
+                3|right|r|"") target="right" ;;
+                *) target="right" ;;
+            esac
         else
             echo "Current bar widget position: $(read_setting "BAR_POSITION" "right")"
-            echo "Usage: omarchy-undercover --bar-position <left|center|middle|right>"
+            echo "Usage: omarchy-undercover --bar-position <left|middle|center|right>"
             return 0
         fi
     fi
 
     local norm_pos="right"
     case "$target" in
-        left) norm_pos="left" ;;
-        center*|middle) norm_pos="center" ;;
-        right|*) norm_pos="right" ;;
+        left|l) norm_pos="left" ;;
+        center*|middle|mid|m|c) norm_pos="center" ;;
+        right|r|*) norm_pos="right" ;;
     esac
 
     write_setting "BAR_POSITION" "$norm_pos"
@@ -1630,6 +1725,7 @@ show_help() {
     echo "  --restore-stock-dock                    Restore official Omarchy floating dock"
     echo "  --disable, --omarchy                    Switch to original Omarchy mode & theming"
     echo "  --restore                               Restore from baseline backup"
+    echo "  --install, -i [left|middle|right]       Install Undercover, link binaries, and configure bar icon position"
     echo "  --uninstall                             Uninstall and restore original settings (clean cache & runtime)"
     echo "  --purge                                 Completely purge all files, downloaded media, cache & unregister"
     echo "  --persistent                            Enable disguise persistence across reboots"
@@ -1815,6 +1911,9 @@ case "$1" in
         ;;
     --restore)
         restore_baseline
+        ;;
+    --install|-i)
+        install_undercover "${2:-}"
         ;;
     --uninstall)
         uninstall_undercover 0

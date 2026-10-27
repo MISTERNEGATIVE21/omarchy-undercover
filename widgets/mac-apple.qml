@@ -14,6 +14,10 @@ BarWidget {
 
   property bool menuOpen: false
 
+  function close() {
+    root.menuOpen = false
+  }
+
   property string homeDir: Quickshell.env("HOME")
   property string configDir: homeDir + "/.config/omarchy/plugins/omarchy-undercover"
 

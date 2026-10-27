@@ -121,6 +121,28 @@ Designed for presentations, shared screen privacy, or personal preference, Omarc
 
 Omarchy Undercover is packaged as an official Omarchy shell plugin.
 
+### Quick Install via Installer Script
+
+Clone the repository and run the interactive installer:
+
+```bash
+git clone https://github.com/MISTERNEGATIVE21/omarchy-undercover.git
+cd omarchy-undercover
+./install.sh
+```
+
+During installation, the installer prompts you to choose where to display the Undercover icon on your Omarchy status bar:
+- `left`
+- `middle` (center)
+- `right` (default)
+
+You can also specify placement flags directly:
+```bash
+./install.sh --left      # Place icon on the left
+./install.sh --middle    # Place icon in the middle (center)
+./install.sh --right     # Place icon on the right
+```
+
 ### Install via Omarchy CLI
 
 ```bash
@@ -129,12 +151,12 @@ omarchy plugin add https://github.com/MISTERNEGATIVE21/omarchy-undercover.git --
 
 This clones the repository into `~/.config/omarchy/plugins/omarchy-undercover`, validates the manifest, links modular widgets into the shell plugin directory, and registers the global toggle keybindings.
 
-### Enable the Bar / Tray Widget
+### Status Bar Icon Placement
 
-To place the mode switcher icon in your status bar:
+You can adjust or reconfigure the placement of the Undercover icon on your status bar at any time:
 
 ```bash
-omarchy plugin enable omarchy-undercover --section right
+omarchy-undercover --bar-position <left|middle|right>
 ```
 
 ---
