@@ -61,10 +61,6 @@ if command -v hyprctl >/dev/null 2>&1; then
 
     hyprctl eval 'if hl and hl.window_rule then hl.window_rule({ match = { class = "^org.quickshell$", title = "^Settings$" }, float = true, center = true, size = { 980, 640 }, focus_on_activate = true }) end' >/dev/null 2>&1 || true
     hyprctl eval 'if o and o.window then o.window({ class = "^org.quickshell$", title = "^Settings$" }, { float = true, center = true, size = { 980, 640 }, focus_on_activate = true }) end' >/dev/null 2>&1 || true
-    hyprctl keyword windowrulev2 "float,class:^(org.quickshell)$,title:^(Settings)$" >/dev/null 2>&1 || true
-    hyprctl keyword windowrulev2 "center,class:^(org.quickshell)$,title:^(Settings)$" >/dev/null 2>&1 || true
-    hyprctl keyword windowrulev2 "size 980 640,class:^(org.quickshell)$,title:^(Settings)$" >/dev/null 2>&1 || true
-    hyprctl keyword windowrulev2 "focusonactivate,class:^(org.quickshell)$,title:^(Settings)$" >/dev/null 2>&1 || true
 fi
 
 if command -v quickshell >/dev/null 2>&1 && [[ -d "$DIR" ]]; then

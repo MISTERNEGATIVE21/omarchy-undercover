@@ -850,10 +850,9 @@ hide_stock_omarchy_dock() {
         omarchy-shell -q shell reloadConfig 2>/dev/null || true
     fi
 
-    # 5. Suppress layer in Hyprland so no lingering dock surface can render
+    # 5. Suppress layer in Hyprland via Lua so no lingering dock surface can render
     if command_exists hyprctl; then
-        hyprctl keyword layerrule "ignorezero, omarchy-dock" >/dev/null 2>&1 || true
-        hyprctl keyword layerrule "ignorealpha 1.0, omarchy-dock" >/dev/null 2>&1 || true
+        hyprctl eval 'if hl and hl.layer_rule then hl.layer_rule({ match = { namespace = "omarchy-dock" }, ignore_zero = true, ignore_alpha = 1.0 }) end' >/dev/null 2>&1 || true
     fi
 
     # 6. Terminate any lingering Quickshell dock instances
@@ -1523,7 +1522,9 @@ verify_integrity() {
         fi
     fi
     echo "Launcher: $(detect_launcher)"
-    if grep -q "windows-mode" "$HOME/.config/hypr/hyprland.lua" 2>/dev/null; then
+    local cur_st=""
+    [[ -f "$STATE_FILE" ]] && cur_st=$(cat "$STATE_FILE" 2>/dev/null | tr -d '[:space:]')
+    if [[ ("$cur_st" == *"win"* || "$cur_st" == *"windows"*) && -f "$HOME/.local/state/omarchy/toggles/hypr/undercover.lua" ]]; then
         echo "Hyprland Windows Mode (lua): Active"
     else
         echo "Hyprland Windows Mode (lua): Inactive"
@@ -1838,8 +1839,9 @@ case "$1" in
             inact_op="${3:-0.85}"
             write_setting "ACTIVE_OPACITY" "$active_op"
             write_setting "INACTIVE_OPACITY" "$inact_op"
-            hyprctl keyword decoration:active_opacity "$active_op" >/dev/null 2>&1 || true
-            hyprctl keyword decoration:inactive_opacity "$inact_op" >/dev/null 2>&1 || true
+            if command_exists hyprctl; then
+                hyprctl eval "if hl and hl.config then hl.config({ decoration = { active_opacity = $active_op, inactive_opacity = $inact_op } }) end" >/dev/null 2>&1 || true
+            fi
             msg "Window opacity set to: active=$active_op, inactive=$inact_op"
         else
             echo "Current opacity: active=$(read_setting "ACTIVE_OPACITY" "0.95"), inactive=$(read_setting "INACTIVE_OPACITY" "0.85")"

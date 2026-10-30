@@ -1113,7 +1113,7 @@ ShellRoot {
                         onMoved: {
                           settingsWin.windowGaps = Math.round(value)
                           settingsWin.saveSetting("WINDOW_GAPS", Math.round(value))
-                          settingsWin.runCmd("hyprctl keyword general:gaps_out " + Math.round(value) + " >/dev/null 2>&1; hyprctl keyword general:gaps_in " + Math.round(value / 2) + " >/dev/null 2>&1")
+                          settingsWin.runCmd("hyprctl eval \"if hl and hl.config then hl.config({ general = { gaps_out = " + Math.round(value) + ", gaps_in = " + Math.round(value / 2) + " } }) end\" >/dev/null 2>&1")
                         }
                       }
                     }
@@ -1153,7 +1153,7 @@ ShellRoot {
                         onMoved: {
                           settingsWin.windowRounding = Math.round(value)
                           settingsWin.saveSetting("WINDOW_ROUNDING", Math.round(value))
-                          settingsWin.runCmd("hyprctl keyword decoration:rounding " + Math.round(value) + " >/dev/null 2>&1")
+                          settingsWin.runCmd("hyprctl eval \"if hl and hl.config then hl.config({ decoration = { rounding = " + Math.round(value) + " } }) end\" >/dev/null 2>&1")
                         }
                       }
                     }
@@ -3594,7 +3594,7 @@ ShellRoot {
                             onClicked: {
                               settingsWin.activeAccent = modelData
                               settingsWin.saveSetting("ACCENT", modelData)
-                              settingsWin.runCmd("hyprctl keyword general:col.active_border '0xff" + modelData + "' >/dev/null 2>&1")
+                              settingsWin.runCmd("hyprctl eval \"if hl and hl.config then hl.config({ general = { col = { active_border = 0xff" + modelData + " } } }) end\" >/dev/null 2>&1")
                             }
                           }
                         }

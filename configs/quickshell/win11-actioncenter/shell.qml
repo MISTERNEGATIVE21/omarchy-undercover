@@ -191,8 +191,9 @@ ShellRoot {
         return
       }
       if (wifiConnectProc.running) wifiConnectProc.running = false
-      if (password && password.length > 0) {
-        wifiConnectProc.command = ["nmcli", "device", "wifi", "connect", ssid, "password", password]
+      wifiConnectProc.secret = (typeof password === "string") ? password : ""
+      if (wifiConnectProc.secret) {
+        wifiConnectProc.command = ["nmcli", "--ask", "device", "wifi", "connect", ssid]
       } else {
         wifiConnectProc.command = ["nmcli", "device", "wifi", "connect", ssid]
       }

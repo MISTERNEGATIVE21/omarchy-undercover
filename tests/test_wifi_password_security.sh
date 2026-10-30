@@ -61,7 +61,50 @@ diff -u "${SETTINGS_FILES[0]}" "${SETTINGS_FILES[2]}"
 diff -u "${SETTINGS_FILES[0]}" "${SETTINGS_FILES[3]}"
 echo "  ✔ All 4 SettingsService.qml copies are synchronized."
 
-echo "=== 2. Testing omarchy-settings-engine Wi-Fi connect via stdin ==="
+echo "=== 2. Checking Wi-Fi popup & action center shell.qml files ==="
+
+FLYOUT_FILES=(
+    "$REPO_DIR/configs/quickshell/mac-wifi/shell.qml"
+    "$REPO_DIR/configs/quickshell/win11-wifi/shell.qml"
+    "$REPO_DIR/configs/quickshell/mac-controlcenter/shell.qml"
+    "$REPO_DIR/configs/quickshell/win11-actioncenter/shell.qml"
+)
+
+for file in "${FLYOUT_FILES[@]}"; do
+    echo "Checking $(basename "$(dirname "$file")")/$(basename "$file")..."
+
+    # Must NOT put password in process arguments
+    if grep -E 'command\s*=\s*\[.*"password",\s*password.*\]' "$file"; then
+        echo "  ✖ FAIL: $file passes password in command line arguments!"
+        exit 1
+    fi
+
+    # Must contain wifiConnectProc with stdinEnabled
+    if ! grep -q 'id:\s*wifiConnectProc' "$file"; then
+        echo "  ✖ FAIL: $file missing wifiConnectProc Process!"
+        exit 1
+    fi
+    if ! grep -q 'stdinEnabled:\s*true' "$file"; then
+        echo "  ✖ FAIL: $file missing stdinEnabled: true in wifiConnectProc!"
+        exit 1
+    fi
+
+    # Must invoke nmcli with --ask for secure stdin reading
+    if ! grep -q '"--ask"' "$file"; then
+        echo "  ✖ FAIL: $file does not invoke nmcli with --ask!"
+        exit 1
+    fi
+
+    # Must write and clear secret
+    if ! grep -q 'secret = ""' "$file"; then
+        echo "  ✖ FAIL: $file does not zero/clear secret after writing to stdin!"
+        exit 1
+    fi
+
+    echo "  ✔ $file passes security validation."
+done
+
+echo "=== 3. Testing omarchy-settings-engine Wi-Fi connect via stdin ==="
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
