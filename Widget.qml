@@ -26,8 +26,8 @@ BarWidget {
     if (c && c.length > 0) return c + "/omarchy-undercover/settings.conf"
     return homeDir + "/.config/omarchy-undercover/settings.conf"
   }
-  property string activeState: "mac-dark"
-  property string currentMode: "mac" // "mac", "win11", "omarchy"
+  property string activeState: "omarchy"
+  property string currentMode: "omarchy" // "mac", "win11", "omarchy"
   property bool isLight: false
   property bool isAutohide: false
   property bool isTransparent: true
@@ -36,7 +36,7 @@ BarWidget {
 
   function updateFromState() {
     var raw = stateFile.text().trim()
-    if (!raw) raw = "mac-dark"
+    if (!raw) raw = "omarchy"
     root.activeState = raw
     root.isLight = (raw.indexOf("light") !== -1)
 

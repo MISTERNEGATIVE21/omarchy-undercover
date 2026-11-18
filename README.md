@@ -147,9 +147,17 @@ You can also specify placement flags directly:
 
 ```bash
 omarchy plugin add https://github.com/MISTERNEGATIVE21/omarchy-undercover.git --enable --yes
+~/.config/omarchy/plugins/omarchy-undercover/install.sh
 ```
 
-This clones the repository into `~/.config/omarchy/plugins/omarchy-undercover`, validates the manifest, links modular widgets into the shell plugin directory, and registers the global toggle keybindings.
+Or specify placement flags directly when running the installer:
+```bash
+~/.config/omarchy/plugins/omarchy-undercover/install.sh --left      # Place icon on the left
+~/.config/omarchy/plugins/omarchy-undercover/install.sh --middle    # Place icon in the middle (center)
+~/.config/omarchy/plugins/omarchy-undercover/install.sh --right     # Place icon on the right
+```
+
+`omarchy plugin add` clones, validates, and enables the plugin in `~/.config/omarchy/plugins/omarchy-undercover`. Running `install.sh` links executables to `~/.local/bin` (adding `omarchy-undercover` to your `PATH`), registers the dynamic Hyprland toggle shortcut (`SUPER + ALT + U`), initializes baseline settings, and configures the bar icon position.
 
 ### Status Bar Icon Placement
 

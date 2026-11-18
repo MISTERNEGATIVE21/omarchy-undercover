@@ -577,8 +577,30 @@ backup_original_configs() {
 
     backup_config_dir "waybar" "$cur_backup"
     if [[ -f "$HOME/.config/omarchy/shell.json" ]]; then
-        if ! grep -qEi "undercover|mac-|win11-" "$HOME/.config/omarchy/shell.json"; then
-            mkdir -p "$cur_backup/omarchy"
+        mkdir -p "$cur_backup/omarchy"
+        # If shell.json is currently in camouflage mode (contains mac- or win11- widgets),
+        # sanitize camouflage widgets with jq so the user's real third-party plugins
+        # and custom layout are preserved.
+        if grep -qEi "mac-|win11-" "$HOME/.config/omarchy/shell.json"; then
+            if command_exists jq; then
+                jq '
+                  walk(
+                    if type == "object" and has("id") and ((.id // "") | test("mac-|win11-")) then empty
+                    elif type == "array" then map(select(type == "string" and (. | test("mac-|win11-")) | not))
+                    else . end
+                  )
+                  | .bar.transparent = false
+                  | .bar.position = "top"
+                  | if (.bar.centerAnchor // "") == "" then .bar.centerAnchor = "omarchy.clock" else . end
+                ' "$HOME/.config/omarchy/shell.json" > "$cur_backup/omarchy/shell.json.tmp" 2>/dev/null
+                if [[ -s "$cur_backup/omarchy/shell.json.tmp" ]] && jq -e '.bar.layout.left and (.bar.layout.left | length > 0)' "$cur_backup/omarchy/shell.json.tmp" >/dev/null 2>&1; then
+                    mv "$cur_backup/omarchy/shell.json.tmp" "$cur_backup/omarchy/shell.json"
+                else
+                    rm -f "$cur_backup/omarchy/shell.json.tmp"
+                fi
+            fi
+        else
+            # Normal Omarchy mode (with or without undercover widget): preserve the user's real shell.json
             cp -f "$HOME/.config/omarchy/shell.json" "$cur_backup/omarchy/"
         fi
     fi
@@ -1466,6 +1488,22 @@ uninstall_undercover() {
     # 6. Terminate any running tracker daemon
     pkill -f "omarchy-undercover-tracker" 2>/dev/null || true
     rm -f "${XDG_RUNTIME_DIR:-/tmp}/omarchy-undercover-tracker.pid" 2>/dev/null || true
+
+    # Clean up undercover widget entries from shell.json
+    local shell_json="$HOME/.config/omarchy/shell.json"
+    if [[ -f "$shell_json" ]] && command_exists jq; then
+        local tmp="$shell_json.tmp"
+        if jq '
+            .plugins = ((.plugins // []) - ["omarchy-undercover"])
+            | .bar.layout.left = ((.bar.layout.left // []) | map(select((.id // "") != "omarchy-undercover")))
+            | .bar.layout.center = ((.bar.layout.center // []) | map(select((.id // "") != "omarchy-undercover")))
+            | .bar.layout.right = ((.bar.layout.right // []) | map(select((.id // "") != "omarchy-undercover")))
+        ' "$shell_json" > "$tmp" 2>/dev/null && [[ -s "$tmp" ]]; then
+            mv "$tmp" "$shell_json"
+        else
+            rm -f "$tmp"
+        fi
+    fi
 
     # 7. Clear state, backup, cache, and temporary runtime directories
     clear_state

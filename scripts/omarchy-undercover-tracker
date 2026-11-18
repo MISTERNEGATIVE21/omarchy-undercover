@@ -92,7 +92,8 @@ def build_state():
                 addr = "0x" + addr
 
             ws_info = c.get("workspace", {})
-            ws_id = ws_info.get("id") if isinstance(ws_info, dict) else (c.get("workspace") if isinstance(c.get("workspace"), int) else 0)
+            raw_ws_id = ws_info.get("id") if isinstance(ws_info, dict) else (c.get("workspace") if isinstance(c.get("workspace"), int) else 0)
+            ws_id = raw_ws_id if isinstance(raw_ws_id, int) else 0
             ws_name = ws_info.get("name", str(ws_id)) if isinstance(ws_info, dict) else str(ws_id)
             is_mapped = bool(c.get("mapped", True) and not c.get("hidden", False))
             
